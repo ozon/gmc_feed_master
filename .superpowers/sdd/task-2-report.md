@@ -7,7 +7,7 @@ Implemented Task 2: Settings, injectable clock, FastAPI application factory, cac
 ## Commits
 
 - `373d2f0 feat: add FastAPI settings and health factory` — application and focused test implementation.
-- `<pending>` — this report.
+- `c424b30 docs: report Task 2 implementation` — this report.
 
 ## Files
 
