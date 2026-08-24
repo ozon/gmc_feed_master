@@ -79,6 +79,17 @@ binding product specification. Dates use ISO 8601 calendar dates.
   keeps persistence behind repository/session boundaries. Alembic provides
   reviewed, reproducible schema evolution.
 
+### M1 Task 1 async database boundary dependencies
+
+- **Topic:** Exact Python dependency pins for the async database boundary
+- **Decision:** Use SQLAlchemy 2.0.43, asyncpg 0.30.0, Alembic 1.16.4,
+  argon2-cffi 25.1.0, pytest 8.4.2, and pytest-asyncio 1.1.0. The pytest pin
+  is lowered from the M0 development pin because pytest-asyncio 1.1.0 requires
+  pytest >=8.2 and <9.
+- **Rationale:** These exact versions resolve together under the current
+  package index while providing the documented SQLAlchemy 2.x async engine,
+  async session factory, migration, password-hashing, and async test APIs.
+
 ### M1 asynchronous session-store boundary
 
 - **Topic:** Async persistence at the existing auth boundary

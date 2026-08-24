@@ -13,6 +13,20 @@ class Settings(BaseSettings):
     initial_password: str
     database_url: str = "postgresql://postgres:postgres@localhost:5432/gmc_feed"
 
+    @property
+    def async_database_url(self) -> str:
+        if self.database_url.startswith("postgresql+asyncpg://"):
+            return self.database_url
+        if self.database_url.startswith("postgresql://"):
+            return "postgresql+asyncpg://" + self.database_url.removeprefix(
+                "postgresql://"
+            )
+        if self.database_url.startswith("postgres://"):
+            return "postgresql+asyncpg://" + self.database_url.removeprefix(
+                "postgres://"
+            )
+        return self.database_url
+
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parents[2] / ".env",
         env_file_encoding="utf-8",
