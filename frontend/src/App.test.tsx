@@ -107,6 +107,19 @@ it('records an explicit interaction', async () => {
   }));
 });
 
+it('returns to login when an authenticated interaction expires with 401', async () => {
+  fetchMock.mockResolvedValueOnce(jsonResponse({ username: 'operator' }));
+  fetchMock.mockResolvedValueOnce(jsonResponse({}, 401));
+  const user = userEvent.setup();
+
+  render(<App />);
+  await screen.findByText(/signed in as operator/i);
+  await user.click(screen.getByRole('button', { name: /record interaction/i }));
+
+  expect(await screen.findByRole('button', { name: /sign in/i })).toBeInTheDocument();
+  expect(screen.queryByText(/signed in as operator/i)).not.toBeInTheDocument();
+});
+
 it('uses the interaction API function for the interaction button', async () => {
   fetchMock.mockResolvedValueOnce(jsonResponse({ username: 'operator' }));
   fetchMock.mockResolvedValueOnce(jsonResponse({ username: 'operator' }));

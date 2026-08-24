@@ -31,3 +31,15 @@ def test_compose_defines_only_healthy_postgres_service():
 
     assert list(config["services"]) == ["postgres"]
     assert "healthcheck" in config["services"]["postgres"]
+
+
+def test_frontend_proxy_and_ci_startup_are_documented():
+    root = Path(__file__).resolve().parents[2]
+    vite_config = (root / "frontend" / "vite.config.ts").read_text()
+    assert "'/auth'" in vite_config
+    assert "'/health'" in vite_config
+    assert "127.0.0.1:8000" in vite_config
+
+    workflow = (root / ".github" / "workflows" / "ci.yml").read_text()
+    assert "docker compose up -d --wait postgres" in workflow
+    assert "docker compose down --volumes" in workflow

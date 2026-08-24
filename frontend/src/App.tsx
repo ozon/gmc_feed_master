@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { getCurrentUser, login, logout, recordInteraction, User } from './api';
+import { ApiError, getCurrentUser, login, logout, recordInteraction, User } from './api';
 import './App.css';
 
 type AppState = 'loading' | 'login' | 'authenticated';
@@ -53,8 +53,14 @@ export default function App() {
       setUser(null);
       setState('login');
       setError(null);
-    } catch {
-      setError('Unable to sign out. Please try again.');
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        setUser(null);
+        setState('login');
+        setError(null);
+      } else {
+        setError('Unable to sign out. Please try again.');
+      }
     } finally {
       setPending(false);
     }
@@ -65,8 +71,14 @@ export default function App() {
     setError(null);
     try {
       await recordInteraction();
-    } catch {
-      setError('Unable to record interaction. Please try again.');
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        setUser(null);
+        setState('login');
+        setError(null);
+      } else {
+        setError('Unable to record interaction. Please try again.');
+      }
     } finally {
       setPending(false);
     }

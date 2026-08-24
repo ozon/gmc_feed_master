@@ -1,5 +1,6 @@
 from app.config import Settings
 from pydantic import ValidationError
+from pathlib import Path
 
 
 def test_session_defaults(monkeypatch):
@@ -39,3 +40,23 @@ def test_settings_reject_non_positive_durations():
             pass
         else:
             raise AssertionError(f"{field} should be positive")
+
+
+def test_default_env_file_is_repository_root_even_when_started_from_backend(monkeypatch):
+    env_file = Path(__file__).resolve().parents[2] / ".env"
+    for key in ("SESSION_SECRET", "INITIAL_USERNAME", "INITIAL_PASSWORD"):
+        monkeypatch.delenv(key, raising=False)
+    original = env_file.read_bytes() if env_file.exists() else None
+    env_file.write_text(
+        "SESSION_SECRET=root-secret\nINITIAL_USERNAME=root-user\nINITIAL_PASSWORD=root-password\n"
+    )
+    monkeypatch.chdir(Path(__file__).resolve().parents[1])
+    try:
+        settings = Settings()
+    finally:
+        if original is None:
+            env_file.unlink()
+        else:
+            env_file.write_bytes(original)
+    assert settings.session_secret == "root-secret"
+    assert settings.initial_username == "root-user"
