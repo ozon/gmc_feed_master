@@ -1,0 +1,2700 @@
+{
+  "version": 1,
+  "source_fingerprint": "effa575de2b31aa991160a66d3cad97036ed686dfa7e6417789dd6ef50c640cf",
+  "attributes": {
+    "Buy_on_Google_listings": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "removed",
+      "domain": "vehicle_listings",
+      "export_status": "non_exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "additional_image_link": {
+      "kind": "repeated_scalar",
+      "type": "URL",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": 10
+      },
+      "constraints": {
+        "max_length": 2000,
+        "format": null
+      },
+      "fields": []
+    },
+    "ads_redirect": {
+      "kind": "scalar",
+      "type": "URL",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "adult": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [
+        "yes/no"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "age_group": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [
+        "newborn",
+        "infant",
+        "toddler",
+        "kids",
+        "adult"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "auto_pricing_min_price": {
+      "kind": "scalar",
+      "type": "Price",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "availability": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "required",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [
+        "in_stock",
+        "out_of_stock",
+        "preorder",
+        "backorder"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "availability_date": {
+      "kind": "scalar",
+      "type": "Date",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "body_style": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [
+        "sedan",
+        "suv",
+        "coupe",
+        "convertible",
+        "crossover",
+        "hatchback",
+        "minivan",
+        "truck",
+        "station wagon",
+        "full size van …"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "brand": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "required",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": 70,
+        "format": null
+      },
+      "fields": []
+    },
+    "canonical_link": {
+      "kind": "scalar",
+      "type": "URL",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": 2000,
+        "format": null
+      },
+      "fields": []
+    },
+    "certification": {
+      "kind": "repeated_structured",
+      "type": "Object",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": [
+        {
+          "name": "certification_authority",
+          "type": "String",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "certification_name",
+          "type": "String",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "certification_code",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "certification_value",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        }
+      ]
+    },
+    "certified_pre_owned": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "co2_emission": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "color": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "condition": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "required",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [
+        "new",
+        "refurbished",
+        "used"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "consumer_notice": {
+      "kind": "repeated_structured",
+      "type": "Object",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": [
+        {
+          "name": "notice_type",
+          "type": "Enum",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "notice_message",
+          "type": "String",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        }
+      ]
+    },
+    "cost_of_goods_sold": {
+      "kind": "scalar",
+      "type": "Price",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "custom_label_0": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": 100,
+        "format": null
+      },
+      "fields": []
+    },
+    "custom_label_4": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": 100,
+        "format": null
+      },
+      "fields": []
+    },
+    "date_in_stock": {
+      "kind": "scalar",
+      "type": "Date",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "dealership_address": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "required",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "dealership_name": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "required",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "description": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "required",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": 5000,
+        "format": null
+      },
+      "fields": []
+    },
+    "display_ads_id": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "removed",
+      "domain": "vehicle_listings",
+      "export_status": "non_exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "display_ads_link": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "removed",
+      "domain": "vehicle_listings",
+      "export_status": "non_exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "display_ads_similar_ids": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "removed",
+      "domain": "vehicle_listings",
+      "export_status": "non_exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "display_ads_title": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "removed",
+      "domain": "vehicle_listings",
+      "export_status": "non_exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "display_ads_value": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "removed",
+      "domain": "vehicle_listings",
+      "export_status": "non_exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "drive_train": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [
+        "FWD",
+        "RWD",
+        "AWD",
+        "4WD"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "energy_efficiency_class": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "deprecated (eu)",
+      "domain": "primary",
+      "export_status": "non_exportable",
+      "enum_values": [
+        "A+++ … G"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "engine": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "ev_battery": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "ev_range": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "excluded_destination": {
+      "kind": "repeated_scalar",
+      "type": "Enum",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "expected_lifetime": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "not a gmc attribute",
+      "domain": "vehicle_listings",
+      "export_status": "non_exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "expiration_date": {
+      "kind": "scalar",
+      "type": "Date",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "exterior_color": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "recommended/optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "exterior_color_generic": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "recommended/optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "external_seller_id": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "conditional (required for multi-seller accounts)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "free_shipping_threshold": {
+      "kind": "scalar",
+      "type": "Price",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "fuel": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "fuel_efficiency": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "gender": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [
+        "male",
+        "female",
+        "unisex"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "google_product_category": {
+      "kind": "scalar",
+      "type": "Integer",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "gtin": {
+      "kind": "repeated_scalar",
+      "type": "String",
+      "required": "conditional (strongly recommended)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "handling_cutoff_time": {
+      "kind": "structured",
+      "type": "Object",
+      "required": "optional (new 2025/26)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": [
+        {
+          "name": "cutoff_time",
+          "type": "String",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "country",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "cutoff_timezone",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "disable_delivery_after_cutoff",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        }
+      ]
+    },
+    "id": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "required",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": 50,
+        "format": null
+      },
+      "fields": []
+    },
+    "identifier_exists": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [
+        "yes/no"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "image_link": {
+      "kind": "scalar",
+      "type": "URL",
+      "required": "required",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": 2000,
+        "format": null
+      },
+      "fields": []
+    },
+    "included_destination": {
+      "kind": "repeated_scalar",
+      "type": "Enum",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "installment": {
+      "kind": "structured",
+      "type": "Object",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": [
+        {
+          "name": "months",
+          "type": "Integer",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "amount",
+          "type": "Price",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "downpayment",
+          "type": "Price",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "credit_type",
+          "type": "Enum",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        }
+      ]
+    },
+    "interior_color": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "recommended/optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "interior_color_generic": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "recommended/optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "is_bundle": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [
+        "yes/no"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "item_group_id": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "legal_disclaimer": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "lifestyle_image_link": {
+      "kind": "repeated_scalar",
+      "type": "URL",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "link": {
+      "kind": "scalar",
+      "type": "URL",
+      "required": "required",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": 2000,
+        "format": null
+      },
+      "fields": []
+    },
+    "link_template": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "removed (shopping)",
+      "domain": "vehicle_listings",
+      "export_status": "non_exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "loyalty_program": {
+      "kind": "structured",
+      "type": "Object",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": [
+        {
+          "name": "loyalty_points",
+          "type": "Integer",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "member_price_effective_date",
+          "type": "Date",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        }
+      ]
+    },
+    "make": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "required",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "maps_url": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "material": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "max_energy_efficiency_class": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "deprecated (eu)",
+      "domain": "primary",
+      "export_status": "non_exportable",
+      "enum_values": [
+        "A+++ … G"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "max_handling_time": {
+      "kind": "scalar",
+      "type": "Integer",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "maximum_retail_price": {
+      "kind": "scalar",
+      "type": "Price",
+      "required": "optional (india only)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "mileage": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "required (for `used`)",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "min_energy_efficiency_class": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "deprecated (eu)",
+      "domain": "primary",
+      "export_status": "non_exportable",
+      "enum_values": [
+        "A+++ … G"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "min_handling_time": {
+      "kind": "scalar",
+      "type": "Integer",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "minimum_order_value": {
+      "kind": "structured",
+      "type": "Object",
+      "required": "optional (new; **required from 2026-09-30** for in-store products in uk/ch/eea)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": 100
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": [
+        {
+          "name": "country",
+          "type": "String",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "service",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "surface",
+          "type": "Enum",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "price",
+          "type": "String",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        }
+      ]
+    },
+    "mobile_link": {
+      "kind": "scalar",
+      "type": "URL",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": 2000,
+        "format": null
+      },
+      "fields": []
+    },
+    "mobile_link_template": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "removed (shopping)",
+      "domain": "vehicle_listings",
+      "export_status": "non_exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "model": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "required",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "monroney_sticker": {
+      "kind": "scalar",
+      "type": "URL",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "mpn": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": 70,
+        "format": null
+      },
+      "fields": []
+    },
+    "multipack": {
+      "kind": "scalar",
+      "type": "Integer",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "num_doors": {
+      "kind": "scalar",
+      "type": "Integer",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "pattern": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "pause": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [
+        "ads"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "pickup_cost": {
+      "kind": "structured",
+      "type": "Object",
+      "required": "optional (new; **required from 2026-09-30** for in-store products in uk/ch/eea)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": [
+        {
+          "name": "pickup_cost_flat_rate",
+          "type": "String",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "pickup_cost_free_threshold",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        }
+      ]
+    },
+    "pickup_method": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "optional (since 2026)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [
+        "buy",
+        "reserve",
+        "ship_to_store",
+        "not_supported"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "pickup_sla": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [
+        "same day",
+        "next day",
+        "2-day",
+        "3-day",
+        "4-day",
+        "5-day",
+        "6-day",
+        "7-day",
+        "multi-week"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "place_id": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "price": {
+      "kind": "scalar",
+      "type": "Price",
+      "required": "required",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "product_detail": {
+      "kind": "repeated_structured",
+      "type": "Object",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": [
+        {
+          "name": "section_name",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "attribute_name",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        }
+      ]
+    },
+    "product_height": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "product_highlight": {
+      "kind": "repeated_scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "product_length": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "product_type": {
+      "kind": "repeated_scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": 5
+      },
+      "constraints": {
+        "max_length": 750,
+        "format": null
+      },
+      "fields": []
+    },
+    "product_weight": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "product_width": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "promotion_id": {
+      "kind": "repeated_scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "quantity": {
+      "kind": "scalar",
+      "type": "Integer",
+      "required": "required (lia)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "region_id": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "required (regional inventory feed only)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "returns": {
+      "kind": "structured",
+      "type": "Object",
+      "required": "optional (new, recommended)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": 100
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": [
+        {
+          "name": "country",
+          "type": "String",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "item_condition",
+          "type": "Enum",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "window_type",
+          "type": "Enum",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "window_days",
+          "type": "String",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "method",
+          "type": "Enum",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "outcome",
+          "type": "Enum",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "shipping_fee",
+          "type": "Price",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "shipping_fee_type",
+          "type": "Enum",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "restocking_fee",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "restocking_percentage_fee",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "policy_url",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        }
+      ]
+    },
+    "sale_price": {
+      "kind": "scalar",
+      "type": "Price",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "sale_price_effective_date": {
+      "kind": "scalar",
+      "type": "Date",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "seating_capacity": {
+      "kind": "scalar",
+      "type": "Integer",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "seating_rows": {
+      "kind": "scalar",
+      "type": "Integer",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "sell_on_google_quantity": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "removed",
+      "domain": "vehicle_listings",
+      "export_status": "non_exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "shipping": {
+      "kind": "repeated_structured",
+      "type": "Object",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": 100
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": [
+        {
+          "name": "price",
+          "type": "Price",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        }
+      ]
+    },
+    "shipping_height": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "shipping_label": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "shipping_length": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "shipping_weight": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "shipping_width": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "ships_from_country": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "shopping_ads_excluded_country": {
+      "kind": "repeated_scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "size": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "size_system": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [
+        "US",
+        "UK",
+        "EU",
+        "DE",
+        "FR",
+        "JP",
+        "CN",
+        "IT",
+        "BR",
+        "MEX",
+        "AU"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "size_type": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [
+        "regular",
+        "petite",
+        "plus",
+        "big and tall",
+        "maternity"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "store_code": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "required (lia)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "structured_description": {
+      "kind": "structured",
+      "type": "Object",
+      "required": "required* (alternative)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": [
+        {
+          "name": "digital_source_type",
+          "type": "Enum",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "content",
+          "type": "String",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        }
+      ]
+    },
+    "structured_title": {
+      "kind": "structured",
+      "type": "Object",
+      "required": "required* (alternative)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": [
+        {
+          "name": "digital_source_type",
+          "type": "Enum",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "content",
+          "type": "String",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        }
+      ]
+    },
+    "subscription_cost": {
+      "kind": "structured",
+      "type": "Object",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": [
+        {
+          "name": "period",
+          "type": "Enum",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "period_length",
+          "type": "Integer",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "amount",
+          "type": "Price",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        }
+      ]
+    },
+    "tax": {
+      "kind": "structured",
+      "type": "Object",
+      "required": "conditional (us only)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": [
+        {
+          "name": "rate",
+          "type": "String",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "tax_ship",
+          "type": "Boolean",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "format": null
+          }
+        }
+      ]
+    },
+    "tax_category": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional (us)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "title": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "required",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": 150,
+        "format": null
+      },
+      "fields": []
+    },
+    "tracking_phone_number": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "transit_time_label": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "transmission": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "trim": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "required (where available)",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "unit_pricing_base_measure": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "unit_pricing_measure": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "conditional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "vehicle_fulfillment": {
+      "kind": "scalar",
+      "type": "Enum",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [
+        "IN_STORE",
+        "SHIP_TO_STORE",
+        "ONLINE"
+      ],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "vehicle_history_report_link": {
+      "kind": "scalar",
+      "type": "URL",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "vehicle_location": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "vehicle_msrp": {
+      "kind": "scalar",
+      "type": "Price",
+      "required": "recommended (for `new`)",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "vehicle_option": {
+      "kind": "repeated_scalar",
+      "type": "String",
+      "required": "recommended",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "video_link": {
+      "kind": "scalar",
+      "type": "URL",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "vin": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "required",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "virtual_model_link": {
+      "kind": "scalar",
+      "type": "URL",
+      "required": "optional (us only)",
+      "domain": "primary",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "year": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "required",
+      "domain": "vehicle_listings",
+      "export_status": "exportable",
+      "enum_values": [],
+      "cardinality": {
+        "max_items": null
+      },
+      "constraints": {
+        "max_length": null,
+        "format": null
+      },
+      "fields": []
+    }
+  }
+}
