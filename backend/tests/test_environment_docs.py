@@ -1,4 +1,6 @@
 from pathlib import Path
+import json
+import subprocess
 
 
 def test_env_example_documents_required_settings():
@@ -18,15 +20,14 @@ def test_env_example_documents_required_settings():
 
 def test_compose_defines_only_healthy_postgres_service():
     root = Path(__file__).resolve().parents[2]
-    text = (root / "docker-compose.yml").read_text()
+    result = subprocess.run(
+        ["docker", "compose", "-f", str(root / "docker-compose.yml"), "config", "--format", "json"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    config = json.loads(result.stdout)
 
-    services = text.split("services:", 1)[1].split("\nvolumes:", 1)[0]
-    service_names = [
-        line.strip()[:-1]
-        for line in services.splitlines()
-        if line.startswith("  ") and not line.startswith("    ") and line.strip().endswith(":")
-    ]
-
-    assert service_names == ["postgres"]
-    assert "healthcheck:" in services
-    assert "pg_isready" in services
+    assert list(config["services"]) == ["postgres"]
+    assert "healthcheck" in config["services"]["postgres"]
