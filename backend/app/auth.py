@@ -47,7 +47,7 @@ def _unauthorized() -> HTTPException:
     )
 
 
-def require_user(
+async def require_user(
     request: Request,
     store: SessionStore = Depends(_store),
     clock: Clock = Depends(_clock),
@@ -55,13 +55,13 @@ def require_user(
     token = request.cookies.get(SESSION_COOKIE_NAME)
     if token is None:
         raise _unauthorized()
-    user_id = store.validate(token, clock.now(), renew_idle=False)
+    user_id = await store.validate(token, clock.now(), renew_idle=False)
     if user_id is None:
         raise _unauthorized()
     return user_id
 
 
-def require_user_for_interaction(
+async def require_user_for_interaction(
     request: Request,
     store: SessionStore = Depends(_store),
     clock: Clock = Depends(_clock),
@@ -69,7 +69,7 @@ def require_user_for_interaction(
     token = request.cookies.get(SESSION_COOKIE_NAME)
     if token is None:
         raise _unauthorized()
-    user_id = store.validate(token, clock.now(), renew_idle=True)
+    user_id = await store.validate(token, clock.now(), renew_idle=True)
     if user_id is None:
         raise _unauthorized()
     return user_id
@@ -81,12 +81,12 @@ def authenticate(credentials: Credentials, settings: Settings) -> str:
     return credentials.username
 
 
-def create_session(store: SessionStore, clock: Clock, user_id: str) -> str:
-    return store.create(user_id, clock.now())
+async def create_session(store: SessionStore, clock: Clock, user_id: str) -> str:
+    return await store.create(user_id, clock.now())
 
 
-def invalidate_session(store: SessionStore, token: str) -> None:
-    store.invalidate(token)
+async def invalidate_session(store: SessionStore, token: str) -> None:
+    await store.invalidate(token)
 
 
 def set_session_cookie(response: Response, token: str, max_age: int) -> None:

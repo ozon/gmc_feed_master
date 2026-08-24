@@ -8,13 +8,13 @@ from typing import Protocol
 
 
 class SessionStore(Protocol):
-    def create(self, user_id: str, now: datetime) -> str:
+    async def create(self, user_id: str, now: datetime) -> str:
         ...
 
-    def validate(self, session_id: str, now: datetime, renew_idle: bool) -> str | None:
+    async def validate(self, session_id: str, now: datetime, renew_idle: bool) -> str | None:
         ...
 
-    def invalidate(self, session_id: str) -> None:
+    async def invalidate(self, session_id: str) -> None:
         ...
 
 
@@ -34,7 +34,7 @@ class InMemorySessionStore(SessionStore):
         self._secret = secret.encode("utf-8")
         self._records: dict[str, _SessionRecord] = {}
 
-    def create(self, user_id: str, now: datetime) -> str:
+    async def create(self, user_id: str, now: datetime) -> str:
         now = _utc(now)
         nonce = secrets.token_urlsafe(32)
         absolute_expires_at = now + self._absolute
@@ -47,7 +47,7 @@ class InMemorySessionStore(SessionStore):
         )
         return f"{nonce}.{self._signature(nonce)}"
 
-    def validate(self, session_id: str, now: datetime, renew_idle: bool) -> str | None:
+    async def validate(self, session_id: str, now: datetime, renew_idle: bool) -> str | None:
         parsed = self._parse(session_id)
         if parsed is None:
             return None
@@ -67,7 +67,7 @@ class InMemorySessionStore(SessionStore):
             record.idle_expires_at = min(now + self._idle, record.absolute_expires_at)
         return record.user_id
 
-    def invalidate(self, session_id: str) -> None:
+    async def invalidate(self, session_id: str) -> None:
         parsed = self._parse(session_id)
         if parsed is not None:
             nonce, signature = parsed
