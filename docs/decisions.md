@@ -85,7 +85,8 @@ binding product specification. Dates use ISO 8601 calendar dates.
 - **Decision:** Use SQLAlchemy 2.0.43, asyncpg 0.30.0, Alembic 1.16.4,
   argon2-cffi 25.1.0, pytest 8.4.2, and pytest-asyncio 1.1.0. The pytest pin
   is lowered from the M0 development pin because pytest-asyncio 1.1.0 requires
-  pytest >=8.2 and <9.
+  pytest >=8.2 and <9. The M1 pytest pin 8.4.2 supersedes the M0 historical
+  pin 9.1.1 for the backend development environment.
 - **Rationale:** These exact versions resolve together under the current
   package index while providing the documented SQLAlchemy 2.x async engine,
   async session factory, migration, password-hashing, and async test APIs.

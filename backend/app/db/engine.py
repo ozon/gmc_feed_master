@@ -22,7 +22,11 @@ def create_engine(settings: Settings) -> AsyncEngine:
 def create_session_factory(
     engine: AsyncEngine,
 ) -> async_sessionmaker[AsyncSession]:
-    return async_sessionmaker(engine, expire_on_commit=False)
+    return async_sessionmaker(
+        engine,
+        expire_on_commit=False,
+        close_resets_only=False,
+    )
 
 
 async def get_db_session(request: Request) -> AsyncIterator[AsyncSession]:

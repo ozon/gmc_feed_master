@@ -1,5 +1,7 @@
 import pytest
 from fastapi import Request
+from sqlalchemy import text
+from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from app.db.engine import (
@@ -51,3 +53,5 @@ async def test_session_dependency_yields_and_closes_session(settings):
     assert session.is_active
     await dependency.aclose()
     assert session.in_transaction() is False
+    with pytest.raises(InvalidRequestError, match="permanently closed"):
+        await session.execute(text("SELECT 1"))
