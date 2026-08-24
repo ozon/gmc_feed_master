@@ -52,3 +52,28 @@ Listing 'alembic/versions'...
 
 - The focused test run retains the pre-existing `StarletteDeprecationWarning` about the installed httpx/Starlette combination; it does not fail the tests.
 - The requested baseline Alembic revision is intentionally deferred to Task 3.
+
+## Review fixes
+
+- Added the binding §4 representation fields: feed-source field mappings; pipeline/feed-source ownership and ordered module positions; staging content/config hashes, status, and last-seen timestamp; plugin manifest; declared plugin scopes and client/feed-source owners; quality finding ingestion-run linkage; ingestion error details and processed/failed counts; export product/severity counts and stored export-version linkage.
+- Added indexes for the required foreign-key lookup columns and strengthened metadata tests for all reviewed contracts, JSONB fields, scope owners, and indexes.
+- Kept exactly 15 tables and did not add a baseline migration, repositories, authentication persistence, or registry.
+
+## Review-fix verification
+
+```text
+$ cd backend && uv run pytest tests/test_models.py -q && uv run python -m compileall app alembic
+......                                                                   [100%]
+6 passed, 1 warning in 0.31s
+Listing 'app'...
+Listing 'app/db'...
+Listing 'app/models'...
+Listing 'alembic'...
+Listing 'alembic/versions'...
+
+$ cd backend && uv run pytest -q
+..............................................                           [100%]
+46 passed, 1 warning in 1.23s
+```
+
+The warning is the pre-existing `StarletteDeprecationWarning` for the installed httpx/Starlette combination.
