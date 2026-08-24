@@ -64,12 +64,12 @@ def isolated_database_url():
         finally:
             await connection.close()
 
-    asyncio.run(create_database())
-    isolated = urlunsplit((parts.scheme, parts.netloc, f"/{database_name}", parts.query, ""))
-    config = Config("alembic.ini")
-    config.set_main_option("sqlalchemy.url", isolated)
-    command.upgrade(config, "head")
     try:
+        asyncio.run(create_database())
+        isolated = urlunsplit((parts.scheme, parts.netloc, f"/{database_name}", parts.query, ""))
+        config = Config("alembic.ini")
+        config.set_main_option("sqlalchemy.url", isolated)
+        command.upgrade(config, "head")
         yield isolated
     finally:
         async def drop_database():

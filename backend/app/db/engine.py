@@ -30,6 +30,10 @@ def create_session_factory(
 
 
 async def get_db_session(request: Request) -> AsyncIterator[AsyncSession | None]:
+    app = request.scope.get("app")
+    if app is not None and getattr(app.state, "session_store_injected", False):
+        yield None
+        return
     factory = getattr(request.state, "db_session_factory", None)
     if factory is None:
         factory = request.app.state.db_session_factory

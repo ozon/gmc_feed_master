@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timezone
 
 import pytest
 import pytest_asyncio
@@ -11,6 +12,7 @@ from app.main import create_app
 from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
+from app.clock import TestClock
 
 
 @pytest_asyncio.fixture
@@ -81,6 +83,41 @@ async def test_password_change_rejects_wrong_current_and_empty_new(postgres_app)
     assert wrong.status_code == 401
     assert wrong.json() == {"detail": "Invalid credentials"}
     assert empty.status_code == 422
+    await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_persisted_logout_clears_cookie_and_invalidates_session(postgres_app):
+    client = await client_factory(postgres_app)
+    assert (await client.post("/auth/login", json={"username": "operator", "password": "old"})).status_code == 200
+
+    response = await client.post("/auth/logout")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+    cookie = response.headers["set-cookie"].lower()
+    assert "gmc_session=" in cookie
+    assert "max-age=0" in cookie
+    assert "expires=" in cookie
+    assert "httponly" in cookie
+    assert "secure" in cookie
+    assert "samesite=lax" in cookie
+    assert (await client.get("/auth/me")).status_code == 401
+    await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_persisted_interaction_renews_idle_expiry(postgres_app):
+    app, _ = postgres_app
+    clock = TestClock(datetime(2026, 1, 1, tzinfo=timezone.utc))
+    app.state.clock = clock
+    client = await client_factory(postgres_app)
+    assert (await client.post("/auth/login", json={"username": "operator", "password": "old"})).status_code == 200
+
+    clock.advance(minutes=29)
+    assert (await client.post("/auth/interaction")).status_code == 200
+    clock.advance(minutes=29)
+    assert (await client.get("/auth/me")).status_code == 200
     await client.aclose()
 
 

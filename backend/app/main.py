@@ -39,6 +39,7 @@ def create_app(
         if (
             application.state.db_session_factory is not None
             and settings is not None
+            and not application.state.session_store_injected
         ):
             async with application.state.db_session_factory() as session:
                 await seed_initial_user(
@@ -57,7 +58,7 @@ def create_app(
     app.state.clock = clock if clock is not None else SystemClock()
     if settings is not None:
         app.dependency_overrides.setdefault(get_settings, lambda: settings)
-        if app.state.db_session_factory is None:
+        if app.state.db_session_factory is None and session_store is None:
             app.state.db_engine = create_engine(settings)
             app.state.db_session_factory = create_session_factory(app.state.db_engine)
         if session_store is None and app.state.db_session_factory is not None:
@@ -113,6 +114,11 @@ def create_app(
         request_user: str = Depends(require_user),
         db_session: AsyncSession | None = Depends(get_db_session),
     ) -> dict[str, str]:
+        if request.app.state.session_store_injected:
+            raise HTTPException(
+                status_code=501,
+                detail="Password changes require the configured PostgreSQL persistence boundary",
+            )
         token = request.cookies[SESSION_COOKIE_NAME]
         if db_session is None or not await change_password(
             db_session, request_user, payload.current_password, payload.new_password

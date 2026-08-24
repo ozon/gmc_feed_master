@@ -156,3 +156,73 @@ documentation details; they are retained here as an append-only audit trail:
   `docker compose down` cleanup.
 - M0 continues to use its in-process session store and requires one backend
   worker; PostgreSQL remains available for the persistence milestone.
+
+## Task 6 review-fix follow-up: injection precedence and persisted API coverage
+
+- Explicit `session_store` injection now prevents settings-based engine/factory
+  construction, startup user seeding, and DB session dependency creation. This
+  keeps an injected `InMemorySessionStore` as the sole auth boundary even when
+  settings contain a PostgreSQL URL.
+- The password route now returns the tested `501` response
+  `Password changes require the configured PostgreSQL persistence boundary`
+  when an explicit session store is injected, rather than silently changing a
+  different database-backed user store.
+- Default settings-backed PostgreSQL behavior and explicit
+  `db_session_factory` injection remain unchanged.
+- The temporary database fixture now wraps database creation, migration setup,
+  yielding, and forced drop cleanup in one outer `try/finally`, including
+  migration setup failures.
+- Added persisted API coverage for logout cookie clearing and invalidation,
+  `/auth/interaction` idle renewal, and explicit injection precedence/password
+  behavior. Invalid sessions remain rejected after persisted logout.
+
+## Review-fix verification outputs
+
+From the repository root/worktree:
+
+```text
+docker compose up -d --wait postgres
+Container m1-persistence-registry-postgres-1 Healthy
+```
+
+From `backend/`:
+
+```text
+TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest tests/test_auth_api.py tests/test_postgres_auth.py -q
+................                                                         [100%]
+16 passed, 7 warnings in 5.68s
+
+TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest -q
+........................................................................ [ 98%]
+.
+73 passed, 24 warnings in 19.27s
+
+uv run python -m compileall app alembic
+Listing 'app'...
+Listing 'app/db'...
+Listing 'app/models'...
+Listing 'app/persistence'...
+Listing 'app/security'...
+Listing 'alembic'...
+Listing 'alembic/versions'...
+
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run alembic upgrade head
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+```
+
+Cleanup:
+
+```text
+docker compose down --volumes
+Container m1-persistence-registry-postgres-1 Stopped
+Container m1-persistence-registry-postgres-1 Removed
+Volume m1-persistence-registry_postgres_data Removed
+Network m1-persistence-registry_default Removed
+
+git diff --check
+exit 0
+```
+
+Concerns remain limited to the existing Starlette/httpx and Alembic
+configuration deprecation warnings reported by the test run.
