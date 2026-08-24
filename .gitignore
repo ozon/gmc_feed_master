@@ -1,0 +1,66 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+*.egg
+
+# Environment
+.env
+
+# Frontend build output (D-06)
+frontend/dist/
+
+# Node
+node_modules/
+*.tsbuildinfo
+
+# Testing
+.pytest_cache/
+.worktrees/
+.ruff_cache/
+.mypy_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# Docker
+pgdata/
+
+# OS
+.DS_Store
+*.swp
+
+# Testcontainers
+.testcontainers*
+
+# Playwright E2E test artifacts
+frontend/test-results/
+frontend/playwright-report/
+frontend/playwright/.cache/
+backend/test-report.json
+backend/.testmondata
+backend/scripts/live_integration_test_report.json
+backend/scripts/live_integration_test_report.md
+
+
+backend/gmc_feed_*.sql.gz
+*.kate-swp
+gmc_feed_*.sql.gz
+.nvmrc
+
+# Local UX review input (source doc, not app code)
+frontend-report.md
+
+# Superpowers SDD workspace (task briefs/reports)
+.superpowers/
+backend/.testmondata-shm
+backend/.testmondata-wal
+frontend/test-results.json
+
+# frontend_new (React rebuild)
+frontend_new/node_modules/
+frontend_new/dist/
+frontend_new/.vite/
