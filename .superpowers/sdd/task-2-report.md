@@ -77,3 +77,40 @@ $ cd backend && uv run pytest -q
 ```
 
 The warning is the pre-existing `StarletteDeprecationWarning` for the installed httpx/Starlette combination.
+
+## Remaining review-fix verification
+
+- Reworked `PluginConfig` and `PluginData` scoped persistence to use three explicit PostgreSQL partial unique indexes per table (global, client, and feed-source), including the scoped owner columns in each index. This permits the same plugin/key at different scopes while rejecting duplicates for the same scope/owner, including NULL global owners.
+- Added `ck_plugin_configs_scope_owner` and `ck_plugin_data_scope_owner` check constraints enforcing global-with-no-owner, client-with-client-only, and feed-source-with-feed-source-only records. `PluginData` now has the conceptual `key` needed by scoped uniqueness.
+- Added nullable `FeedSource.active_pipeline_id` as the direct active-pipeline reference. Kept `ModulePipeline.feed_source_id` as the required ownership FK and `ModuleInstance.position` plus its per-pipeline uniqueness. Added explicit relationships with foreign-key selection on both sides so the circular FK metadata configures cleanly.
+- Tightened JSON metadata tests to require PostgreSQL `JSONB` exactly and added metadata assertions for partial indexes, scope-owner checks, and active-pipeline FK.
+- Preserved exactly 15 tables; no migration, repository, authentication, or registry implementation was added.
+
+Commands and output:
+
+```text
+$ cd backend && uv run pytest tests/test_models.py -q
+........                                                                 [100%]
+8 passed, 1 warning in 0.33s
+
+$ cd backend && uv run pytest -q
+................................................                         [100%]
+48 passed, 1 warning in 1.12s
+
+$ cd backend && uv run python -m compileall app alembic
+Listing 'app'...
+Listing 'app/db'...
+Listing 'app/models'...
+Listing 'alembic'...
+Listing 'alembic/versions'...
+
+$ metadata inspection
+tables: 15 ['clients', 'export_runs', 'export_versions', 'feed_sources', 'ingestion_runs', 'module_instances', 'module_pipelines', 'plugin_configs', 'plugin_data', 'plugins', 'quality_findings', 'sessions', 'staging_history', 'staging_products', 'users']
+CREATE UNIQUE INDEX uq_plugin_configs_client_plugin_key ON plugin_configs (plugin_id, client_id, key) WHERE scope = 'client' AND client_id IS NOT NULL AND feed_source_id IS NULL
+CREATE UNIQUE INDEX uq_plugin_configs_feed_source_plugin_key ON plugin_configs (plugin_id, feed_source_id, key) WHERE scope = 'feed_source' AND client_id IS NULL AND feed_source_id IS NOT NULL
+CREATE UNIQUE INDEX uq_plugin_configs_global_plugin_key ON plugin_configs (plugin_id, key) WHERE scope = 'global' AND client_id IS NULL AND feed_source_id IS NULL
+CREATE UNIQUE INDEX uq_plugin_data_client_plugin_key ON plugin_data (plugin_id, client_id, key) WHERE scope = 'client' AND client_id IS NOT NULL AND feed_source_id IS NULL
+CREATE UNIQUE INDEX uq_plugin_data_feed_source_plugin_key ON plugin_data (plugin_id, feed_source_id, key) WHERE scope = 'feed_source' AND client_id IS NULL AND feed_source_id IS NOT NULL
+CREATE UNIQUE INDEX uq_plugin_data_global_plugin_key ON plugin_data (plugin_id, key) WHERE scope = 'global' AND client_id IS NULL AND feed_source_id IS NULL
+active_pipeline_fk: ['module_pipelines.id']
+```

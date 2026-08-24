@@ -1,4 +1,4 @@
-from sqlalchemy import JSON, UniqueConstraint
+from sqlalchemy import CheckConstraint, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app.db.base import Base
@@ -34,7 +34,43 @@ def test_required_foreign_keys_and_uniqueness():
                if isinstance(constraint, UniqueConstraint))
     assert any({"feed_source_id", "version_number"} == {c.name for c in constraint.columns}
                for constraint in Base.metadata.tables["export_versions"].constraints
-                if isinstance(constraint, UniqueConstraint))
+                 if isinstance(constraint, UniqueConstraint))
+
+
+def test_plugin_scoped_records_have_partial_unique_indexes_and_owner_checks():
+    for name in ("plugin_configs", "plugin_data"):
+        table = Base.metadata.tables[name]
+        assert {"key", "scope", "client_id", "feed_source_id"} <= set(table.c.keys())
+        indexes = {index.name: index for index in table.indexes}
+        assert {
+            f"uq_{name}_global_plugin_key",
+            f"uq_{name}_client_plugin_key",
+            f"uq_{name}_feed_source_plugin_key",
+        } <= set(indexes)
+        assert all(index.unique for index in indexes.values() if index.name.startswith("uq_"))
+        assert all(index.dialect_options["postgresql"].get("where") is not None
+                   for index in indexes.values() if index.name.startswith("uq_"))
+        checks = {
+            constraint.name: str(constraint.sqltext)
+            for constraint in table.constraints
+            if isinstance(constraint, CheckConstraint)
+        }
+        assert f"ck_{name}_scope_owner" in checks
+        assert "global" in checks[f"ck_{name}_scope_owner"]
+        assert "client" in checks[f"ck_{name}_scope_owner"]
+        assert "feed_source" in checks[f"ck_{name}_scope_owner"]
+
+
+def test_feed_source_has_nullable_active_pipeline_reference():
+    feed_sources = Base.metadata.tables["feed_sources"]
+    pipelines = Base.metadata.tables["module_pipelines"]
+    assert feed_sources.c.active_pipeline_id.nullable
+    assert {"module_pipelines.id"} == {
+        str(f.column) for f in feed_sources.c.active_pipeline_id.foreign_keys
+    }
+    assert {"feed_sources.id"} == {
+        str(f.column) for f in pipelines.c.feed_source_id.foreign_keys
+    }
 
 
 def test_review_contract_fields_and_foreign_key_indexes():
@@ -71,4 +107,4 @@ def test_conceptual_json_columns_use_postgresql_jsonb():
         Base.metadata.tables["feed_sources"].c.field_mapping,
         Base.metadata.tables["plugins"].c.manifest,
     ]
-    assert all(isinstance(column.type, (JSONB, JSON)) for column in json_columns)
+    assert all(isinstance(column.type, JSONB) for column in json_columns)
