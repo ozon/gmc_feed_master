@@ -129,3 +129,30 @@ Review-fix verification outputs:
 Remaining concerns:
 
 - Existing Starlette/httpx and Alembic configuration deprecation warnings remain.
+
+## Preserved prior Task 6 report details
+
+The preceding report also recorded the following historical verification and
+documentation details; they are retained here as an append-only audit trail:
+
+- The Compose file is PostgreSQL-only and uses `postgres:16.4-alpine`,
+  configurable credentials and host port, a named `postgres_data` volume, and
+  a `pg_isready` health check.
+- `.env.example` contains safe local placeholders, including the
+  non-production session-secret marker and the M0 one-worker requirement.
+- The environment documentation states that changing any `POSTGRES_*` value
+  requires the matching `DATABASE_URL` update and identifies the host-local
+  default relationship.
+- `backend/tests/test_environment_docs.py` parses `docker compose config
+  --format json` with the standard-library JSON parser, asserts exactly one
+  service named `postgres`, and checks the health check without adding an
+  unpinned YAML dependency.
+- Historical focused verification: `uv run pytest
+  tests/test_environment_docs.py -q` reported `2 passed, 1 warning`; the
+  historical full suite reported `32 passed, 1 warning`; and
+  `uv run python -m compileall app` completed successfully.
+- Historical repository verification included successful `git diff --check`,
+  `docker compose config -q`, a healthy Compose PostgreSQL service, and clean
+  `docker compose down` cleanup.
+- M0 continues to use its in-process session store and requires one backend
+  worker; PostgreSQL remains available for the persistence milestone.
