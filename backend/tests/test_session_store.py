@@ -1,5 +1,8 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
+import pytest
+
+from app.clock import TestClock as InjectableTestClock
 from app.session_store import InMemorySessionStore
 
 
@@ -16,6 +19,12 @@ def test_read_validation_does_not_renew_idle_expiry(store, clock):
     assert store.validate(token, clock.now(), renew_idle=False) is None
 
 
+def test_validation_rejects_exactly_at_idle_expiry(store, clock):
+    token = store.create("operator", clock.now())
+    clock.advance(minutes=30)
+    assert store.validate(token, clock.now(), renew_idle=False) is None
+
+
 def test_explicit_interaction_renews_idle_but_not_absolute(store, clock):
     token = store.create("operator", clock.now())
     absolute = clock.now() + timedelta(hours=12)
@@ -24,6 +33,12 @@ def test_explicit_interaction_renews_idle_but_not_absolute(store, clock):
     clock.advance(minutes=29)
     assert store.validate(token, clock.now(), renew_idle=False) == "operator"
     clock.set(absolute + timedelta(seconds=1))
+    assert store.validate(token, clock.now(), renew_idle=True) is None
+
+
+def test_validation_rejects_exactly_at_absolute_expiry(store, clock):
+    token = store.create("operator", clock.now())
+    clock.advance(hours=12)
     assert store.validate(token, clock.now(), renew_idle=True) is None
 
 
@@ -45,6 +60,25 @@ def test_malformed_and_tampered_tokens_are_rejected(store, clock):
     token = store.create("operator", clock.now())
     for invalid in ("", "not-a-token", token + "x", token.replace(".", "", 1)):
         assert store.validate(invalid, clock.now(), renew_idle=False) is None
+
+
+def test_same_length_signature_tampering_is_rejected(store, clock):
+    token = store.create("operator", clock.now())
+    nonce, signature = token.split(".")
+    replacement = "A" if signature[0] != "A" else "B"
+    tampered = f"{nonce}.{replacement}{signature[1:]}"
+    assert len(tampered) == len(token)
+    assert store.validate(tampered, clock.now(), renew_idle=False) is None
+
+
+def test_test_clock_normalizes_aware_times_to_utc():
+    clock = InjectableTestClock(datetime(2026, 1, 1, 1, tzinfo=timezone(timedelta(hours=1))))
+    assert clock.now() == datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+
+def test_test_clock_rejects_naive_times():
+    with pytest.raises(ValueError, match="timezone-aware"):
+        InjectableTestClock(datetime(2026, 1, 1))
 
 
 def test_idle_deadline_is_capped_by_absolute_deadline(store, clock):

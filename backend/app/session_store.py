@@ -27,7 +27,7 @@ class _SessionRecord:
     absolute_expires_at: datetime
 
 
-class InMemorySessionStore:
+class InMemorySessionStore(SessionStore):
     def __init__(self, idle: timedelta, absolute: timedelta, secret: str):
         self._idle = idle
         self._absolute = absolute
