@@ -7,7 +7,6 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from app.clock import TestClock as InjectableTestClock
-from app.db.base import Base
 from app.models.session import Session
 from app.models.user import User
 from app.persistence.sessions import PostgresSessionStore, _token_hash
@@ -17,16 +16,10 @@ pytestmark = pytest.mark.asyncio
 
 
 @pytest_asyncio.fixture
-async def postgres_store():
-    url = os.environ.get("TEST_DATABASE_URL")
-    if not url:
-        pytest.fail("TEST_DATABASE_URL must point to PostgreSQL via asyncpg")
-    if not url.startswith("postgresql+asyncpg://"):
-        pytest.fail("TEST_DATABASE_URL must use the asyncpg driver")
+async def postgres_store(isolated_database_url):
+    url = isolated_database_url
     engine = create_async_engine(url)
     factory = async_sessionmaker(engine, expire_on_commit=False)
-    async with engine.begin() as connection:
-        await connection.run_sync(Base.metadata.create_all)
     async with factory() as session:
         async with session.begin():
             await session.execute(delete(Session))

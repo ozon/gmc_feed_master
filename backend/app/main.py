@@ -36,7 +36,10 @@ def create_app(
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(application: FastAPI):
-        if application.state.db_session_factory is not None and settings is not None:
+        if (
+            application.state.db_session_factory is not None
+            and settings is not None
+        ):
             async with application.state.db_session_factory() as session:
                 await seed_initial_user(
                     session, settings.initial_username, settings.initial_password
@@ -48,13 +51,18 @@ def create_app(
     app = FastAPI(lifespan=lifespan)
     app.state.settings = settings
     app.state.session_store = session_store
+    app.state.session_store_injected = session_store is not None
     app.state.db_session_factory = db_session_factory
+    app.state.db_engine = None
     app.state.clock = clock if clock is not None else SystemClock()
     if settings is not None:
         app.dependency_overrides.setdefault(get_settings, lambda: settings)
-        if session_store is None and db_session_factory is not None:
+        if app.state.db_session_factory is None:
+            app.state.db_engine = create_engine(settings)
+            app.state.db_session_factory = create_session_factory(app.state.db_engine)
+        if session_store is None and app.state.db_session_factory is not None:
             app.state.session_store = PostgresSessionStore(
-                db_session_factory,
+                app.state.db_session_factory,
                 idle=timedelta(minutes=settings.session_idle_minutes),
                 absolute=timedelta(hours=settings.session_absolute_hours),
                 secret=settings.session_secret,
@@ -68,12 +76,17 @@ def create_app(
     @app.post("/auth/login")
     async def login(
         credentials: Credentials,
+        request: Request,
         response: Response,
         settings: Settings = Depends(get_settings),
         store: SessionStore = Depends(_store),
         db_session: AsyncSession | None = Depends(get_db_session),
     ) -> dict[str, str]:
-        user_id = await authenticate(credentials, settings, db_session)
+        user_id = await authenticate(
+            credentials,
+            settings,
+            None if request.app.state.session_store_injected else db_session,
+        )
         token = await create_session(store, app.state.clock, user_id)
         set_session_cookie(response, token, settings.session_absolute_hours * 60 * 60)
         return {"username": user_id}

@@ -7,7 +7,6 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
-from app.db.base import Base
 from app.main import create_app
 from app.models.session import Session
 from app.models.user import User
@@ -15,16 +14,10 @@ from app.persistence.users import seed_initial_user
 
 
 @pytest_asyncio.fixture
-async def postgres_app():
-    url = os.environ.get("TEST_DATABASE_URL")
-    if not url:
-        pytest.fail("TEST_DATABASE_URL must point to PostgreSQL via asyncpg")
-    if not url.startswith("postgresql+asyncpg://"):
-        pytest.fail("TEST_DATABASE_URL must use the asyncpg driver")
+async def postgres_app(isolated_database_url):
+    url = isolated_database_url
     engine = create_async_engine(url)
     factory = async_sessionmaker(engine, expire_on_commit=False)
-    async with engine.begin() as connection:
-        await connection.run_sync(Base.metadata.create_all)
     async with factory() as session:
         async with session.begin():
             await session.execute(delete(Session))
@@ -39,10 +32,6 @@ async def postgres_app():
     )
     app = create_app(settings=settings, db_session_factory=factory)
     yield app, factory
-    async with factory() as session:
-        async with session.begin():
-            await session.execute(delete(Session))
-            await session.execute(delete(User))
     await engine.dispose()
 
 
@@ -93,3 +82,35 @@ async def test_password_change_rejects_wrong_current_and_empty_new(postgres_app)
     assert wrong.json() == {"detail": "Invalid credentials"}
     assert empty.status_code == 422
     await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_startup_seeds_once_and_session_survives_new_app_instance(
+    isolated_database_url,
+):
+    engine = create_async_engine(isolated_database_url)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    settings = Settings(
+        _env_file=None,
+        session_secret="test-secret",
+        initial_username="operator",
+        initial_password="first-password",
+        database_url=isolated_database_url,
+    )
+    first_app = create_app(settings=settings, db_session_factory=factory)
+    async with first_app.router.lifespan_context(first_app):
+        first = AsyncClient(transport=ASGITransport(app=first_app), base_url="https://testserver")
+        assert (await first.post("/auth/login", json={"username": "operator", "password": "first-password"})).status_code == 200
+        token = first.cookies["gmc_session"]
+        await first.aclose()
+
+    second_settings = settings.model_copy(update={"initial_password": "replacement"})
+    second_app = create_app(settings=second_settings, db_session_factory=factory)
+    async with second_app.router.lifespan_context(second_app):
+        second = AsyncClient(transport=ASGITransport(app=second_app), base_url="https://testserver")
+        second.cookies.set("gmc_session", token)
+        assert (await second.get("/auth/me")).status_code == 200
+        assert (await second.post("/auth/login", json={"username": "operator", "password": "replacement"})).status_code == 401
+        assert (await second.post("/auth/login", json={"username": "operator", "password": "first-password"})).status_code == 200
+        await second.aclose()
+    await engine.dispose()

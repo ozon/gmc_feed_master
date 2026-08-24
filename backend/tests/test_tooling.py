@@ -123,7 +123,20 @@ def test_create_app_is_public_entry_point_for_health_and_auth_flow():
         initial_username="operator",
         initial_password="correct",
     )
-    client = TestClient(create_app(settings=settings), base_url="https://testserver")
+    from app.session_store import InMemorySessionStore
+    from datetime import timedelta
+
+    client = TestClient(
+        create_app(
+            settings=settings,
+            session_store=InMemorySessionStore(
+                idle=timedelta(minutes=30),
+                absolute=timedelta(hours=12),
+                secret="integration-secret",
+            ),
+        ),
+        base_url="https://testserver",
+    )
 
     assert client.get("/health").json() == {"status": "ok"}
     login = client.post(

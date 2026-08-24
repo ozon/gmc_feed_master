@@ -15,12 +15,8 @@ from app.persistence.users import (
 
 
 @pytest_asyncio.fixture
-async def user_session():
-    url = os.environ.get("TEST_DATABASE_URL")
-    if not url:
-        pytest.fail("TEST_DATABASE_URL must point to PostgreSQL via asyncpg")
-    if not url.startswith("postgresql+asyncpg://"):
-        pytest.fail("TEST_DATABASE_URL must use the postgresql+asyncpg:// dialect")
+async def user_session(isolated_database_url):
+    url = isolated_database_url
     engine = create_async_engine(url)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
