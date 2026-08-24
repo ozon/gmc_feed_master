@@ -99,3 +99,25 @@ Listing 'app'...
 ```
 
 The warning remains the existing Starlette/httpx deprecation warning documented above.
+
+## Remaining Review Fix
+
+### Files changed
+
+- Modified `backend/app/main.py` to bind factory-supplied settings through the actual overridable `get_settings` dependency, while preserving explicit dependency overrides and default import safety.
+- Modified `backend/tests/test_tooling.py` with a regression proving `create_app(settings=valid_settings)` serves `/health` without credential environment variables.
+
+### Commands and output
+
+```text
+cd backend && uv run pytest -q && uv run python -m compileall app
+```
+
+Output:
+
+```text
+9 passed, 1 warning in 0.83s
+Listing 'app'...
+```
+
+The warning remains the existing Starlette/httpx deprecation warning documented above.

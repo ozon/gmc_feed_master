@@ -34,6 +34,22 @@ def test_factory_installs_injected_dependencies():
     assert application.state.clock is clock
 
 
+def test_factory_settings_are_used_by_health_without_credentials_environment(monkeypatch):
+    for key in ("SESSION_SECRET", "INITIAL_USERNAME", "INITIAL_PASSWORD"):
+        monkeypatch.delenv(key, raising=False)
+    settings = Settings(
+        _env_file=None,
+        session_secret="factory-secret",
+        initial_username="factory-user",
+        initial_password="factory-password",
+    )
+
+    response = TestClient(create_app(settings=settings)).get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
 def test_asgi_import_is_safe_without_settings_environment():
     environment = os.environ.copy()
     for key in ("SESSION_SECRET", "INITIAL_USERNAME", "INITIAL_PASSWORD"):

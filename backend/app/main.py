@@ -20,6 +20,8 @@ def create_app(
     app.state.settings = settings
     app.state.session_store = session_store
     app.state.clock = clock if clock is not None else SystemClock()
+    if settings is not None:
+        app.dependency_overrides.setdefault(get_settings, lambda: settings)
 
     @app.get("/health")
     def health(_settings: Settings = Depends(get_settings)) -> dict[str, str]:
