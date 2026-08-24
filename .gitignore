@@ -8,6 +8,10 @@ dist/
 
 # Environment
 .env
+.env.local
+
+# Local HTTPS development certificate and key
+local-certs/
 
 # Frontend build output (D-06)
 frontend/dist/
