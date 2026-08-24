@@ -16,7 +16,18 @@ class ExportStatus(str, Enum):
 
 class FeedDomain(str, Enum):
     PRIMARY = "primary"
+    LOCAL_INVENTORY = "local_inventory"
     VEHICLE_LISTINGS = "vehicle_listings"
+
+
+class RequirementStatus(str, Enum):
+    REQUIRED = "required"
+    CONDITIONAL = "conditional"
+    OPTIONAL = "optional"
+    RECOMMENDED = "recommended"
+    DEPRECATED = "deprecated"
+    REMOVED = "removed"
+    NOT_APPLICABLE = "not_applicable"
 
 
 @dataclass(frozen=True)
@@ -27,6 +38,7 @@ class Cardinality:
 @dataclass(frozen=True)
 class Constraints:
     max_length: int | None = None
+    min_length: int | None = None
     format: str | None = None
 
 
@@ -34,7 +46,7 @@ class Constraints:
 class SubField:
     name: str
     type: str
-    required: str
+    required: RequirementStatus
     constraints: Constraints = field(default_factory=Constraints)
     enum_values: tuple[str, ...] = ()
 
@@ -44,7 +56,7 @@ class RegistryAttribute:
     name: str
     kind: AttributeKind
     type: str
-    required: str
+    required: RequirementStatus
     domain: FeedDomain
     export_status: ExportStatus
     fields: tuple[SubField, ...] = ()
@@ -52,6 +64,10 @@ class RegistryAttribute:
     cardinality: Cardinality = field(default_factory=Cardinality)
     constraints: Constraints = field(default_factory=Constraints)
     source_line: int = 0
+    source_lines: tuple[int, ...] = ()
+    applicability: tuple[FeedDomain, ...] = ()
+    qualifiers: tuple[str, ...] = ()
+    metadata: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)

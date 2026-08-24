@@ -6,46 +6,82 @@
       "kind": "scalar",
       "type": "String",
       "required": "removed",
-      "domain": "vehicle_listings",
+      "domain": "primary",
       "export_status": "non_exportable",
+      "source_line": 227,
+      "source_lines": [
+        227
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Discontinued destination"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
     },
     "additional_image_link": {
       "kind": "repeated_scalar",
-      "type": "URL",
+      "type": "Url",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 44,
+      "source_lines": [
+        44,
+        193
+      ],
+      "applicability": [
+        "primary",
+        "vehicle_listings"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Additional images (staging/graphics allowed), max. 2000 chars per URL"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": 10
       },
       "constraints": {
         "max_length": 2000,
+        "min_length": null,
         "format": null
       },
       "fields": []
     },
     "ads_redirect": {
       "kind": "scalar",
-      "type": "URL",
+      "type": "Url",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 129,
+      "source_lines": [
+        129
+      ],
+      "applicability": [],
+      "qualifiers": [
+        "alternative"
+      ],
+      "metadata": {
+        "description": "Alternative click URL for tracking (ads only, not free listings)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -56,14 +92,24 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 111,
+      "source_lines": [
+        111
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Required for adult content"
+      },
       "enum_values": [
-        "yes/no"
+        "yes`/`no"
       ],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -74,6 +120,15 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 105,
+      "source_lines": [
+        105
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Required for apparel"
+      },
       "enum_values": [
         "newborn",
         "infant",
@@ -86,6 +141,7 @@
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -96,12 +152,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 70,
+      "source_lines": [
+        70
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Floor price for automated discounts/dynamic offers (MAP compliance)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -112,6 +178,19 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 58,
+      "source_lines": [
+        58,
+        176
+      ],
+      "applicability": [
+        "primary",
+        "local_inventory"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Must match landing page/checkout/Schema.org markup"
+      },
       "enum_values": [
         "in_stock",
         "out_of_stock",
@@ -123,6 +202,7 @@
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -133,12 +213,26 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 59,
+      "source_lines": [
+        59,
+        176
+      ],
+      "applicability": [
+        "primary",
+        "local_inventory"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Required for `preorder` (recommended for `backorder`); max. 1 year in the future; must be visible on landing page"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -149,6 +243,15 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 203,
+      "source_lines": [
+        203
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Body style"
+      },
       "enum_values": [
         "sedan",
         "suv",
@@ -159,13 +262,14 @@
         "minivan",
         "truck",
         "station wagon",
-        "full size van …"
+        "full size van` …"
       ],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -176,28 +280,48 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 88,
+      "source_lines": [
+        88
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Max. 70 chars; exceptions: movies, books, music; do not use \"N/A\"/\"Generic\"; leave empty if truly unbranded"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": 70,
+        "min_length": null,
         "format": null
       },
       "fields": []
     },
     "canonical_link": {
       "kind": "scalar",
-      "type": "URL",
+      "type": "Url",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 42,
+      "source_lines": [
+        42
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Canonical URL of the landing page (for tracking parameters/variant URLs), max. 2000 chars"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": 2000,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -208,12 +332,22 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 116,
+      "source_lines": [
+        116
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Required for EPREL-mandated products in EU/EFTA/UK; replaces the energy efficiency attributes in the EU since 2025-04"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": [
@@ -221,9 +355,13 @@
           "name": "certification_authority",
           "type": "String",
           "required": "required",
-          "enum_values": [],
+          "enum_values": [
+            "EC",
+            "European_Commission"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -231,29 +369,34 @@
           "name": "certification_name",
           "type": "String",
           "required": "required",
-          "enum_values": [],
+          "enum_values": [
+            "EPREL"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
         {
           "name": "certification_code",
           "type": "String",
-          "required": "optional",
+          "required": "conditional",
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
         {
           "name": "certification_value",
           "type": "String",
-          "required": "optional",
+          "required": "conditional",
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         }
@@ -261,16 +404,26 @@
     },
     "certified_pre_owned": {
       "kind": "scalar",
-      "type": "String",
+      "type": "Boolean",
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 197,
+      "source_lines": [
+        197
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "OEM-certified pre-owned"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -281,12 +434,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 209,
+      "source_lines": [
+        209
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "CO₂ emissions"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -297,12 +460,22 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 100,
+      "source_lines": [
+        100
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Required for apparel with color variants; up to 3 colors separated by `/`"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -313,6 +486,19 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 99,
+      "source_lines": [
+        99,
+        196
+      ],
+      "applicability": [
+        "primary",
+        "vehicle_listings"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Product condition"
+      },
       "enum_values": [
         "new",
         "refurbished",
@@ -323,6 +509,7 @@
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -333,12 +520,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 119,
+      "source_lines": [
+        119
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Legally required consumer notices/safety warnings (e.g. EU GPSR, California Prop 65); format: `notice_type:notice_message`"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": [
@@ -346,9 +543,14 @@
           "name": "notice_type",
           "type": "Enum",
           "required": "required",
-          "enum_values": [],
+          "enum_values": [
+            "legal_disclaimer",
+            "safety_warning",
+            "prop_65"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -356,9 +558,15 @@
           "name": "notice_message",
           "type": "String",
           "required": "required",
-          "enum_values": [],
+          "enum_values": [
+            "<b>",
+            "<br>",
+            "<i>",
+            "<a href>"
+          ],
           "constraints": {
-            "max_length": null,
+            "max_length": 1000,
+            "min_length": null,
             "format": null
           }
         }
@@ -370,12 +578,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 63,
+      "source_lines": [
+        63
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Cost of goods for margin reporting in Merchant Center"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -386,12 +604,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 127,
+      "source_lines": [
+        127
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Free labels for campaign segmentation; max. 100 chars, up to 1000 unique values per label"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": 100,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -402,12 +630,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 127,
+      "source_lines": [
+        127
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Free labels for campaign segmentation; max. 100 chars, up to 1000 unique values per label"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": 100,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -418,12 +656,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 215,
+      "source_lines": [
+        215
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "In stock since"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -434,12 +682,22 @@
       "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 190,
+      "source_lines": [
+        190
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Dealership name / full address"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -450,12 +708,22 @@
       "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 190,
+      "source_lines": [
+        190
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Dealership name / full address"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -466,12 +734,26 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 39,
+      "source_lines": [
+        39,
+        211
+      ],
+      "applicability": [
+        "primary",
+        "vehicle_listings"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Product description, max. 5000 chars; no links/sales info/competitor mentions; formatting allowed"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": 5000,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -480,14 +762,24 @@
       "kind": "scalar",
       "type": "String",
       "required": "removed",
-      "domain": "vehicle_listings",
+      "domain": "primary",
       "export_status": "non_exportable",
+      "source_line": 224,
+      "source_lines": [
+        224
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Legacy dynamic remarketing attributes; no longer part of the specification"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -496,14 +788,24 @@
       "kind": "scalar",
       "type": "String",
       "required": "removed",
-      "domain": "vehicle_listings",
+      "domain": "primary",
       "export_status": "non_exportable",
+      "source_line": 224,
+      "source_lines": [
+        224
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Legacy dynamic remarketing attributes; no longer part of the specification"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -512,14 +814,24 @@
       "kind": "scalar",
       "type": "String",
       "required": "removed",
-      "domain": "vehicle_listings",
+      "domain": "primary",
       "export_status": "non_exportable",
+      "source_line": 224,
+      "source_lines": [
+        224
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Legacy dynamic remarketing attributes; no longer part of the specification"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -528,14 +840,24 @@
       "kind": "scalar",
       "type": "String",
       "required": "removed",
-      "domain": "vehicle_listings",
+      "domain": "primary",
       "export_status": "non_exportable",
+      "source_line": 224,
+      "source_lines": [
+        224
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Legacy dynamic remarketing attributes; no longer part of the specification"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -544,14 +866,24 @@
       "kind": "scalar",
       "type": "String",
       "required": "removed",
-      "domain": "vehicle_listings",
+      "domain": "primary",
       "export_status": "non_exportable",
+      "source_line": 224,
+      "source_lines": [
+        224
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Legacy dynamic remarketing attributes; no longer part of the specification"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -562,6 +894,15 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 205,
+      "source_lines": [
+        205
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Drivetrain"
+      },
       "enum_values": [
         "FWD",
         "RWD",
@@ -573,6 +914,7 @@
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -580,17 +922,30 @@
     "energy_efficiency_class": {
       "kind": "scalar",
       "type": "Enum",
-      "required": "deprecated (eu)",
+      "required": "deprecated",
       "domain": "primary",
       "export_status": "non_exportable",
+      "source_line": 117,
+      "source_lines": [
+        117,
+        223
+      ],
+      "applicability": [
+        "primary"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Replaced by `certification` in the EU; use only for CH/NO/UK"
+      },
       "enum_values": [
-        "A+++ … G"
+        "A+++` … `G"
       ],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -601,12 +956,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 206,
+      "source_lines": [
+        206
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Engine / transmission / fuel type / efficiency (MPG)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -617,12 +982,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 207,
+      "source_lines": [
+        207
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "EV: battery / range"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -633,12 +1008,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 207,
+      "source_lines": [
+        207
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "EV: battery / range"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -649,12 +1034,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 131,
+      "source_lines": [
+        131
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Exclude product from destinations; **takes precedence over `included_destination`**"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -662,15 +1057,25 @@
     "expected_lifetime": {
       "kind": "scalar",
       "type": "String",
-      "required": "not a gmc attribute",
-      "domain": "vehicle_listings",
+      "required": "removed",
+      "domain": "primary",
       "export_status": "non_exportable",
+      "source_line": 228,
+      "source_lines": [
+        228
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Does not exist in the official specification – was incorrectly listed in the template, removed here"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -681,12 +1086,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 64,
+      "source_lines": [
+        64
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Stop showing the item; < 30 days in the future"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -694,15 +1109,25 @@
     "exterior_color": {
       "kind": "scalar",
       "type": "String",
-      "required": "recommended/optional",
+      "required": "recommended",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 202,
+      "source_lines": [
+        202
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Colors (OEM designation / generic)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -710,15 +1135,25 @@
     "exterior_color_generic": {
       "kind": "scalar",
       "type": "String",
-      "required": "recommended/optional",
+      "required": "recommended",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 202,
+      "source_lines": [
+        202
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Colors (OEM designation / generic)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -726,15 +1161,25 @@
     "external_seller_id": {
       "kind": "scalar",
       "type": "String",
-      "required": "conditional (required for multi-seller accounts)",
+      "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 141,
+      "source_lines": [
+        141
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Unique seller ID of a marketplace seller; case-sensitive; allowed: ASCII alphanumeric + `_`, `-`, `.`, `~`; must not equal the internal `seller_id`"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -745,12 +1190,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 157,
+      "source_lines": [
+        157
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Minimum order value for free shipping"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -761,12 +1216,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 206,
+      "source_lines": [
+        206
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Engine / transmission / fuel type / efficiency (MPG)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -777,12 +1242,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 206,
+      "source_lines": [
+        206
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Engine / transmission / fuel type / efficiency (MPG)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -793,6 +1268,15 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 104,
+      "source_lines": [
+        104
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Required for apparel"
+      },
       "enum_values": [
         "male",
         "female",
@@ -803,22 +1287,33 @@
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
     },
     "google_product_category": {
       "kind": "scalar",
-      "type": "Integer",
+      "type": "String",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 79,
+      "source_lines": [
+        79
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "One single, most specific category from the Google Product Taxonomy; ID preferred; special rules for mobile devices (267), smartwatches (201), tablets (4745), gift cards (53), alcohol, subscription goods"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -826,15 +1321,25 @@
     "gtin": {
       "kind": "repeated_scalar",
       "type": "String",
-      "required": "conditional (strongly recommended)",
+      "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 89,
+      "source_lines": [
+        89
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Max. 14 digits per value: UPC (12), EAN (13), JAN (8/13), ISBN (13), ITF-14 (14); GS1 checksum must be valid; submit only if certain it is correct"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -842,15 +1347,25 @@
     "handling_cutoff_time": {
       "kind": "structured",
       "type": "Object",
-      "required": "optional (new 2025/26)",
+      "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 154,
+      "source_lines": [
+        154
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Daily order cutoff for same-day processing; at offer, country, or shipping-override level"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": [
@@ -858,9 +1373,13 @@
           "name": "cutoff_time",
           "type": "String",
           "required": "required",
-          "enum_values": [],
+          "enum_values": [
+            "HHMM",
+            "2359"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -871,6 +1390,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -878,9 +1398,12 @@
           "name": "cutoff_timezone",
           "type": "String",
           "required": "optional",
-          "enum_values": [],
+          "enum_values": [
+            "Europe/Berlin"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -888,9 +1411,12 @@
           "name": "disable_delivery_after_cutoff",
           "type": "String",
           "required": "optional",
-          "enum_values": [],
+          "enum_values": [
+            "false"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         }
@@ -902,12 +1428,26 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 36,
+      "source_lines": [
+        36,
+        188
+      ],
+      "applicability": [
+        "primary",
+        "vehicle_listings"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Unique product ID (ideally the SKU), max. 50 chars, stable across updates, valid Unicode only, identical across countries"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": 50,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -918,30 +1458,54 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 91,
+      "source_lines": [
+        91
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Default `yes`; set `no` when brand/GTIN/MPN do not exist (e.g. handmade goods)"
+      },
       "enum_values": [
-        "yes/no"
+        "yes`/`no"
       ],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
     },
     "image_link": {
       "kind": "scalar",
-      "type": "URL",
+      "type": "Url",
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 43,
+      "source_lines": [
+        43,
+        193
+      ],
+      "applicability": [
+        "primary",
+        "vehicle_listings"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Main image, max. 2000 chars; formats: JPEG, WebP, PNG, GIF (non-animated), BMP, TIFF; no watermarks/promo text; **min. 500×500 px from 2027-01-31** (warnings since 2026-04-14); AI images: IPTC `DigitalSourceType` metadata must be preserved"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": 2000,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -952,12 +1516,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 130,
+      "source_lines": [
+        130
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Additional serving destinations per product"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -968,12 +1542,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 67,
+      "source_lines": [
+        67
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Installment payment; `price` must hold the full upfront price; observe country/category restrictions"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": [
@@ -984,6 +1568,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -994,6 +1579,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1004,6 +1590,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1011,9 +1598,13 @@
           "name": "credit_type",
           "type": "Enum",
           "required": "optional",
-          "enum_values": [],
+          "enum_values": [
+            "finance",
+            "lease"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         }
@@ -1022,15 +1613,25 @@
     "interior_color": {
       "kind": "scalar",
       "type": "String",
-      "required": "recommended/optional",
+      "required": "recommended",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 202,
+      "source_lines": [
+        202
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Colors (OEM designation / generic)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1038,15 +1639,25 @@
     "interior_color_generic": {
       "kind": "scalar",
       "type": "String",
-      "required": "recommended/optional",
+      "required": "recommended",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 202,
+      "source_lines": [
+        202
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Colors (OEM designation / generic)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1057,14 +1668,24 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 110,
+      "source_lines": [
+        110
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Marks a bundle of different products"
+      },
       "enum_values": [
-        "yes/no"
+        "yes`/`no"
       ],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1075,12 +1696,22 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 106,
+      "source_lines": [
+        106
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Groups all variants of the same base product; consistent across all variants"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1091,44 +1722,78 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 210,
+      "source_lines": [
+        210
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Legal notices (taxes, fees)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
     },
     "lifestyle_image_link": {
       "kind": "repeated_scalar",
-      "type": "URL",
+      "type": "Url",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 45,
+      "source_lines": [
+        45
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Lifestyle image (product in real-world context), 1–2000 chars; formats: GIF, JPEG, PNG, BMP, TIFF"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
     },
     "link": {
       "kind": "scalar",
-      "type": "URL",
+      "type": "Url",
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 41,
+      "source_lines": [
+        41,
+        192
+      ],
+      "applicability": [
+        "primary",
+        "vehicle_listings"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Landing page, max. 2000 chars, verified domain, http/https"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": 2000,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1136,15 +1801,27 @@
     "link_template": {
       "kind": "scalar",
       "type": "String",
-      "required": "removed (shopping)",
-      "domain": "vehicle_listings",
+      "required": "removed",
+      "domain": "primary",
       "export_status": "non_exportable",
+      "source_line": 225,
+      "source_lines": [
+        225
+      ],
+      "applicability": [
+        "vehicle_listings"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "No longer part of the Shopping specification; still used in vehicle feeds"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1155,12 +1832,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 69,
+      "source_lines": [
+        69
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Member prices ONLY via this attribute (not via `price`/`sale_price`); must match the loyalty program settings in Merchant Center; available incl. US, UK, DE, FR, IT, ES, NL, JP (points)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": [
@@ -1171,6 +1858,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1181,6 +1869,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         }
@@ -1192,12 +1881,22 @@
       "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 198,
+      "source_lines": [
+        198
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Make / model (without trim details)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1208,12 +1907,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 191,
+      "source_lines": [
+        191
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Business Profile matching; tracking number"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1224,12 +1933,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 107,
+      "source_lines": [
+        107
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Material information"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1237,17 +1956,30 @@
     "max_energy_efficiency_class": {
       "kind": "scalar",
       "type": "Enum",
-      "required": "deprecated (eu)",
+      "required": "deprecated",
       "domain": "primary",
       "export_status": "non_exportable",
+      "source_line": 118,
+      "source_lines": [
+        118,
+        223
+      ],
+      "applicability": [
+        "primary"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Like `energy_efficiency_class`; scale range, CH/NO/UK only"
+      },
       "enum_values": [
-        "A+++ … G"
+        "A+++` … `G"
       ],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1258,12 +1990,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 153,
+      "source_lines": [
+        153
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Processing time from order to carrier handover"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1271,31 +2013,51 @@
     "maximum_retail_price": {
       "kind": "scalar",
       "type": "Price",
-      "required": "optional (india only)",
+      "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 71,
+      "source_lines": [
+        71
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Manufacturer-declared maximum retail price (MRP) for free listings in India; must match landing page/checkout"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
     },
     "mileage": {
       "kind": "scalar",
-      "type": "String",
-      "required": "required (for `used`)",
+      "type": "Integer",
+      "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 201,
+      "source_lines": [
+        201
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Odometer reading (km/miles)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1303,17 +2065,30 @@
     "min_energy_efficiency_class": {
       "kind": "scalar",
       "type": "Enum",
-      "required": "deprecated (eu)",
+      "required": "deprecated",
       "domain": "primary",
       "export_status": "non_exportable",
+      "source_line": 118,
+      "source_lines": [
+        118,
+        223
+      ],
+      "applicability": [
+        "primary"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Like `energy_efficiency_class`; scale range, CH/NO/UK only"
+      },
       "enum_values": [
-        "A+++ … G"
+        "A+++` … `G"
       ],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1324,12 +2099,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 153,
+      "source_lines": [
+        153
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Processing time from order to carrier handover"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1337,15 +2122,25 @@
     "minimum_order_value": {
       "kind": "structured",
       "type": "Object",
-      "required": "optional (new; **required from 2026-09-30** for in-store products in uk/ch/eea)",
+      "required": "required",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 158,
+      "source_lines": [
+        158
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Minimum order value at product level"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": 100
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": [
@@ -1356,6 +2151,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1366,6 +2162,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1373,9 +2170,15 @@
           "name": "surface",
           "type": "Enum",
           "required": "optional",
-          "enum_values": [],
+          "enum_values": [
+            "online",
+            "local",
+            "online_local",
+            "online_local"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1386,6 +2189,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         }
@@ -1393,16 +2197,26 @@
     },
     "mobile_link": {
       "kind": "scalar",
-      "type": "URL",
+      "type": "Url",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 48,
+      "source_lines": [
+        48
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Mobile landing page variant, max. 2000 chars; same requirements as `link`"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": 2000,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1410,15 +2224,27 @@
     "mobile_link_template": {
       "kind": "scalar",
       "type": "String",
-      "required": "removed (shopping)",
-      "domain": "vehicle_listings",
+      "required": "removed",
+      "domain": "primary",
       "export_status": "non_exportable",
+      "source_line": 225,
+      "source_lines": [
+        225
+      ],
+      "applicability": [
+        "vehicle_listings"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "No longer part of the Shopping specification; still used in vehicle feeds"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1429,28 +2255,48 @@
       "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 198,
+      "source_lines": [
+        198
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Make / model (without trim details)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
     },
     "monroney_sticker": {
       "kind": "scalar",
-      "type": "URL",
+      "type": "Url",
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 214,
+      "source_lines": [
+        214
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "History report / Monroney sticker"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1461,12 +2307,22 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 90,
+      "source_lines": [
+        90
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Max. 70 chars; required if no GTIN; only manufacturer-assigned values"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": 70,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1477,12 +2333,22 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 109,
+      "source_lines": [
+        109
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Number of identical single products in a multipack"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1493,12 +2359,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 208,
+      "source_lines": [
+        208
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Doors / seats / seating rows"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1509,12 +2385,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 108,
+      "source_lines": [
+        108
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Pattern/design"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1525,6 +2411,15 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 133,
+      "source_lines": [
+        133
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Pauses the product in Shopping ads without deleting it"
+      },
       "enum_values": [
         "ads"
       ],
@@ -1533,6 +2428,7 @@
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1540,15 +2436,25 @@
     "pickup_cost": {
       "kind": "structured",
       "type": "Object",
-      "required": "optional (new; **required from 2026-09-30** for in-store products in uk/ch/eea)",
+      "required": "required",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 159,
+      "source_lines": [
+        159
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Fee for online purchase/reservation with in-store pickup; without threshold the flat rate always applies"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": [
@@ -1559,6 +2465,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1569,6 +2476,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         }
@@ -1577,9 +2485,18 @@
     "pickup_method": {
       "kind": "scalar",
       "type": "Enum",
-      "required": "optional (since 2026)",
-      "domain": "primary",
+      "required": "optional",
+      "domain": "local_inventory",
       "export_status": "exportable",
+      "source_line": 174,
+      "source_lines": [
+        174
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Pickup option (buy/reserve/ship to store)"
+      },
       "enum_values": [
         "buy",
         "reserve",
@@ -1591,6 +2508,7 @@
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1599,8 +2517,17 @@
       "kind": "scalar",
       "type": "Enum",
       "required": "conditional",
-      "domain": "primary",
+      "domain": "local_inventory",
       "export_status": "exportable",
+      "source_line": 175,
+      "source_lines": [
+        175
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Pickup readiness time; required when `pickup_method` is set"
+      },
       "enum_values": [
         "same day",
         "next day",
@@ -1617,6 +2544,7 @@
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1627,12 +2555,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 191,
+      "source_lines": [
+        191
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Business Profile matching; tracking number"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1643,12 +2581,28 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 60,
+      "source_lines": [
+        60,
+        176,
+        194
+      ],
+      "applicability": [
+        "primary",
+        "local_inventory",
+        "vehicle_listings"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "US/CA: excl. taxes; all other countries: incl. VAT/GST; must match checkout; not 0 (exceptions: mobile device with contract, physical subscription goods); **since 2025-04-08 no longer used for installment downpayments** (use `installment(downpayment)`)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1659,12 +2613,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 115,
+      "source_lines": [
+        115
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Structured technical details (e.g. battery, connectivity)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": [
@@ -1675,6 +2639,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1685,6 +2650,18 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "attribute_value",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
             "format": null
           }
         }
@@ -1696,12 +2673,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 112,
+      "source_lines": [
+        112
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Product dimensions (without packaging)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1712,12 +2699,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 114,
+      "source_lines": [
+        114
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Bullet highlights: 1–150 chars each; if used, min. 2, max. 100 (recommended 4–6)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1728,12 +2725,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 112,
+      "source_lines": [
+        112
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Product dimensions (without packaging)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1744,12 +2751,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 80,
+      "source_lines": [
+        80
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Max. 750 chars; your own store categorization; only the first value is used for bidding/reporting in Ads"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": 5
       },
       "constraints": {
         "max_length": 750,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1760,12 +2777,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 113,
+      "source_lines": [
+        113
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Product weight"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1776,12 +2803,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 112,
+      "source_lines": [
+        112
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Product dimensions (without packaging)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1792,12 +2829,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 128,
+      "source_lines": [
+        128
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Links the product to Merchant Center promotion(s)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1805,15 +2852,25 @@
     "quantity": {
       "kind": "scalar",
       "type": "Integer",
-      "required": "required (lia)",
-      "domain": "primary",
+      "required": "required",
+      "domain": "local_inventory",
       "export_status": "exportable",
+      "source_line": 173,
+      "source_lines": [
+        173
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Available units in the store"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1821,15 +2878,25 @@
     "region_id": {
       "kind": "scalar",
       "type": "String",
-      "required": "required (regional inventory feed only)",
-      "domain": "primary",
+      "required": "required",
+      "domain": "local_inventory",
       "export_status": "exportable",
+      "source_line": 177,
+      "source_lines": [
+        177
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Regional price/availability overrides (RAAP; generally available since 2025-09, postal-code level in 22 countries)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1837,15 +2904,25 @@
     "returns": {
       "kind": "structured",
       "type": "Object",
-      "required": "optional (new, recommended)",
+      "required": "recommended",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 162,
+      "source_lines": [
+        162
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Return policy at product level; overrides account-level policy; text feed example: header `returns(country:window_days:item_condition:method:shipping_fee)`, value `US:30:NEW:BY_MAIL:8.00 USD`"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": 100
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": [
@@ -1856,6 +2933,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1863,9 +2941,15 @@
           "name": "item_condition",
           "type": "Enum",
           "required": "required",
-          "enum_values": [],
+          "enum_values": [
+            "NEW",
+            "LIKE_NEW",
+            "USED",
+            "DEFECTIVE_ONLY"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1873,19 +2957,28 @@
           "name": "window_type",
           "type": "Enum",
           "required": "optional",
-          "enum_values": [],
+          "enum_values": [
+            "FINITE_RETURN_WINDOW",
+            "NO_RETURNS",
+            "LIFETIME",
+            "FINITE_RETURN_WINDOW"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
         {
           "name": "window_days",
-          "type": "String",
+          "type": "Integer",
           "required": "required",
-          "enum_values": [],
+          "enum_values": [
+            "FINITE_RETURN_WINDOW"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1893,9 +2986,15 @@
           "name": "method",
           "type": "Enum",
           "required": "required",
-          "enum_values": [],
+          "enum_values": [
+            "BY_MAIL",
+            "IN_STORE",
+            "AT_A_KIOSK",
+            "DROP_OFF_LOCATION"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1903,9 +3002,14 @@
           "name": "outcome",
           "type": "Enum",
           "required": "optional",
-          "enum_values": [],
+          "enum_values": [
+            "REFUND",
+            "EXCHANGE",
+            "STORE_CREDIT"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1916,16 +3020,21 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
         {
           "name": "shipping_fee_type",
           "type": "Enum",
-          "required": "optional",
-          "enum_values": [],
+          "required": "conditional",
+          "enum_values": [
+            "DEDUCTED_FROM_REFUND",
+            "CUSTOMER_RESPONSIBILITY"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1936,6 +3045,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1946,6 +3056,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -1956,6 +3067,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         }
@@ -1967,12 +3079,26 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 61,
+      "source_lines": [
+        61,
+        176
+      ],
+      "applicability": [
+        "primary",
+        "local_inventory"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "In addition to `price` (regular price stays in `price`); do not use for loyalty/member prices"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1983,12 +3109,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 62,
+      "source_lines": [
+        62
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Without it, `sale_price` applies permanently; start before end"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -1999,12 +3135,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 208,
+      "source_lines": [
+        208
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Doors / seats / seating rows"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2015,12 +3161,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 208,
+      "source_lines": [
+        208
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Doors / seats / seating rows"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2029,14 +3185,24 @@
       "kind": "scalar",
       "type": "String",
       "required": "removed",
-      "domain": "vehicle_listings",
+      "domain": "primary",
       "export_status": "non_exportable",
+      "source_line": 226,
+      "source_lines": [
+        226
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Discontinued with \"Buy on Google\""
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2047,12 +3213,22 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 149,
+      "source_lines": [
+        149
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Item-level shipping costs/times; required if not covered at account level or if deviating"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": 100
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": [
@@ -2063,6 +3239,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         }
@@ -2074,12 +3251,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 152,
+      "source_lines": [
+        152
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Package dimensions"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2090,12 +3277,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 150,
+      "source_lines": [
+        150
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Custom grouping for shipping rules (e.g. \"bulky\")"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2106,12 +3303,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 152,
+      "source_lines": [
+        152
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Package dimensions"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2122,12 +3329,22 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 151,
+      "source_lines": [
+        151
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Required for weight-based/carrier-calculated shipping"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2138,12 +3355,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 152,
+      "source_lines": [
+        152
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Package dimensions"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2154,12 +3381,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 156,
+      "source_lines": [
+        156
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Shipping origin country (if different from target country)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2170,12 +3407,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 132,
+      "source_lines": [
+        132
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Country exclusion specifically for Shopping ads"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2186,12 +3433,22 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 101,
+      "source_lines": [
+        101
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Required for size variants (apparel/shoes)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2202,6 +3459,15 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 103,
+      "source_lines": [
+        103
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Default: `US`"
+      },
       "enum_values": [
         "US",
         "UK",
@@ -2220,6 +3486,7 @@
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2230,6 +3497,15 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 102,
+      "source_lines": [
+        102
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Cut type"
+      },
       "enum_values": [
         "regular",
         "petite",
@@ -2242,6 +3518,7 @@
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2249,15 +3526,29 @@
     "store_code": {
       "kind": "scalar",
       "type": "String",
-      "required": "required (lia)",
-      "domain": "primary",
+      "required": "required",
+      "domain": "local_inventory",
       "export_status": "exportable",
+      "source_line": 172,
+      "source_lines": [
+        172,
+        189
+      ],
+      "applicability": [
+        "local_inventory",
+        "vehicle_listings"
+      ],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Store code, must match the linked Business Profile"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2265,15 +3556,27 @@
     "structured_description": {
       "kind": "structured",
       "type": "Object",
-      "required": "required* (alternative)",
+      "required": "required",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 40,
+      "source_lines": [
+        40
+      ],
+      "applicability": [],
+      "qualifiers": [
+        "alternative"
+      ],
+      "metadata": {
+        "description": "Required variant for AI-generated descriptions"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": [
@@ -2281,9 +3584,13 @@
           "name": "digital_source_type",
           "type": "Enum",
           "required": "optional",
-          "enum_values": [],
+          "enum_values": [
+            "default",
+            "trained_algorithmic_media"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -2294,6 +3601,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         }
@@ -2302,15 +3610,27 @@
     "structured_title": {
       "kind": "structured",
       "type": "Object",
-      "required": "required* (alternative)",
+      "required": "required",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 38,
+      "source_lines": [
+        38
+      ],
+      "applicability": [],
+      "qualifiers": [
+        "alternative"
+      ],
+      "metadata": {
+        "description": "Required variant for AI-generated titles"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": [
@@ -2318,9 +3638,13 @@
           "name": "digital_source_type",
           "type": "Enum",
           "required": "optional",
-          "enum_values": [],
+          "enum_values": [
+            "default",
+            "trained_algorithmic_media"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -2331,6 +3655,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         }
@@ -2342,12 +3667,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 68,
+      "source_lines": [
+        68
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Only for eligible `google_product_category` IDs (wireless: 201, 267, 4745, 6030, 6544; physical subscriptions incl. 166, 491, 536, 1253, 2915, 5814, 1868, 2, 499676, 518); for physical subscriptions `price` = 0"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": [
@@ -2355,9 +3690,14 @@
           "name": "period",
           "type": "Enum",
           "required": "optional",
-          "enum_values": [],
+          "enum_values": [
+            "week",
+            "month",
+            "year"
+          ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -2368,6 +3708,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -2378,6 +3719,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         }
@@ -2386,15 +3728,25 @@
     "tax": {
       "kind": "structured",
       "type": "Object",
-      "required": "conditional (us only)",
+      "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 160,
+      "source_lines": [
+        160
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "US taxes at item level"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": [
@@ -2405,6 +3757,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         },
@@ -2415,6 +3768,7 @@
           "enum_values": [],
           "constraints": {
             "max_length": null,
+            "min_length": null,
             "format": null
           }
         }
@@ -2423,15 +3777,25 @@
     "tax_category": {
       "kind": "scalar",
       "type": "String",
-      "required": "optional (us)",
+      "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 161,
+      "source_lines": [
+        161
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Tax category mapping"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2442,12 +3806,22 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 37,
+      "source_lines": [
+        37
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Product name, max. 150 chars; no promotional text, no ALL CAPS, must match landing page; include distinguishing attribute (color/size) for variants"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": 150,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2458,12 +3832,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 191,
+      "source_lines": [
+        191
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Business Profile matching; tracking number"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2474,12 +3858,22 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 155,
+      "source_lines": [
+        155
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Label for transit time tables in Merchant Center"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2490,12 +3884,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 206,
+      "source_lines": [
+        206
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Engine / transmission / fuel type / efficiency (MPG)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2503,31 +3907,51 @@
     "trim": {
       "kind": "scalar",
       "type": "String",
-      "required": "required (where available)",
+      "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 199,
+      "source_lines": [
+        199
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Trim level"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
     },
     "unit_pricing_base_measure": {
       "kind": "scalar",
-      "type": "String",
+      "type": "Integer",
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 66,
+      "source_lines": [
+        66
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Only together with `unit_pricing_measure`; integers: 1, 10, 100, 2, 4, 8; additional allowed combos: `75cl`, `750ml`, `50kg`, `1000kg`"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2538,12 +3962,22 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 65,
+      "source_lines": [
+        65
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Required where legally mandated (unit pricing); units: oz, lb, mg, g, kg, floz, pt, qt, gal, ml, cl, l, cbm, in, ft, yd, cm, m, sqft, sqm, ct"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2554,6 +3988,15 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 212,
+      "source_lines": [
+        212
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Availability/fulfillment status"
+      },
       "enum_values": [
         "IN_STORE",
         "SHIP_TO_STORE",
@@ -2564,22 +4007,33 @@
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
     },
     "vehicle_history_report_link": {
       "kind": "scalar",
-      "type": "URL",
+      "type": "Url",
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 214,
+      "source_lines": [
+        214
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "History report / Monroney sticker"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2590,12 +4044,22 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 213,
+      "source_lines": [
+        213
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Deviating vehicle location"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2603,15 +4067,25 @@
     "vehicle_msrp": {
       "kind": "scalar",
       "type": "Price",
-      "required": "recommended (for `new`)",
+      "required": "recommended",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 195,
+      "source_lines": [
+        195
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "MSRP in current configuration"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2622,28 +4096,48 @@
       "required": "recommended",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 204,
+      "source_lines": [
+        204
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Standard/optional equipment (comma-separated)"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
     },
     "video_link": {
       "kind": "scalar",
-      "type": "URL",
+      "type": "Url",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 46,
+      "source_lines": [
+        46
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Product video (serving since 2026-06-30): 6–240 s, max. 500 MB, ≥720p, aspect ratio 9:16/16:9/1:1; formats: MPG, MP4, WMV, AVI, MOV, FLV, MPEG-1, MPEGPS; direct file link (no player), publicly crawlable"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
@@ -2654,44 +4148,74 @@
       "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 187,
+      "source_lines": [
+        187
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Vehicle identification number"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
     },
     "virtual_model_link": {
       "kind": "scalar",
-      "type": "URL",
-      "required": "optional (us only)",
+      "type": "Url",
+      "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
+      "source_line": 47,
+      "source_lines": [
+        47
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "3D model, max. 15 MB, textures max. 2K"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []
     },
     "year": {
       "kind": "scalar",
-      "type": "String",
+      "type": "Integer",
       "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
+      "source_line": 200,
+      "source_lines": [
+        200
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Model year"
+      },
       "enum_values": [],
       "cardinality": {
         "max_items": null
       },
       "constraints": {
         "max_length": null,
+        "min_length": null,
         "format": null
       },
       "fields": []

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from .model import (
     AttributeKind, Cardinality, Constraints, ExportStatus, FeedDomain,
-    RegistryAttribute, RegistryDocument, SubField,
+    RegistryAttribute, RegistryDocument, RequirementStatus, SubField,
 )
 
 
@@ -11,139 +11,210 @@ class RegistryParseError(ValueError):
     pass
 
 
-_SUPPORTED = {"String", "URL", "Price", "Date", "Integer", "Boolean", "Enum"}
-_HEADER = re.compile(r"^\|\s*Field\s*\|\s*(?:Required\s*\|\s*Type/Syntax\s*\|\s*Description|Status\s*\|\s*Note)\s*\|?", re.I)
+_PRIMITIVES = {"String", "URL", "Price", "Date", "Integer", "Boolean", "Enum"}
+_HEADER = re.compile(r"^\|\s*Field\s*\|\s*(Required|Status)\s*\|\s*(?:Type/Syntax|Note)\s*\|", re.I)
 
 
 def _clean(value: str) -> str:
     return re.sub(r"`([^`]*)`", r"\1", value).strip()
 
 
-def _constraint(description: str) -> Constraints:
-    match = re.search(r"max\.?\s*(?:of\s*)?(\d+)\s*chars?", description, re.I)
-    return Constraints(max_length=int(match.group(1)) if match else None)
+def _requirement(value: str) -> RequirementStatus:
+    value = value.upper().replace("*", "")
+    if "NOT A GMC ATTRIBUTE" in value:
+        return RequirementStatus.REMOVED
+    if "REMOVED" in value:
+        return RequirementStatus.REMOVED
+    if "DEPRECATED" in value:
+        return RequirementStatus.DEPRECATED
+    if "CONDITIONAL" in value:
+        return RequirementStatus.CONDITIONAL
+    if "REQUIRED" in value:
+        return RequirementStatus.REQUIRED
+    if "RECOMMENDED" in value:
+        return RequirementStatus.RECOMMENDED
+    if "OPTIONAL" in value:
+        return RequirementStatus.OPTIONAL
+    raise RegistryParseError(f"unsupported requirement status {value}")
+
+
+def _constraints(description: str) -> Constraints:
+    max_match = re.search(r"max\.?\s*(?:of\s*)?(\d+)\s*chars?", description, re.I)
+    min_match = re.search(r"(?:min\.?|at least)\s*(\d+)\s*chars?", description, re.I)
+    fmt = None
+    if re.search(r"ISO\s*8601", description, re.I):
+        fmt = "ISO 8601"
+    elif re.search(r"RFC\s*(?:2396|3986|1738)", description, re.I):
+        fmt = "RFC URL"
+    return Constraints(
+        max_length=int(max_match.group(1)) if max_match else None,
+        min_length=int(min_match.group(1)) if min_match else None,
+        format=fmt,
+    )
+
+
+def _type_name(raw: str, line: int) -> str:
+    text = _clean(raw).strip().rstrip(".")
+    text = re.sub(r"^(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)\.?\s+", "", text, flags=re.I)
+    text = re.sub(r"\s*(?:>|≥|\+).*", "", text).strip()
+    if text.lower() in {"number", "phone no", "phone", "percent"}:
+        return "String"
+    if text.lower() in {"as in primary feed"}:
+        return "String"
+    if re.match(r"^(?:Integer|String)\s*\([^)]*\)\s+OR\s+(?:Integer|String)", text, re.I):
+        return "String"
+    prefix = re.match(r"^(String|URL|Price|Date|Integer|Boolean)\b", text, re.I)
+    if prefix:
+        return prefix.group(1).title()
+    if re.match(r"^Enum\s+like\b", text, re.I):
+        return "Enum"
+    if re.match(r"^Enum(?:-like)?\s*:", text, re.I):
+        return "Enum"
+    if re.match(r"^Date\s+interval\b", text, re.I):
+        return "Date"
+    # These are documented representations of a primitive field, not new types.
+    documented = (
+        r"String(?:\s*\([^)]*\))?$", r"URL(?:\s+.*)?$",
+        r"Price(?:\s*\([^)]*\))?$", r"Date(?:\s*\([^)]*\))?$",
+        r"Integer(?:\s*\([^)]*\))?(?:\s+\+\s+unit)?$",
+        r"Boolean(?:\s*\([^)]*\))?$", r"Enum(?:-like)?(?:\s*\([^)]*\))?$",
+        r"Number\s*\+\s*unit(?:\s*\([^)]*\))?$", r"ISO\s+3166-1(?:\s+country\s+code)?$",
+        r"String\s*/\s*URL\s*/\s*phone\s+no$", r"String\s*\(numeric\)$",
+    )
+    for pattern in documented:
+        if re.match(pattern, text, re.I):
+            if text.lower().startswith("enum"):
+                return "Enum"
+            if text.lower().startswith("url"):
+                return "URL"
+            if text.lower().startswith("price"):
+                return "Price"
+            if text.lower().startswith("date"):
+                return "Date"
+            if text.lower().startswith("integer"):
+                return "Integer"
+            if text.lower().startswith("boolean"):
+                return "Boolean"
+            return "String"
+    raise RegistryParseError(f"line {line}: unsupported type {text}")
+
+
+def _field_spec(name: str, spec: str, description: str, line: int) -> SubField:
+    required = RequirementStatus.OPTIONAL
+    if re.search(r"\breq(?:uired)?\b", spec, re.I):
+        required = RequirementStatus.REQUIRED
+    elif re.search(r"\bcond(?:itional)?\b", spec, re.I):
+        required = RequirementStatus.CONDITIONAL
+    type_part = re.split(r"[,;]", spec, maxsplit=1)[0].strip()
+    type_name = "String"
+    if re.fullmatch(r"(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)[.]?", type_part, re.I):
+        type_name = "String"
+    elif "|" in spec:
+        type_name = "Enum"
+    # Parenthesized alternatives are enum values when the type itself is omitted.
+    if "|" in spec and not re.fullmatch(r"(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)[.]?", type_part, re.I) and not re.match(r"^(?:Integer|String|Price|Date|URL|Boolean)\b", type_part, re.I):
+        type_name = "Enum"
+    elif not re.fullmatch(r"(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)[.]?", type_part, re.I) and "|" not in spec:
+        type_name = _type_name(type_part, line)
+    enum_values = tuple(v.strip().strip("`") for v in re.findall(r"`([^`]+)`", spec))
+    return SubField(name, type_name, required, _constraints(spec + " " + description), enum_values)
 
 
 def _type_info(syntax: str, description: str, line: int):
-    text = _clean(syntax).replace("×", "x")
+    text = syntax.strip().replace("×", "x")
     repeated = bool(re.search(r"\brepeatable\b", text, re.I))
-    max_items = None
-    match = re.search(r"up to\s+(\d+)", text, re.I)
-    if match:
-        max_items = int(match.group(1))
+    count = re.search(r"up to\s+(\d+)", text, re.I)
+    cardinality = Cardinality(int(count.group(1)) if count else None)
     enum_match = re.search(r"Enum(?:-like)?\s*:\s*(.*)", text, re.I)
-    enums = ()
-    if enum_match:
-        values = enum_match.group(1).split(",")
-        enums = tuple(v.strip().strip("`") for v in values if v.strip())
-        base = "Enum"
-    elif text.startswith("Object"):
-        if re.match(r"Object\s+like\b", text, re.I):
-            fields = (SubField("digital_source_type", "Enum", "optional"),
-                      SubField("content", "String", "required"))
-            return (AttributeKind.REPEATED_STRUCTURED if repeated else AttributeKind.STRUCTURED,
-                    "Object", fields, enums, Cardinality(max_items))
-        object_match = re.search(r"Object.*?:\s*(.*)", text, re.I)
+    enums = tuple(v.strip().strip("`") for v in enum_match.group(1).split(",")) if enum_match else ()
+    if re.match(r"^Object\b", text, re.I):
+        object_match = re.search(r"Object[^:]*:\s*(.*)", text, re.I)
         if not object_match:
-            listed = re.search(r"Object\s+with\s+\d+\s+sub-attributes:\s*(.*)", text, re.I)
-            if listed:
-                names = re.findall(r"`?([a-z][\w]*)`?", listed.group(1))
-                fields = tuple(SubField(name, "String", "optional") for name in names)
-                if fields:
-                    return (AttributeKind.REPEATED_STRUCTURED if repeated else AttributeKind.STRUCTURED,
-                            "Object", fields, enums, Cardinality(max_items))
-        if object_match and not re.findall(r"\([^)]*\)", object_match.group(1)):
-            names = [name.strip().strip("`") for name in object_match.group(1).split(",")]
-            names = [name for name in names if re.fullmatch(r"[A-Za-z_]\w*", name)]
-            if names:
-                fields = tuple(SubField(name, "String", "optional") for name in names)
+            if re.match(r"Object\s+like\b", text, re.I):
+                fields = (
+                    SubField("digital_source_type", "Enum", RequirementStatus.OPTIONAL,
+                             enum_values=("default", "trained_algorithmic_media")),
+                    SubField("content", "String", RequirementStatus.REQUIRED,
+                             constraints=_constraints(description)),
+                )
                 return (AttributeKind.REPEATED_STRUCTURED if repeated else AttributeKind.STRUCTURED,
-                        "Object", fields, enums, Cardinality(max_items))
-        if not object_match:
+                        "Object", fields, enums, cardinality)
             raise RegistryParseError(f"line {line}: ambiguous structured attribute order")
         fields = []
-        for raw in re.findall(r"`?([A-Za-z][\w]*)`?\s*\(([^)]*)\)", object_match.group(1)):
-            name, spec = raw
-            required = "required" if re.search(r"\breq(?:uired)?\b", spec, re.I) else "optional"
-            type_name = re.split(r"[,;|]", spec)[0].strip()
-            type_name = re.sub(r"\s+.*", "", type_name)
-            if type_name.lower().rstrip(".") in {"req", "opt", "cond", "required", "optional", "conditional", "percent"}:
-                type_name = "String"
-            if "|" in spec or "`" in spec:
-                type_name = "Enum"
-            if type_name not in _SUPPORTED and type_name != "Enum":
-                raise RegistryParseError(f"line {line}: unsupported type {type_name}")
-            fields.append(SubField(name, type_name, required))
+        for raw_name, spec in re.findall(r"`?([A-Za-z][\w]*)`?\s*\(([^)]*)\)", object_match.group(1)):
+            fields.append(_field_spec(raw_name, spec, description, line))
+        if not fields:
+            names = re.findall(r"`([A-Za-z][\w]*)`", object_match.group(1))
+            if not names:
+                names = [n.strip() for n in object_match.group(1).split(",") if re.fullmatch(r"[A-Za-z_][\w]*", n.strip())]
+            fields = [SubField(name, "String", RequirementStatus.OPTIONAL) for name in names]
         if not fields:
             raise RegistryParseError(f"line {line}: ambiguous structured attribute order")
         return (AttributeKind.REPEATED_STRUCTURED if repeated else AttributeKind.STRUCTURED,
-                "Object", tuple(fields), enums, Cardinality(max_items))
-    else:
-        base = text.split(",", 1)[0].strip()
-        base = re.sub(r"\s*\(.*", "", base)
-        base = re.sub(r"\s+to\b.*", "", base, flags=re.I)
-        if base.lower().startswith("date interval"):
-            base = "Date"
-        if base.lower().startswith("number"):
-            base = "String"
-        if base.lower().startswith("iso 3166"):
-            base = "String"
-        if base.lower().startswith(("enum-like", "enum")):
-            base = "Enum"
-        if base.lower().startswith(("integer +", "string /", "boolean", "percent")):
-            base = "String"
-        if base not in _SUPPORTED:
-            if base.lower() == "blob":
-                raise RegistryParseError(f"line {line}: unsupported type {base}")
-            base = "String"
-    kind = AttributeKind.REPEATED_SCALAR if repeated else AttributeKind.SCALAR
-    return kind, base, (), enums, Cardinality(max_items)
+                "Object", tuple(fields), enums, cardinality)
+    base = _type_name(text.split(",", 1)[0], line)
+    return (AttributeKind.REPEATED_SCALAR if repeated else AttributeKind.SCALAR,
+            base, (), enums, cardinality)
+
+
+def _row_domain(section: str) -> FeedDomain:
+    if section == "vehicle":
+        return FeedDomain.VEHICLE_LISTINGS
+    if section == "local":
+        return FeedDomain.LOCAL_INVENTORY
+    return FeedDomain.PRIMARY
 
 
 def parse_gmc_markdown(path: Path) -> RegistryDocument:
+    path = Path(path)
     lines = path.read_text(encoding="utf-8").splitlines()
-    attributes = {}
-    domain = FeedDomain.PRIMARY
-    status = ExportStatus.EXPORTABLE
+    attributes: dict[str, RegistryAttribute] = {}
+    section = "primary"
     i = 0
     while i < len(lines):
         line = lines[i]
-        if re.match(r"^##\s+10\.\s+Vehicle Listings", line, re.I):
-            domain = FeedDomain.VEHICLE_LISTINGS
-        elif re.match(r"^##\s+11\.\s+Deprecated", line, re.I):
-            status = ExportStatus.NON_EXPORTABLE
+        if re.match(r"^##\s+9\.", line, re.I):
+            section = "local"
+        elif re.match(r"^##\s+10\.", line, re.I):
+            section = "vehicle"
+        elif re.match(r"^##\s+11\.", line, re.I):
+            section = "deprecated"
         elif _HEADER.match(line):
             if i + 1 >= len(lines) or not lines[i + 1].lstrip().startswith("|---"):
                 raise RegistryParseError(f"line {i + 1}: malformed table header")
-            i += 2
             deprecated_table = "Status" in line
+            i += 2
             while i < len(lines) and lines[i].lstrip().startswith("|"):
+                row_line = i + 1
                 protected = lines[i].replace("\\|", "\x00")
                 cells = [c.strip().replace("\x00", "|") for c in protected.strip().strip("|").split("|")]
                 if deprecated_table and len(cells) == 3:
                     cells = [cells[0], cells[1], "String", cells[2]]
                 if len(cells) != 4 or any(not c for c in cells):
-                    raise RegistryParseError(f"line {i + 1}: malformed table row")
-                raw_names, required, syntax, description = cells
-                names = re.findall(r"`([^`]+)`", raw_names) or [raw_names.strip()]
-                kind, type_name, fields, enums, cardinality = _type_info(syntax, description, i + 1)
-                row_status = status
-                if "DEPRECATED" in required.upper() or "REMOVED" in required.upper():
-                    row_status = ExportStatus.NON_EXPORTABLE
-                for name in names:
-                    name = name.strip()
+                    raise RegistryParseError(f"line {row_line}: malformed table row")
+                raw_names, requirement_text, syntax, description = cells
+                requirement = _requirement(requirement_text)
+                status = ExportStatus.NON_EXPORTABLE if section == "deprecated" or requirement in (RequirementStatus.DEPRECATED, RequirementStatus.REMOVED) else ExportStatus.EXPORTABLE
+                domain = FeedDomain.VEHICLE_LISTINGS if section == "vehicle" else _row_domain(section)
+                deprecated_vehicle = section == "deprecated" and re.search(r"vehicle|vehicle feeds", description, re.I)
+                kind, type_name, fields, enums, cardinality = _type_info(syntax, description, row_line)
+                qualifiers = tuple(x for x in ("alternative" if "alternative" in requirement_text.lower() or "alternative" in description.lower() else "",) if x)
+                for name in (n.strip() for n in (re.findall(r"`([^`]+)`", raw_names) or [raw_names.strip()])):
                     if name in attributes:
-                        if attributes[name].domain != domain:
-                            continue
-                        if name in {"price", "sale_price", "availability", "availability_date", "condition", "id", "link", "image_link", "description"}:
-                            continue
-                        raise RegistryParseError(f"line {i + 1}: duplicate attribute {name}")
-                    attributes[name] = RegistryAttribute(
-                        name=name, kind=kind, type=type_name,
-                        required=required.rstrip("*").strip().lower(), domain=domain,
-                        export_status=row_status, fields=fields, enum_values=enums,
-                        cardinality=cardinality, constraints=_constraint(description), source_line=i + 1,
-                    )
+                        old = attributes[name]
+                        if domain in old.applicability or (not old.applicability and domain is old.domain):
+                            # GMC intentionally repeats deprecated definitions in the
+                            # historical table. Preserve that applicability instead of
+                            # pretending the second row is a new canonical field.
+                            if not (section == "deprecated" and old.export_status is ExportStatus.NON_EXPORTABLE):
+                                raise RegistryParseError(f"line {row_line}: duplicate attribute {name} (first occurrence line {old.source_line})")
+                        applicability = old.applicability or (old.domain,)
+                        if deprecated_vehicle:
+                            applicability = tuple(dict.fromkeys(applicability + (FeedDomain.VEHICLE_LISTINGS,)))
+                        attributes[name] = RegistryAttribute(**{**old.__dict__, "source_lines": old.source_lines + (row_line,), "applicability": applicability + ((domain,) if domain not in applicability else ()), "qualifiers": tuple(dict.fromkeys(old.qualifiers + qualifiers))})
+                    else:
+                        applicability = (FeedDomain.VEHICLE_LISTINGS,) if deprecated_vehicle else ()
+                        attributes[name] = RegistryAttribute(name, kind, type_name, requirement, domain, status, fields, enums, cardinality, _constraints(description), row_line, (row_line,), applicability, qualifiers, (("description", description),))
                 i += 1
             continue
         i += 1
