@@ -6,6 +6,7 @@ import pytest_asyncio
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
+from app.clock import TestClock as InjectableTestClock
 from app.db.base import Base
 from app.models.session import Session
 from app.models.user import User
@@ -90,6 +91,30 @@ async def test_postgres_rejects_exact_idle_expiry(postgres_store):
 async def test_postgres_rejects_exact_absolute_expiry(postgres_store):
     token = await postgres_store.create("operator", now())
     assert await postgres_store.validate(token, now() + timedelta(hours=12), renew_idle=True) is None
+
+
+async def test_postgres_absolute_expiry_is_hard_cap_during_near_boundary_renewal(postgres_store):
+    clock = InjectableTestClock(now())
+    absolute_expiry = clock.now() + timedelta(hours=12)
+    token = await postgres_store.create("operator", clock.now())
+
+    for _ in range(24):
+        clock.advance(minutes=29)
+        assert await postgres_store.validate(token, clock.now(), renew_idle=True) == "operator"
+    clock.advance(minutes=23, seconds=59)
+    assert await postgres_store.validate(token, clock.now(), renew_idle=True) == "operator"
+
+    async with postgres_store._session_factory() as session:
+        row = (await session.execute(select(Session))).scalar_one()
+        assert row.absolute_expires_at == absolute_expiry
+        assert row.idle_expires_at == absolute_expiry
+
+    clock.set(absolute_expiry)
+    assert await postgres_store.validate(token, clock.now(), renew_idle=True) is None
+
+    after_token = await postgres_store.create("operator", clock.now())
+    clock.advance(hours=12, seconds=1)
+    assert await postgres_store.validate(after_token, clock.now(), renew_idle=True) is None
 
 
 async def test_postgres_rejects_malformed_and_tampered_tokens(postgres_store):

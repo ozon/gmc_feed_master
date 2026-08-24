@@ -20,3 +20,20 @@
 - `uv run python -m compileall app alembic`: **passed**
 - `git diff --check`: **passed**
 - `docker compose down --volumes`: passed
+
+## Remaining M1 Review Fix: Hard Absolute Cap Test
+
+- Reworked the real PostgreSQL session test to use the injectable `TestClock`,
+  renew idle repeatedly near the 12-hour boundary, assert validation succeeds
+  one second before absolute expiry, assert the persisted absolute expiry is
+  unchanged and the idle expiry is capped at it, and assert validation rejects
+  at the exact absolute expiry and after it. This independently proves that
+  renewal cannot move the absolute deadline.
+
+## Remaining Review Fix Verification
+
+- `docker compose up -d --wait postgres`: passed; PostgreSQL healthy
+- `TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest tests/test_postgres_sessions.py tests/test_session_store.py -q`: **21 passed, 1 warning**
+- `TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest -q`: **66 passed, 4 warnings**
+- `uv run python -m compileall app alembic`: passed
+- `docker compose down --volumes`: passed
