@@ -13,12 +13,21 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     getCurrentUser()
       .then((currentUser) => {
+        if (cancelled) return;
         setUser(currentUser);
         setState('authenticated');
       })
-      .catch(() => setState('login'));
+      .catch(() => {
+        if (!cancelled) setState('login');
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {

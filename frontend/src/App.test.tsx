@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { StrictMode } from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
 
@@ -9,6 +10,16 @@ function jsonResponse(body: unknown, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+  return { promise, resolve, reject };
 }
 
 beforeEach(() => {
@@ -22,6 +33,26 @@ it('shows the login form after an unauthenticated session check', async () => {
   render(<App />);
   expect(await screen.findByLabelText(/username/i)).toBeInTheDocument();
   expect(fetchMock).toHaveBeenCalledWith('/auth/me', expect.objectContaining({ credentials: 'include' }));
+});
+
+it('keeps the authenticated state when duplicate initial requests resolve out of order', async () => {
+  const firstRequest = deferred<Response>();
+  const secondRequest = deferred<Response>();
+  fetchMock.mockImplementationOnce(() => firstRequest.promise).mockImplementationOnce(() => secondRequest.promise);
+
+  render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+  secondRequest.resolve(jsonResponse({ username: 'operator' }));
+  expect(await screen.findByText(/signed in as operator/i)).toBeInTheDocument();
+  firstRequest.resolve(jsonResponse({ detail: 'Not authenticated' }, 401));
+
+  await waitFor(() => expect(screen.getByText(/signed in as operator/i)).toBeInTheDocument());
+  expect(screen.queryByLabelText(/username/i)).not.toBeInTheDocument();
 });
 
 it('submits credentials and renders the authenticated shell', async () => {
