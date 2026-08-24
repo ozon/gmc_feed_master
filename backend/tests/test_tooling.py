@@ -1,12 +1,16 @@
 import os
 import subprocess
 import sys
+from typing import Any, cast
 
+from starlette.requests import Request
 from fastapi.testclient import TestClient
 
+from app.auth import _store
 from app.clock import SystemClock
 from app.config import Settings, get_settings
 from app.main import create_app
+from app.persistence.sessions import PostgresSessionStore
 
 
 def test_python_test_runner_is_configured():
@@ -32,6 +36,24 @@ def test_factory_installs_injected_dependencies():
     assert application.state.settings is settings
     assert application.state.session_store is store
     assert application.state.clock is clock
+
+
+def test_factory_selects_postgres_store_when_settings_are_omitted():
+    factory = object()
+    application = create_app(db_session_factory=cast(Any, factory))
+    request = Request({"type": "http", "app": application})
+    settings = Settings(
+        _env_file=None,
+        session_secret="test-secret",
+        initial_username="test-user",
+        initial_password="test-password",
+    )
+
+    store = _store(request, settings)
+
+    assert isinstance(store, PostgresSessionStore)
+    assert store._session_factory is factory
+    assert application.state.session_store is store
 
 
 def test_factory_settings_are_used_by_health_without_credentials_environment(monkeypatch):

@@ -31,11 +31,22 @@ def _clock(request: Request) -> Clock:
 def _store(request: Request, settings: Settings = Depends(_settings)) -> SessionStore:
     store = request.app.state.session_store
     if store is None:
-        store = InMemorySessionStore(
-            idle=timedelta(minutes=settings.session_idle_minutes),
-            absolute=timedelta(hours=settings.session_absolute_hours),
-            secret=settings.session_secret,
-        )
+        factory = request.app.state.db_session_factory
+        if factory is not None:
+            from .persistence.sessions import PostgresSessionStore
+
+            store = PostgresSessionStore(
+                factory,
+                idle=timedelta(minutes=settings.session_idle_minutes),
+                absolute=timedelta(hours=settings.session_absolute_hours),
+                secret=settings.session_secret,
+            )
+        else:
+            store = InMemorySessionStore(
+                idle=timedelta(minutes=settings.session_idle_minutes),
+                absolute=timedelta(hours=settings.session_absolute_hours),
+                secret=settings.session_secret,
+            )
         request.app.state.session_store = store
     return store
 
