@@ -106,3 +106,17 @@ it('records an explicit interaction', async () => {
     credentials: 'include',
   }));
 });
+
+it('uses the interaction API function for the interaction button', async () => {
+  fetchMock.mockResolvedValueOnce(jsonResponse({ username: 'operator' }));
+  fetchMock.mockResolvedValueOnce(jsonResponse({ username: 'operator' }));
+  const interactionSpy = vi.spyOn(await import('./api'), 'recordInteraction');
+  const user = userEvent.setup();
+
+  render(<App />);
+  await screen.findByText(/signed in as operator/i);
+  await user.click(screen.getByRole('button', { name: /record interaction/i }));
+
+  expect(interactionSpy).toHaveBeenCalledOnce();
+  interactionSpy.mockRestore();
+});

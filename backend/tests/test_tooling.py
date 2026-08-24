@@ -92,3 +92,20 @@ def test_settings_dependency_override_changes_route_state():
     assert response.json() == {"status": "ok"}
     assert calls == [overridden]
     assert application.state.settings is overridden
+
+
+def test_create_app_is_public_entry_point_for_health_and_auth_flow():
+    settings = Settings(
+        _env_file=None,
+        session_secret="integration-secret",
+        initial_username="operator",
+        initial_password="correct",
+    )
+    client = TestClient(create_app(settings=settings), base_url="https://testserver")
+
+    assert client.get("/health").json() == {"status": "ok"}
+    login = client.post(
+        "/auth/login", json={"username": "operator", "password": "correct"}
+    )
+    assert login.status_code == 200
+    assert client.get("/auth/me").json() == {"username": "operator"}

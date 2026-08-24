@@ -68,3 +68,14 @@ binding product specification. Dates use ISO 8601 calendar dates.
 - **Rationale:** Password changes must revoke previously issued credentials;
   this is a concrete milestone acceptance criterion rather than an unnamed
   future hardening task.
+
+### M0 CI verification
+
+- **Topic:** Continuous integration checks
+- **Decision:** CI runs the backend test and compile checks, frontend test,
+  typecheck, and production build using committed lockfiles and test-only
+  environment values. PostgreSQL readiness is verified through the Compose
+  configuration and its service healthcheck; no production secrets are needed.
+- **Rationale:** The complete M0 verification remains reproducible on pushes and
+  pull requests while keeping database persistence and deployment credentials
+  outside the milestone.
