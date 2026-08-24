@@ -263,7 +263,7 @@
         "minivan",
         "truck",
         "station wagon",
-        "full size van …"
+        "full size van"
       ],
       "cardinality": {
         "max_items": null
@@ -1379,7 +1379,7 @@
           "constraints": {
             "max_length": null,
             "min_length": null,
-            "format": null
+            "format": "ISO 3166-1"
           }
         },
         {
@@ -1390,7 +1390,7 @@
           "constraints": {
             "max_length": null,
             "min_length": null,
-            "format": null
+            "format": "IANA"
           }
         },
         {
@@ -2193,7 +2193,7 @@
           "constraints": {
             "max_length": null,
             "min_length": null,
-            "format": null
+            "format": "ISO 3166-1"
           }
         },
         {
@@ -2214,8 +2214,7 @@
           "enum_values": [
             "online",
             "local",
-            "online_local",
-            "default online_local"
+            "online_local"
           ],
           "constraints": {
             "max_length": null,
@@ -3001,8 +3000,7 @@
           "enum_values": [
             "FINITE_RETURN_WINDOW",
             "NO_RETURNS",
-            "LIFETIME",
-            "default FINITE_RETURN_WINDOW"
+            "LIFETIME"
           ],
           "constraints": {
             "max_length": null,
@@ -3096,7 +3094,7 @@
           "constraints": {
             "max_length": null,
             "min_length": null,
-            "format": null
+            "format": "percent"
           }
         },
         {
@@ -3942,7 +3940,7 @@
           "constraints": {
             "max_length": null,
             "min_length": null,
-            "format": null
+            "format": "percent"
           }
         },
         {

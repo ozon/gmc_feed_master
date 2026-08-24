@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 
 import pytest
 
@@ -26,18 +25,16 @@ def test_parses_scalar_repeated_structured_enum_metadata():
     assert document.attributes["availability"].enum_values == ("in_stock", "out_of_stock")
 
 
-@pytest.mark.parametrize("fixture, message", [
-    ("malformed.md", "malformed table row"),
-    ("duplicate.md", "duplicate attribute"),
-    ("unsupported.md", "unsupported type"),
-    ("ambiguous.md", "ambiguous structured attribute order"),
+@pytest.mark.parametrize("fixture, expected", [
+    ("malformed.md", "line 3: malformed table row"),
+    ("duplicate.md", "line 4: duplicate attribute title (first occurrence line 3, field title)"),
+    ("unsupported.md", "line 3: unsupported type Blob"),
+    ("ambiguous.md", "line 3: ambiguous structured attribute order"),
 ])
-def test_rejects_invalid_fixtures_with_line_diagnostics(fixture, message):
-    with pytest.raises(RegistryParseError, match=message) as error:
+def test_rejects_invalid_fixtures_with_exact_line_diagnostics(fixture, expected):
+    with pytest.raises(RegistryParseError) as error:
         parse_gmc_markdown(FIXTURES / fixture)
-    assert re.search(r"line \d+", str(error.value))
-    if fixture == "duplicate.md":
-        assert str(error.value) == "line 4: duplicate attribute title (first occurrence line 3, field title)"
+    assert str(error.value) == expected
 
 
 def test_marks_deprecated_and_vehicle_attributes_explicitly():
@@ -83,3 +80,28 @@ def test_full_source_preserves_domains_statuses_and_structured_metadata():
     assert tuple(field.name for field in document.attributes["loyalty_program"].fields) == ("program_label", "tier_label", "price", "cashback_for_future_use", "loyalty_points", "member_price_effective_date", "shipping_label")
     assert next(field for field in document.attributes["returns"].fields if field.name == "policy_url").type == "URL"
     assert next(field for field in document.attributes["minimum_order_value"].fields if field.name == "price").type == "Price"
+
+
+def test_full_source_normalizes_enum_values_without_defaults_or_truncation():
+    document = parse_gmc_markdown(Path(__file__).parents[2] / "gmc_def.md")
+
+    assert document.attributes["minimum_order_value"].fields[2].enum_values == (
+        "online", "local", "online_local"
+    )
+    assert next(field for field in document.attributes["returns"].fields if field.name == "window_type").enum_values == (
+        "FINITE_RETURN_WINDOW", "NO_RETURNS", "LIFETIME"
+    )
+    assert document.attributes["body_style"].enum_values[-2:] == ("station wagon", "full size van")
+    for name in ("adult", "identifier_exists"):
+        assert document.attributes[name].enum_values == ("yes", "no")
+    assert all("default" not in value.lower() and "…" not in value for value in document.attributes["body_style"].enum_values)
+
+
+def test_nested_format_qualifiers_are_preserved():
+    document = parse_gmc_markdown(Path(__file__).parents[2] / "gmc_def.md")
+    minimum = document.attributes["minimum_order_value"]
+    assert next(field for field in minimum.fields if field.name == "country").constraints.format == "ISO 3166-1"
+    returns = document.attributes["returns"]
+    assert next(field for field in returns.fields if field.name == "restocking_percentage_fee").constraints.format == "percent"
+    cutoff = document.attributes["handling_cutoff_time"]
+    assert next(field for field in cutoff.fields if field.name == "cutoff_timezone").constraints.format == "IANA"

@@ -42,7 +42,13 @@ def _constraints(description: str) -> Constraints:
     max_match = re.search(r"max\.?\s*(?:of\s*)?(\d+)\s*chars?", description, re.I)
     min_match = re.search(r"(?:min\.?|at least)\s*(\d+)\s*chars?", description, re.I)
     fmt = None
-    if re.search(r"ISO\s*8601", description, re.I):
+    if re.search(r"ISO\s*3166(?:-1)?", description, re.I):
+        fmt = "ISO 3166-1"
+    elif re.search(r"\bIANA\b", description, re.I):
+        fmt = "IANA"
+    elif re.search(r"\bpercent\b", description, re.I):
+        fmt = "percent"
+    elif re.search(r"ISO\s*8601", description, re.I):
         fmt = "ISO 8601"
     elif re.search(r"RFC\s*(?:2396|3986|1738)", description, re.I):
         fmt = "RFC URL"
@@ -106,10 +112,16 @@ def _type_name(raw: str, line: int) -> str:
 
 
 def _enum_values(text: str) -> tuple[str, ...]:
+    # Defaults and prose are metadata, not enum members.  Keep this cleanup
+    # here so it applies equally to top-level and nested enum syntax.
+    text = re.sub(r",?\s*default\s+(?:=\s*)?[^,;|]+", "", text, flags=re.I)
+    text = re.sub(r"(?:\s*\.\.\.|\s*…)+\s*$", "", text).strip()
+    text = re.sub(r"\s*[.;]\s*$", "", text).strip()
     values: list[str] = []
     for part in re.split(r"\s*,\s*|\s*\|\s*", text):
-        part = part.strip().strip("`").strip()
+        part = part.strip().strip("`").strip("()[]{}").strip()
         part = part.replace("`", "")
+        part = re.sub(r"\s*(?:\.\.\.|…)+\s*$", "", part).strip()
         if not part:
             continue
         if re.fullmatch(r"[^\s/]+(?:/[^\s/]+)+", part):
@@ -186,9 +198,10 @@ def _field_spec(name: str, spec: str, description: str, line: int) -> SubField:
         required = RequirementStatus.CONDITIONAL
     type_part = re.sub(r"^(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)\.?\s*[,;:]?\s*", "", spec, flags=re.I).strip()
     type_part = re.sub(r"\s*[,;:]\s*(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)\.?\s*$", "", type_part, flags=re.I).strip()
-    is_enum = "|" in type_part or re.fullmatch(r"[A-Za-z_]+(?:/[A-Za-z_]+)+", type_part)
+    enum_text = type_part
+    is_enum = "|" in enum_text or re.fullmatch(r"[A-Za-z_]+(?:/[A-Za-z_]+)+", enum_text)
     type_name = "Enum" if is_enum else ("String" if not type_part else _type_name(type_part, line))
-    enum_values = _enum_values(type_part) if type_name == "Enum" else ()
+    enum_values = _enum_values(enum_text) if type_name == "Enum" else ()
     return SubField(name, type_name, required, _constraints(spec + " " + description), enum_values)
 
 
