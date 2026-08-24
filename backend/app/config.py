@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     session_secret: str
     initial_username: str
     initial_password: str
-    database_url: str = "postgresql://postgres:postgres@postgres:5432/gmc_feed"
+    database_url: str = "postgresql://postgres:postgres@localhost:5432/gmc_feed"
 
     model_config = SettingsConfigDict(
         env_file=".env",
