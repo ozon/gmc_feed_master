@@ -3,11 +3,12 @@ from __future__ import annotations
 from datetime import timedelta
 
 from fastapi import Depends, HTTPException, Request, Response, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .clock import Clock
 from .config import Settings, get_settings
 from .session_store import InMemorySessionStore, SessionStore
+from .persistence.users import verify_user_password
 
 
 SESSION_COOKIE_NAME = "gmc_session"
@@ -17,6 +18,11 @@ _INVALID_CREDENTIALS = "Invalid credentials"
 class Credentials(BaseModel):
     username: str
     password: str
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=1)
 
 
 def _settings(request: Request, settings: Settings = Depends(get_settings)) -> Settings:
@@ -86,7 +92,11 @@ async def require_user_for_interaction(
     return user_id
 
 
-def authenticate(credentials: Credentials, settings: Settings) -> str:
+async def authenticate(credentials: Credentials, settings: Settings, session=None) -> str:
+    if session is not None:
+        if not await verify_user_password(session, credentials.username, credentials.password):
+            raise _unauthorized()
+        return credentials.username
     if credentials.username != settings.initial_username or credentials.password != settings.initial_password:
         raise _unauthorized()
     return credentials.username

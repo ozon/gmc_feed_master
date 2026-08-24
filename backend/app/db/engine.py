@@ -29,9 +29,12 @@ def create_session_factory(
     )
 
 
-async def get_db_session(request: Request) -> AsyncIterator[AsyncSession]:
+async def get_db_session(request: Request) -> AsyncIterator[AsyncSession | None]:
     factory = getattr(request.state, "db_session_factory", None)
     if factory is None:
         factory = request.app.state.db_session_factory
+    if factory is None:
+        yield None
+        return
     async with factory() as session:
         yield session

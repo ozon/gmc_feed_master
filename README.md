@@ -18,7 +18,10 @@ DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed \
   uv run alembic downgrade base
 ```
 
-`alembic upgrade head` is the required migration step for a new database.
+`alembic upgrade head` is the required migration step for a new database. After
+migrations, application startup explicitly seeds the first configured user only
+when the `users` table is empty; it never mutates the schema or overwrites an
+existing user.
 Application startup does not call `create_all`; schema changes must be made by
 the Alembic CLI. For migration tests, set `TEST_DATABASE_URL` to a PostgreSQL
 `postgresql+asyncpg://` URL; tests intentionally fail if it is absent or points
