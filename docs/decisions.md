@@ -69,6 +69,46 @@ binding product specification. Dates use ISO 8601 calendar dates.
   this is a concrete milestone acceptance criterion rather than an unnamed
   future hardening task.
 
+### M1 database and migration layer
+
+- **Topic:** PostgreSQL persistence implementation
+- **Decision:** Use SQLAlchemy 2.x's async engine/session API with `asyncpg`,
+  and use Alembic for explicit schema migrations. Application startup does
+  not implicitly create or alter schema.
+- **Rationale:** Async database access matches the FastAPI execution model and
+  keeps persistence behind repository/session boundaries. Alembic provides
+  reviewed, reproducible schema evolution.
+
+### M1 persisted authentication
+
+- **Topic:** User and session persistence
+- **Decision:** Add PostgreSQL-backed users and sessions in M1 behind the
+  existing `SessionStore` interface. Seed the first operator only when the
+  users table is empty; environment credentials never overwrite an existing
+  password. Use a user-level revocation generation so password changes
+  invalidate all existing sessions immediately.
+- **Rationale:** This preserves the M0 auth call-site boundary while meeting
+  the explicit M1 acceptance criterion for password-change invalidation.
+
+### M1 password hashing
+
+- **Topic:** Persisted password hashing
+- **Decision:** Hash persisted operator passwords with Argon2id. The exact
+  dependency version and parameters are recorded when implementation begins.
+- **Rationale:** Argon2id is the selected password-hashing scheme for the
+  persisted user credential and avoids storing or comparing plaintext
+  passwords after initial seeding.
+
+### M1 registry artifact
+
+- **Topic:** GMC Attribute Registry source and runtime form
+- **Decision:** Parse `gmc_def.md` with a strict deterministic generator and
+  commit the generated `backend/registry/attributes.json`. Runtime loads the
+  checked-in JSON artifact; CI fails when regeneration changes it.
+- **Rationale:** The artifact gives runtime consumers a stable machine-readable
+  schema while the source document remains reviewable and generation prevents
+  silent registry drift.
+
 ### M0 CI verification
 
 - **Topic:** Continuous integration checks
