@@ -5,6 +5,13 @@ from app.models.user import User
 from app.security.passwords import hash_password, verify_password
 
 
+async def _begin_repository_transaction(session: AsyncSession):
+    """Close SQLAlchemy's autobegun read transaction before repository work."""
+    if session.in_transaction():
+        await session.rollback()
+    return session.begin()
+
+
 async def get_user_by_username(session: AsyncSession, username: str) -> User | None:
     result = await session.execute(select(User).where(User.username == username))
     return result.scalar_one_or_none()
@@ -13,7 +20,7 @@ async def get_user_by_username(session: AsyncSession, username: str) -> User | N
 async def seed_initial_user(
     session: AsyncSession, username: str, password: str
 ) -> User:
-    async with session.begin():
+    async with await _begin_repository_transaction(session):
         await session.execute(text("LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE"))
         existing = await session.execute(select(User).limit(1))
         existing_user = existing.scalar_one_or_none()
@@ -40,7 +47,7 @@ async def change_password(
     current_password: str,
     new_password: str,
 ) -> bool:
-    async with session.begin():
+    async with await _begin_repository_transaction(session):
         result = await session.execute(
             select(User).where(User.username == username).with_for_update()
         )

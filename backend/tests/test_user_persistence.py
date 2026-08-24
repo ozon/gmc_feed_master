@@ -18,7 +18,9 @@ from app.persistence.users import (
 async def user_session():
     url = os.environ.get("TEST_DATABASE_URL")
     if not url:
-        pytest.fail("TEST_DATABASE_URL must point to PostgreSQL")
+        pytest.fail("TEST_DATABASE_URL must point to PostgreSQL via asyncpg")
+    if not url.startswith("postgresql+asyncpg://"):
+        pytest.fail("TEST_DATABASE_URL must use the postgresql+asyncpg:// dialect")
     engine = create_async_engine(url)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
@@ -58,16 +60,21 @@ async def test_password_change_requires_current_password_and_increments_generati
 ):
     await seed_initial_user(user_session, "operator", "current-password")
 
-    assert not await change_password(user_session, "operator", "wrong", "new-password")
-    unchanged = await get_user_by_username(user_session, "operator")
-    assert unchanged.revocation_generation == 0
-    await user_session.rollback()
-
+    assert await verify_user_password(user_session, "operator", "current-password")
     assert await change_password(user_session, "operator", "current-password", "new-password")
     changed = await get_user_by_username(user_session, "operator")
     assert changed.revocation_generation == 1
     assert not await verify_user_password(user_session, "operator", "current-password")
     assert await verify_user_password(user_session, "operator", "new-password")
+
+
+@pytest.mark.asyncio
+async def test_password_change_rejects_wrong_password_without_mutation(user_session):
+    await seed_initial_user(user_session, "operator", "current-password")
+
+    assert not await change_password(user_session, "operator", "wrong", "new-password")
+    unchanged = await get_user_by_username(user_session, "operator")
+    assert unchanged.revocation_generation == 0
 
 
 @pytest.mark.asyncio

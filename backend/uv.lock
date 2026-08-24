@@ -338,6 +338,7 @@ name = "gmc-feed-backend"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "argon2-cffi" },
     { name = "asyncpg" },
     { name = "fastapi" },
     { name = "httpx" },
@@ -348,13 +349,13 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "alembic" },
-    { name = "argon2-cffi" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "argon2-cffi", specifier = "==25.1.0" },
     { name = "asyncpg", specifier = "==0.30.0" },
     { name = "fastapi", specifier = "==0.141.1" },
     { name = "httpx", specifier = "==0.28.1" },
@@ -365,7 +366,6 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "alembic", specifier = "==1.16.4" },
-    { name = "argon2-cffi", specifier = "==25.1.0" },
     { name = "pytest", specifier = "==8.4.2" },
     { name = "pytest-asyncio", specifier = "==1.1.0" },
 ]
