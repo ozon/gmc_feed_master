@@ -61,11 +61,17 @@ def _type_name(raw: str, line: int) -> str:
         return "String"
     if text.lower() in {"as in primary feed"}:
         return "String"
+    if text.lower().startswith("e.g."):
+        return "String"
+    if text.lower().startswith("iana"):
+        return "String"
+    if re.match(r"^\d+[- ]digit\b", text, re.I):
+        return "String"
     if re.match(r"^(?:Integer|String)\s*\([^)]*\)\s+OR\s+(?:Integer|String)", text, re.I):
         return "String"
     prefix = re.match(r"^(String|URL|Price|Date|Integer|Boolean)\b", text, re.I)
     if prefix:
-        return prefix.group(1).title()
+        return {"url": "URL", "price": "Price", "date": "Date", "integer": "Integer", "boolean": "Boolean", "string": "String"}[prefix.group(1).lower()]
     if re.match(r"^Enum\s+like\b", text, re.I):
         return "Enum"
     if re.match(r"^Enum(?:-like)?\s*:", text, re.I):
@@ -99,24 +105,90 @@ def _type_name(raw: str, line: int) -> str:
     raise RegistryParseError(f"line {line}: unsupported type {text}")
 
 
+def _enum_values(text: str) -> tuple[str, ...]:
+    values: list[str] = []
+    for part in re.split(r"\s*,\s*|\s*\|\s*", text):
+        part = part.strip().strip("`").strip()
+        part = part.replace("`", "")
+        if not part:
+            continue
+        if re.fullmatch(r"[^\s/]+(?:/[^\s/]+)+", part):
+            values.extend(part.split("/"))
+        else:
+            values.append(part)
+    return tuple(dict.fromkeys(values))
+
+
+def _object_parts(value: str) -> list[tuple[str, str]]:
+    parts: list[str] = []
+    start = depth = 0
+    for index, char in enumerate(value):
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+        elif char == "," and depth == 0:
+            parts.append(value[start:index].strip())
+            start = index + 1
+    parts.append(value[start:].strip())
+    result: list[tuple[str, str]] = []
+    expanded: list[str] = []
+    for part in parts:
+        alternatives = re.split(r"\s+OR\s+", part, flags=re.I)
+        expanded.extend(alternatives if len(alternatives) > 1 else [part])
+    for part in expanded:
+        part = re.sub(r";\s*repeatable(?:\s*\([^)]*\))?\s*$", "", part, flags=re.I).strip()
+        part = re.sub(r"\s+–\s+only one of the two.*$", "", part, flags=re.I).strip()
+        match = re.fullmatch(r"`?([A-Za-z][\w]*)`?(?:\s*\((.*)\))?", part)
+        if match:
+            result.append((match.group(1), match.group(2) or ""))
+            continue
+        match = re.match(r"`?([A-Za-z][\w]*)`?\s*\((.*)\)\s*$", part, re.S)
+        if match:
+            result.append((match.group(1), match.group(2)))
+    return result
+
+
+def _object_payload(text: str) -> str | None:
+    start = text.lower().find("object") + len("object")
+    depth = 0
+    for index in range(start, len(text)):
+        char = text[index]
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+        elif char == ":" and depth == 0:
+            return text[index + 1:].strip()
+    return None
+
+
+def _table_cells(line: str) -> list[str]:
+    value = line.strip().strip("|")
+    cells: list[str] = []
+    start = 0
+    in_code = False
+    for index, char in enumerate(value):
+        if char == "`":
+            in_code = not in_code
+        elif char == "|" and not in_code and (index == 0 or value[index - 1] != "\\"):
+            cells.append(value[start:index].strip())
+            start = index + 1
+    cells.append(value[start:].strip())
+    return [cell.replace("\\|", "|") for cell in cells]
+
+
 def _field_spec(name: str, spec: str, description: str, line: int) -> SubField:
     required = RequirementStatus.OPTIONAL
     if re.search(r"\breq(?:uired)?\b", spec, re.I):
         required = RequirementStatus.REQUIRED
     elif re.search(r"\bcond(?:itional)?\b", spec, re.I):
         required = RequirementStatus.CONDITIONAL
-    type_part = re.split(r"[,;]", spec, maxsplit=1)[0].strip()
-    type_name = "String"
-    if re.fullmatch(r"(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)[.]?", type_part, re.I):
-        type_name = "String"
-    elif "|" in spec:
-        type_name = "Enum"
-    # Parenthesized alternatives are enum values when the type itself is omitted.
-    if "|" in spec and not re.fullmatch(r"(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)[.]?", type_part, re.I) and not re.match(r"^(?:Integer|String|Price|Date|URL|Boolean)\b", type_part, re.I):
-        type_name = "Enum"
-    elif not re.fullmatch(r"(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)[.]?", type_part, re.I) and "|" not in spec:
-        type_name = _type_name(type_part, line)
-    enum_values = tuple(v.strip().strip("`") for v in re.findall(r"`([^`]+)`", spec))
+    type_part = re.sub(r"^(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)\.?\s*[,;:]?\s*", "", spec, flags=re.I).strip()
+    type_part = re.sub(r"\s*[,;:]\s*(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)\.?\s*$", "", type_part, flags=re.I).strip()
+    is_enum = "|" in type_part or re.fullmatch(r"[A-Za-z_]+(?:/[A-Za-z_]+)+", type_part)
+    type_name = "Enum" if is_enum else ("String" if not type_part else _type_name(type_part, line))
+    enum_values = _enum_values(type_part) if type_name == "Enum" else ()
     return SubField(name, type_name, required, _constraints(spec + " " + description), enum_values)
 
 
@@ -126,9 +198,10 @@ def _type_info(syntax: str, description: str, line: int):
     count = re.search(r"up to\s+(\d+)", text, re.I)
     cardinality = Cardinality(int(count.group(1)) if count else None)
     enum_match = re.search(r"Enum(?:-like)?\s*:\s*(.*)", text, re.I)
-    enums = tuple(v.strip().strip("`") for v in enum_match.group(1).split(",")) if enum_match else ()
+    enums = _enum_values(enum_match.group(1)) if enum_match else ()
     if re.match(r"^Object\b", text, re.I):
-        object_match = re.search(r"Object[^:]*:\s*(.*)", text, re.I)
+        object_payload = _object_payload(text)
+        object_match = re.match(r".*", object_payload) if object_payload is not None else None
         if not object_match:
             if re.match(r"Object\s+like\b", text, re.I):
                 fields = (
@@ -141,12 +214,12 @@ def _type_info(syntax: str, description: str, line: int):
                         "Object", fields, enums, cardinality)
             raise RegistryParseError(f"line {line}: ambiguous structured attribute order")
         fields = []
-        for raw_name, spec in re.findall(r"`?([A-Za-z][\w]*)`?\s*\(([^)]*)\)", object_match.group(1)):
-            fields.append(_field_spec(raw_name, spec, description, line))
+        for raw_name, spec in _object_parts(object_match.group(0)):
+            fields.append(_field_spec(raw_name, spec, description, line) if spec else SubField(raw_name, "String", RequirementStatus.OPTIONAL, _constraints(description)))
         if not fields:
-            names = re.findall(r"`([A-Za-z][\w]*)`", object_match.group(1))
+            names = re.findall(r"`([A-Za-z][\w]*)`", object_match.group(0))
             if not names:
-                names = [n.strip() for n in object_match.group(1).split(",") if re.fullmatch(r"[A-Za-z_][\w]*", n.strip())]
+                names = [n.strip() for n in object_match.group(0).split(",") if re.fullmatch(r"[A-Za-z_][\w]*", n.strip())]
             fields = [SubField(name, "String", RequirementStatus.OPTIONAL) for name in names]
         if not fields:
             raise RegistryParseError(f"line {line}: ambiguous structured attribute order")
@@ -169,6 +242,7 @@ def parse_gmc_markdown(path: Path) -> RegistryDocument:
     path = Path(path)
     lines = path.read_text(encoding="utf-8").splitlines()
     attributes: dict[str, RegistryAttribute] = {}
+    attribute_sections: dict[str, str] = {}
     section = "primary"
     i = 0
     while i < len(lines):
@@ -186,8 +260,7 @@ def parse_gmc_markdown(path: Path) -> RegistryDocument:
             i += 2
             while i < len(lines) and lines[i].lstrip().startswith("|"):
                 row_line = i + 1
-                protected = lines[i].replace("\\|", "\x00")
-                cells = [c.strip().replace("\x00", "|") for c in protected.strip().strip("|").split("|")]
+                cells = _table_cells(lines[i])
                 if deprecated_table and len(cells) == 3:
                     cells = [cells[0], cells[1], "String", cells[2]]
                 if len(cells) != 4 or any(not c for c in cells):
@@ -202,12 +275,13 @@ def parse_gmc_markdown(path: Path) -> RegistryDocument:
                 for name in (n.strip() for n in (re.findall(r"`([^`]+)`", raw_names) or [raw_names.strip()])):
                     if name in attributes:
                         old = attributes[name]
-                        if domain in old.applicability or (not old.applicability and domain is old.domain):
+                        cross_section_repeat = domain in old.applicability or (not old.applicability and domain is old.domain)
+                        intentional_deprecated_repeat = section == "deprecated" and old.export_status is ExportStatus.NON_EXPORTABLE
+                        if attribute_sections[name] == section or (cross_section_repeat and not intentional_deprecated_repeat):
                             # GMC intentionally repeats deprecated definitions in the
                             # historical table. Preserve that applicability instead of
                             # pretending the second row is a new canonical field.
-                            if not (section == "deprecated" and old.export_status is ExportStatus.NON_EXPORTABLE):
-                                raise RegistryParseError(f"line {row_line}: duplicate attribute {name} (first occurrence line {old.source_line})")
+                            raise RegistryParseError(f"line {row_line}: duplicate attribute {name} (first occurrence line {old.source_line}, field {name})")
                         applicability = old.applicability or (old.domain,)
                         if deprecated_vehicle:
                             applicability = tuple(dict.fromkeys(applicability + (FeedDomain.VEHICLE_LISTINGS,)))
@@ -215,6 +289,7 @@ def parse_gmc_markdown(path: Path) -> RegistryDocument:
                     else:
                         applicability = (FeedDomain.VEHICLE_LISTINGS,) if deprecated_vehicle else ()
                         attributes[name] = RegistryAttribute(name, kind, type_name, requirement, domain, status, fields, enums, cardinality, _constraints(description), row_line, (row_line,), applicability, qualifiers, (("description", description),))
+                        attribute_sections[name] = section
                 i += 1
             continue
         i += 1

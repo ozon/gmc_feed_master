@@ -30,7 +30,7 @@
     },
     "additional_image_link": {
       "kind": "repeated_scalar",
-      "type": "Url",
+      "type": "URL",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
@@ -60,7 +60,7 @@
     },
     "ads_redirect": {
       "kind": "scalar",
-      "type": "Url",
+      "type": "URL",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
@@ -102,7 +102,8 @@
         "description": "Required for adult content"
       },
       "enum_values": [
-        "yes`/`no"
+        "yes",
+        "no"
       ],
       "cardinality": {
         "max_items": null
@@ -262,7 +263,7 @@
         "minivan",
         "truck",
         "station wagon",
-        "full size van` …"
+        "full size van …"
       ],
       "cardinality": {
         "max_items": null
@@ -302,7 +303,7 @@
     },
     "canonical_link": {
       "kind": "scalar",
-      "type": "Url",
+      "type": "URL",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
@@ -355,10 +356,7 @@
           "name": "certification_authority",
           "type": "String",
           "required": "required",
-          "enum_values": [
-            "EC",
-            "European_Commission"
-          ],
+          "enum_values": [],
           "constraints": {
             "max_length": null,
             "min_length": null,
@@ -369,9 +367,7 @@
           "name": "certification_name",
           "type": "String",
           "required": "required",
-          "enum_values": [
-            "EPREL"
-          ],
+          "enum_values": [],
           "constraints": {
             "max_length": null,
             "min_length": null,
@@ -558,12 +554,7 @@
           "name": "notice_message",
           "type": "String",
           "required": "required",
-          "enum_values": [
-            "<b>",
-            "<br>",
-            "<i>",
-            "<a href>"
-          ],
+          "enum_values": [],
           "constraints": {
             "max_length": 1000,
             "min_length": null,
@@ -938,7 +929,7 @@
         "description": "Replaced by `certification` in the EU; use only for CH/NO/UK"
       },
       "enum_values": [
-        "A+++` … `G"
+        "A+++ … G"
       ],
       "cardinality": {
         "max_items": null
@@ -1373,10 +1364,7 @@
           "name": "cutoff_time",
           "type": "String",
           "required": "required",
-          "enum_values": [
-            "HHMM",
-            "2359"
-          ],
+          "enum_values": [],
           "constraints": {
             "max_length": null,
             "min_length": null,
@@ -1398,9 +1386,7 @@
           "name": "cutoff_timezone",
           "type": "String",
           "required": "optional",
-          "enum_values": [
-            "Europe/Berlin"
-          ],
+          "enum_values": [],
           "constraints": {
             "max_length": null,
             "min_length": null,
@@ -1409,11 +1395,9 @@
         },
         {
           "name": "disable_delivery_after_cutoff",
-          "type": "String",
+          "type": "Boolean",
           "required": "optional",
-          "enum_values": [
-            "false"
-          ],
+          "enum_values": [],
           "constraints": {
             "max_length": null,
             "min_length": null,
@@ -1468,7 +1452,8 @@
         "description": "Default `yes`; set `no` when brand/GTIN/MPN do not exist (e.g. handmade goods)"
       },
       "enum_values": [
-        "yes`/`no"
+        "yes",
+        "no"
       ],
       "cardinality": {
         "max_items": null
@@ -1482,7 +1467,7 @@
     },
     "image_link": {
       "kind": "scalar",
-      "type": "Url",
+      "type": "URL",
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
@@ -1678,7 +1663,8 @@
         "description": "Marks a bundle of different products"
       },
       "enum_values": [
-        "yes`/`no"
+        "yes",
+        "no"
       ],
       "cardinality": {
         "max_items": null
@@ -1744,7 +1730,7 @@
     },
     "lifestyle_image_link": {
       "kind": "repeated_scalar",
-      "type": "Url",
+      "type": "URL",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
@@ -1770,7 +1756,7 @@
     },
     "link": {
       "kind": "scalar",
-      "type": "Url",
+      "type": "URL",
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
@@ -1852,6 +1838,50 @@
       },
       "fields": [
         {
+          "name": "program_label",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "tier_label",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "price",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "cashback_for_future_use",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
           "name": "loyalty_points",
           "type": "Integer",
           "required": "optional",
@@ -1865,6 +1895,17 @@
         {
           "name": "member_price_effective_date",
           "type": "Date",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "shipping_label",
+          "type": "String",
           "required": "optional",
           "enum_values": [],
           "constraints": {
@@ -1972,7 +2013,7 @@
         "description": "Like `energy_efficiency_class`; scale range, CH/NO/UK only"
       },
       "enum_values": [
-        "A+++` … `G"
+        "A+++ … G"
       ],
       "cardinality": {
         "max_items": null
@@ -2081,7 +2122,7 @@
         "description": "Like `energy_efficiency_class`; scale range, CH/NO/UK only"
       },
       "enum_values": [
-        "A+++` … `G"
+        "A+++ … G"
       ],
       "cardinality": {
         "max_items": null
@@ -2174,7 +2215,7 @@
             "online",
             "local",
             "online_local",
-            "online_local"
+            "default online_local"
           ],
           "constraints": {
             "max_length": null,
@@ -2184,7 +2225,7 @@
         },
         {
           "name": "price",
-          "type": "String",
+          "type": "Price",
           "required": "required",
           "enum_values": [],
           "constraints": {
@@ -2197,7 +2238,7 @@
     },
     "mobile_link": {
       "kind": "scalar",
-      "type": "Url",
+      "type": "URL",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
@@ -2277,7 +2318,7 @@
     },
     "monroney_sticker": {
       "kind": "scalar",
-      "type": "Url",
+      "type": "URL",
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
@@ -2460,7 +2501,7 @@
       "fields": [
         {
           "name": "pickup_cost_flat_rate",
-          "type": "String",
+          "type": "Price",
           "required": "required",
           "enum_values": [],
           "constraints": {
@@ -2471,7 +2512,7 @@
         },
         {
           "name": "pickup_cost_free_threshold",
-          "type": "String",
+          "type": "Price",
           "required": "optional",
           "enum_values": [],
           "constraints": {
@@ -2961,7 +3002,7 @@
             "FINITE_RETURN_WINDOW",
             "NO_RETURNS",
             "LIFETIME",
-            "FINITE_RETURN_WINDOW"
+            "default FINITE_RETURN_WINDOW"
           ],
           "constraints": {
             "max_length": null,
@@ -2973,9 +3014,7 @@
           "name": "window_days",
           "type": "Integer",
           "required": "required",
-          "enum_values": [
-            "FINITE_RETURN_WINDOW"
-          ],
+          "enum_values": [],
           "constraints": {
             "max_length": null,
             "min_length": null,
@@ -3040,7 +3079,7 @@
         },
         {
           "name": "restocking_fee",
-          "type": "String",
+          "type": "Price",
           "required": "optional",
           "enum_values": [],
           "constraints": {
@@ -3062,7 +3101,7 @@
         },
         {
           "name": "policy_url",
-          "type": "String",
+          "type": "URL",
           "required": "optional",
           "enum_values": [],
           "constraints": {
@@ -3233,8 +3272,118 @@
       },
       "fields": [
         {
+          "name": "country",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "region",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "postal_code",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "location_id",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "location_group_name",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "service",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
           "name": "price",
           "type": "Price",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "min_handling_time",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "max_handling_time",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "min_transit_time",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "max_transit_time",
+          "type": "String",
           "required": "optional",
           "enum_values": [],
           "constraints": {
@@ -3637,22 +3786,13 @@
         {
           "name": "digital_source_type",
           "type": "Enum",
-          "required": "optional",
+          "required": "required",
           "enum_values": [
             "default",
-            "trained_algorithmic_media"
+            "trained_algorithmic_media",
+            "opt) + content (req",
+            "max. 150"
           ],
-          "constraints": {
-            "max_length": null,
-            "min_length": null,
-            "format": null
-          }
-        },
-        {
-          "name": "content",
-          "type": "String",
-          "required": "required",
-          "enum_values": [],
           "constraints": {
             "max_length": null,
             "min_length": null,
@@ -3750,6 +3890,50 @@
         "format": null
       },
       "fields": [
+        {
+          "name": "country",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "region",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "postal_code",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "location_id",
+          "type": "String",
+          "required": "optional",
+          "enum_values": [],
+          "constraints": {
+            "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
         {
           "name": "rate",
           "type": "String",
@@ -4014,7 +4198,7 @@
     },
     "vehicle_history_report_link": {
       "kind": "scalar",
-      "type": "Url",
+      "type": "URL",
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
@@ -4118,7 +4302,7 @@
     },
     "video_link": {
       "kind": "scalar",
-      "type": "Url",
+      "type": "URL",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
@@ -4170,7 +4354,7 @@
     },
     "virtual_model_link": {
       "kind": "scalar",
-      "type": "Url",
+      "type": "URL",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",

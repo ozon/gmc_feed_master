@@ -29,3 +29,17 @@ Runtime loading, artifact integration beyond the generated registry, and CI chan
 
 Runtime loader, artifact integration beyond generation, and CI changes remain
 out of scope as requested.
+
+## Remaining Parser Findings Verification (2026-08-24)
+
+- Structured objects preserve bare names, ordered declarations, nested primitive
+  types, requirement markers, enum alternatives, and constraints/formats.
+- Full-source assertions cover adult, identifier_exists, body_style, shipping,
+  minimum_order_value, pickup_cost, returns, loyalty_program, and nested URL/
+  Price fields.
+- Duplicate diagnostics assert the duplicate and first source lines plus field
+  name; cross-section applicability repeats remain the only accepted repeats.
+- Registry parser and generation tests: 9 passed.
+- Registry generation/check, compileall, and `git diff --check`: passed.
+- Full backend: 63 passed, 20 PostgreSQL errors because `TEST_DATABASE_URL` is
+  not configured in this environment.

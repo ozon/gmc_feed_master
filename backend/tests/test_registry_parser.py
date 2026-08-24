@@ -36,6 +36,8 @@ def test_rejects_invalid_fixtures_with_line_diagnostics(fixture, message):
     with pytest.raises(RegistryParseError, match=message) as error:
         parse_gmc_markdown(FIXTURES / fixture)
     assert re.search(r"line \d+", str(error.value))
+    if fixture == "duplicate.md":
+        assert str(error.value) == "line 4: duplicate attribute title (first occurrence line 3, field title)"
 
 
 def test_marks_deprecated_and_vehicle_attributes_explicitly():
@@ -70,3 +72,14 @@ def test_full_source_preserves_domains_statuses_and_structured_metadata():
     shipping = document.attributes["shipping"]
     assert shipping.cardinality.max_items == 100
     assert next(field for field in shipping.fields if field.name == "price").type == "Price"
+    assert document.attributes["adult"].enum_values == ("yes", "no")
+    assert document.attributes["identifier_exists"].enum_values == ("yes", "no")
+    assert "big and tall" in document.attributes["size_type"].enum_values
+    assert document.attributes["body_style"].enum_values[:3] == ("sedan", "suv", "coupe")
+    assert len(shipping.fields) == 11
+    assert tuple(field.name for field in document.attributes["minimum_order_value"].fields) == ("country", "service", "surface", "price")
+    assert tuple(field.name for field in document.attributes["pickup_cost"].fields) == ("pickup_cost_flat_rate", "pickup_cost_free_threshold")
+    assert tuple(field.name for field in document.attributes["returns"].fields) == ("country", "item_condition", "window_type", "window_days", "method", "outcome", "shipping_fee", "shipping_fee_type", "restocking_fee", "restocking_percentage_fee", "policy_url")
+    assert tuple(field.name for field in document.attributes["loyalty_program"].fields) == ("program_label", "tier_label", "price", "cashback_for_future_use", "loyalty_points", "member_price_effective_date", "shipping_label")
+    assert next(field for field in document.attributes["returns"].fields if field.name == "policy_url").type == "URL"
+    assert next(field for field in document.attributes["minimum_order_value"].fields if field.name == "price").type == "Price"
