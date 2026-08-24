@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
 from .clock import Clock, SystemClock
 from .config import Settings, get_settings
@@ -17,12 +17,13 @@ def create_app(
     clock: Clock | None = None,
 ) -> FastAPI:
     app = FastAPI()
-    app.state.settings = settings if settings is not None else get_settings()
+    app.state.settings = settings
     app.state.session_store = session_store
     app.state.clock = clock if clock is not None else SystemClock()
 
     @app.get("/health")
-    def health() -> dict[str, str]:
+    def health(_settings: Settings = Depends(get_settings)) -> dict[str, str]:
+        app.state.settings = _settings
         return {"status": "ok"}
 
     return app

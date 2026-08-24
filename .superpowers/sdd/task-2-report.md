@@ -71,3 +71,31 @@ Output: no errors.
 
 - The focused and full test runs emit the pre-existing Starlette/httpx deprecation warning; no test failures occurred.
 - Session routes/authentication and the concrete session-store implementation were intentionally not added, as required by Task 2.
+
+## Review Fix
+
+### Files changed
+
+- Modified `backend/app/main.py` to defer settings construction until the FastAPI dependency is resolved, making `import app.main` safe without credentials while retaining `get_settings()` validation at request/runtime use. The health route now uses the actual `get_settings` dependency path.
+- Modified `backend/tests/test_tooling.py` with regressions covering clean ASGI import and `app.dependency_overrides[get_settings]` route behavior.
+
+### Commands and output
+
+```text
+cd backend && uv run pytest tests/test_tooling.py -q
+```
+
+Output: `5 passed, 1 warning in 0.82s`.
+
+```text
+cd backend && uv run pytest -q && uv run python -m compileall app
+```
+
+Output:
+
+```text
+8 passed, 1 warning in 0.80s
+Listing 'app'...
+```
+
+The warning remains the existing Starlette/httpx deprecation warning documented above.
