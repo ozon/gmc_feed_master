@@ -1,24 +1,99 @@
-# Task 6 report
+# Task 6 Report
 
-Implemented persistent authentication integration on top of Task 5:
+## Status
 
-- Added async database-session dependency wiring and PostgreSQL session-store selection when a session factory is configured.
-- Added persisted password verification for login while preserving in-memory auth injection and M0 response shapes.
-- Added `POST /auth/password` with non-empty new-password validation, generic credential failures, transactional password hash/revocation-generation update, caller-session invalidation, and cookie clearing.
-- Added explicit startup first-user seeding after migrations without schema mutation or overwriting an existing user.
-- Added PostgreSQL API integration tests covering multiple sessions, password rotation, old/new password behavior, wrong current password, and validation.
-- Documented explicit migration and startup-seeding behavior.
+Implemented PostgreSQL Compose and environment documentation on top of Task 5
+commit `2260d86`.
 
-Verification:
+## Files changed
 
-- PostgreSQL Compose service started and Alembic migrations upgraded to head.
-- `TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest -q`: 68 passed.
-- `uv run python -m compileall app alembic`: passed.
+- `docker-compose.yml` — PostgreSQL-only Compose configuration using
+  `postgres:16.4-alpine`, configurable database credentials and host port, a
+  named persistent volume, and a `pg_isready` health check.
+- `.env.example` — safe local-only environment placeholders for Compose and
+  backend settings, including the M0 one-worker requirement.
+- `backend/app/config.py` — aligns the default lazy database URL with the
+  host-published local PostgreSQL service; no ORM, schema, or connection is
+  created.
+- `backend/tests/test_environment_docs.py` — environment key coverage and
+  PostgreSQL-only Compose structure/health-check coverage.
 
-Concerns:
+## Verification commands and output
 
-- Test output retains existing dependency/deprecation warnings.
-- PostgreSQL integration tests require the Compose database and `TEST_DATABASE_URL`.
+From `backend/`:
+
+```text
+uv run pytest tests/test_environment_docs.py -q
+2 passed, 1 warning in 0.01s
+
+uv run pytest -q
+32 passed, 1 warning in 0.71s
+
+uv run python -m compileall app
+Listing 'app'...
+```
+
+From the repository root:
+
+```text
+git diff --check
+exit 0
+
+docker compose config -q
+exit 0
+
+docker compose up -d postgres
+health=starting
+health=starting
+health=starting
+health=healthy
+
+docker compose ps
+postgres container: Up 6 seconds (healthy)
+
+docker compose down
+container and network removed without errors.
+```
+
+## Concerns
+
+- Backend tests emit the existing Starlette deprecation warning about using
+  `httpx` with `starlette.testclient`; all tests pass.
+- The Compose file intentionally starts only PostgreSQL. M0 still uses its
+  in-process session store and requires one backend worker; PostgreSQL remains
+  available for the later persistence milestone.
+
+## Review-fix details
+
+- `.env.example` explicitly documents that changes to any `POSTGRES_*` value
+  require the corresponding `DATABASE_URL` update, and identifies the
+  host-local default relationship.
+- `backend/tests/test_environment_docs.py` parses the Compose YAML through
+  `docker compose config --format json` and the standard-library JSON parser;
+  it asserts exactly one service named `postgres` and a health check without
+  adding an unpinned YAML dependency.
+
+## Review-fix verification
+
+From `backend/`:
+
+```text
+uv run pytest -q
+................................                                         [100%]
+32 passed, 1 warning in 0.85s
+```
+
+From the repository root:
+
+```text
+docker compose config -q
+(no output; exit 0)
+
+docker compose up -d --wait postgres && docker compose ps && docker compose down
+Container m0-foundation-postgres-1 Healthy
+m0-foundation-postgres-1   postgres:16.4-alpine   ...   Up 5 seconds (healthy)
+container and network removed without errors.
+```
 
 ## Task 6 review-fix follow-up
 
