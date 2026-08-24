@@ -43,10 +43,12 @@ owns schema migrations. The application receives an async database session
 through a dependency/lifecycle boundary, and repositories isolate persistence
 operations from route handlers.
 
-The existing `SessionStore` interface remains the auth boundary. A
-`PostgresSessionStore` implements `create`, `validate`, and `invalidate` so
-auth call sites do not depend on SQLAlchemy details. Tests may continue to
-inject `InMemorySessionStore`.
+The existing `SessionStore` interface remains the auth boundary. Its method
+names and semantics remain `create`, `validate`, and `invalidate`, but M1
+makes those protocol methods awaitable so the async PostgreSQL implementation
+does not block the event loop. `PostgresSessionStore` implements the protocol
+and auth call sites depend only on it. `InMemorySessionStore` remains an async
+test implementation with identical expiry behavior.
 
 The first migration is a reviewed baseline migration. It creates the complete
 M1 schema in one step; later milestones add migrations incrementally.

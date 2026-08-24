@@ -79,6 +79,18 @@ binding product specification. Dates use ISO 8601 calendar dates.
   keeps persistence behind repository/session boundaries. Alembic provides
   reviewed, reproducible schema evolution.
 
+### M1 asynchronous session-store boundary
+
+- **Topic:** Async persistence at the existing auth boundary
+- **Decision:** Preserve the `SessionStore` method names and semantics, but
+  make `create`, `validate`, and `invalidate` awaitable in M1. The PostgreSQL
+  implementation and the in-memory test implementation both satisfy the
+  async protocol.
+- **Rationale:** SQLAlchemy's async sessions must not be hidden behind blocking
+  calls in FastAPI handlers. Keeping the names and behavior preserves the
+  established architectural boundary while allowing non-blocking database
+  access.
+
 ### M1 persisted authentication
 
 - **Topic:** User and session persistence
