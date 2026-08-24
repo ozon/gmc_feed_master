@@ -86,6 +86,36 @@ def test_asgi_import_is_safe_without_settings_environment():
     assert result.returncode == 0, result.stderr
 
 
+def test_default_asgi_app_resolves_configured_settings_and_postgres_persistence():
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "SESSION_SECRET": "configured-secret",
+            "INITIAL_USERNAME": "configured-user",
+            "INITIAL_PASSWORD": "configured-password",
+            "DATABASE_URL": "postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed",
+        }
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "from app.main import app; "
+                "from app.persistence.sessions import PostgresSessionStore; "
+                "assert app.state.settings is not None; "
+                "assert app.state.db_session_factory is not None; "
+                "assert isinstance(app.state.session_store, PostgresSessionStore)"
+            ),
+        ],
+        cwd=".",
+        env=environment,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+
+
 def test_settings_dependency_override_changes_route_state():
     original = Settings(
         _env_file=None,

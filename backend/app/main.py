@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from pydantic import ValidationError
 
 from .auth import (
     Credentials,
@@ -28,12 +29,24 @@ from .persistence.sessions import PostgresSessionStore
 from .db.engine import create_engine, create_session_factory, get_db_session
 from .persistence.users import change_password, seed_initial_user
 
+
+def _configured_settings() -> Settings | None:
+    try:
+        return get_settings()
+    except ValidationError:
+        # Keep `import app.main` safe for M0 environments that do not yet have
+        # the persistence credentials configured.
+        return None
+
 def create_app(
     settings: Settings | None = None,
     session_store: SessionStore | None = None,
     clock: Clock | None = None,
     db_session_factory: async_sessionmaker[AsyncSession] | None = None,
 ) -> FastAPI:
+    if settings is None and session_store is None and db_session_factory is None:
+        settings = _configured_settings()
+
     @asynccontextmanager
     async def lifespan(application: FastAPI):
         if (

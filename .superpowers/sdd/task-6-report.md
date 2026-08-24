@@ -226,3 +226,54 @@ exit 0
 
 Concerns remain limited to the existing Starlette/httpx and Alembic
 configuration deprecation warnings reported by the test run.
+
+## Remaining M1 Task 6 finding fix
+
+- The module-level ASGI app now resolves `get_settings()` when `create_app()`
+  receives no explicit settings, session store, or database session factory.
+  With configured environment settings this constructs the async SQLAlchemy
+  engine/session factory and selects `PostgresSessionStore` by default.
+- Settings validation failures are treated as an unconfigured M0 import path,
+  so `import app.main` remains safe without persistence credentials.
+- Explicit `session_store` precedence, explicit `db_session_factory` injection,
+  and in-memory test paths remain unchanged. No schema creation was added.
+- Added a regression subprocess test proving the default ASGI app resolves
+  configured settings and selects PostgreSQL persistence.
+
+## Remaining-finding verification outputs
+
+From `backend/`:
+
+```text
+uv run pytest tests/test_tooling.py -q
+9 passed, 1 warning in 1.81s
+
+TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest tests/test_auth_api.py tests/test_postgres_auth.py -q
+16 passed, 7 warnings in 6.39s
+
+TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest -q
+74 passed, 24 warnings in 20.47s
+
+uv run python -m compileall app alembic
+completed successfully
+
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run alembic upgrade head
+completed successfully (M1 baseline)
+```
+
+From the repository root:
+
+```text
+docker compose up -d --wait postgres
+Container m1-persistence-registry-postgres-1 Healthy
+docker compose config -q
+completed successfully
+docker compose down --volumes
+completed successfully
+git diff --check
+completed successfully
+```
+
+The initial combined command was retried from `backend/` after root-level `uv`
+reported that `pytest` was unavailable; no test failure resulted. Existing
+Starlette/httpx, Pytest collection, and Alembic deprecation warnings remain.
