@@ -20,7 +20,12 @@ def _clean(value: str) -> str:
 
 
 def _requirement(value: str) -> RequirementStatus:
-    value = value.upper().replace("*", "")
+    value = value.upper().replace("*", "").strip()
+    # The first requirement marker is authoritative.  A note such as
+    # "OPTIONAL (required from 2026-09-30)" must not upgrade the field.
+    marker = re.match(r"^(?:\()?\s*(NOT\s+A\s+GMC\s+ATTRIBUTE|REMOVED|DEPRECATED|CONDITIONAL|REQUIRED|RECOMMENDED|OPTIONAL)\b", value)
+    if marker:
+        value = marker.group(1)
     if "NOT A GMC ATTRIBUTE" in value:
         return RequirementStatus.REMOVED
     if "REMOVED" in value:
@@ -40,6 +45,8 @@ def _requirement(value: str) -> RequirementStatus:
 
 def _constraints(description: str) -> Constraints:
     max_match = re.search(r"max\.?\s*(?:of\s*)?(\d+)\s*chars?", description, re.I)
+    if not max_match:
+        max_match = re.search(r"max\.?\s*(?:of\s*)?(\d+)\b", description, re.I)
     min_match = re.search(r"(?:min\.?|at least)\s*(\d+)\s*chars?", description, re.I)
     fmt = None
     if re.search(r"ISO\s*3166(?:-1)?", description, re.I):
@@ -114,7 +121,13 @@ def _type_name(raw: str, line: int) -> str:
 def _enum_values(text: str) -> tuple[str, ...]:
     # Defaults and prose are metadata, not enum members.  Keep this cleanup
     # here so it applies equally to top-level and nested enum syntax.
+    text = text.replace(r"\|", "|")
     text = re.sub(r",?\s*default\s+(?:=\s*)?[^,;|]+", "", text, flags=re.I)
+    internal_range = re.fullmatch(r"\s*([^,|]+?)\s+(?:\.\.\.|…)\s+([^,|]+?)\s*", text)
+    if internal_range:
+        start = internal_range.group(1).strip().strip("`")
+        end = internal_range.group(2).strip().strip("`")
+        return (f"range:{start}..{end}",)
     text = re.sub(r"(?:\s*\.\.\.|\s*…)+\s*$", "", text).strip()
     text = re.sub(r"\s*[.;]\s*$", "", text).strip()
     values: list[str] = []
@@ -147,7 +160,8 @@ def _object_parts(value: str) -> list[tuple[str, str]]:
     expanded: list[str] = []
     for part in parts:
         alternatives = re.split(r"\s+OR\s+", part, flags=re.I)
-        expanded.extend(alternatives if len(alternatives) > 1 else [part])
+        for alternative in alternatives:
+            expanded.extend(re.split(r"\s+\+\s+", alternative) if re.search(r"\s+\+\s+", alternative) else [alternative])
     for part in expanded:
         part = re.sub(r";\s*repeatable(?:\s*\([^)]*\))?\s*$", "", part, flags=re.I).strip()
         part = re.sub(r"\s+–\s+only one of the two.*$", "", part, flags=re.I).strip()
@@ -192,15 +206,18 @@ def _table_cells(line: str) -> list[str]:
 
 def _field_spec(name: str, spec: str, description: str, line: int) -> SubField:
     required = RequirementStatus.OPTIONAL
-    if re.search(r"\breq(?:uired)?\b", spec, re.I):
-        required = RequirementStatus.REQUIRED
-    elif re.search(r"\bcond(?:itional)?\b", spec, re.I):
+    if re.search(r"\bcond(?:itional)?\.?\b", spec, re.I):
         required = RequirementStatus.CONDITIONAL
+    elif re.search(r"\breq(?:uired)?\.?\b", spec, re.I):
+        required = RequirementStatus.REQUIRED
     type_part = re.sub(r"^(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)\.?\s*[,;:]?\s*", "", spec, flags=re.I).strip()
     type_part = re.sub(r"\s*[,;:]\s*(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)\.?\s*$", "", type_part, flags=re.I).strip()
     enum_text = type_part
     is_enum = "|" in enum_text or re.fullmatch(r"[A-Za-z_]+(?:/[A-Za-z_]+)+", enum_text)
-    type_name = "Enum" if is_enum else ("String" if not type_part else _type_name(type_part, line))
+    type_name = "Enum" if is_enum else (
+        "String" if not type_part or re.match(r"^(?:max|min)\.?\s*\d+\b", type_part, re.I)
+        else _type_name(type_part, line)
+    )
     enum_values = _enum_values(enum_text) if type_name == "Enum" else ()
     return SubField(name, type_name, required, _constraints(spec + " " + description), enum_values)
 
@@ -221,7 +238,7 @@ def _type_info(syntax: str, description: str, line: int):
                     SubField("digital_source_type", "Enum", RequirementStatus.OPTIONAL,
                              enum_values=("default", "trained_algorithmic_media")),
                     SubField("content", "String", RequirementStatus.REQUIRED,
-                             constraints=_constraints(description)),
+                             constraints=_constraints(f"{text} {description}")),
                 )
                 return (AttributeKind.REPEATED_STRUCTURED if repeated else AttributeKind.STRUCTURED,
                         "Object", fields, enums, cardinality)
@@ -241,6 +258,17 @@ def _type_info(syntax: str, description: str, line: int):
     base = _type_name(text.split(",", 1)[0], line)
     return (AttributeKind.REPEATED_SCALAR if repeated else AttributeKind.SCALAR,
             base, (), enums, cardinality)
+
+
+def _requirement_qualifiers(requirement_text: str, description: str) -> tuple[str, ...]:
+    text = f"{requirement_text} {description}"
+    qualifiers: list[str] = []
+    if re.search(r"\balternative\b", text, re.I):
+        qualifiers.append("alternative")
+    match = re.search(r"required\s+from\s+([0-9]{4}-[0-9]{2}-[0-9]{2})", text, re.I)
+    if match:
+        qualifiers.append(f"required_from:{match.group(1)}")
+    return tuple(qualifiers)
 
 
 def _row_domain(section: str) -> FeedDomain:
@@ -284,7 +312,7 @@ def parse_gmc_markdown(path: Path) -> RegistryDocument:
                 domain = FeedDomain.VEHICLE_LISTINGS if section == "vehicle" else _row_domain(section)
                 deprecated_vehicle = section == "deprecated" and re.search(r"vehicle|vehicle feeds", description, re.I)
                 kind, type_name, fields, enums, cardinality = _type_info(syntax, description, row_line)
-                qualifiers = tuple(x for x in ("alternative" if "alternative" in requirement_text.lower() or "alternative" in description.lower() else "",) if x)
+                qualifiers = _requirement_qualifiers(requirement_text, description)
                 for name in (n.strip() for n in (re.findall(r"`([^`]+)`", raw_names) or [raw_names.strip()])):
                     if name in attributes:
                         old = attributes[name]

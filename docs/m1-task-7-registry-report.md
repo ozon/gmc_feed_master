@@ -19,3 +19,10 @@
 ## Concerns
 
 - Existing non-blocking warnings remain: Starlette/httpx TestClient deprecation, pytest collection of `TestClock`, and Alembic `path_separator` deprecation.
+
+## M1 Task 7 parser follow-up
+
+- Internal `A+++ … G` syntax is represented as the distinguishable range value `range:A+++..G`, without emitting the ellipsis marker as an enum literal.
+- Structured `+` separators preserve ordered `digital_source_type` and `content` subfields, including exact enum values, requirements, and content length limits.
+- Requirement markers take precedence over prose notes: `minimum_order_value` and `pickup_cost` remain optional with `required_from:2026-09-30` qualifiers, while `returns.window_days` remains conditional.
+- Follow-up verification: focused registry parser suite **10 passed**; full backend suite with Compose PostgreSQL and `TEST_DATABASE_URL` **86 passed**; compileall and registry CLI drift check passed; `docker compose config -q` passed.

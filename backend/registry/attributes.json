@@ -232,7 +232,7 @@
         "max_items": null
       },
       "constraints": {
-        "max_length": null,
+        "max_length": 1,
         "min_length": null,
         "format": null
       },
@@ -929,7 +929,7 @@
         "description": "Replaced by `certification` in the EU; use only for CH/NO/UK"
       },
       "enum_values": [
-        "A+++ … G"
+        "range:A+++..G"
       ],
       "cardinality": {
         "max_items": null
@@ -1329,7 +1329,7 @@
         "max_items": null
       },
       "constraints": {
-        "max_length": null,
+        "max_length": 14,
         "min_length": null,
         "format": null
       },
@@ -2013,7 +2013,7 @@
         "description": "Like `energy_efficiency_class`; scale range, CH/NO/UK only"
       },
       "enum_values": [
-        "A+++ … G"
+        "range:A+++..G"
       ],
       "cardinality": {
         "max_items": null
@@ -2122,7 +2122,7 @@
         "description": "Like `energy_efficiency_class`; scale range, CH/NO/UK only"
       },
       "enum_values": [
-        "A+++ … G"
+        "range:A+++..G"
       ],
       "cardinality": {
         "max_items": null
@@ -2163,7 +2163,7 @@
     "minimum_order_value": {
       "kind": "structured",
       "type": "Object",
-      "required": "required",
+      "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
       "source_line": 158,
@@ -2171,7 +2171,9 @@
         158
       ],
       "applicability": [],
-      "qualifiers": [],
+      "qualifiers": [
+        "required_from:2026-09-30"
+      ],
       "metadata": {
         "description": "Minimum order value at product level"
       },
@@ -2476,7 +2478,7 @@
     "pickup_cost": {
       "kind": "structured",
       "type": "Object",
-      "required": "required",
+      "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
       "source_line": 159,
@@ -2484,7 +2486,9 @@
         159
       ],
       "applicability": [],
-      "qualifiers": [],
+      "qualifiers": [
+        "required_from:2026-09-30"
+      ],
       "metadata": {
         "description": "Fee for online purchase/reservation with in-store pickup; without threshold the flat rate always applies"
       },
@@ -2753,7 +2757,7 @@
         "max_items": null
       },
       "constraints": {
-        "max_length": null,
+        "max_length": 100,
         "min_length": null,
         "format": null
       },
@@ -2944,7 +2948,7 @@
     "returns": {
       "kind": "structured",
       "type": "Object",
-      "required": "recommended",
+      "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
       "source_line": 162,
@@ -3011,7 +3015,7 @@
         {
           "name": "window_days",
           "type": "Integer",
-          "required": "required",
+          "required": "conditional",
           "enum_values": [],
           "constraints": {
             "max_length": null,
@@ -3747,7 +3751,7 @@
           "required": "required",
           "enum_values": [],
           "constraints": {
-            "max_length": null,
+            "max_length": 5000,
             "min_length": null,
             "format": null
           }
@@ -3784,15 +3788,24 @@
         {
           "name": "digital_source_type",
           "type": "Enum",
-          "required": "required",
+          "required": "optional",
           "enum_values": [
             "default",
-            "trained_algorithmic_media",
-            "opt) + content (req",
-            "max. 150"
+            "trained_algorithmic_media"
           ],
           "constraints": {
             "max_length": null,
+            "min_length": null,
+            "format": null
+          }
+        },
+        {
+          "name": "content",
+          "type": "String",
+          "required": "required",
+          "enum_values": [],
+          "constraints": {
+            "max_length": 150,
             "min_length": null,
             "format": null
           }
@@ -4318,7 +4331,7 @@
         "max_items": null
       },
       "constraints": {
-        "max_length": null,
+        "max_length": 500,
         "min_length": null,
         "format": null
       },
@@ -4370,7 +4383,7 @@
         "max_items": null
       },
       "constraints": {
-        "max_length": null,
+        "max_length": 15,
         "min_length": null,
         "format": null
       },

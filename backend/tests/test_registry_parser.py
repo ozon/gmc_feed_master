@@ -105,3 +105,26 @@ def test_nested_format_qualifiers_are_preserved():
     assert next(field for field in returns.fields if field.name == "restocking_percentage_fee").constraints.format == "percent"
     cutoff = document.attributes["handling_cutoff_time"]
     assert next(field for field in cutoff.fields if field.name == "cutoff_timezone").constraints.format == "IANA"
+
+
+def test_full_source_preserves_ranges_structured_plus_order_and_requirement_notes():
+    document = parse_gmc_markdown(Path(__file__).parents[2] / "gmc_def.md")
+
+    for name in ("energy_efficiency_class", "min_energy_efficiency_class", "max_energy_efficiency_class"):
+        assert document.attributes[name].enum_values == ("range:A+++..G",)
+        assert "…" not in document.attributes[name].enum_values[0]
+
+    for name, max_length in (("structured_title", 150), ("structured_description", 5000)):
+        fields = document.attributes[name].fields
+        assert tuple(field.name for field in fields) == ("digital_source_type", "content")
+        assert fields[0].enum_values == ("default", "trained_algorithmic_media")
+        assert fields[0].required == "optional"
+        assert fields[1].required == "required"
+        assert fields[1].constraints.max_length == max_length
+
+    for name in ("minimum_order_value", "pickup_cost"):
+        attribute = document.attributes[name]
+        assert attribute.required == "optional"
+        assert "required_from:2026-09-30" in attribute.qualifiers
+    window_days = next(field for field in document.attributes["returns"].fields if field.name == "window_days")
+    assert window_days.required == "conditional"
