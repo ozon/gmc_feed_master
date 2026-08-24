@@ -1,46 +1,21 @@
-# Task 3 Report
+# Task 3 report: M1 baseline migration
 
-## Status
+## Implemented
 
-Complete. Implemented the injectable in-process session store on top of Task 2 commit `0a09c88` without changing unrelated behavior.
+- Added `backend/alembic/versions/20260824_0001_m1_baseline.py` as the concrete M1 baseline revision.
+- The revision creates all 15 application tables, PostgreSQL JSONB columns, timezone-aware timestamps, token/revocation fields, primary/unique constraints, foreign keys, indexes, scoped plugin partial unique indexes, and scope-owner checks.
+- Cyclic feed-source/pipeline and export-run/export-version relationships are created with deferred foreign-key operations after their tables exist.
+- Downgrade removes cyclic foreign keys, indexes, and tables in reverse dependency order.
+- Added PostgreSQL-only migration tests with an isolated temporary database. Tests explicitly run Alembic CLI commands for upgrade, downgrade, and re-upgrade and verify table names, indexes, constraints, foreign keys, and scoped checks. Missing or non-PostgreSQL `TEST_DATABASE_URL` fails clearly.
+- Updated root `.env.example` and `README.md` with explicit migration URL and `alembic upgrade head` / `alembic downgrade base` commands. Runtime application code remains free of `create_all` calls.
 
-## Files changed
+## Verification
 
-- `backend/app/clock.py` — added controllable `TestClock` with `now`, `set`, and `advance`.
-- `backend/app/session_store.py` — added the `SessionStore` protocol and `InMemorySessionStore` with server-side records, random opaque HMAC-protected tokens, constant-time signature verification, idle and absolute expiry, explicit-only idle renewal, invalidation, malformed/tampered token rejection, and per-instance restart invalidation.
-- `backend/tests/conftest.py` — added reusable clock and store fixtures.
-- `backend/tests/test_session_store.py` — added boundary and security behavior tests.
+- Focused migration test: `1 passed` against Compose PostgreSQL.
+- Full backend tests: `49 passed` against Compose PostgreSQL migration test configuration.
+- `uv run python -m compileall -q app alembic tests`: passed.
+- Explicit CLI downgrade and upgrade against Compose PostgreSQL: both exited successfully.
 
-## Commands and output
+## Notes
 
-- `uv run pytest tests/test_session_store.py -q`
-  - `7 passed in 0.02s`
-- `uv run python -m compileall app`
-  - completed successfully; `Listing 'app'...`
-- `uv run pytest -q`
-  - `16 passed, 1 warning in 0.83s`
-  - Existing warning: Starlette deprecation warning about using `httpx` with `starlette.testclient`.
-- `git diff --check`
-  - completed successfully.
-
-## Concerns
-
-- The full suite emits one pre-existing dependency warning from Starlette/httpx; it does not fail the suite.
-
-## Review Fixes
-
-### Files changed
-
-- `backend/app/session_store.py` — declared `class InMemorySessionStore(SessionStore)` exactly as required.
-- `backend/app/clock.py` — `TestClock` now rejects naive datetimes and normalizes aware input in its constructor and `set` method to timezone-aware UTC.
-- `backend/tests/test_session_store.py` — added exact idle-expiry and exact absolute-expiry rejection tests, a same-length validly shaped signature tampering test, and `TestClock` timezone contract tests.
-
-### Verification commands and output
-
-- `uv run pytest tests/test_session_store.py -q`
-  - `12 passed in 0.03s`
-- `uv run pytest -q`
-  - `21 passed, 1 warning in 0.85s`
-  - Existing warning: Starlette deprecation warning about using `httpx` with `starlette.testclient`.
-- `uv run python -m compileall app`
-  - completed successfully; `Listing 'app'...`
+- Alembic emits its existing `prepend_sys_path` deprecation warning and the existing Starlette/httpx deprecation warning; no test failures or migration errors remain.

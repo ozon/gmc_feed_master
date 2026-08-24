@@ -9,6 +9,21 @@ cp .env.example .env
 docker compose up -d postgres
 ```
 
+Apply or remove the M1 PostgreSQL schema explicitly from `backend/`:
+
+```bash
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed \
+  uv run alembic upgrade head
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed \
+  uv run alembic downgrade base
+```
+
+`alembic upgrade head` is the required migration step for a new database.
+Application startup does not call `create_all`; schema changes must be made by
+the Alembic CLI. For migration tests, set `TEST_DATABASE_URL` to a PostgreSQL
+`postgresql+asyncpg://` URL; tests intentionally fail if it is absent or points
+to a non-PostgreSQL backend.
+
 Generate a local self-signed certificate and key for Vite:
 
 ```bash
