@@ -68,3 +68,4 @@ frontend/test-results.json
 frontend_new/node_modules/
 frontend_new/dist/
 frontend_new/.vite/
+.codegraph/
