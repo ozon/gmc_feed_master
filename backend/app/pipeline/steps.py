@@ -10,12 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from registry.model import RegistryDocument
 
 from ..ingest import HttpFetcher, read_feed
+from ..ingest.report import SourceField
 from ..models.feed_source import FeedSource
 
 
 @dataclass
 class RunState:
     products: list[dict[str, Any]] = field(default_factory=list)
+    source_fields: list[SourceField] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -76,6 +78,7 @@ class IngestStep:
         report = read_feed(data, feed_source.source_format, self._registry)
 
         ctx.run_state.products.extend(report.products)
+        ctx.run_state.source_fields = list(report.source_fields)
         if report.row_errors:
             ctx.logger.warning(
                 "ingest: %d row errors for feed source %s",
