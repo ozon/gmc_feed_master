@@ -219,3 +219,27 @@ binding product specification. Dates use ISO 8601 calendar dates.
   `int | None` (rather than `int`) when a feed source does not exist and no
   run was pre-created, because the `ingestion_runs` FK constraint prevents
   inserting a run row for a nonexistent feed source.
+
+### M3 Basic Auth credential storage
+
+- **Topic:** Where HTTP Basic Auth credentials for source-feed fetches live
+- **Decision:** Read optional Basic Auth credentials from the existing
+  `feed_sources.configuration` JSONB column (created in the M1 baseline
+  migration; no new migration needed). Credentials are stored in plaintext
+  JSONB for the MVP.
+- **Rationale:** The column already exists and is the designated per-feed-source
+  configuration bag. Encrypting credentials at rest is deferred; the tool is a
+  single-operator, single-tenant deployment behind session auth, and plaintext
+  storage is an accepted MVP limitation to revisit if credentials management
+  becomes a feature.
+
+### M3 XML reader scope
+
+- **Topic:** Which XML shapes the XML input reader supports
+- **Decision:** The XML reader supports GMC feed XML only: rss/atom roots,
+  `g:`-namespaced or bare attribute tags, repeated sibling elements as arrays,
+  nested structured elements (`g:shipping`/`g:tax`) as structs. Arbitrary
+  merchant XML with configurable element paths is out of scope.
+- **Rationale:** Spec §5.8's four input formats refer to GMC XML feeds ("XML
+  input maps natively onto the same canonical model"), not arbitrary merchant
+  XML. Narrowing the scope keeps the reader deterministic and registry-driven.

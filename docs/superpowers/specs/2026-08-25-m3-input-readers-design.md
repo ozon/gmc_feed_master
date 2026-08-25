@@ -81,7 +81,9 @@ four §5.5 kinds:
 Rules:
 - All leaf values are strings.
 - Empty cells / empty elements are omitted (key absent), not stored as empty strings.
-- Empty elements are stripped from repeated fields.
+- Empty elements are stripped from repeated fields at ingestion. The writer
+  still applies its own empty-element stripping (spec §5.7) because plugins
+  can create empty slots downstream of ingestion.
 - Pass-through fidelity: structures no component touches reach later stages unchanged.
 
 ### Reader protocol
@@ -161,7 +163,10 @@ class HttpFetcher:
 
 - httpx async client, 60 s timeout.
 - Streams the response; aborts once 500 MB is exceeded.
-- Optional Basic Auth credentials from `FeedSource.configuration`.
+- Optional Basic Auth credentials from `FeedSource.configuration` (the JSONB
+  column created in the M1 baseline migration — no new migration needed).
+  Credentials are stored in plaintext JSONB for the MVP (see
+  `docs/decisions.md`, "M3 Basic Auth credential storage").
 - Fetch errors (timeout, non-2xx HTTP status, size limit, connection failure) →
   raise; the run fails with a clear message.
 - Returns bytes; format selection is by `FeedSource.source_format`.
