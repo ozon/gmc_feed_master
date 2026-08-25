@@ -1,45 +1,38 @@
 # Task 7 Report
 
-Implemented the strict normalized registry model, documented Markdown parser, deterministic JSON generator/check mode, CLI, fixture coverage, and generated `backend/registry/attributes.json` from `gmc_def.md`.
+## Status
+
+DONE
+
+## Summary
+
+Implemented `HttpFetcher` in `backend/app/ingest/fetch.py` with `FetchError`,
+60 s default timeout, 500 MB default size limit, streaming accumulation, and
+optional Basic Auth. Tests in `backend/tests/test_fetch.py` use
+`httpx.MockTransport` via an injectable `_client` test seam.
+
+## Files changed
+
+- `backend/app/ingest/fetch.py` — `FetchError`, `HttpFetcher.fetch(url,
+  basic_auth=None, _client=None)`; streams response, aborts over `max_bytes`,
+  wraps timeout/HTTP errors into `FetchError`, non-200 raises with status.
+- `backend/tests/test_fetch.py` — 6 tests: success bytes, timeout, 404, 500,
+  size limit, Basic Auth header.
 
 ## Verification
 
-- Registry parser and generation tests: 8 passed.
-- Full backend regression: 62 passed, 20 errors because `TEST_DATABASE_URL` is not configured in this environment.
-- `uv run python -m compileall -q backend`: passed.
-- Full-source generation and CLI check mode: passed.
+From `backend/`:
 
-## Scope
+```text
+uv run pytest tests/test_fetch.py -x -q
+6 passed, 1 warning in 0.02s
+```
 
-Runtime loading, artifact integration beyond the generated registry, and CI changes were intentionally not implemented.
+## Concerns
 
-## Review Fix Verification (2026-08-24)
-
-- Full-source parser now preserves primary, local-inventory, vehicle-listings,
-  and deprecated applicability, including vehicle-valid deprecated rows.
-- Duplicate canonical rows are rejected with both the duplicate and first source
-  lines; intentional source repeats are represented as explicit applicability.
-- Unsupported types are rejected rather than coerced to String.
-- Structured field enums, requirement status, limits, formats, qualifiers,
-  ordered fields, metadata, and source lines are retained in normalized output.
-- Stale check output includes a unified byte-level text diff.
-- Registry parser/generator tests: 9 passed.
-- Full backend suite with Compose PostgreSQL and `TEST_DATABASE_URL`: 83 passed.
-- `compileall`, registry CLI check, and `git diff --check`: passed.
-
-Runtime loader, artifact integration beyond generation, and CI changes remain
-out of scope as requested.
-
-## Remaining Parser Findings Verification (2026-08-24)
-
-- Structured objects preserve bare names, ordered declarations, nested primitive
-  types, requirement markers, enum alternatives, and constraints/formats.
-- Full-source assertions cover adult, identifier_exists, body_style, shipping,
-  minimum_order_value, pickup_cost, returns, loyalty_program, and nested URL/
-  Price fields.
-- Duplicate diagnostics assert the duplicate and first source lines plus field
-  name; cross-section applicability repeats remain the only accepted repeats.
-- Registry parser and generation tests: 9 passed.
-- Registry generation/check, compileall, and `git diff --check`: passed.
-- Full backend: 63 passed, 20 PostgreSQL errors because `TEST_DATABASE_URL` is
-  not configured in this environment.
+- `fetch()` accepts an extra `_client` keyword (test seam for MockTransport);
+  spec signature is `fetch(url, basic_auth=None)` — the seam is additive and
+  defaults to None, preserving the spec'd call shape.
+- Only HTTP 200 is accepted (not 2xx range); spec says "non-2xx raises", so
+  redirects are not followed explicitly — httpx follows redirects by default
+  only when configured; default client does not follow redirects.
