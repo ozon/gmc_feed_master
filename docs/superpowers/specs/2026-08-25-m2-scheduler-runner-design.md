@@ -30,8 +30,8 @@ M2 delivers the scheduling and execution skeleton for feed pipelines. Pipeline s
 |---|---|---|
 | Scheduler | APScheduler 3.11.3 `AsyncIOScheduler` | Spec-mandated; async-native, shares FastAPI event loop |
 | Job store | In-memory, re-registered at startup | Spec's no-catch-up rule makes persistence pointless; simplest |
-| Cron validation | `croniter` 6.2.4 at write time | Exact validation before APScheduler sees the expression |
-| Manual trigger | Async: 202 + background task | Same code path as scheduled tick; no HTTP connection held |
+| Cron validation | Construct APScheduler `CronTrigger` at write time | croniter accepts expressions the trigger rejects; a feed source that never schedules must not fail silently |
+| Manual trigger | Async: 202 + `asyncio.create_task` | Same code path as scheduled tick; no HTTP connection held |
 | Locking | In-process `asyncio.Lock` per feed source ID | Single-worker constraint (M0 decision) makes this sufficient |
 | Pipeline steps | `PipelineStep` protocol + no-op implementations | Later milestones swap in real steps without touching runner |
 | Feed source CRUD | Minimal subset included | Scheduler needs real DB data; full features deferred |
@@ -54,7 +54,7 @@ app/pipeline/
 
 ```python
 @dataclass(frozen=True)
-class RunContext:
+class StepContext:
     feed_source_id: int
     session_factory: Callable[[], AsyncSession]
     logger: logging.Logger
@@ -67,8 +67,10 @@ class StepResult:
 
 class PipelineStep(Protocol):
     name: str
-    async def execute(self, ctx: RunContext) -> StepResult: ...
+    async def execute(self, ctx: StepContext) -> StepResult: ...
 ```
+
+The step-level context is named `StepContext`, not `RunContext`: `RunContext` is reserved for the per-product plugin contract (spec §5.4). Different granularity — merging is not an option.
 
 M2 no-op steps: `IngestStep`, `PluginStep`, `QualityCheckStep`, `ExportStep`. Each logs `"<name>: not implemented (M2 skeleton)"` and returns `StepResult()`.
 
@@ -98,9 +100,10 @@ Execution flow:
 class LockRegistry:
     def get(self, feed_source_id: int) -> asyncio.Lock: ...  # lazily created
     def is_locked(self, feed_source_id: int) -> bool: ...
+    def discard(self, feed_source_id: int) -> None: ...      # drop entry on feed-source DELETE
 ```
 
-Held in `app.state.lock_registry`.
+Held in `app.state.lock_registry`. `discard` is called on feed-source DELETE so the registry does not grow unboundedly; discarding a held lock is a caller error (DELETE is rejected with 409 while runs exist, and the runner releases in `finally`).
 
 ### SchedulerService
 
@@ -116,7 +119,7 @@ class SchedulerService:
 ```
 
 - `AsyncIOScheduler(timezone=utc)`, in-memory job store
-- `misfire_grace_time=None` → no catch-up after downtime (spec §10)
+- No catch-up after downtime comes from the in-memory store + re-registration at startup (jobs simply do not exist across a restart); `misfire_grace_time=None` is set so a late-firing job while the process is up is skipped rather than run late
 - Job function: `runner.execute(feed_source_id)`
 - Held in `app.state.scheduler_service`
 
@@ -169,10 +172,10 @@ All endpoints require a valid session (existing `require_session` dependency).
 | PUT | `/feed-sources/{id}` | partial update of above fields | 200 + feed source |
 | DELETE | `/feed-sources/{id}` | — | 204 |
 
-- `cron_expression` validated with `croniter.is_valid()` at write time; invalid → 422
-- POST with valid cron → `scheduler_service.register(feed_source)`
+- `cron_expression` validated at write time by constructing the actual APScheduler `CronTrigger`; construction failure → 422. croniter alone is not sufficient because it accepts expressions the trigger rejects.
+- POST with valid cron → `scheduler_service.register(feed_source)`; registration failure → the write fails (500), never a silently unscheduled feed source
 - PUT with changed cron → `scheduler_service.reschedule(feed_source)`; cron removed → `unregister`
-- DELETE → `scheduler_service.unregister(id)` then delete row; if ingestion runs exist (RESTRICT FK) → 409
+- DELETE → `scheduler_service.unregister(id)`, `lock_registry.discard(id)`, then delete row; if ingestion runs exist (RESTRICT FK) → 409
 - Unknown client/feed source → 404
 
 ### Manual trigger
@@ -214,7 +217,7 @@ Each entry: `id`, `status`, `started_at`, `completed_at`, `processed_count`, `fa
 - No-op steps: contract compliance, zero counts
 - `PipelineRunner`: success lifecycle, error lifecycle (exception → error run), skip when locked, missing feed source
 - `SchedulerService`: register/unregister/reschedule with real `AsyncIOScheduler` (paused, no clock dependency)
-- Cron validation: valid/invalid expressions
+- Cron validation: valid/invalid expressions via `CronTrigger` construction, including expressions croniter accepts but the trigger rejects
 
 **API (PostgreSQL via `isolated_database_url` fixture):**
 - Client CRUD: create, duplicate name → 409, list
@@ -228,7 +231,18 @@ Each entry: `id`, `status`, `started_at`, `completed_at`, `processed_count`, `fa
 - Alembic upgrade/downgrade/re-upgrade verified
 - compileall clean
 
+## Deferred FeedSource fields (spec §4)
+
+M2 adds only the scheduling-relevant columns. The remaining §4 fields are tracked to the milestones that need them:
+
+| Field | Lands with |
+|---|---|
+| `feed_type` | Supplemental feeds milestone (MVP is `primary` only; column added when supplemental feeds are implemented) |
+| `export_token` | Export/XML writer milestone (public export URL, token rotation) |
+| `history_retention_count` | Export versioning milestone (ExportVersion retention) |
+| `volume_drop_threshold_pct` | Quality check milestone (volume-drop safeguard rule) |
+| `field_mapping` | Column exists since M1 (JSONB, default `{}`); populated by the field-mapping milestone (auto mapper + manual mapper) |
+
 ## Dependencies (exact pins)
 
 - `apscheduler==3.11.3`
-- `croniter==6.2.4`

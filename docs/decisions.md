@@ -159,3 +159,40 @@ binding product specification. Dates use ISO 8601 calendar dates.
   asyncpg 0.30.0, Alembic 1.16.4, argon2-cffi 25.1.0, pytest-asyncio 1.1.0.
   Argon2id uses the argon2-cffi defaults (time_cost=3, memory_cost=65536,
   parallelism=4).
+
+## 2026-08-25
+
+### M2 step context naming
+
+- **Topic:** Name of the pipeline-step execution context
+- **Decision:** The step-level context in `app/pipeline/steps.py` is named
+  `StepContext`. The name `RunContext` is reserved for the per-product plugin
+  contract (spec §5.4).
+- **Rationale:** The two contexts have different granularity: `StepContext`
+  describes a whole pipeline run for a feed source, while the plugin
+  `RunContext` carries a single product through a plugin. Merging them is not
+  an option, and reusing the reserved name would collide when the plugin
+  system lands.
+
+### M2 manual trigger dispatch
+
+- **Topic:** How `POST /feed-sources/{id}/run` dispatches the background run
+- **Decision:** Use `asyncio.create_task` from the request handler after
+  pre-creating the `IngestionRun` row (`status="pending"`), not Starlette
+  `BackgroundTasks`.
+- **Rationale:** `BackgroundTasks` only runs after the response is sent and is
+  tied to the request lifecycle; the run must be independent of the client
+  connection and identical to the scheduled path. `create_task` on the shared
+  event loop gives fire-and-forget semantics under the single-worker
+  constraint, and the pre-created row lets the 202 response return `run_id`.
+
+### M2 cron validation
+
+- **Topic:** Validation of `FeedSource.cron_expression` at write time
+- **Decision:** Validate by constructing the actual APScheduler `CronTrigger`;
+  construction failure rejects the write with 422. Registration failure after
+  a successful write fails the request rather than leaving an unscheduled feed
+  source.
+- **Rationale:** croniter accepts expressions that `CronTrigger` rejects, so
+  croniter-only validation could persist a cron expression that never
+  schedules. A feed source that never fires must not fail silently.
