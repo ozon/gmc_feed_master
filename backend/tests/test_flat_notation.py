@@ -1,6 +1,13 @@
 import pytest
 
-from app.ingest.flat_notation import HeaderError, HeaderPlan, ColumnSpec, parse_header
+from app.ingest.flat_notation import (
+    HeaderError,
+    HeaderPlan,
+    ColumnSpec,
+    RowError,
+    parse_header,
+    split_row,
+)
 from registry.model import (
     AttributeKind,
     ExportStatus,
@@ -82,6 +89,7 @@ class TestParseHeaderRepeatedStructured:
                 name="shipping",
                 kind="repeated_structured",
                 sub_fields=["country", "price"],
+                arity=2,
             ),
         ]
 
@@ -129,3 +137,116 @@ class TestParseHeaderDuplicateScalarError:
         })
         with pytest.raises(HeaderError, match="title"):
             parse_header(["title", "title"], reg)
+
+
+class TestSplitRowScalar:
+    def test_scalar_value(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="title", kind="scalar", sub_fields=[]),
+        ])
+        result, err = split_row(["Red Shirt"], plan)
+        assert result == {"title": "Red Shirt"}
+        assert err is None
+
+    def test_empty_cell_omitted(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="title", kind="scalar", sub_fields=[]),
+        ])
+        result, err = split_row([""], plan)
+        assert result == {}
+        assert err is None
+
+    def test_two_scalars(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="title", kind="scalar", sub_fields=[]),
+            ColumnSpec(name="price", kind="scalar", sub_fields=[]),
+        ])
+        result, err = split_row(["Red Shirt", "19.99"], plan)
+        assert result == {"title": "Red Shirt", "price": "19.99"}
+        assert err is None
+
+
+class TestSplitRowRepeatedScalar:
+    def test_comma_separated(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="additional_image_link", kind="scalar", sub_fields=[]),
+        ])
+        result, err = split_row(["img1.jpg,img2.jpg"], plan)
+        assert result == {"additional_image_link": ["img1.jpg", "img2.jpg"]}
+        assert err is None
+
+    def test_quoted_comma_preserved(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="additional_image_link", kind="scalar", sub_fields=[]),
+        ])
+        result, err = split_row(['"img1.jpg,img2.jpg"'], plan)
+        assert result == {"additional_image_link": ["img1.jpg,img2.jpg"]}
+        assert err is None
+
+    def test_single_value_no_split(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="additional_image_link", kind="scalar", sub_fields=[]),
+        ])
+        result, err = split_row(["img1.jpg"], plan)
+        assert result == {"additional_image_link": "img1.jpg"}
+        assert err is None
+
+
+class TestSplitRowStructured:
+    def test_annotated_structured(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="shipping", kind="structured", sub_fields=["country", "price"]),
+        ])
+        result, err = split_row(["US:6.49 USD"], plan)
+        assert result == {"shipping": {"country": "US", "price": "6.49 USD"}}
+        assert err is None
+
+    def test_surplus_colons_returns_error(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="shipping", kind="structured", sub_fields=["country", "price"]),
+        ])
+        result, err = split_row(["US:6.49:extra"], plan)
+        assert err is not None
+        assert "shipping" in err.message
+
+    def test_empty_structured_cell_omitted(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="shipping", kind="structured", sub_fields=["country", "price"]),
+        ])
+        result, err = split_row([""], plan)
+        assert result == {}
+        assert err is None
+
+
+class TestSplitRowRepeatedStructured:
+    def test_two_columns(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="shipping", kind="repeated_structured", sub_fields=["country", "price"], arity=2),
+        ])
+        result, err = split_row(["US:6.49 USD", "UK:5.99 GBP"], plan)
+        assert result == {
+            "shipping": [
+                {"country": "US", "price": "6.49 USD"},
+                {"country": "UK", "price": "5.99 GBP"},
+            ]
+        }
+        assert err is None
+
+    def test_one_empty_one_filled(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="shipping", kind="repeated_structured", sub_fields=["country", "price"], arity=2),
+        ])
+        result, err = split_row(["US:6.49 USD", ""], plan)
+        assert result == {
+            "shipping": [
+                {"country": "US", "price": "6.49 USD"},
+            ]
+        }
+        assert err is None
+
+    def test_surplus_colons_in_repeated_returns_error(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="shipping", kind="repeated_structured", sub_fields=["country", "price"], arity=2),
+        ])
+        result, err = split_row(["US:6.49:extra", "UK:5.99 GBP"], plan)
+        assert err is not None
