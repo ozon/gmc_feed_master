@@ -196,3 +196,26 @@ binding product specification. Dates use ISO 8601 calendar dates.
 - **Rationale:** croniter accepts expressions that `CronTrigger` rejects, so
   croniter-only validation could persist a cron expression that never
   schedules. A feed source that never fires must not fail silently.
+
+### M2 final verification
+
+- **Topic:** Milestone 2 acceptance gate
+- **Decision:** M2 is complete. The full acceptance gate passes: Alembic
+  upgrade/downgrade produces 15 tables (renamed `source_format` + scheduling
+  columns on `feed_sources`; `contact_details`/`status` on `clients`);
+  compileall, backend pytest (155 tests), and `git diff --check` all pass.
+  APScheduler 3.11.3 is used for cron-triggered scheduling. The M2 acceptance
+  test (`test_m2_acceptance.py`) covers the full end-to-end flow: login,
+  client CRUD, feed source CRUD with cron validation, manual trigger with run
+  lifecycle, run history, and schema verification.
+- **Resolved dependency versions (verified 2026-08-25):** APScheduler 3.11.3,
+  SQLAlchemy 2.0.43, asyncpg 0.30.0, Alembic 1.16.4, argon2-cffi 25.1.0,
+  pytest-asyncio 1.1.0.
+- **Deviation from plan:** The pipeline service objects (`LockRegistry`,
+  `PipelineRunner`, `SchedulerService`) are constructed eagerly in
+  `create_app` rather than in the lifespan, because the API tests use
+  `httpx.ASGITransport` which does not run lifespan events. Lifespan handles
+  scheduler startup and `register_all` only. The runner's `execute()` returns
+  `int | None` (rather than `int`) when a feed source does not exist and no
+  run was pre-created, because the `ingestion_runs` FK constraint prevents
+  inserting a run row for a nonexistent feed source.
