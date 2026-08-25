@@ -9,6 +9,7 @@ dependencies = [
   "sqlalchemy==2.0.43",
   "asyncpg==0.30.0",
   "argon2-cffi==25.1.0",
+  "apscheduler==3.11.3",
 ]
 
 [dependency-groups]

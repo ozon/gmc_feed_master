@@ -21,7 +21,12 @@ class FeedSource(Base):
         ForeignKey("module_pipelines.id", ondelete="RESTRICT"), nullable=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    source_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    source_format: Mapped[str] = mapped_column(String(50), nullable=False)
+    cron_expression: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    target_country: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    target_language: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     field_mapping: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     configuration: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
