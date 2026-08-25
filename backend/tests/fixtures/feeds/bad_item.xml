@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <item>
+      <g:id>1</g:id>
+      <g:title>Red Shirt</g:title>
+      <g:price>19.99 USD</g:price>
+    </item>
+    <item>
+      <g:id>2</g:id>
+      <g:title>Blue Hat</g:title>
+      <g:shipping>Domestic<g:country>US</g:country></g:shipping>
+    </item>
+  </channel>
+</rss>

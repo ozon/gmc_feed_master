@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>Product Feed</title>
+    <item>
+      <g:id>1</g:id>
+      <g:title>Red Shirt</g:title>
+      <g:price>19.99 USD</g:price>
+      <g:link>https://example.com/1</g:link>
+    </item>
+    <item>
+      <g:id>2</g:id>
+      <g:title>Blue Hat</g:title>
+      <g:price>9.99 USD</g:price>
+      <g:link>https://example.com/2</g:link>
+    </item>
+    <item>
+      <g:id>3</g:id>
+      <g:title>Green Pants</g:title>
+      <g:price>29.99 USD</g:price>
+      <g:link>https://example.com/3</g:link>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <item>
+      <g:id>1</g:id>
+      <g:title>Red Shirt</g:title>
+      <g:additional_image_link>https://example.com/1a.jpg</g:additional_image_link>
+      <g:additional_image_link>https://example.com/1b.jpg</g:additional_image_link>
+    </item>
+    <item>
+      <g:id>2</g:id>
+      <g:title>Blue Hat</g:title>
+      <g:additional_image_link>https://example.com/2a.jpg</g:additional_image_link>
+    </item>
+  </channel>
+</rss>

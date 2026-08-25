@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Product Feed</title>
+  <entry>
+    <id>1</id>
+    <title>Red Shirt</title>
+    <price>19.99 USD</price>
+    <link>https://example.com/1</link>
+  </entry>
+  <entry>
+    <id>2</id>
+    <title>Blue Hat</title>
+    <price>9.99 USD</price>
+    <link>https://example.com/2</link>
+  </entry>
+  <entry>
+    <id>3</id>
+    <title>Green Pants</title>
+    <price>29.99 USD</price>
+    <link>https://example.com/3</link>
+  </entry>
+</feed>
