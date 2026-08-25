@@ -143,3 +143,19 @@ binding product specification. Dates use ISO 8601 calendar dates.
 - **Rationale:** The complete M0 verification remains reproducible on pushes and
   pull requests while keeping database persistence and deployment credentials
   outside the milestone.
+
+### M1 final verification
+
+- **Topic:** Milestone 1 acceptance gate
+- **Decision:** M1 is complete. The full acceptance gate passes: Alembic
+  upgrade/downgrade produces the expected 15 tables; persisted auth with
+  Argon2id password hashing works through the FastAPI endpoints; a password
+  change invalidates all pre-existing sessions; the checked-in registry
+  artifact passes drift-check; and compileall, backend pytest (94 tests),
+  frontend vitest (8 tests), TypeScript typecheck, and production build all
+  pass. The M1 acceptance test (`test_m1_acceptance.py`) is the explicit
+  milestone gate.
+- **Resolved dependency versions (verified 2026-08-25):** SQLAlchemy 2.0.43,
+  asyncpg 0.30.0, Alembic 1.16.4, argon2-cffi 25.1.0, pytest-asyncio 1.1.0.
+  Argon2id uses the argon2-cffi defaults (time_cost=3, memory_cost=65536,
+  parallelism=4).
