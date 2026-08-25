@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 from registry.model import RegistryDocument
 
-from .report import IngestReport, RowError
+from .report import IngestReport, RowError, SourceField
 
 
 class XmlParseError(Exception):
@@ -85,6 +85,46 @@ def _find_items(root: ET.Element) -> list[ET.Element]:
     return []
 
 
+def _infer_source_fields(products: list[dict[str, object]]) -> list[SourceField]:
+    first_value: dict[str, object] = {}
+    sub_field_order: dict[str, list[str]] = {}
+
+    for product in products:
+        for key, value in product.items():
+            if key not in first_value:
+                first_value[key] = value
+            if isinstance(value, dict):
+                seen = sub_field_order.setdefault(key, [])
+                for sub_key in value:
+                    if sub_key not in seen:
+                        seen.append(sub_key)
+            elif isinstance(value, list):
+                for element in value:
+                    if isinstance(element, dict):
+                        seen = sub_field_order.setdefault(key, [])
+                        for sub_key in element:
+                            if sub_key not in seen:
+                                seen.append(sub_key)
+
+    fields: list[SourceField] = []
+    for key, value in first_value.items():
+        if isinstance(value, str):
+            kind = "scalar"
+        elif isinstance(value, dict):
+            kind = "structured"
+        elif isinstance(value, list):
+            first = value[0] if value else None
+            kind = "repeated_structured" if isinstance(first, dict) else "repeated_scalar"
+        else:
+            continue
+        fields.append(
+            SourceField(
+                name=key, kind=kind, sub_fields=tuple(sub_field_order.get(key, []))
+            )
+        )
+    return fields
+
+
 def parse_xml(data: bytes, registry: RegistryDocument) -> IngestReport:
     try:
         root = ET.fromstring(data)
@@ -102,4 +142,8 @@ def parse_xml(data: bytes, registry: RegistryDocument) -> IngestReport:
         except Exception as exc:
             row_errors.append(RowError(line=idx, message=str(exc)))
 
-    return IngestReport(products=products, row_errors=row_errors)
+    return IngestReport(
+        products=products,
+        row_errors=row_errors,
+        source_fields=_infer_source_fields(products),
+    )

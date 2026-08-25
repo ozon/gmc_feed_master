@@ -6,7 +6,7 @@ import io
 from registry.model import RegistryDocument
 
 from .flat_notation import HeaderError, parse_header, split_row
-from .report import IngestReport, RowError
+from .report import IngestReport, RowError, SourceField
 
 
 def _detect_delimiter(source_format: str, sample: str) -> str:
@@ -40,6 +40,15 @@ def parse_delimited(
     headers = next(header_reader)
     plan = parse_header(headers, registry)
 
+    source_fields = [
+        SourceField(
+            name=spec.name,
+            kind="scalar" if spec.kind == "generic" else spec.kind,
+            sub_fields=tuple(spec.sub_fields),
+        )
+        for spec in plan.columns
+    ]
+
     products: list[dict] = []
     row_errors: list[RowError] = []
 
@@ -52,4 +61,6 @@ def parse_delimited(
         else:
             products.append(product)
 
-    return IngestReport(products=products, row_errors=row_errors)
+    return IngestReport(
+        products=products, row_errors=row_errors, source_fields=source_fields
+    )
