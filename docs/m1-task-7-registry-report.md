@@ -2,7 +2,7 @@
 
 ## Verification
 
-- Full backend suite with `TEST_DATABASE_URL` and Compose PostgreSQL: **85 passed**.
+- Full backend suite with `TEST_DATABASE_URL` and Compose PostgreSQL (requires running PostgreSQL instance): **85 passed**.
 - Registry parser/generator focused suite: **11 passed**.
 - `python -m compileall app alembic registry`: passed.
 - Registry CLI drift check: passed.

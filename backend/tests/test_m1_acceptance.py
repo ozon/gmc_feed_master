@@ -20,7 +20,6 @@ from app.main import create_app
 from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
-from registry.generate import check_registry
 
 
 EXPECTED_TABLES = {
