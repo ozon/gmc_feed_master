@@ -243,3 +243,40 @@ binding product specification. Dates use ISO 8601 calendar dates.
 - **Rationale:** Spec §5.8's four input formats refer to GMC XML feeds ("XML
   input maps natively onto the same canonical model"), not arbitrary merchant
   XML. Narrowing the scope keeps the reader deterministic and registry-driven.
+
+### M4 unmapped source fields dropped at the mapping step
+
+- **Topic:** Fate of source fields that no mapping (auto or manual) covers
+- **Decision:** Unmapped source fields are dropped from the canonical product
+  at the mapping step. Plugin conditions therefore operate on registry paths
+  only; non-registry source data (e.g. a margin column) is unreachable for
+  plugins. Accepted for MVP. A `_source` sidecar carrying unmapped source data
+  through the pipeline is deferred to the per-plugin specs — the Labelizer
+  `field_match`/`price_range` design must revisit this.
+- **Rationale:** Spec §5.7 makes the Attribute Registry the addressable field
+  universe; plugins, QC, and the writer all consume registry-only data, and
+  `content_hash` covers only export-relevant data. Keeping unmapped fields
+  would bloat staging and create a second, unaddressable field namespace.
+
+### M4 one target per source field (no multi-column merges)
+
+- **Topic:** Whether several source fields may map into one array target
+- **Decision:** A target may be claimed by at most one source field. Merging
+  multiple source columns into a single repeated target (e.g. two image
+  columns into `additional_image_link`) is not supported.
+- **Rationale:** GMC-shaped sources use single comma-separated columns for
+  repeated values, which the readers already split. Merge semantics would add
+  ordering/precedence rules with no MVP demand. Accepted limitation.
+
+### M4 XML kind inference for source fields
+
+- **Topic:** How the XML reader derives `source_fields` kinds
+- **Decision:** Kinds are inferred from value shape across items; when items
+  disagree on a field's shape, the first-observed shape wins for that field.
+  `str` → scalar, `list[str]` → repeated-scalar, `dict` → structured,
+  `list[dict]` → repeated-structured; sub-fields are the union of observed
+  dict keys.
+- **Rationale:** XML items are heterogeneous; a deterministic first-observed
+  rule keeps `source_fields` stable without a second pass. Shape conflicts are
+  rare in GMC feeds and the mapping step still drops mismatched values per
+  product with logging.
