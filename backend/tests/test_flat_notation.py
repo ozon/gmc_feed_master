@@ -94,6 +94,21 @@ class TestParseHeaderRepeatedStructured:
         ]
 
 
+class TestParseHeaderNonAdjacentRepeatError:
+    def test_non_adjacent_repeated_structured_raises(self) -> None:
+        reg = _registry({
+            "shipping": _structured("shipping", (
+                SubField("country", "String", RequirementStatus.REQUIRED),
+                SubField("price", "Price", RequirementStatus.OPTIONAL),
+            )),
+            "title": _scalar("title"),
+        })
+        with pytest.raises(HeaderError, match="shipping"):
+            parse_header(
+                ["shipping(country:price)", "title", "shipping(country:price)"], reg
+            )
+
+
 class TestParseHeaderGeneric:
     def test_unknown_attribute_is_generic(self) -> None:
         reg = _registry({

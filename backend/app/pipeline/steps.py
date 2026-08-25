@@ -76,6 +76,12 @@ class IngestStep:
         report = read_feed(data, feed_source.source_format, self._registry)
 
         ctx.run_state.products.extend(report.products)
+        if report.row_errors:
+            ctx.logger.warning(
+                "ingest: %d row errors for feed source %s",
+                len(report.row_errors),
+                ctx.feed_source_id,
+            )
         return StepResult(
             processed_count=len(report.products),
             failed_count=len(report.row_errors),

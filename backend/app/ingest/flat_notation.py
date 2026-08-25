@@ -82,6 +82,12 @@ def parse_header(
                 )
             else:
                 existing = columns[-1]
+                if existing.name != name:
+                    raise HeaderError(
+                        f"Column '{header}' repeats non-adjacently; "
+                        f"repeated structured columns must be consecutive",
+                        column=header,
+                    )
                 columns[-1] = ColumnSpec(
                     name=existing.name,
                     kind=kind,

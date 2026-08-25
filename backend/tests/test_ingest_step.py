@@ -180,6 +180,28 @@ class TestIngestStepRowErrors:
         assert all(set(entry) == {"line", "message"} for entry in row_errors)
 
     @pytest.mark.asyncio
+    async def test_row_errors_logged_as_warning(self, caplog):
+        data = b"id\tshipping(country:price)\n1\tUS:6.49:extra\n"
+        fetcher = StubFetcher(data=data)
+        ctx = _ctx(FakeSessionFactory(_feed_source()))
+
+        with caplog.at_level(logging.WARNING, logger="test"):
+            result = await _step(fetcher).execute(ctx)
+
+        assert result.failed_count == 1
+        assert any("row error" in record.message for record in caplog.records)
+
+    @pytest.mark.asyncio
+    async def test_no_row_errors_no_warning(self, caplog):
+        fetcher = StubFetcher(data=b"id\n1\n")
+        ctx = _ctx(FakeSessionFactory(_feed_source()))
+
+        with caplog.at_level(logging.WARNING, logger="test"):
+            await _step(fetcher).execute(ctx)
+
+        assert not caplog.records
+
+    @pytest.mark.asyncio
     async def test_empty_row_errors_statistics_present(self):
         fetcher = StubFetcher(data=b"id\n1\n")
         ctx = _ctx(FakeSessionFactory(_feed_source()))
