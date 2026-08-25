@@ -28,6 +28,7 @@ from .session_store import SessionStore
 from .persistence.sessions import PostgresSessionStore
 from .db.engine import create_engine, create_session_factory, get_db_session
 from .persistence.users import change_password, seed_initial_user
+from .routes import clients_router
 
 
 def _configured_settings() -> Settings | None:
@@ -58,11 +59,20 @@ def create_app(
                 await seed_initial_user(
                     session, settings.initial_username, settings.initial_password
                 )
+            scheduler_service = getattr(application.state, "scheduler_service", None)
+            if scheduler_service is not None:
+                await scheduler_service.start()
+                async with application.state.db_session_factory() as session:
+                    await scheduler_service.register_all(session)
         yield
+        scheduler_service = getattr(application.state, "scheduler_service", None)
+        if scheduler_service is not None:
+            await scheduler_service.shutdown()
         if getattr(application.state, "db_engine", None) is not None:
             await application.state.db_engine.dispose()
 
     app = FastAPI(lifespan=lifespan)
+    app.include_router(clients_router)
     app.state.settings = settings
     app.state.session_store = session_store
     app.state.session_store_injected = session_store is not None
@@ -81,6 +91,16 @@ def create_app(
                 absolute=timedelta(hours=settings.session_absolute_hours),
                 secret=settings.session_secret,
             )
+
+    if app.state.db_session_factory is not None:
+        from .pipeline import DEFAULT_STEPS, LockRegistry, PipelineRunner, SchedulerService
+
+        lock_registry = LockRegistry()
+        runner = PipelineRunner(lock_registry, app.state.db_session_factory, list(DEFAULT_STEPS))
+        scheduler_service = SchedulerService(runner)
+        app.state.lock_registry = lock_registry
+        app.state.pipeline_runner = runner
+        app.state.scheduler_service = scheduler_service
 
     @app.get("/health")
     def health(_settings: Settings = Depends(get_settings)) -> dict[str, str]:
