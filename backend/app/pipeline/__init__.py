@@ -8,6 +8,7 @@ from .steps import (
     PipelineStep,
     PluginStep,
     QualityCheckStep,
+    RunState,
     StepContext,
     StepResult,
 )
@@ -21,6 +22,7 @@ __all__ = [
     "PipelineStep",
     "PluginStep",
     "QualityCheckStep",
+    "RunState",
     "SchedulerService",
     "StepContext",
     "StepResult",

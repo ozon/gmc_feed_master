@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from ..models.feed_source import FeedSource
 from ..models.ingestion import IngestionRun
 from .locks import LockRegistry
-from .steps import PipelineStep, StepContext, StepResult
+from .steps import PipelineStep, RunState, StepContext, StepResult
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -55,12 +55,14 @@ class PipelineRunner:
             processed_count = 0
             failed_count = 0
             statistics: dict = {}
+            run_state = RunState()
             try:
                 for step in self._steps:
                     ctx = StepContext(
                         feed_source_id=feed_source_id,
                         session_factory=self._session_factory,
                         logger=logger,
+                        run_state=run_state,
                     )
                     result: StepResult = await step.execute(ctx)
                     processed_count += result.processed_count

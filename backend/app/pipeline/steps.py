@@ -8,11 +8,17 @@ from typing import Any, Protocol, runtime_checkable
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
+@dataclass
+class RunState:
+    products: list[dict[str, Any]] = field(default_factory=list)
+
+
 @dataclass(frozen=True)
 class StepContext:
     feed_source_id: int
     session_factory: Callable[[], AsyncSession]
     logger: logging.Logger
+    run_state: RunState
 
 
 @dataclass(frozen=True)

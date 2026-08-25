@@ -10,6 +10,7 @@ from app.pipeline import (
     PipelineStep,
     PluginStep,
     QualityCheckStep,
+    RunState,
     StepContext,
     StepResult,
 )
@@ -21,13 +22,14 @@ def ctx():
         feed_source_id=1,
         session_factory=lambda: None,
         logger=logging.getLogger("test"),
+        run_state=RunState(),
     )
 
 
 def test_step_context_and_result_are_frozen():
     assert dataclasses.is_dataclass(StepContext)
     assert dataclasses.is_dataclass(StepResult)
-    ctx = StepContext(feed_source_id=1, session_factory=lambda: None, logger=logging.getLogger("test"))
+    ctx = StepContext(feed_source_id=1, session_factory=lambda: None, logger=logging.getLogger("test"), run_state=RunState())
     result = StepResult()
     with pytest.raises(dataclasses.FrozenInstanceError):
         ctx.feed_source_id = 2
@@ -77,3 +79,13 @@ def test_default_steps_order():
 def test_steps_satisfy_protocol():
     for step in DEFAULT_STEPS:
         assert isinstance(step, PipelineStep)
+
+
+def test_run_state_has_empty_products():
+    ctx = StepContext(
+        feed_source_id=1,
+        session_factory=lambda: None,
+        logger=logging.getLogger("test"),
+        run_state=RunState(),
+    )
+    assert ctx.run_state.products == []
