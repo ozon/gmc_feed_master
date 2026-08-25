@@ -24,6 +24,7 @@ from .auth import (
 )
 from .clock import Clock, SystemClock
 from .config import Settings, get_settings
+from .ingest import HttpFetcher
 from .session_store import SessionStore
 from .persistence.sessions import PostgresSessionStore
 from .db.engine import create_engine, create_session_factory, get_db_session
@@ -44,6 +45,7 @@ def create_app(
     session_store: SessionStore | None = None,
     clock: Clock | None = None,
     db_session_factory: async_sessionmaker[AsyncSession] | None = None,
+    fetcher: HttpFetcher | None = None,
 ) -> FastAPI:
     if settings is None and session_store is None and db_session_factory is None:
         settings = _configured_settings()
@@ -93,10 +95,13 @@ def create_app(
             )
 
     if app.state.db_session_factory is not None:
-        from .pipeline import DEFAULT_STEPS, LockRegistry, PipelineRunner, SchedulerService
+        from registry.loader import load_registry
+
+        from .pipeline import LockRegistry, PipelineRunner, SchedulerService, default_steps
 
         lock_registry = LockRegistry()
-        runner = PipelineRunner(lock_registry, app.state.db_session_factory, list(DEFAULT_STEPS))
+        steps = default_steps(fetcher if fetcher is not None else HttpFetcher(), load_registry())
+        runner = PipelineRunner(lock_registry, app.state.db_session_factory, list(steps))
         scheduler_service = SchedulerService(runner)
         app.state.lock_registry = lock_registry
         app.state.pipeline_runner = runner

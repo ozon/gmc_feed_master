@@ -7,6 +7,11 @@ from typing import Any, Protocol, runtime_checkable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from registry.model import RegistryDocument
+
+from ..ingest import HttpFetcher, read_feed
+from ..models.feed_source import FeedSource
+
 
 @dataclass
 class RunState:
@@ -44,9 +49,43 @@ class _NoOpStep:
         return StepResult()
 
 
-class IngestStep(_NoOpStep):
-    def __init__(self) -> None:
-        super().__init__("ingest")
+class IngestStep:
+    name = "ingest"
+
+    def __init__(self, fetcher: HttpFetcher, registry: RegistryDocument) -> None:
+        self._fetcher = fetcher
+        self._registry = registry
+
+    async def execute(self, ctx: StepContext) -> StepResult:
+        async with ctx.session_factory() as session:
+            async with session.begin():
+                feed_source = await session.get(FeedSource, ctx.feed_source_id)
+        if feed_source is None:
+            raise LookupError(f"feed source {ctx.feed_source_id} not found")
+        if not feed_source.source_url:
+            raise ValueError(
+                f"feed source {ctx.feed_source_id} has no source_url configured"
+            )
+
+        basic_auth: tuple[str, str] | None = None
+        auth_config = feed_source.configuration.get("basic_auth")
+        if auth_config:
+            basic_auth = (auth_config["username"], auth_config["password"])
+
+        data = await self._fetcher.fetch(feed_source.source_url, basic_auth=basic_auth)
+        report = read_feed(data, feed_source.source_format, self._registry)
+
+        ctx.run_state.products.extend(report.products)
+        return StepResult(
+            processed_count=len(report.products),
+            failed_count=len(report.row_errors),
+            statistics={
+                "row_errors": [
+                    {"line": error.line, "message": error.message}
+                    for error in report.row_errors[:100]
+                ]
+            },
+        )
 
 
 class PluginStep(_NoOpStep):
@@ -64,9 +103,12 @@ class ExportStep(_NoOpStep):
         super().__init__("export")
 
 
-DEFAULT_STEPS: list[PipelineStep] = [
-    IngestStep(),
-    PluginStep(),
-    QualityCheckStep(),
-    ExportStep(),
-]
+def default_steps(
+    fetcher: HttpFetcher, registry: RegistryDocument
+) -> tuple[PipelineStep, ...]:
+    return (
+        IngestStep(fetcher, registry),
+        PluginStep(),
+        QualityCheckStep(),
+        ExportStep(),
+    )

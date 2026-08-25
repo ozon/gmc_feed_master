@@ -1,4 +1,5 @@
 import asyncio
+from typing import Any, cast
 
 import pytest
 import pytest_asyncio
@@ -15,6 +16,11 @@ from app.persistence.users import seed_initial_user
 
 
 pytestmark = pytest.mark.asyncio
+
+
+class StubFetcher:
+    async def fetch(self, url, basic_auth=None, _client=None):
+        return b"<rss><channel></channel></rss>"
 
 EXPECTED_TABLES = {
     "users",
@@ -55,7 +61,7 @@ async def app_factory(isolated_database_url):
         initial_password="pw",
         database_url=url,
     )
-    app = create_app(settings=settings, db_session_factory=factory)
+    app = create_app(settings=settings, db_session_factory=factory, fetcher=cast(Any, StubFetcher()))
     yield app, factory
     await engine.dispose()
 
@@ -78,7 +84,12 @@ async def test_m2_acceptance(app_factory):
 
     resp = await client.post(
         f"/clients/{client_id}/feed-sources",
-        json={"name": "Main", "source_format": "xml", "cron_expression": "*/5 * * * *"},
+        json={
+            "name": "Main",
+            "source_format": "xml",
+            "cron_expression": "*/5 * * * *",
+            "source_url": "https://example.com/feed.xml",
+        },
     )
     assert resp.status_code == 201
     fs_id = resp.json()["id"]

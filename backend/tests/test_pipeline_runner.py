@@ -50,7 +50,12 @@ async def feed_source_id(session_factory):
             client = Client(name="Acme")
             session.add(client)
             await session.flush()
-            feed_source = FeedSource(client_id=client.id, name="Main feed", source_format="xml")
+            feed_source = FeedSource(
+                client_id=client.id,
+                name="Main feed",
+                source_format="xml",
+                source_url="https://example.com/feed.xml",
+            )
             session.add(feed_source)
             await session.flush()
             return feed_source.id
@@ -66,10 +71,16 @@ async def _run_count(factory):
         return len((await session.execute(select(IngestionRun))).scalars().all())
 
 
-async def test_success_path_with_noop_steps(session_factory, feed_source_id):
-    from app.pipeline import DEFAULT_STEPS
+async def test_success_path_with_default_steps(session_factory, feed_source_id):
+    from app.pipeline import default_steps
+    from registry.model import RegistryDocument
 
-    runner = PipelineRunner(LockRegistry(), session_factory, list(DEFAULT_STEPS))
+    class StubFetcher:
+        async def fetch(self, url, basic_auth=None, _client=None):
+            return b"<rss><channel></channel></rss>"
+
+    steps = default_steps(StubFetcher(), RegistryDocument(attributes={}))
+    runner = PipelineRunner(LockRegistry(), session_factory, list(steps))
     run_id = await runner.execute(feed_source_id)
     run = await _get_run(session_factory, run_id)
     assert run.status == "success"

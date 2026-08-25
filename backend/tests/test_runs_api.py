@@ -1,4 +1,5 @@
 import asyncio
+from typing import Any, cast
 
 import pytest
 import pytest_asyncio
@@ -15,6 +16,11 @@ from app.persistence.users import seed_initial_user
 
 
 pytestmark = pytest.mark.asyncio
+
+
+class StubFetcher:
+    async def fetch(self, url, basic_auth=None, _client=None):
+        return b"<rss><channel></channel></rss>"
 
 
 @pytest_asyncio.fixture
@@ -37,7 +43,7 @@ async def app_factory(isolated_database_url):
         initial_password="pw",
         database_url=url,
     )
-    app = create_app(settings=settings, db_session_factory=factory)
+    app = create_app(settings=settings, db_session_factory=factory, fetcher=cast(Any, StubFetcher()))
     yield app, factory
     await engine.dispose()
 
@@ -57,7 +63,7 @@ async def _seed_feed_source(app_factory) -> tuple[int, int]:
     fs_id = (
         await client.post(
             f"/clients/{client_id}/feed-sources",
-            json={"name": "Main", "source_format": "xml"},
+            json={"name": "Main", "source_format": "xml", "source_url": "https://example.com/feed.xml"},
         )
     ).json()["id"]
     return client, fs_id

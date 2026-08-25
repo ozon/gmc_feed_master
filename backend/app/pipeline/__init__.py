@@ -2,7 +2,6 @@ from .locks import LockRegistry
 from .runner import PipelineRunner
 from .scheduler import SchedulerService, job_id, validate_cron
 from .steps import (
-    DEFAULT_STEPS,
     ExportStep,
     IngestStep,
     PipelineStep,
@@ -11,10 +10,10 @@ from .steps import (
     RunState,
     StepContext,
     StepResult,
+    default_steps,
 )
 
 __all__ = [
-    "DEFAULT_STEPS",
     "ExportStep",
     "IngestStep",
     "LockRegistry",
@@ -26,6 +25,7 @@ __all__ = [
     "SchedulerService",
     "StepContext",
     "StepResult",
+    "default_steps",
     "job_id",
     "validate_cron",
 ]

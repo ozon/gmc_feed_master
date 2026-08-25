@@ -4,7 +4,6 @@ import logging
 import pytest
 
 from app.pipeline import (
-    DEFAULT_STEPS,
     ExportStep,
     IngestStep,
     PipelineStep,
@@ -13,7 +12,18 @@ from app.pipeline import (
     RunState,
     StepContext,
     StepResult,
+    default_steps,
 )
+from registry.model import RegistryDocument
+
+
+class StubFetcher:
+    async def fetch(self, url, basic_auth=None, _client=None):
+        return b""
+
+
+def _steps():
+    return default_steps(StubFetcher(), RegistryDocument(attributes={}))
 
 
 @pytest.fixture
@@ -46,7 +56,7 @@ def test_step_result_defaults():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "step_cls", [IngestStep, PluginStep, QualityCheckStep, ExportStep]
+    "step_cls", [PluginStep, QualityCheckStep, ExportStep]
 )
 async def test_no_op_steps_contract(step_cls, ctx):
     step = step_cls()
@@ -56,19 +66,20 @@ async def test_no_op_steps_contract(step_cls, ctx):
 
 
 def test_step_names_are_distinct():
-    steps = [IngestStep(), PluginStep(), QualityCheckStep(), ExportStep()]
+    steps = _steps()
     names = [step.name for step in steps]
     assert len(set(names)) == 4
 
 
 def test_default_steps_order():
-    assert [type(step) for step in DEFAULT_STEPS] == [
+    steps = _steps()
+    assert [type(step) for step in steps] == [
         IngestStep,
         PluginStep,
         QualityCheckStep,
         ExportStep,
     ]
-    assert [step.name for step in DEFAULT_STEPS] == [
+    assert [step.name for step in steps] == [
         "ingest",
         "run_plugins",
         "quality_check",
@@ -77,7 +88,7 @@ def test_default_steps_order():
 
 
 def test_steps_satisfy_protocol():
-    for step in DEFAULT_STEPS:
+    for step in _steps():
         assert isinstance(step, PipelineStep)
 
 
