@@ -69,3 +69,23 @@ sessions are invalidated when the backend process restarts.
 PostgreSQL is available in the local Compose setup, but M0 does not persist
 sessions there. M1 is the named milestone for PostgreSQL session persistence
 and password-change invalidation.
+
+## GMC Registry
+
+The checked-in artifact `backend/registry/attributes.json` is the source of
+truth for attribute metadata. The loader (`registry.loader.load_registry`)
+reads it at runtime; the generator produces it from `gmc_def.md`.
+
+Regenerate after editing `gmc_def.md`:
+
+```bash
+cd backend
+uv run python scripts/registry_check.py --source ../gmc_def.md --output registry/attributes.json
+```
+
+Verify the artifact is up to date (CI runs this automatically):
+
+```bash
+cd backend
+uv run python scripts/registry_check.py --source ../gmc_def.md --output registry/attributes.json --check
+```

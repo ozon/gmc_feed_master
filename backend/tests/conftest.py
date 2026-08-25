@@ -2,6 +2,7 @@ import os
 import asyncio
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
 import pytest
@@ -20,6 +21,13 @@ from app.session_store import InMemorySessionStore
 os.environ.setdefault("SESSION_SECRET", "test-secret")
 os.environ.setdefault("INITIAL_USERNAME", "test-user")
 os.environ.setdefault("INITIAL_PASSWORD", "test-password")
+
+_ARTIFACT_PATH = Path(__file__).resolve().parent.parent / "registry" / "attributes.json"
+
+
+@pytest.fixture
+def artifact_path():
+    return _ARTIFACT_PATH
 
 
 @pytest.fixture
