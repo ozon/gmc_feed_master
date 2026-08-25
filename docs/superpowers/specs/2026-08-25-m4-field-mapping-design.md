@@ -30,6 +30,8 @@ suggests mappings on first ingestion; operators refine them through the API.
 - Frontend mapper UI (M10)
 - Staging DB, delta mechanics (`content_hash`/`config_hash`) — next milestone
 - Positional path indices (`shipping.1.price`) and wildcards in mapping targets
+- Multi-column merges into one array target (one target per source field;
+  GMC-shaped sources use single comma-separated columns — accepted limitation)
 - Plugin execution, QC rules, XML export
 - File-upload ingestion endpoint
 
@@ -83,7 +85,9 @@ a frozen dataclass `(name, kind, sub_fields)`:
 - Delimited readers: derived from the header plan (`ColumnSpec` → `SourceField`).
 - XML reader: union of item keys; kind inferred from value shape
   (`str` → scalar, `list[str]` → repeated-scalar, `dict` → structured,
-  `list[dict]` → repeated-structured; sub-fields from dict keys).
+  `list[dict]` → repeated-structured; sub-fields are the union of observed
+  dict keys). When items disagree on a field's shape, the first-observed
+  shape wins for that field.
 
 `RunState` gains `source_fields: list[SourceField]`; `IngestStep` copies them
 from the report. `MappingStep` persists them into the document.
