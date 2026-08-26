@@ -27,6 +27,10 @@ def job_id(feed_source_id: int) -> str:
     return f"feed-source-{feed_source_id}"
 
 
+SYSTEM_PURGE_JOB_ID = "system-staging-purge"
+PURGE_CRON = "0 3 * * *"
+
+
 class SchedulerService:
     def __init__(self, runner: PipelineRunner) -> None:
         self._runner = runner
@@ -66,6 +70,23 @@ class SchedulerService:
 
     def reschedule(self, feed_source: FeedSource) -> None:
         self.register(feed_source)
+
+    def register_system_job(
+        self,
+        job_id: str,
+        cron_expression: str,
+        func,
+        *args,
+    ) -> None:
+        trigger = validate_cron(cron_expression)
+        self._scheduler.add_job(
+            func,
+            trigger,
+            args=list(args),
+            id=job_id,
+            replace_existing=True,
+            misfire_grace_time=None,
+        )
 
     async def register_all(self, session: AsyncSession) -> int:
         from sqlalchemy import select

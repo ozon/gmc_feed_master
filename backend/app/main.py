@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 from datetime import timedelta
 
@@ -64,6 +65,26 @@ def create_app(
             scheduler_service = getattr(application.state, "scheduler_service", None)
             if scheduler_service is not None:
                 await scheduler_service.start()
+
+                from datetime import datetime, timezone
+
+                from .pipeline.scheduler import PURGE_CRON, SYSTEM_PURGE_JOB_ID
+                from .staging.purge import purge_expired
+
+                async def run_staging_purge() -> None:
+                    counts = await purge_expired(
+                        application.state.db_session_factory,
+                        datetime.now(timezone.utc),
+                    )
+                    logging.getLogger(__name__).info(
+                        "staging purge: %s removed products, %s history rows",
+                        counts.removed_products,
+                        counts.history_rows,
+                    )
+
+                scheduler_service.register_system_job(
+                    SYSTEM_PURGE_JOB_ID, PURGE_CRON, run_staging_purge
+                )
                 async with application.state.db_session_factory() as session:
                     await scheduler_service.register_all(session)
         yield

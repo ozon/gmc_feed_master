@@ -87,3 +87,23 @@ async def test_start_and_shutdown(service):
     assert service._scheduler.running
     await service.shutdown()
     assert not service._scheduler.running
+
+
+class TestSystemJobs:
+    def test_register_system_job_uses_given_id(self):
+        from app.pipeline.scheduler import SYSTEM_PURGE_JOB_ID, SchedulerService
+
+        service = SchedulerService(runner=FakeRunner())
+        service.register_system_job(SYSTEM_PURGE_JOB_ID, "0 3 * * *", lambda: None)
+        jobs = service._scheduler.get_jobs()
+        assert [job.id for job in jobs] == [SYSTEM_PURGE_JOB_ID]
+
+    def test_feed_source_lifecycle_never_touches_system_job(self):
+        from app.pipeline.scheduler import SYSTEM_PURGE_JOB_ID, SchedulerService
+
+        service = SchedulerService(runner=FakeRunner())
+        service.register_system_job(SYSTEM_PURGE_JOB_ID, "0 3 * * *", lambda: None)
+        service.register(feed_source(1, "0 * * * *"))
+        service.unregister(1)
+
+        assert service._scheduler.get_job(SYSTEM_PURGE_JOB_ID) is not None
