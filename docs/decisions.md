@@ -324,3 +324,19 @@ binding product specification. Dates use ISO 8601 calendar dates.
 - **Rationale:** `register_all`/`unregister` must never touch system jobs;
   disjoint namespaces make that impossible by construction rather than by
   call-site discipline.
+
+### M5 resolved config/data payload shape
+
+- **Topic:** Shape of `resolved_config`/`resolved_data` inside the `config_hash`
+  bundle (`app/staging/config_resolver.resolve_config_bundle`)
+- **Decision:** Both resolve to a flat merged payload per plugin instance.
+  Rows from all declared scopes are merged with the §5.3 rule applied at
+  payload level; the `plugin_configs.key` / `plugin_data.key` column is storage
+  granularity, never a nesting level in the resolved shape. The plan's initial
+  test assertions were internally contradictory (flat config vs keyed data);
+  resolved in favor of flat for both.
+- **Rationale:** Spec §8 defines one full-replace payload per plugin/scope
+  validated against a single manifest schema — plugins receive one document,
+  so the hashed bundle must mirror that document, not a storage-key nest.
+  Internal shape until M6 wires plugin runtime; recorded here since Task 6
+  hashes this exact structure.
