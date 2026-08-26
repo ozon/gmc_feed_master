@@ -78,6 +78,9 @@ yield-a-`postgresql+asyncpg://`-URL behavior. Zero changes in consuming tests.
 | Parallelism default | On (`addopts = "-n auto"`) | Approved 2026-08-26; opt-out via `-n0` |
 | Template population | Alembic inside the plugin `load=` hook | Single source of schema truth stays the migration chain |
 | Pins | Exact versions recorded in `docs/decisions.md` at install | AGENTS.md §4 rule |
+| Template lifecycle | Engine/pool fully disposed inside the `load=` hook before returning | `CREATE DATABASE … TEMPLATE` fails while connections to the template are open (spec-owner note) |
+| Test-engine pool caps | `pool_size=2, max_overflow=0` on engines created from the fixture | Keeps `-n auto` safely under Docker's default `max_connections=100` on large machines (spec-owner note) |
+| Coverage tooling | None now; if pytest-cov is added later it needs `parallel-mode`/cov-context configuration under xdist | Spec-owner note, deferred |
 
 ## Verification
 
