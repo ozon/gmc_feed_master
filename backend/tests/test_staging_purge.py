@@ -109,5 +109,6 @@ async def test_purge_on_empty_tables_is_zero(isolated_database_url):
 
     counts = await purge_expired(FactoryAdapter(factory), NOW)
 
-    assert counts == (0, 0) or counts.removed_products == 0 and counts.history_rows == 0
+    assert counts.removed_products == 0
+    assert counts.history_rows == 0
     await engine.dispose()

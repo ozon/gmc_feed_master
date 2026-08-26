@@ -42,17 +42,6 @@ INVALID_ID_TSV = (
     b"A1\tRed Shirt\t1234567890123\n"
 )
 
-SCENARIOS = [
-    ("test_first_run_stages_everything", "first run stages both products as new/active"),
-    ("test_identical_second_run_enqueues_nothing", "identical rerun is all unchanged, no history"),
-    ("test_content_change_reprocesses_with_history", "content change writes exactly one history row"),
-    ("test_config_change_reprocesses_without_history", "config-only change reprocesses without history"),
-    ("test_removed_product_flips_status_and_returns", "removal flips status, resurface reactivates"),
-    ("test_purge_clears_expired_rows_end_to_end", "purge_expired drops expired removals and history"),
-    ("test_invalid_ids_do_not_block_run", "missing-id rows fail without blocking the run"),
-    ("test_migration_head_matches_models", "alembic head has removed_at and CASCADE FK"),
-]
-
 
 class StubFetcher:
     def __init__(self, data: bytes):
