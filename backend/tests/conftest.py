@@ -1,15 +1,13 @@
 import os
-import asyncio
-import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import quote, urlsplit
 
 import pytest
-import asyncpg
 from alembic import command
 from alembic.config import Config
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from pytest_postgresql import factories
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from fastapi.testclient import TestClient
 
 from app.clock import TestClock
@@ -23,6 +21,65 @@ os.environ.setdefault("INITIAL_USERNAME", "test-user")
 os.environ.setdefault("INITIAL_PASSWORD", "test-password")
 
 _ARTIFACT_PATH = Path(__file__).resolve().parent.parent / "registry" / "attributes.json"
+
+_BACKEND_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _server_params() -> dict:
+    value = os.environ.get("TEST_DATABASE_URL")
+    if not value:
+        pytest.fail("TEST_DATABASE_URL must point to PostgreSQL via asyncpg")
+    if not value.startswith("postgresql+asyncpg://"):
+        pytest.fail("TEST_DATABASE_URL must use the postgresql+asyncpg:// dialect")
+    parts = urlsplit(value)
+    return {
+        "host": parts.hostname or "localhost",
+        "port": parts.port or 5432,
+        "user": parts.username or "postgres",
+        "password": parts.password or "",
+    }
+
+
+def _load_alembic_schema(**kwargs):
+    """Populate the plugin's template database with the full migration chain."""
+    config = Config(str(_BACKEND_ROOT / "alembic.ini"))
+    password = quote(kwargs.get("password") or "", safe="")
+    url = (
+        f"postgresql+asyncpg://{kwargs['user']}:{password}"
+        f"@{kwargs['host']}:{kwargs['port']}/{kwargs['dbname']}"
+    )
+    config.set_main_option("sqlalchemy.url", url)
+    command.upgrade(config, "head")
+    # alembic's env.py disposes its own engine before returning, so no
+    # connections hold the template open when the plugin clones it.
+
+
+_server = _server_params()
+
+gmc_postgres_noproc = factories.postgresql_noproc(
+    host=_server["host"],
+    port=_server["port"],
+    user=_server["user"],
+    password=_server["password"],
+    load=[_load_alembic_schema],
+)
+
+gmc_database = factories.postgresql("gmc_postgres_noproc")
+
+
+def _asyncpg_url(info) -> str:
+    password = quote(info.password or "", safe="")
+    return (
+        f"postgresql+asyncpg://{info.user}:{password}"
+        f"@{info.host}:{info.port}/{info.dbname}"
+    )
+
+
+@pytest.fixture
+def isolated_database_url(request):
+    _server_params()
+    connection = request.getfixturevalue("gmc_database")
+    return _asyncpg_url(connection.info)
 
 
 @pytest.fixture
@@ -52,42 +109,6 @@ def settings():
         initial_username="operator",
         initial_password="correct",
     )
-
-
-@pytest.fixture
-def isolated_database_url():
-    value = os.environ.get("TEST_DATABASE_URL")
-    if not value:
-        pytest.fail("TEST_DATABASE_URL must point to PostgreSQL via asyncpg")
-    if not value.startswith("postgresql+asyncpg://"):
-        pytest.fail("TEST_DATABASE_URL must use the postgresql+asyncpg:// dialect")
-    parts = urlsplit(value)
-    database_name = f"m1_test_{uuid.uuid4().hex}"
-    admin_url = urlunsplit(("postgresql", parts.netloc, "/postgres", parts.query, ""))
-
-    async def create_database():
-        connection = await asyncpg.connect(admin_url)
-        try:
-            await connection.execute(f'CREATE DATABASE "{database_name}"')
-        finally:
-            await connection.close()
-
-    try:
-        asyncio.run(create_database())
-        isolated = urlunsplit((parts.scheme, parts.netloc, f"/{database_name}", parts.query, ""))
-        config = Config("alembic.ini")
-        config.set_main_option("sqlalchemy.url", isolated)
-        command.upgrade(config, "head")
-        yield isolated
-    finally:
-        async def drop_database():
-            connection = await asyncpg.connect(admin_url)
-            try:
-                await connection.execute(f'DROP DATABASE IF EXISTS "{database_name}" WITH (FORCE)')
-            finally:
-                await connection.close()
-
-        asyncio.run(drop_database())
 
 
 @pytest.fixture
