@@ -32,7 +32,8 @@ with `uv run pytest -n0` or cap workers with `PYTEST_XDIST_AUTO_NUM_WORKERS`.
 Integration tests still require `TEST_DATABASE_URL` pointing at a
 `postgresql+asyncpg://` server; each test runs against its own database cloned
 from an Alembic-migrated template, so the migration chain runs once per
-worker rather than once per test.
+worker rather than once per test. On servers with tight connection limits,
+cap workers explicitly (e.g. `uv run pytest -n 4`).
 
 Generate a local self-signed certificate and key for Vite:
 

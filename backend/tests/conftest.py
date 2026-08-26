@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote, urlsplit
 
+import psycopg
 import pytest
 from alembic import command
 from alembic.config import Config
@@ -31,7 +32,12 @@ def _server_params() -> dict:
         pytest.fail("TEST_DATABASE_URL must point to PostgreSQL via asyncpg")
     if not value.startswith("postgresql+asyncpg://"):
         pytest.fail("TEST_DATABASE_URL must use the postgresql+asyncpg:// dialect")
-    parts = urlsplit(value)
+    try:
+        parts = urlsplit(value)
+    except ValueError:
+        pytest.fail("TEST_DATABASE_URL must point to PostgreSQL via asyncpg")
+    if parts.query:
+        pytest.fail("TEST_DATABASE_URL must not contain query parameters")
     return {
         "host": parts.hostname or "localhost",
         "port": parts.port or 5432,
@@ -67,7 +73,7 @@ gmc_postgres_noproc = factories.postgresql_noproc(
 gmc_database = factories.postgresql("gmc_postgres_noproc")
 
 
-def _asyncpg_url(info) -> str:
+def _asyncpg_url(info: psycopg.ConnectionInfo) -> str:
     password = quote(info.password or "", safe="")
     return (
         f"postgresql+asyncpg://{info.user}:{password}"
