@@ -10,9 +10,9 @@ from app.models.ingestion import IngestionRun
 from app.models.staging import StagingHistory, StagingProduct
 from app.pipeline import RunState, StepContext
 from app.pipeline.steps import StagingStep
-from app.staging.delta import StoredRow
+from app.staging.delta import StagingDelta, StoredRow
 from app.staging.hashing import content_hash
-from app.staging.persistence import load_stored_rows
+from app.staging.persistence import apply_staging_delta, load_stored_rows
 
 pytestmark = pytest.mark.asyncio
 
@@ -183,6 +183,29 @@ async def test_invalid_and_duplicate_ids_counted_failed(isolated_database_url):
     rows = await _staged_rows(factory)
     assert set(rows) == {"1"}
     assert rows["1"].raw_data["title"] == "first"
+    await engine.dispose()
+
+
+async def test_apply_staging_delta_maps_reactivations_in_pk_map(isolated_database_url):
+    engine = create_async_engine(isolated_database_url)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with factory() as session:
+        async with session.begin():
+            feed_source = await _seed(session)
+    await StagingStep().execute(
+        _ctx(factory, feed_source.id, [{"id": "1", "title": "A"}], run_id=1)
+    )
+    await StagingStep().execute(_ctx(factory, feed_source.id, [], run_id=2))
+    rows = await _staged_rows(factory)
+    pk = rows["1"].id
+
+    product = {"id": "1", "title": "A"}
+    delta = StagingDelta(reactivations=[pk])
+    pk_map = await apply_staging_delta(
+        FactoryAdapter(factory), feed_source.id, 3, delta, content_hash(product)
+    )
+
+    assert pk_map == {"1": pk}
     await engine.dispose()
 
 

@@ -118,6 +118,12 @@ async def apply_staging_delta(
                             last_seen_at=now,
                         )
                     )
+                rows = await session.execute(
+                    select(StagingProduct.id, StagingProduct.product_id)
+                    .where(StagingProduct.id.in_(group))
+                )
+                for pk, product_id in rows.all():
+                    pk_map[product_id] = pk
 
     for group in _chunks(delta.removals, chunk_size):
         async with session_factory() as session:
