@@ -16,13 +16,22 @@ from ..models.feed_source import FeedSource
 from ..staging.config_resolver import resolve_config_bundle
 from ..staging.delta import classify
 from ..staging.hashing import content_hash
-from ..staging.persistence import apply_staging_delta, load_stored_rows
+from ..staging.persistence import (
+    PluginOutcome,
+    apply_plugin_outcomes,
+    apply_staging_delta,
+    load_stored_rows,
+)
+from ..plugins.runtime import RunContext
 
 
 @dataclass
 class RunState:
     products: list[dict[str, Any]] = field(default_factory=list)
     source_fields: list[SourceField] = field(default_factory=list)
+    client_id: int | None = None
+    config_bundle: dict[str, Any] = field(default_factory=dict)
+    product_pks: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -161,6 +170,8 @@ class StagingStep:
 
         async with ctx.session_factory() as session:
             bundle = await resolve_config_bundle(session, feed_source)
+        ctx.run_state.client_id = feed_source.client_id
+        ctx.run_state.config_bundle = bundle
         config_hash_value = content_hash(bundle)
 
         stored = await load_stored_rows(ctx.session_factory, ctx.feed_source_id)
@@ -171,7 +182,7 @@ class StagingStep:
                 delta.counts.failed,
             )
 
-        await apply_staging_delta(
+        pk_map = await apply_staging_delta(
             ctx.session_factory,
             ctx.feed_source_id,
             ctx.ingestion_run_id,
@@ -179,6 +190,7 @@ class StagingStep:
             config_hash_value,
             chunk_size=self._chunk_size,
         )
+        ctx.run_state.product_pks = pk_map
 
         ctx.run_state.products = list(delta.enqueue)
         return StepResult(
@@ -188,9 +200,87 @@ class StagingStep:
         )
 
 
-class PluginStep(_NoOpStep):
-    def __init__(self) -> None:
-        super().__init__("run_plugins")
+class PluginStep:
+    name = "run_plugins"
+
+    def __init__(self, registry: dict[str, Any] | None = None) -> None:
+        self._registry = registry if registry is not None else {}
+
+    async def execute(self, ctx: StepContext) -> StepResult:
+        from copy import deepcopy
+
+        bundle = ctx.run_state.config_bundle or {"instances": []}
+        pks = ctx.run_state.product_pks
+        survivors: list[dict[str, Any]] = []
+        outcomes: list[PluginOutcome] = []
+        processed = dropped = errored = 0
+
+        for product in ctx.run_state.products:
+            pid = product.get("id")
+            current = product
+            original = deepcopy(product)
+            drop = error = False
+            for instance in bundle.get("instances", []):
+                plugin_obj = self._registry.get(instance["plugin"])
+                if plugin_obj is None:
+                    continue
+                rctx = RunContext(
+                    client_id=ctx.run_state.client_id or 0,
+                    feed_source_id=ctx.feed_source_id,
+                    run_id=ctx.ingestion_run_id,
+                    logger=ctx.logger,
+                    original_product=original,
+                )
+                try:
+                    result = plugin_obj.process(
+                        current,
+                        instance["resolved_config"],
+                        instance["resolved_data"],
+                        rctx,
+                    )
+                except Exception as exc:
+                    ctx.logger.warning(
+                        "plugin %s errored on product %s: %s",
+                        instance["plugin"], pid, exc,
+                    )
+                    errored += 1
+                    error = True
+                    break
+                if result is None:
+                    drop = True
+                    break
+                current = result
+            if error:
+                continue
+            pk = pks.get(pid) if isinstance(pid, str) else None
+            if drop:
+                dropped += 1
+                if pk is not None:
+                    outcomes.append(PluginOutcome(pid, pk, "dropped", None))
+                continue
+            processed += 1
+            survivors.append(current)
+            if pk is not None:
+                outcomes.append(PluginOutcome(str(pid), pk, "processed", current))
+
+        await apply_plugin_outcomes(
+            ctx.session_factory,
+            ctx.feed_source_id,
+            ctx.ingestion_run_id,
+            outcomes,
+        )
+        ctx.run_state.products = survivors
+        return StepResult(
+            processed_count=len(survivors),
+            failed_count=errored,
+            statistics={
+                "plugins": {
+                    "processed": processed,
+                    "dropped": dropped,
+                    "errored": errored,
+                }
+            },
+        )
 
 
 class QualityCheckStep(_NoOpStep):
@@ -204,13 +294,15 @@ class ExportStep(_NoOpStep):
 
 
 def default_steps(
-    fetcher: HttpFetcher, registry: RegistryDocument
+    fetcher: HttpFetcher,
+    registry: RegistryDocument,
+    plugin_registry: dict[str, Any] | None = None,
 ) -> tuple[PipelineStep, ...]:
     return (
         IngestStep(fetcher, registry),
         MappingStep(registry),
         StagingStep(),
-        PluginStep(),
+        PluginStep(plugin_registry),
         QualityCheckStep(),
         ExportStep(),
     )

@@ -83,7 +83,8 @@ async def test_happy_path_tsv_ingest_end_to_end(session_factory):
 
     run = await _get_run(session_factory, run_id)
     assert run.status == "success"
-    assert run.processed_count == 9
+    # 3 ingest + 3 mapping + 3 staging + 3 plugin survivors
+    assert run.processed_count == 12
     assert run.failed_count == 0
     assert run.completed_at is not None
     assert run.statistics["row_errors"] == []
@@ -106,7 +107,8 @@ async def test_row_errors_skipped_but_run_succeeds(session_factory):
 
     run = await _get_run(session_factory, run_id)
     assert run.status == "success"
-    assert run.processed_count == 3
+    # 1 ingest + 1 mapping + 1 staging + 1 plugin survivor
+    assert run.processed_count == 4
     assert run.failed_count == 1
     assert run.statistics["row_errors"] == [
         {

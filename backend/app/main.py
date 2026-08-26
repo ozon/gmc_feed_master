@@ -135,7 +135,11 @@ def create_app(
         from .pipeline import LockRegistry, PipelineRunner, SchedulerService, default_steps
 
         lock_registry = LockRegistry()
-        steps = default_steps(fetcher if fetcher is not None else HttpFetcher(), load_registry())
+        steps = default_steps(
+            fetcher if fetcher is not None else HttpFetcher(),
+            load_registry(),
+            app.state.plugin_registry,
+        )
         runner = PipelineRunner(lock_registry, app.state.db_session_factory, list(steps))
         scheduler_service = SchedulerService(runner)
         app.state.lock_registry = lock_registry

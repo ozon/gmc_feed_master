@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
@@ -9,6 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.staging import StagingHistory, StagingProduct
 from .delta import StagingDelta, StoredRow
+
+
+@dataclass(frozen=True)
+class PluginOutcome:
+    product_id: str
+    pk: int
+    status: str
+    final_product: dict[str, Any] | None
 
 
 async def load_stored_rows(
@@ -154,3 +163,37 @@ async def apply_staging_delta(
                 ])
 
     return pk_map
+
+
+async def apply_plugin_outcomes(
+    session_factory: Callable[[], AsyncSession],
+    feed_source_id: int,
+    ingestion_run_id: int,
+    outcomes: Sequence[PluginOutcome],
+    *,
+    chunk_size: int = 1000,
+) -> None:
+    now = datetime.now(timezone.utc)
+
+    for group in _chunks(list(outcomes), chunk_size):
+        async with session_factory() as session:
+            async with session.begin():
+                for outcome in group:
+                    values: dict[str, Any] = {
+                        "ingestion_run_id": ingestion_run_id,
+                    }
+                    if outcome.status == "processed":
+                        values["processed_data"] = outcome.final_product
+                        values["excluded"] = False
+                        values["last_seen_at"] = now
+                    else:
+                        values["processed_data"] = None
+                        values["excluded"] = True
+                    await session.execute(
+                        update(StagingProduct)
+                        .where(
+                            StagingProduct.feed_source_id == feed_source_id,
+                            StagingProduct.id == outcome.pk,
+                        )
+                        .values(**values)
+                    )
