@@ -63,6 +63,7 @@ class PipelineRunner:
                         session_factory=self._session_factory,
                         logger=logger,
                         run_state=run_state,
+                        ingestion_run_id=run_id,
                     )
                     result: StepResult = await step.execute(ctx)
                     processed_count += result.processed_count

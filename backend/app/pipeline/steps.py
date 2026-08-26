@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +13,10 @@ from ..ingest import HttpFetcher, read_feed
 from ..ingest.report import SourceField
 from ..mapping import MappingDocument, apply_mapping, auto_match
 from ..models.feed_source import FeedSource
+from ..staging.config_resolver import resolve_config_bundle
+from ..staging.delta import classify
+from ..staging.hashing import content_hash
+from ..staging.persistence import apply_staging_delta, load_stored_rows
 
 
 @dataclass
@@ -27,6 +31,7 @@ class StepContext:
     session_factory: Callable[[], AsyncSession]
     logger: logging.Logger
     run_state: RunState
+    ingestion_run_id: int = 0
 
 
 @dataclass(frozen=True)
@@ -141,6 +146,48 @@ class MappingStep:
         )
 
 
+class StagingStep:
+    name = "staging"
+
+    def __init__(self, chunk_size: int = 1000) -> None:
+        self._chunk_size = chunk_size
+
+    async def execute(self, ctx: StepContext) -> StepResult:
+        async with ctx.session_factory() as session:
+            async with session.begin():
+                feed_source = await session.get(FeedSource, ctx.feed_source_id)
+        if feed_source is None:
+            raise LookupError(f"feed source {ctx.feed_source_id} not found")
+
+        async with ctx.session_factory() as session:
+            bundle = await resolve_config_bundle(session, feed_source)
+        config_hash_value = content_hash(bundle)
+
+        stored = await load_stored_rows(ctx.session_factory, ctx.feed_source_id)
+        delta = classify(ctx.run_state.products, stored, config_hash_value)
+        if delta.counts.failed:
+            ctx.logger.warning(
+                "staging: %d unusable products (missing/duplicate id)",
+                delta.counts.failed,
+            )
+
+        await apply_staging_delta(
+            ctx.session_factory,
+            ctx.feed_source_id,
+            ctx.ingestion_run_id,
+            delta,
+            config_hash_value,
+            chunk_size=self._chunk_size,
+        )
+
+        ctx.run_state.products = list(delta.enqueue)
+        return StepResult(
+            processed_count=len(delta.enqueue),
+            failed_count=delta.counts.failed,
+            statistics={"staging": asdict(delta.counts)},
+        )
+
+
 class PluginStep(_NoOpStep):
     def __init__(self) -> None:
         super().__init__("run_plugins")
@@ -162,6 +209,7 @@ def default_steps(
     return (
         IngestStep(fetcher, registry),
         MappingStep(registry),
+        StagingStep(),
         PluginStep(),
         QualityCheckStep(),
         ExportStep(),

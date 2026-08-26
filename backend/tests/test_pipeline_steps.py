@@ -11,6 +11,7 @@ from app.pipeline import (
     PluginStep,
     QualityCheckStep,
     RunState,
+    StagingStep,
     StepContext,
     StepResult,
     default_steps,
@@ -69,7 +70,7 @@ async def test_no_op_steps_contract(step_cls, ctx):
 def test_step_names_are_distinct():
     steps = _steps()
     names = [step.name for step in steps]
-    assert len(set(names)) == 5
+    assert len(set(names)) == 6
 
 
 def test_default_steps_order():
@@ -77,6 +78,7 @@ def test_default_steps_order():
     assert [type(step) for step in steps] == [
         IngestStep,
         MappingStep,
+        StagingStep,
         PluginStep,
         QualityCheckStep,
         ExportStep,
@@ -84,6 +86,7 @@ def test_default_steps_order():
     assert [step.name for step in steps] == [
         "ingest",
         "mapping",
+        "staging",
         "run_plugins",
         "quality_check",
         "export",

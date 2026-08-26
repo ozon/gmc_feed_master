@@ -167,12 +167,7 @@ async def test_field_mapping_end_to_end(app_factory):
 
     rerun = await _get_run(factory, rerun_id)
     assert rerun.status == "success"
-    assert rerun_capture.captured == [
-        {"id": "A1", "title": "Red Shirt", "gtin": ["1234567890123"]},
-        {"id": "A2", "title": "Blue Hat", "gtin": ["9876543210987"]},
-    ]
-    for product in rerun_capture.captured:
-        assert "margin" not in product
+    assert rerun_capture.captured == []
 
     doc = await _get_field_mapping(factory, fs_id)
     assert doc["auto_mapped"] is True
