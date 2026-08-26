@@ -52,7 +52,7 @@ def test_m2_migration_upgrade_downgrade_reupgrade(alembic_config, isolated_datab
     assert client_columns["status"][3] == "NO"
     assert client_columns["status"][4] == "'active'::character varying"
 
-    command.downgrade(alembic_config, "-1")
+    command.downgrade(alembic_config, "20260824_0001")
 
     feed_source_columns = asyncio.run(_columns(isolated_database_url, "feed_sources"))
     assert "source_type" in feed_source_columns
