@@ -1,279 +1,90 @@
-# Task 6 Report
+# Task 6 Report: StagingStep + runner wiring
 
-## Status
+**Status:** COMPLETE
+**Commit:** `870a2dc` — "feat: StagingStep persists staged state and reduces run to delta set"
+**Branch:** `m5-staging-delta`
 
-Implemented PostgreSQL Compose and environment documentation on top of Task 5
-commit `2260d86`.
+## Implementation
+
+- **Created `backend/app/staging/persistence.py`** exactly per brief:
+  - `load_stored_rows(session_factory, feed_source_id) -> dict[str, StoredRow]`
+  - `apply_staging_delta(session_factory, feed_source_id, ingestion_run_id, delta, config_hash, *, chunk_size=1000) -> dict[str, int]` returning product_id -> pk for all enqueued products. Each chunk wrapped in its own transaction.
+- **Modified `backend/app/pipeline/steps.py`:**
+  - `StepContext` gains `ingestion_run_id: int = 0` (existing constructions unaffected).
+  - Added `StagingStep(chunk_size=1000)` with `name="staging"` after `MappingStep`; loads feed source, resolves config bundle via `resolve_config_bundle`, hashes it with `content_hash`, classifies via `classify`, persists via `apply_staging_delta`, replaces `ctx.run_state.products` with `delta.enqueue`, returns `processed_count=len(enqueue)`, `failed_count=counts.failed`, `statistics={"staging": asdict(counts)}`.
+  - `default_steps()` now: Ingest, Mapping, **Staging**, Plugin, QualityCheck, Export.
+- **Modified `backend/app/pipeline/runner.py`:** passes `ingestion_run_id=run_id` into `StepContext`.
+- **Modified `backend/app/pipeline/__init__.py`:** exports `StagingStep`.
+
+## Persistence-action verification (spec §4 table)
+
+| Action | Verified |
+|---|---|
+| inserts | INSERT with all fields incl. `status="active"`, `removed_at=None`, flush per chunk for pks ✓ |
+| updates (insert=False) | UPDATE by `(feed_source_id, product_id)`; raw_data, both hashes, active, `removed_at=None`, run id, last_seen ✓ |
+| reactivations | UPDATE pk: active, `removed_at=None`, last_seen, run id ✓ |
+| removals | UPDATE pk: removed, `removed_at=now`, run id ✓ |
+| touches | UPDATE `last_seen_at=now` ONLY ✓ |
+| history | INSERT `StagingHistory` only for upserts with `write_history=True` ✓ |
+
+## TDD Evidence
+
+- **RED:** `ImportError: cannot import name 'StagingStep' from 'app.pipeline.steps'` (7 test collection errors) — captured before implementation.
+- **GREEN:** `tests/test_staging_step.py` → 7 passed.
+- **Affected suites:** staging + mapping + ingest + pipeline_steps + pipeline_runner → 49 passed.
+
+## Full suite
+
+`TEST_DATABASE_URL=... uv run pytest -q` → **350 passed** (343 baseline + 7 new), ~90s, pristine output (only pre-existing deprecation warnings).
 
 ## Files changed
 
-- `docker-compose.yml` — PostgreSQL-only Compose configuration using
-  `postgres:16.4-alpine`, configurable database credentials and host port, a
-  named persistent volume, and a `pg_isready` health check.
-- `.env.example` — safe local-only environment placeholders for Compose and
-  backend settings, including the M0 one-worker requirement.
-- `backend/app/config.py` — aligns the default lazy database URL with the
-  host-published local PostgreSQL service; no ORM, schema, or connection is
-  created.
-- `backend/tests/test_environment_docs.py` — environment key coverage and
-  PostgreSQL-only Compose structure/health-check coverage.
+- `backend/app/staging/persistence.py` (new)
+- `backend/tests/test_staging_step.py` (new)
+- `backend/app/pipeline/steps.py`
+- `backend/app/pipeline/runner.py`
+- `backend/app/pipeline/__init__.py`
+- `backend/tests/test_pipeline_steps.py` (sanctioned)
+- `backend/tests/test_m3_acceptance.py` (see deviations)
+- `backend/tests/test_m4_acceptance.py` (see deviations)
 
-## Verification commands and output
+## Deviations from brief (all documented in commit message)
 
-From `backend/`:
+1. **Test seeding of `IngestionRun` rows 1–3** (`test_staging_step.py::_seed`): the brief's tests use `run_id=1..3`, but `staging_products.ingestion_run_id` has a real FK to `ingestion_runs.id`; without seeded runs every test fails with `ForeignKeyViolationError`. Production code always passes a real run id from the runner, so only the fixture needed fixing. All other brief test code is verbatim except item 2.
+2. **Test logger uses `logging.getLogger(__name__)` instead of `"test"`**: root-caused cross-test interference — `alembic/env.py` calls `fileConfig()` (disable_existing_loggers=True) on every `isolated_database_url` setup; once my tests create the shared `"test"` logger, the next alembic run disables it and `test_ingest_step::test_row_errors_logged_as_warning` fails when run after my tests. Module-scoped logger removes the interference; nothing asserts on my tests' log output. (Latent repo-wide landmine in alembic/env.py — flagged as concern.)
+3. **Sanctioned (brief Step 5):** `test_pipeline_steps.py` exact-composition assertions updated to 6 steps / names include "staging".
+4. **Acceptance expectations (not explicitly sanctioned, required for milestone semantics):**
+   - `test_m3_acceptance`: `run.processed_count` totals 6→9 and 2→3 — runner sums per-step counts; StagingStep legitimately adds its enqueue counts.
+   - `test_m4_acceptance`: identical rerun now captures `[]` instead of both products — this is precisely M5's delta behavior (unchanged products don't reach plugins). Removed the now-vacuous `margin` loop over the empty capture list.
 
-```text
-uv run pytest tests/test_environment_docs.py -q
-2 passed, 1 warning in 0.01s
+## Self-review
 
-uv run pytest -q
-32 passed, 1 warning in 0.71s
-
-uv run python -m compileall app
-Listing 'app'...
-```
-
-From the repository root:
-
-```text
-git diff --check
-exit 0
-
-docker compose config -q
-exit 0
-
-docker compose up -d postgres
-health=starting
-health=starting
-health=starting
-health=healthy
-
-docker compose ps
-postgres container: Up 6 seconds (healthy)
-
-docker compose down
-container and network removed without errors.
-```
+- Persistence-action table re-checked line by line against spec §4 — no findings.
+- No debug artifacts; minimal comments; `from __future__ import annotations` style followed.
+- No lint/typecheck commands configured in pyproject (checked); pytest is the arbiter. LSP "errors" in test files are pre-existing strictness about stub fetchers/lambdas, not introduced here.
 
 ## Concerns
 
-- Backend tests emit the existing Starlette deprecation warning about using
-  `httpx` with `starlette.testclient`; all tests pass.
-- The Compose file intentionally starts only PostgreSQL. M0 still uses its
-  in-process session store and requires one backend worker; PostgreSQL remains
-  available for the later persistence milestone.
+- `alembic/env.py`'s unconditional `fileConfig()` disables any pre-existing non-alembic loggers on each test DB creation — a latent trap for any future test that creates a logger and later relies on caplog. Suggest `fileConfig(config.config_file_name, disable_existing_loggers=False)` in a future task (out of scope here).
 
-## Review-fix details
+## Fix Round 1
 
-- `.env.example` explicitly documents that changes to any `POSTGRES_*` value
-  require the corresponding `DATABASE_URL` update, and identifies the
-  host-local default relationship.
-- `backend/tests/test_environment_docs.py` parses the Compose YAML through
-  `docker compose config --format json` and the standard-library JSON parser;
-  it asserts exactly one service named `postgres` and a health check without
-  adding an unpinned YAML dependency.
+**Reviewer finding:** `apply_staging_delta` pk_map missing entries for flip-only reactivations (they are enqueued but never mapped).
 
-## Review-fix verification
+**Fix:** `backend/app/staging/persistence.py` — inside the reactivations chunk loop (same transaction), batch-resolve `(id, product_id)` for the chunk via `select(...).where(StagingProduct.id.in_(group))` and add `pk_map[product_id] = pk`.
 
-From `backend/`:
+**New test:** `test_apply_staging_delta_maps_reactivations_in_pk_map` — stages a product, removes it (empty second run), then calls `apply_staging_delta` directly with `StagingDelta(reactivations=[pk])`; asserts returned map == `{product_id: pk}`.
 
-```text
-uv run pytest -q
-................................                                         [100%]
-32 passed, 1 warning in 0.85s
+Commands and output:
+
+```
+$ TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest tests/test_staging_step.py -v
+...
+tests/test_staging_step.py::test_apply_staging_delta_maps_reactivations_in_pk_map PASSED
+======================== 8 passed, 9 warnings in 5.75s =========================
+
+$ TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest -q
+351 passed, 101 warnings in 89.81s
 ```
 
-From the repository root:
-
-```text
-docker compose config -q
-(no output; exit 0)
-
-docker compose up -d --wait postgres && docker compose ps && docker compose down
-Container m0-foundation-postgres-1 Healthy
-m0-foundation-postgres-1   postgres:16.4-alpine   ...   Up 5 seconds (healthy)
-container and network removed without errors.
-```
-
-## Task 6 review-fix follow-up
-
-- `create_app(settings=...)` now creates the async SQLAlchemy engine and session
-  factory from settings when no factory is injected, stores the engine on app
-  state, disposes it during lifespan shutdown, and retains explicit injected
-  factory/session-store precedence. Startup still performs no schema creation.
-- Startup seeding is exercised through the actual lifespan after Alembic
-  migrations. Tests cover first-user seeding, idempotent second startup without
-  credential overwrite, and authentication/session persistence across a newly
-  created app instance.
-- PostgreSQL integration fixtures now create a unique temporary database,
-  apply Alembic `head`, and drop the database with force cleanup. The
-  PostgreSQL auth, user, and session tests no longer call
-  `Base.metadata.create_all`; M0 in-memory injection tests remain isolated.
-- Repository transactions now use a nested transaction when a caller already
-  owns a transaction instead of unconditionally rolling it back, preserving
-  unrelated caller work while retaining atomic password hash and revocation
-  generation updates.
-- Added/retained coverage for persisted login, logout, `me`, interaction idle
-  renewal, password change, all-session invalidation, caller cookie clearing,
-  old/new password behavior, and migration-backed schema.
-
-Review-fix verification outputs:
-
-- `docker compose up -d postgres`: PostgreSQL Compose service running.
-- `DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run alembic upgrade head`: passed.
-- `TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest tests/test_postgres_auth.py -q`: 3 passed, 4 warnings.
-- `TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest -q`: 69 passed, 21 warnings.
-- `uv run python -m compileall app alembic`: passed.
-- Temporary isolated PostgreSQL databases were dropped by fixture cleanup.
-
-Remaining concerns:
-
-- Existing Starlette/httpx and Alembic configuration deprecation warnings remain.
-
-## Preserved prior Task 6 report details
-
-The preceding report also recorded the following historical verification and
-documentation details; they are retained here as an append-only audit trail:
-
-- The Compose file is PostgreSQL-only and uses `postgres:16.4-alpine`,
-  configurable credentials and host port, a named `postgres_data` volume, and
-  a `pg_isready` health check.
-- `.env.example` contains safe local placeholders, including the
-  non-production session-secret marker and the M0 one-worker requirement.
-- The environment documentation states that changing any `POSTGRES_*` value
-  requires the matching `DATABASE_URL` update and identifies the host-local
-  default relationship.
-- `backend/tests/test_environment_docs.py` parses `docker compose config
-  --format json` with the standard-library JSON parser, asserts exactly one
-  service named `postgres`, and checks the health check without adding an
-  unpinned YAML dependency.
-- Historical focused verification: `uv run pytest
-  tests/test_environment_docs.py -q` reported `2 passed, 1 warning`; the
-  historical full suite reported `32 passed, 1 warning`; and
-  `uv run python -m compileall app` completed successfully.
-- Historical repository verification included successful `git diff --check`,
-  `docker compose config -q`, a healthy Compose PostgreSQL service, and clean
-  `docker compose down` cleanup.
-- M0 continues to use its in-process session store and requires one backend
-  worker; PostgreSQL remains available for the persistence milestone.
-
-## Task 6 review-fix follow-up: injection precedence and persisted API coverage
-
-- Explicit `session_store` injection now prevents settings-based engine/factory
-  construction, startup user seeding, and DB session dependency creation. This
-  keeps an injected `InMemorySessionStore` as the sole auth boundary even when
-  settings contain a PostgreSQL URL.
-- The password route now returns the tested `501` response
-  `Password changes require the configured PostgreSQL persistence boundary`
-  when an explicit session store is injected, rather than silently changing a
-  different database-backed user store.
-- Default settings-backed PostgreSQL behavior and explicit
-  `db_session_factory` injection remain unchanged.
-- The temporary database fixture now wraps database creation, migration setup,
-  yielding, and forced drop cleanup in one outer `try/finally`, including
-  migration setup failures.
-- Added persisted API coverage for logout cookie clearing and invalidation,
-  `/auth/interaction` idle renewal, and explicit injection precedence/password
-  behavior. Invalid sessions remain rejected after persisted logout.
-
-## Review-fix verification outputs
-
-From the repository root/worktree:
-
-```text
-docker compose up -d --wait postgres
-Container m1-persistence-registry-postgres-1 Healthy
-```
-
-From `backend/`:
-
-```text
-TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest tests/test_auth_api.py tests/test_postgres_auth.py -q
-................                                                         [100%]
-16 passed, 7 warnings in 5.68s
-
-TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest -q
-........................................................................ [ 98%]
-.
-73 passed, 24 warnings in 19.27s
-
-uv run python -m compileall app alembic
-Listing 'app'...
-Listing 'app/db'...
-Listing 'app/models'...
-Listing 'app/persistence'...
-Listing 'app/security'...
-Listing 'alembic'...
-Listing 'alembic/versions'...
-
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run alembic upgrade head
-INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
-INFO  [alembic.runtime.migration] Will assume transactional DDL.
-```
-
-Cleanup:
-
-```text
-docker compose down --volumes
-Container m1-persistence-registry-postgres-1 Stopped
-Container m1-persistence-registry-postgres-1 Removed
-Volume m1-persistence-registry_postgres_data Removed
-Network m1-persistence-registry_default Removed
-
-git diff --check
-exit 0
-```
-
-Concerns remain limited to the existing Starlette/httpx and Alembic
-configuration deprecation warnings reported by the test run.
-
-## Remaining M1 Task 6 finding fix
-
-- The module-level ASGI app now resolves `get_settings()` when `create_app()`
-  receives no explicit settings, session store, or database session factory.
-  With configured environment settings this constructs the async SQLAlchemy
-  engine/session factory and selects `PostgresSessionStore` by default.
-- Settings validation failures are treated as an unconfigured M0 import path,
-  so `import app.main` remains safe without persistence credentials.
-- Explicit `session_store` precedence, explicit `db_session_factory` injection,
-  and in-memory test paths remain unchanged. No schema creation was added.
-- Added a regression subprocess test proving the default ASGI app resolves
-  configured settings and selects PostgreSQL persistence.
-
-## Remaining-finding verification outputs
-
-From `backend/`:
-
-```text
-uv run pytest tests/test_tooling.py -q
-9 passed, 1 warning in 1.81s
-
-TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest tests/test_auth_api.py tests/test_postgres_auth.py -q
-16 passed, 7 warnings in 6.39s
-
-TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest -q
-74 passed, 24 warnings in 20.47s
-
-uv run python -m compileall app alembic
-completed successfully
-
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run alembic upgrade head
-completed successfully (M1 baseline)
-```
-
-From the repository root:
-
-```text
-docker compose up -d --wait postgres
-Container m1-persistence-registry-postgres-1 Healthy
-docker compose config -q
-completed successfully
-docker compose down --volumes
-completed successfully
-git diff --check
-completed successfully
-```
-
-The initial combined command was retried from `backend/` after root-level `uv`
-reported that `pytest` was unavailable; no test failure resulted. Existing
-Starlette/httpx, Pytest collection, and Alembic deprecation warnings remain.
+**Commit:** `517d1b9` — "fix: include reactivated products in staging pk_map"

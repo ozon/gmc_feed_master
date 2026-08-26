@@ -1,39 +1,70 @@
-# Task 5 report
+# Task 5 Report: Migration — `removed_at`, cascade FK, purge index
 
-- Converted the session protocol and in-memory implementation to awaitable methods while preserving idle and absolute expiry boundaries.
-- Added `PostgresSessionStore` with signed opaque cookie tokens, SHA-256-only token persistence, transactional validation/renewal/invalidation, expiry cleanup, and revocation-generation checks.
-- Updated auth dependencies and routes for async store calls; `create_app` can select PostgreSQL storage when an async session factory is explicitly supplied, while injected in-memory storage remains supported.
-- Focused session, auth, and tooling tests pass. Full backend test execution is blocked in this environment because `TEST_DATABASE_URL` is not configured for PostgreSQL.
+## Status
+COMPLETE
 
-## Review Fixes
+## Commits (branch `m5-staging-delta`)
+- `41a2cf1` — `feat: staging removed_at column, history cascade, purge index`
+  (`backend/app/models/staging.py`, `backend/alembic/versions/20260826_0001_m5_staging_delta.py`, `backend/tests/test_m5_migration.py`)
+- `73f2562` — `test: pin m2 migration downgrade target to 20260824_0001` (required follow-up, see "Deviations")
 
-- `create_app(db_session_factory=factory)` now lazily resolves settings and selects/configures `PostgresSessionStore` when no settings argument is supplied; an explicitly injected `session_store` still takes precedence, and no password or full application wiring is added.
-- Expanded the real PostgreSQL session coverage for idle renewal, non-renewing reads, exact idle and absolute expiry, malformed and tampered token rejection, direct invalidation, token-hash-only persistence, revocation invalidation, and store-restart persistence. The persistence fixture now fails clearly unless `TEST_DATABASE_URL` is a `postgresql+asyncpg://` URL.
-- Corrected the misleading revocation test name and kept logout/invalidation behavior covered by a direct `invalidate` call followed by token rejection.
+## Implementation
+- **Model** (`app/models/staging.py`, exactly two edits as specified):
+  - `StagingProduct.removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)` added after `last_seen_at`.
+  - `StagingHistory.staging_product_id` FK changed from `ondelete="RESTRICT"` to `ondelete="CASCADE"`.
+- **Migration** (`alembic/versions/20260826_0001_m5_staging_delta.py`): verbatim per brief.
+  - upgrade: add nullable timestamptz `removed_at`; create partial index `ix_staging_products_removed_purge ON staging_products (removed_at) WHERE status = 'removed'`; drop + recreate FK `staging_history_staging_product_id_fkey` with `ON DELETE CASCADE`.
+  - downgrade: exact reverse (FK back to RESTRICT, drop index, drop column).
+- The baseline FK name `staging_history_staging_product_id_fkey` was confirmed live (PostgreSQL default naming), matching `_HISTORY_FK`.
 
-## Review Fix Verification
+## TDD evidence
 
-- `docker compose up -d --wait postgres` (Compose PostgreSQL service): passed
-- `TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest tests/test_postgres_sessions.py tests/test_session_store.py -q`: **20 passed, 1 warning**
-- `TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest -q`: **64 passed, 4 warnings**
-- `uv run pytest tests/test_tooling.py -q`: **8 passed, 1 warning**
-- `uv run python -m compileall app alembic`: **passed**
-- `git diff --check`: **passed**
-- `docker compose down --volumes`: passed
+### RED (before model/migration changes)
+```
+tests/test_m5_migration.py::test_upgrade_adds_removed_at_cascade_and_index FAILED
+tests/test_m5_migration.py::test_downgrade_reverses_all_three FAILED
+tests/test_m5_migration.py::test_removal_deletes_history_via_cascade FAILED
+E   AssertionError: assert 'removed_at' in {'config_hash', 'content_hash', ...}
+E   asyncpg.exceptions.ForeignKeyViolationError: update or delete on table
+    "staging_products" violates foreign key constraint
+    "staging_history_staging_product_id_fkey" on table "staging_history"
+```
+Failures are for exactly the reasons the brief predicts (missing column; non-cascading FK blocks delete).
 
-## Remaining M1 Review Fix: Hard Absolute Cap Test
+### GREEN
+```
+tests/test_m5_migration.py          3 passed
+tests/test_migrations.py            1 passed
+tests/test_models.py                8 passed
+======================== 12 passed in 3.95s ========================
+```
 
-- Reworked the real PostgreSQL session test to use the injectable `TestClock`,
-  renew idle repeatedly near the 12-hour boundary, assert validation succeeds
-  one second before absolute expiry, assert the persisted absolute expiry is
-  unchanged and the idle expiry is capped at it, and assert validation rejects
-  at the exact absolute expiry and after it. This independently proves that
-  renewal cannot move the absolute deadline.
+### Full suite (before commit)
+```
+TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest -q
+343 passed, 93 warnings in 85.15s
+```
+340 baseline + 3 new tests. First full run had 1 failure (`tests/test_m2_migration.py`) — see Deviations; fixed and re-run to full green.
 
-## Remaining Review Fix Verification
+### Downgrade verification
+- `test_downgrade_reverses_all_three` downgrades to `20260825_0001` against real Postgres, asserts no `removed_at`, no purge index, FK restored with `ondelete=RESTRICT`, then re-upgrades to head. PASSED.
+- `tests/test_m2_migration.py` now also cycles up → down to `20260824_0001` → up through the new revision. PASSED.
 
-- `docker compose up -d --wait postgres`: passed; PostgreSQL healthy
-- `TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest tests/test_postgres_sessions.py tests/test_session_store.py -q`: **21 passed, 1 warning**
-- `TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run pytest -q`: **66 passed, 4 warnings**
-- `uv run python -m compileall app alembic`: passed
-- `docker compose down --volumes`: passed
+## Files changed
+- Modified: `backend/app/models/staging.py`
+- Created: `backend/alembic/versions/20260826_0001_m5_staging_delta.py`
+- Created: `backend/tests/test_m5_migration.py`
+- Modified: `backend/tests/test_m2_migration.py` (one-line fix, separate commit)
+
+## Deviations from brief (all forced by environment, intent preserved)
+1. **Test inserts extended**: raw-SQL INSERTs needed NOT NULL JSONB columns that ORM defaults would normally supply: `clients.settings`/`contact_details`, `feed_sources.field_mapping`/`configuration`, `ingestion_runs.processed_count/failed_count/statistics`. Brief anticipated this ("extend the column list accordingly").
+2. **Alembic commands run via `asyncio.to_thread`** in the async test: `alembic/env.py` calls `asyncio.run()` internally, which raises `RuntimeError` when invoked from the running pytest-asyncio loop. Offloading to a thread keeps the brief's structure.
+3. **FK `ondelete` read helper**: SQLAlchemy 2.0.43's inspector nests `ondelete` under `fk["options"]` rather than top-level; added tiny `_fk_ondelete()` helper checking both locations so assertions work across versions.
+4. **`test_m2_migration.py` downgrade target pinned** from relative `-1` to `"20260824_0001"`: adding a new head changed what `-1` resolves to, breaking that pre-existing test's assumptions. Pinned explicitly to preserve its original semantics.
+
+## Self-review
+- Model diff contains only the two specified line changes — verified against committed diff.
+- Migration matches brief verbatim (style header, single-quoted identifiers).
+- Upgrade AND downgrade both verified against real PostgreSQL (isolated DB per test via `isolated_database_url` fixture).
+- Full suite green before committing; commits contain only intended files.
+- No concerns remaining.
