@@ -1,71 +1,75 @@
-# Task 2 Report: Three-tier scope merge (pure function)
+# Task 2 Report: Template-database fixture rework
 
-## What Was Implemented
+## Status: DONE
 
-- `backend/app/staging/config_resolver.py` — pure function `merge_scopes(global_payload, client_payload, feed_source_payload) -> dict` implementing spec §5.3: per key, dicts merge recursively (`_merge_dicts` helper), everything else replaces wholesale; client overrides global, feed source overrides both; `None` payloads skipped. Code matches the brief verbatim.
-- `backend/tests/test_config_merge.py` — 7 tests covering: global-only, per-key client override, feed-source precedence, wholesale replacement of non-dict values, recursive dict merge, fall-through for keys missing at specific scopes, and type-flip replacement.
+Commit: `af8e3cf` — `feat: template-database test isolation via pytest-postgresql`
 
-## TDD Evidence
+## What changed
 
-### RED
+`backend/tests/conftest.py` only (+62/−41):
 
-Command:
-```
-uv run pytest tests/test_config_merge.py -v
-```
-Output (key line):
-```
-ImportError while importing test module '.../backend/tests/test_config_merge.py'.
-E   ModuleNotFoundError: No module named 'app.staging.config_resolver'
-```
-Expected because the test module imports `merge_scopes` from `app.staging.config_resolver`, which did not exist yet.
+- Replaced imports: dropped `asyncio`, `uuid`, `urlunsplit`, `asyncpg`; added
+  `quote`, `pytest_postgresql.factories`. Kept `from fastapi.testclient
+  import TestClient` — the brief's import block omitted it, but the untouched
+  `client` fixture requires it.
+- Added module-level wiring after `_ARTIFACT_PATH`: `_BACKEND_ROOT`,
+  `_server_params()`, `_load_alembic_schema()` loader,
+  `gmc_postgres_noproc` / `gmc_database` factories, `_asyncpg_url()`.
+- Deleted the old asyncpg CREATE/DROP DATABASE `isolated_database_url`
+  fixture entirely; new fixture delegates to `gmc_database` and returns the
+  asyncpg URL built from the plugin connection's `.info`.
 
-### GREEN
+Installed pytest-postgresql 8.1.0 factory signatures were verified via
+`inspect.signature`: `postgresql_noproc(host=..., port=..., user=...,
+password=..., load=[callable])` and `postgresql(process_fixture_name)` match
+the brief's literal code exactly — no adaptation needed.
 
-Command:
+## Verification
+
+Step 2 (DB-heavy suites, serial):
+
 ```
-uv run pytest tests/test_config_merge.py -v
-```
-Output:
-```
-tests/test_config_merge.py::TestMergeScopes::test_global_only PASSED     [ 14%]
-tests/test_config_merge.py::TestMergeScopes::test_client_overrides_global_per_key PASSED [ 28%]
-tests/test_config_merge.py::TestMergeScopes::test_feed_source_wins PASSED [ 42%]
-tests/test_config_merge.py::TestMergeScopes::test_non_dict_values_replace_wholesale PASSED [ 57%]
-tests/test_config_merge.py::TestMergeScopes::test_dict_values_merge_recursively PASSED [ 71%]
-tests/test_config_merge.py::TestMergeScopes::test_missing_at_specific_scope_falls_through PASSED [ 85%]
-tests/test_config_merge.py::TestMergeScopes::test_type_flip_replaces PASSED [100%]
-========================= 7 passed, 1 warning in 0.02s =========================
+uv run pytest tests/test_config_bundle.py tests/test_staging_step.py -q -n0 --durations=5
+14 passed, 2 warnings in 3.81s
+slowest: 0.66s setup test_config_bundle (template clone); calls ≤0.18s
 ```
 
-## Full Suite Verification
+Template cloning confirmed working — no "database is being accessed by other
+users" errors; alembic's engine disposal frees the template as expected.
 
-Command:
+Step 3 + Step 4 (full suite, serial):
+
 ```
-TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest -q
+time uv run pytest -q -n0
+366 passed, 11 warnings in 51.88s   (real 55.8s)
 ```
-Output:
-```
-325 passed, 84 warnings in 76.13s (0:01:16)
-```
-Matches expectation: 309 baseline + 9 (Task 1) + 7 new = 325, all passing.
 
-## Files Changed
+Baseline was 366 passed; wall time recorded for decisions.md (Task 4):
+**51.88s** pytest-reported / **~56s** real.
 
-- Created: `backend/app/staging/config_resolver.py`
-- Created: `backend/tests/test_config_merge.py`
+## Migration-test adaptations
 
-## Commit
+None required. `test_migrations.py`, `test_m2_migration.py`,
+`test_m5_migration.py` all pass unmodified against a pre-migrated clone.
 
-- `56d6413` feat: three-tier scope merge per spec 5.3
+## Self-review
 
-## Self-Review Findings
+- Contract preserved: fixture still named `isolated_database_url`, yields
+  `postgresql+asyncpg://user:pass@host:port/dbname` for a fully-migrated DB;
+  all ~56 consuming tests untouched and passing.
+- Fail-fast preserved: `_server_params()` runs inside the fixture *before*
+  `getfixturevalue`, so missing/malformed `TEST_DATABASE_URL` fails with the
+  original messages before plugin machinery spins up.
+- No dead imports: `asyncio`, `uuid`, `urlunsplit`, `asyncpg` all removed;
+  nothing else in the file referenced them (grep-verified during edit).
+- Other fixtures (`artifact_path`, `clock`, `store`, `settings`, `client`)
+  byte-identical to the original.
 
-- Implementation is exactly the brief's code — no extra features (YAGNI respected), minimal comments, `from __future__ import annotations` present.
-- Only the two task files staged/committed; an unrelated modified `.superpowers/sdd/task-1-report.md` was left untouched in the working tree.
-- Test output pristine apart from a pre-existing starlette/httpx deprecation warning present across the whole suite.
-- Function name/signature preserved verbatim for Task 3 consumption.
+## Notes
 
-## Concerns
-
-None.
+- LSP flagged `Import "pytest_postgresql" could not be resolved` and
+  `No parameter named "_env_file"` — both false positives (LSP not using the
+  uv venv; `_env_file` is a pydantic-settings kwarg). Runtime is clean.
+- Untracked scratch files under `.superpowers/sdd/task-1-*` /
+  `task-2-brief.md` modifications are controller bookkeeping, not committed
+  with this task.

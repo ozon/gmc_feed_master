@@ -1,0 +1,910 @@
+# Review package: af8e3cf..4404c0b
+
+## Commits
+4404c0b perf: cap test-engine pools (pool_size=2, max_overflow=0)
+
+## Files changed
+ backend/tests/test_clients_api.py       |  2 +-
+ backend/tests/test_config_bundle.py     |  4 ++--
+ backend/tests/test_field_mapping_api.py |  2 +-
+ backend/tests/test_m1_acceptance.py     |  4 ++--
+ backend/tests/test_m2_acceptance.py     |  2 +-
+ backend/tests/test_m2_migration.py      |  2 +-
+ backend/tests/test_m3_acceptance.py     |  2 +-
+ backend/tests/test_m4_acceptance.py     |  2 +-
+ backend/tests/test_m5_acceptance.py     |  4 ++--
+ backend/tests/test_m5_migration.py      |  4 ++--
+ backend/tests/test_migrations.py        |  6 +++---
+ backend/tests/test_pipeline_runner.py   |  2 +-
+ backend/tests/test_postgres_auth.py     |  4 ++--
+ backend/tests/test_postgres_sessions.py |  2 +-
+ backend/tests/test_registry_api.py      |  2 +-
+ backend/tests/test_runs_api.py          |  2 +-
+ backend/tests/test_scheduler_startup.py |  2 +-
+ backend/tests/test_staging_purge.py     |  4 ++--
+ backend/tests/test_staging_step.py      | 18 +++++++++---------
+ backend/tests/test_user_persistence.py  |  2 +-
+ 20 files changed, 36 insertions(+), 36 deletions(-)
+
+## Diff
+diff --git a/backend/tests/test_clients_api.py b/backend/tests/test_clients_api.py
+index 3b1e175..78080c5 100644
+--- a/backend/tests/test_clients_api.py
++++ b/backend/tests/test_clients_api.py
+@@ -11,21 +11,21 @@ from app.models.session import Session
+ from app.models.user import User
+ from app.persistence.users import seed_initial_user
+ 
+ 
+ pytestmark = pytest.mark.asyncio
+ 
+ 
+ @pytest_asyncio.fixture
+ async def app_factory(isolated_database_url):
+     url = isolated_database_url
+-    engine = create_async_engine(url)
++    engine = create_async_engine(url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             await session.execute(delete(IngestionRun))
+             await session.execute(delete(FeedSource))
+             await session.execute(delete(Client))
+             await session.execute(delete(Session))
+             await session.execute(delete(User))
+         await seed_initial_user(session, "operator", "pw")
+     settings = Settings(
+diff --git a/backend/tests/test_config_bundle.py b/backend/tests/test_config_bundle.py
+index 77025a2..00300a1 100644
+--- a/backend/tests/test_config_bundle.py
++++ b/backend/tests/test_config_bundle.py
+@@ -4,21 +4,21 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+ from app.models.client import Client
+ from app.models.feed_source import FeedSource
+ from app.models.pipeline import ModuleInstance, ModulePipeline
+ from app.models.plugin import Plugin, PluginConfig, PluginData
+ from app.staging.config_resolver import resolve_config_bundle
+ 
+ pytestmark = pytest.mark.asyncio
+ 
+ 
+ def _make(url):
+-    engine = create_async_engine(url)
++    engine = create_async_engine(url, pool_size=2, max_overflow=0)
+     return engine, async_sessionmaker(engine, expire_on_commit=False)
+ 
+ 
+ async def _seed(session):
+     client = Client(name="Acme")
+     session.add(client)
+     await session.flush()
+     plugin = Plugin(
+         name="labelizer",
+         version="1.0.0",
+@@ -121,21 +121,21 @@ async def test_undeclared_feed_source_scope_never_applies(isolated_database_url)
+                 feed_source_id=feed_source.id, key="dims",
+                 config={"min_price": "999"},
+             ))
+         bundle = await resolve_config_bundle(session, feed_source)
+ 
+     assert bundle["instances"][0]["resolved_config"] == {"min_price": "20"}
+     await engine.dispose()
+ 
+ 
+ async def test_declared_feed_source_scope_wins(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             client = Client(name="Acme")
+             session.add(client)
+             await session.flush()
+             plugin = Plugin(
+                 name="labelizer",
+                 version="1.0.0",
+                 manifest={
+diff --git a/backend/tests/test_field_mapping_api.py b/backend/tests/test_field_mapping_api.py
+index 2db375c..3c628d1 100644
+--- a/backend/tests/test_field_mapping_api.py
++++ b/backend/tests/test_field_mapping_api.py
+@@ -11,21 +11,21 @@ from app.models.session import Session
+ from app.models.user import User
+ from app.persistence.users import seed_initial_user
+ 
+ 
+ pytestmark = pytest.mark.asyncio
+ 
+ 
+ @pytest_asyncio.fixture
+ async def app_factory(isolated_database_url):
+     url = isolated_database_url
+-    engine = create_async_engine(url)
++    engine = create_async_engine(url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             await session.execute(delete(IngestionRun))
+             await session.execute(delete(FeedSource))
+             await session.execute(delete(Client))
+             await session.execute(delete(Session))
+             await session.execute(delete(User))
+         await seed_initial_user(session, "operator", "pw")
+     settings = Settings(
+diff --git a/backend/tests/test_m1_acceptance.py b/backend/tests/test_m1_acceptance.py
+index 25c5a6c..11e51a6 100644
+--- a/backend/tests/test_m1_acceptance.py
++++ b/backend/tests/test_m1_acceptance.py
+@@ -37,21 +37,21 @@ EXPECTED_TABLES = {
+     "module_pipelines",
+     "module_instances",
+     "export_runs",
+     "export_versions",
+ }
+ 
+ 
+ @pytest_asyncio.fixture
+ async def m1_app(isolated_database_url):
+     url = isolated_database_url
+-    engine = create_async_engine(url)
++    engine = create_async_engine(url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             await session.execute(delete(Session))
+             await session.execute(delete(User))
+         await seed_initial_user(session, "operator", "old")
+     settings = Settings(
+         _env_file=None,
+         session_secret="test-secret",
+         initial_username="operator",
+@@ -65,21 +65,21 @@ async def m1_app(isolated_database_url):
+ 
+ async def _client(app):
+     return AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+ 
+ 
+ @pytest.mark.asyncio
+ async def test_m1_acceptance(m1_app, isolated_database_url):
+     app, _ = m1_app
+ 
+     # --- Schema verification ---
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     try:
+         async with engine.connect() as conn:
+             tables = await conn.run_sync(
+                 lambda sync_conn: {
+                     t
+                     for t in inspect(sync_conn).get_table_names()
+                     if t != "alembic_version"
+                 }
+             )
+     finally:
+diff --git a/backend/tests/test_m2_acceptance.py b/backend/tests/test_m2_acceptance.py
+index 3d152ec..4fe5dce 100644
+--- a/backend/tests/test_m2_acceptance.py
++++ b/backend/tests/test_m2_acceptance.py
+@@ -37,21 +37,21 @@ EXPECTED_TABLES = {
+     "module_pipelines",
+     "module_instances",
+     "export_runs",
+     "export_versions",
+ }
+ 
+ 
+ @pytest_asyncio.fixture
+ async def app_factory(isolated_database_url):
+     url = isolated_database_url
+-    engine = create_async_engine(url)
++    engine = create_async_engine(url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             await session.execute(delete(IngestionRun))
+             await session.execute(delete(FeedSource))
+             await session.execute(delete(Client))
+             await session.execute(delete(Session))
+             await session.execute(delete(User))
+         await seed_initial_user(session, "operator", "pw")
+     settings = Settings(
+diff --git a/backend/tests/test_m2_migration.py b/backend/tests/test_m2_migration.py
+index 4f9733c..b7baacc 100644
+--- a/backend/tests/test_m2_migration.py
++++ b/backend/tests/test_m2_migration.py
+@@ -8,21 +8,21 @@ from sqlalchemy.ext.asyncio import create_async_engine
+ 
+ 
+ @pytest.fixture
+ def alembic_config(isolated_database_url):
+     config = Config("alembic.ini")
+     config.set_main_option("sqlalchemy.url", isolated_database_url)
+     return config
+ 
+ 
+ async def _columns(database_url, table):
+-    engine = create_async_engine(database_url)
++    engine = create_async_engine(database_url, pool_size=2, max_overflow=0)
+     try:
+         async with engine.connect() as connection:
+             result = await connection.execute(
+                 text(
+                     "SELECT column_name, data_type, character_maximum_length, is_nullable, column_default "
+                     "FROM information_schema.columns WHERE table_schema = 'public' AND table_name = :table"
+                 ),
+                 {"table": table},
+             )
+             return {row[0]: row for row in result}
+diff --git a/backend/tests/test_m3_acceptance.py b/backend/tests/test_m3_acceptance.py
+index ff3dbbf..b038f4c 100644
+--- a/backend/tests/test_m3_acceptance.py
++++ b/backend/tests/test_m3_acceptance.py
+@@ -34,21 +34,21 @@ class CaptureProductsStep:
+     def __init__(self):
+         self.captured: list[dict] | None = None
+ 
+     async def execute(self, ctx: StepContext) -> StepResult:
+         self.captured = list(ctx.run_state.products)
+         return StepResult()
+ 
+ 
+ @pytest_asyncio.fixture
+ async def session_factory(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     yield factory
+     await engine.dispose()
+ 
+ 
+ async def _seed_feed_source(session_factory, configuration):
+     async with session_factory() as session:
+         async with session.begin():
+             client = Client(name="Acme")
+             session.add(client)
+diff --git a/backend/tests/test_m4_acceptance.py b/backend/tests/test_m4_acceptance.py
+index d9510a7..4abd384 100644
+--- a/backend/tests/test_m4_acceptance.py
++++ b/backend/tests/test_m4_acceptance.py
+@@ -39,21 +39,21 @@ class CaptureProductsStep:
+         self.captured: list[dict] | None = None
+ 
+     async def execute(self, ctx: StepContext) -> StepResult:
+         self.captured = list(ctx.run_state.products)
+         return StepResult()
+ 
+ 
+ @pytest_asyncio.fixture
+ async def app_factory(isolated_database_url):
+     url = isolated_database_url
+-    engine = create_async_engine(url)
++    engine = create_async_engine(url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             await session.execute(delete(IngestionRun))
+             await session.execute(delete(FeedSource))
+             await session.execute(delete(Client))
+             await session.execute(delete(Session))
+             await session.execute(delete(User))
+         await seed_initial_user(session, "operator", "pw")
+     settings = Settings(
+diff --git a/backend/tests/test_m5_acceptance.py b/backend/tests/test_m5_acceptance.py
+index 0d3b8a8..c80ccf9 100644
+--- a/backend/tests/test_m5_acceptance.py
++++ b/backend/tests/test_m5_acceptance.py
+@@ -47,21 +47,21 @@ class StubFetcher:
+     def __init__(self, data: bytes):
+         self.data = data
+ 
+     async def fetch(self, url, basic_auth=None, _client=None):
+         return self.data
+ 
+ 
+ @pytest_asyncio.fixture
+ async def app_factory(isolated_database_url):
+     url = isolated_database_url
+-    engine = create_async_engine(url)
++    engine = create_async_engine(url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             await session.execute(delete(IngestionRun))
+             await session.execute(delete(FeedSource))
+             await session.execute(delete(Client))
+             await session.execute(delete(Session))
+             await session.execute(delete(User))
+         await seed_initial_user(session, "operator", "pw")
+     settings = Settings(
+@@ -346,21 +346,21 @@ async def test_invalid_ids_do_not_block_run(app_factory):
+     latest = await _latest_run_via_api(client, fs_id)
+     stats = _staging_stats(latest)
+     assert stats["failed"] >= 1
+     assert stats["new"] == 1
+ 
+     rows = await _staging_rows(factory, fs_id)
+     assert set(rows) == {"A1"}
+ 
+ 
+ async def test_migration_head_matches_models(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+ 
+     def _inspect(connection):
+         inspector = inspect(connection)
+         columns = {c["name"] for c in inspector.get_columns("staging_products")}
+         fks = inspector.get_foreign_keys("staging_history")
+         return columns, fks
+ 
+     try:
+         async with engine.connect() as connection:
+             columns, fks = await connection.run_sync(_inspect)
+diff --git a/backend/tests/test_m5_migration.py b/backend/tests/test_m5_migration.py
+index 5925ef4..16deb62 100644
+--- a/backend/tests/test_m5_migration.py
++++ b/backend/tests/test_m5_migration.py
+@@ -9,21 +9,21 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+ pytestmark = pytest.mark.asyncio
+ 
+ 
+ def _alembic_config(url):
+     config = Config("alembic.ini")
+     config.set_main_option("sqlalchemy.url", url)
+     return config
+ 
+ 
+ async def _inspect_schema(url):
+-    engine = create_async_engine(url)
++    engine = create_async_engine(url, pool_size=2, max_overflow=0)
+ 
+     def _run(connection):
+         inspector = inspect(connection)
+         return (
+             {c["name"] for c in inspector.get_columns("staging_products")},
+             {i["name"]: i for i in inspector.get_indexes("staging_products")},
+             inspector.get_foreign_keys("staging_history"),
+         )
+ 
+     try:
+@@ -56,21 +56,21 @@ async def test_downgrade_reverses_all_three(isolated_database_url):
+     columns, indexes, fks = await _inspect_schema(isolated_database_url)
+     assert "removed_at" not in columns
+     assert "ix_staging_products_removed_purge" not in indexes
+     history_fk = [fk for fk in fks if fk["constrained_columns"] == ["staging_product_id"]]
+     assert history_fk and _fk_ondelete(history_fk[0]) == "RESTRICT"
+ 
+     await asyncio.to_thread(command.upgrade, _alembic_config(isolated_database_url), "head")
+ 
+ 
+ async def test_removal_deletes_history_via_cascade(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             client = (await session.execute(
+                 text(
+                     "INSERT INTO clients (name, settings, contact_details) "
+                     "VALUES ('C', '{}', '{}') RETURNING id"
+                 )
+             )).scalar_one()
+             fs = (await session.execute(
+diff --git a/backend/tests/test_migrations.py b/backend/tests/test_migrations.py
+index b4771e8..b93f513 100644
+--- a/backend/tests/test_migrations.py
++++ b/backend/tests/test_migrations.py
+@@ -62,49 +62,49 @@ def isolated_schema(database_url):
+ 
+ async def _database_command(database_url, statement):
+     connection = await asyncpg.connect(database_url)
+     try:
+         await connection.execute(statement)
+     finally:
+         await connection.close()
+ 
+ 
+ async def _execute(database_url, statement):
+-    engine = create_async_engine(database_url)
++    engine = create_async_engine(database_url, pool_size=2, max_overflow=0)
+     try:
+         async with engine.begin() as connection:
+             for command_text in statement.split(";"):
+                 if command_text.strip():
+                     await connection.execute(text(command_text))
+     finally:
+         await engine.dispose()
+ 
+ 
+ def _schema_url(database_url: str, schema: str) -> str:
+     return database_url
+ 
+ 
+ async def _table_names(database_url, schema):
+-    engine = create_async_engine(database_url)
++    engine = create_async_engine(database_url, pool_size=2, max_overflow=0)
+     try:
+         async with engine.connect() as connection:
+             result = await connection.execute(
+                 text("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'"),
+                 {"schema": schema},
+             )
+             return {row[0] for row in result} - {"alembic_version"}
+     finally:
+         await engine.dispose()
+ 
+ 
+ async def _indexes_and_constraints(database_url, schema):
+-    engine = create_async_engine(database_url)
++    engine = create_async_engine(database_url, pool_size=2, max_overflow=0)
+     try:
+         async with engine.connect() as connection:
+             return await connection.run_sync(
+                 lambda sync: {
+                     table: {
+                         "indexes": inspect(sync).get_indexes(table, schema=schema),
+                         "constraints": inspect(sync).get_check_constraints(table, schema=schema)
+                         + inspect(sync).get_unique_constraints(table, schema=schema),
+                         "foreign_keys": inspect(sync).get_foreign_keys(table, schema=schema),
+                     }
+diff --git a/backend/tests/test_pipeline_runner.py b/backend/tests/test_pipeline_runner.py
+index 4a3ae25..f1bbdd3 100644
+--- a/backend/tests/test_pipeline_runner.py
++++ b/backend/tests/test_pipeline_runner.py
+@@ -30,21 +30,21 @@ class RecordingStep:
+ 
+ class FailingStep:
+     name = "failing"
+ 
+     async def execute(self, ctx: StepContext) -> StepResult:
+         raise RuntimeError("step exploded")
+ 
+ 
+ @pytest_asyncio.fixture
+ async def session_factory(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     yield factory
+     await engine.dispose()
+ 
+ 
+ @pytest_asyncio.fixture
+ async def feed_source_id(session_factory):
+     async with session_factory() as session:
+         async with session.begin():
+             client = Client(name="Acme")
+diff --git a/backend/tests/test_postgres_auth.py b/backend/tests/test_postgres_auth.py
+index b710e36..40e709c 100644
+--- a/backend/tests/test_postgres_auth.py
++++ b/backend/tests/test_postgres_auth.py
+@@ -11,21 +11,21 @@ from app.config import Settings
+ from app.main import create_app
+ from app.models.session import Session
+ from app.models.user import User
+ from app.persistence.users import seed_initial_user
+ from app.clock import TestClock
+ 
+ 
+ @pytest_asyncio.fixture
+ async def postgres_app(isolated_database_url):
+     url = isolated_database_url
+-    engine = create_async_engine(url)
++    engine = create_async_engine(url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             await session.execute(delete(Session))
+             await session.execute(delete(User))
+         await seed_initial_user(session, "operator", "old")
+     settings = Settings(
+         _env_file=None,
+         session_secret="test-secret",
+         initial_username="operator",
+@@ -118,21 +118,21 @@ async def test_persisted_interaction_renews_idle_expiry(postgres_app):
+     assert (await client.post("/auth/interaction")).status_code == 200
+     clock.advance(minutes=29)
+     assert (await client.get("/auth/me")).status_code == 200
+     await client.aclose()
+ 
+ 
+ @pytest.mark.asyncio
+ async def test_startup_seeds_once_and_session_survives_new_app_instance(
+     isolated_database_url,
+ ):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     settings = Settings(
+         _env_file=None,
+         session_secret="test-secret",
+         initial_username="operator",
+         initial_password="first-password",
+         database_url=isolated_database_url,
+     )
+     first_app = create_app(settings=settings, db_session_factory=factory)
+     async with first_app.router.lifespan_context(first_app):
+diff --git a/backend/tests/test_postgres_sessions.py b/backend/tests/test_postgres_sessions.py
+index 6076b35..3e7d261 100644
+--- a/backend/tests/test_postgres_sessions.py
++++ b/backend/tests/test_postgres_sessions.py
+@@ -11,21 +11,21 @@ from app.models.session import Session
+ from app.models.user import User
+ from app.persistence.sessions import PostgresSessionStore, _token_hash
+ 
+ 
+ pytestmark = pytest.mark.asyncio
+ 
+ 
+ @pytest_asyncio.fixture
+ async def postgres_store(isolated_database_url):
+     url = isolated_database_url
+-    engine = create_async_engine(url)
++    engine = create_async_engine(url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             await session.execute(delete(Session))
+             await session.execute(delete(User))
+             session.add(User(username="operator", password_hash="not-used"))
+     yield PostgresSessionStore(factory, timedelta(minutes=30), timedelta(hours=12), "test-secret")
+     async with factory() as session:
+         async with session.begin():
+             await session.execute(delete(Session))
+diff --git a/backend/tests/test_registry_api.py b/backend/tests/test_registry_api.py
+index 13c9983..dcced46 100644
+--- a/backend/tests/test_registry_api.py
++++ b/backend/tests/test_registry_api.py
+@@ -11,21 +11,21 @@ from app.models.session import Session
+ from app.models.user import User
+ from app.persistence.users import seed_initial_user
+ 
+ 
+ pytestmark = pytest.mark.asyncio
+ 
+ 
+ @pytest_asyncio.fixture
+ async def app_factory(isolated_database_url):
+     url = isolated_database_url
+-    engine = create_async_engine(url)
++    engine = create_async_engine(url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             await session.execute(delete(IngestionRun))
+             await session.execute(delete(FeedSource))
+             await session.execute(delete(Client))
+             await session.execute(delete(Session))
+             await session.execute(delete(User))
+         await seed_initial_user(session, "operator", "pw")
+     settings = Settings(
+diff --git a/backend/tests/test_runs_api.py b/backend/tests/test_runs_api.py
+index dd87099..1b36e24 100644
+--- a/backend/tests/test_runs_api.py
++++ b/backend/tests/test_runs_api.py
+@@ -19,21 +19,21 @@ pytestmark = pytest.mark.asyncio
+ 
+ 
+ class StubFetcher:
+     async def fetch(self, url, basic_auth=None, _client=None):
+         return b"<rss><channel></channel></rss>"
+ 
+ 
+ @pytest_asyncio.fixture
+ async def app_factory(isolated_database_url):
+     url = isolated_database_url
+-    engine = create_async_engine(url)
++    engine = create_async_engine(url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             await session.execute(delete(IngestionRun))
+             await session.execute(delete(FeedSource))
+             await session.execute(delete(Client))
+             await session.execute(delete(Session))
+             await session.execute(delete(User))
+         await seed_initial_user(session, "operator", "pw")
+     settings = Settings(
+diff --git a/backend/tests/test_scheduler_startup.py b/backend/tests/test_scheduler_startup.py
+index 4dd132a..317a6ba 100644
+--- a/backend/tests/test_scheduler_startup.py
++++ b/backend/tests/test_scheduler_startup.py
+@@ -10,21 +10,21 @@ from app.models import Client, FeedSource
+ from app.models.session import Session
+ from app.models.user import User
+ from app.persistence.users import seed_initial_user
+ 
+ 
+ pytestmark = pytest.mark.asyncio
+ 
+ 
+ @pytest_asyncio.fixture
+ async def db(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             await session.execute(delete(FeedSource))
+             await session.execute(delete(Client))
+             await session.execute(delete(Session))
+             await session.execute(delete(User))
+         await seed_initial_user(session, "operator", "pw")
+     yield factory, isolated_database_url
+     await engine.dispose()
+diff --git a/backend/tests/test_staging_purge.py b/backend/tests/test_staging_purge.py
+index 2bf50a4..81744a3 100644
+--- a/backend/tests/test_staging_purge.py
++++ b/backend/tests/test_staging_purge.py
+@@ -62,21 +62,21 @@ async def _product(factory, feed_source, pid, status, removed_at, recorded_at=NO
+                     {"ra": removed_at, "pk": pk},
+                 )
+             await session.execute(
+                 text("UPDATE staging_history SET recorded_at = :t WHERE id = :pk"),
+                 {"t": recorded_at, "pk": history_pk},
+             )
+     return pk, history_pk
+ 
+ 
+ async def test_purge_removes_expired_rows_only(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             feed_source = await _seed(session)
+ 
+     expired_pk, expired_hist = await _product(
+         factory, feed_source, "old", "removed", NOW - timedelta(days=91)
+     )
+     fresh_pk, fresh_hist = await _product(
+         factory, feed_source, "recent", "removed", NOW - timedelta(days=10)
+@@ -97,18 +97,18 @@ async def test_purge_removes_expired_rows_only(isolated_database_url):
+         }
+         remaining_history = {
+             row.id for row in (await session.execute(select(StagingHistory))).scalars()
+         }
+     assert remaining_products == {"recent", "active"}
+     assert remaining_history == {fresh_hist}
+     await engine.dispose()
+ 
+ 
+ async def test_purge_on_empty_tables_is_zero(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+ 
+     counts = await purge_expired(FactoryAdapter(factory), NOW)
+ 
+     assert counts.removed_products == 0
+     assert counts.history_rows == 0
+     await engine.dispose()
+diff --git a/backend/tests/test_staging_step.py b/backend/tests/test_staging_step.py
+index 574a278..bffd80b 100644
+--- a/backend/tests/test_staging_step.py
++++ b/backend/tests/test_staging_step.py
+@@ -51,79 +51,79 @@ def _ctx(factory, feed_source_id, products, run_id=1):
+     )
+ 
+ 
+ async def _staged_rows(factory):
+     async with factory() as session:
+         result = await session.execute(select(StagingProduct))
+         return {row.product_id: row for row in result.scalars()}
+ 
+ 
+ async def test_first_run_stages_all_products(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             feed_source = await _seed(session)
+     products = [{"id": "1", "title": "A"}, {"id": "2", "title": "B"}]
+ 
+     result = await StagingStep().execute(_ctx(factory, feed_source.id, products))
+ 
+     assert result.statistics["staging"]["new"] == 2
+     assert result.processed_count == 2
+     rows = await _staged_rows(factory)
+     assert set(rows) == {"1", "2"}
+     assert all(r.status == "active" for r in rows.values())
+     assert rows["1"].raw_data == products[0]
+     await engine.dispose()
+ 
+ 
+ async def test_identical_rerun_touches_only(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             feed_source = await _seed(session)
+     products = [{"id": "1", "title": "A"}]
+     await StagingStep().execute(_ctx(factory, feed_source.id, products, run_id=1))
+ 
+     result = await StagingStep().execute(_ctx(factory, feed_source.id, products, run_id=2))
+ 
+     assert result.statistics["staging"]["unchanged"] == 1
+     assert result.processed_count == 0
+     async with factory() as session:
+         row = (await session.execute(select(StagingProduct))).scalar_one()
+         assert row.ingestion_run_id == 1
+     await engine.dispose()
+ 
+ 
+ async def test_run_state_replaced_with_enqueue_set(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             feed_source = await _seed(session)
+     first = [{"id": "1", "title": "A"}, {"id": "2", "title": "B"}]
+     await StagingStep().execute(_ctx(factory, feed_source.id, first, run_id=1))
+ 
+     second = [{"id": "1", "title": "CHANGED"}, {"id": "2", "title": "B"}]
+     ctx = _ctx(factory, feed_source.id, second, run_id=2)
+     await StagingStep().execute(ctx)
+ 
+     assert [p["id"] for p in ctx.run_state.products] == ["1"]
+     async with factory() as session:
+         histories = (await session.execute(select(StagingHistory))).scalars().all()
+     assert len(histories) == 3
+     await engine.dispose()
+ 
+ 
+ async def test_config_only_change_no_new_history(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             feed_source = await _seed(session)
+     products = [{"id": "1", "title": "A"}]
+     await StagingStep().execute(_ctx(factory, feed_source.id, products, run_id=1))
+ 
+     async with factory() as session:
+         async with session.begin():
+             row = (await session.execute(select(StagingProduct))).scalar_one()
+@@ -133,21 +133,21 @@ async def test_config_only_change_no_new_history(isolated_database_url):
+     result = await StagingStep().execute(ctx)
+ 
+     assert result.statistics["staging"]["changed"] == 1
+     async with factory() as session:
+         histories = (await session.execute(select(StagingHistory))).scalars().all()
+     assert len(histories) == 1
+     await engine.dispose()
+ 
+ 
+ async def test_removal_then_reactivation_round_trip(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             feed_source = await _seed(session)
+     products = [{"id": "1", "title": "A"}, {"id": "2", "title": "B"}]
+     await StagingStep().execute(_ctx(factory, feed_source.id, products, run_id=1))
+ 
+     await StagingStep().execute(_ctx(factory, feed_source.id, products[:1], run_id=2))
+     rows = await _staged_rows(factory)
+     assert rows["2"].status == "removed"
+@@ -158,21 +158,21 @@ async def test_removal_then_reactivation_round_trip(isolated_database_url):
+ 
+     assert result.statistics["staging"]["reactivated"] == 1
+     assert [p["id"] for p in ctx.run_state.products] == ["2"]
+     rows = await _staged_rows(factory)
+     assert rows["2"].status == "active"
+     assert rows["2"].removed_at is None
+     await engine.dispose()
+ 
+ 
+ async def test_invalid_and_duplicate_ids_counted_failed(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             feed_source = await _seed(session)
+     products = [
+         {"title": "no id"},
+         {"id": "1", "title": "first"},
+         {"id": "1", "title": "dup"},
+     ]
+ 
+@@ -180,21 +180,21 @@ async def test_invalid_and_duplicate_ids_counted_failed(isolated_database_url):
+ 
+     assert result.failed_count == 2
+     assert result.statistics["staging"]["failed"] == 2
+     rows = await _staged_rows(factory)
+     assert set(rows) == {"1"}
+     assert rows["1"].raw_data["title"] == "first"
+     await engine.dispose()
+ 
+ 
+ async def test_apply_staging_delta_maps_reactivations_in_pk_map(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             feed_source = await _seed(session)
+     await StagingStep().execute(
+         _ctx(factory, feed_source.id, [{"id": "1", "title": "A"}], run_id=1)
+     )
+     await StagingStep().execute(_ctx(factory, feed_source.id, [], run_id=2))
+     rows = await _staged_rows(factory)
+     pk = rows["1"].id
+@@ -203,21 +203,21 @@ async def test_apply_staging_delta_maps_reactivations_in_pk_map(isolated_databas
+     delta = StagingDelta(reactivations=[pk])
+     pk_map = await apply_staging_delta(
+         FactoryAdapter(factory), feed_source.id, 3, delta, content_hash(product)
+     )
+ 
+     assert pk_map == {"1": pk}
+     await engine.dispose()
+ 
+ 
+ async def test_apply_staging_delta_maps_updates_in_pk_map(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             feed_source = await _seed(session)
+     await StagingStep().execute(
+         _ctx(factory, feed_source.id, [{"id": "1", "title": "A"}], run_id=1)
+     )
+     rows = await _staged_rows(factory)
+     pk = rows["1"].id
+ 
+@@ -232,21 +232,21 @@ async def test_apply_staging_delta_maps_updates_in_pk_map(isolated_database_url)
+     )
+ 
+     assert pk_map == {"1": pk}
+     async with factory() as session:
+         row = (await session.execute(select(StagingProduct))).scalar_one()
+         assert row.raw_data == product
+     await engine.dispose()
+ 
+ 
+ async def test_load_stored_rows_maps_snapshots(isolated_database_url):
+-    engine = create_async_engine(isolated_database_url)
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         async with session.begin():
+             feed_source = await _seed(session)
+     await StagingStep().execute(
+         _ctx(factory, feed_source.id, [{"id": "1", "title": "A"}], run_id=1)
+     )
+ 
+     stored = await load_stored_rows(FactoryAdapter(factory), feed_source.id)
+ 
+diff --git a/backend/tests/test_user_persistence.py b/backend/tests/test_user_persistence.py
+index 830ea02..69d8990 100644
+--- a/backend/tests/test_user_persistence.py
++++ b/backend/tests/test_user_persistence.py
+@@ -10,21 +10,21 @@ from app.persistence.users import (
+     change_password,
+     get_user_by_username,
+     seed_initial_user,
+     verify_user_password,
+ )
+ 
+ 
+ @pytest_asyncio.fixture
+ async def user_session(isolated_database_url):
+     url = isolated_database_url
+-    engine = create_async_engine(url)
++    engine = create_async_engine(url, pool_size=2, max_overflow=0)
+     factory = async_sessionmaker(engine, expire_on_commit=False)
+     async with factory() as session:
+         await session.execute(delete(User))
+         await session.commit()
+         yield session
+         await session.execute(delete(User))
+         await session.commit()
+     await engine.dispose()
+ 
+ 

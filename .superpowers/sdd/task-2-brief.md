@@ -1,99 +1,135 @@
-### Task 2: Three-tier scope merge (pure function)
+### Task 2: Template-database fixture rework
 
 **Files:**
-- Create: `backend/app/staging/config_resolver.py`
-- Test: `backend/tests/test_config_merge.py`
+- Modify: `backend/tests/conftest.py` (replace `isolated_database_url` internals; add plugin wiring)
+- Possibly modify: `backend/tests/test_migrations.py`, `backend/tests/test_m2_migration.py`, `backend/tests/test_m5_migration.py` ONLY if their assumptions break (see Step 4)
 
 **Interfaces:**
-- Consumes: nothing yet (pure).
-- Produces: `merge_scopes(global_payload: dict, client_payload: dict | None, feed_source_payload: dict | None) -> dict` implementing spec §5.3 (per key: dicts merge recursively, everything else replaces wholesale). Task 3 builds on it — do not rename.
+- Consumes: `TEST_DATABASE_URL` env var; Alembic programmatic API; `pytest_postgresql.factories`.
+- Produces: unchanged `isolated_database_url(request)` fixture yielding `postgresql+asyncpg://user:pass@host:port/dbname` for a fully-migrated per-test database. All other test files untouched.
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Rework conftest.py**
 
-Create `backend/tests/test_config_merge.py`:
+Replace the imports block and the whole `isolated_database_url` fixture with the following. Keep every other existing fixture (`artifact_path`, `clock`, `store`, `settings`, `client`) byte-identical.
 
-```python
-from app.staging.config_resolver import merge_scopes
-
-
-class TestMergeScopes:
-    def test_global_only(self):
-        assert merge_scopes({"a": 1}, None, None) == {"a": 1}
-
-    def test_client_overrides_global_per_key(self):
-        assert merge_scopes({"a": 1, "b": 2}, {"b": 3}, None) == {"a": 1, "b": 3}
-
-    def test_feed_source_wins(self):
-        merged = merge_scopes({"a": 1, "b": 2, "c": 3}, {"c": 30}, {"a": 10})
-        assert merged == {"a": 10, "b": 2, "c": 30}
-
-    def test_non_dict_values_replace_wholesale(self):
-        assert merge_scopes({"rules": [1, 2, 3]}, {"rules": [9]}, None) == {"rules": [9]}
-
-    def test_dict_values_merge_recursively(self):
-        merged = merge_scopes(
-            {"limits": {"title": 150, "desc": 5000}},
-            {"limits": {"title": 100}},
-            None,
-        )
-        assert merged == {"limits": {"title": 100, "desc": 5000}}
-
-    def test_missing_at_specific_scope_falls_through(self):
-        assert merge_scopes({"a": 1}, {}, {"b": 2}) == {"a": 1, "b": 2}
-
-    def test_type_flip_replaces(self):
-        assert merge_scopes({"a": {"nested": 1}}, {"a": "flat"}, None) == {"a": "flat"}
-```
-
-- [ ] **Step 2: Run tests to verify they fail**
-
-Run: `uv run pytest tests/test_config_merge.py -v`
-Expected: FAIL with `ModuleNotFoundError: No module named 'app.staging.config_resolver'`
-
-- [ ] **Step 3: Write the implementation**
-
-Create `backend/app/staging/config_resolver.py`:
+New/changed imports (top of file):
 
 ```python
-from __future__ import annotations
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+from urllib.parse import quote, urlsplit
 
-from typing import Any
+import pytest
+from alembic import command
+from alembic.config import Config
+from pytest_postgresql import factories
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-
-def _merge_dicts(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
-    merged = dict(base)
-    for key, value in overlay.items():
-        if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
-            merged[key] = _merge_dicts(merged[key], value)
-        else:
-            merged[key] = value
-    return merged
-
-
-def merge_scopes(
-    global_payload: dict[str, Any],
-    client_payload: dict[str, Any] | None,
-    feed_source_payload: dict[str, Any] | None,
-) -> dict[str, Any]:
-    resolved = dict(global_payload)
-    if client_payload is not None:
-        resolved = _merge_dicts(resolved, client_payload)
-    if feed_source_payload is not None:
-        resolved = _merge_dicts(resolved, feed_source_payload)
-    return resolved
+from app.clock import TestClock
+from app.config import Settings
+from app.main import create_app
+from app.session_store import InMemorySessionStore
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+Remove now-unused imports (`asyncio`, `uuid`, `urlunsplit`, `asyncpg`) unless something else in the file still uses them — nothing else does.
 
-Run: `uv run pytest tests/test_config_merge.py -v`
-Expected: PASS (7 tests)
+Module-level wiring (place after the `_ARTIFACT_PATH` definition):
+
+```python
+_BACKEND_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _server_params() -> dict:
+    value = os.environ.get("TEST_DATABASE_URL")
+    if not value:
+        pytest.fail("TEST_DATABASE_URL must point to PostgreSQL via asyncpg")
+    if not value.startswith("postgresql+asyncpg://"):
+        pytest.fail("TEST_DATABASE_URL must use the postgresql+asyncpg:// dialect")
+    parts = urlsplit(value)
+    return {
+        "host": parts.hostname or "localhost",
+        "port": parts.port or 5432,
+        "user": parts.username or "postgres",
+        "password": parts.password or "",
+    }
+
+
+def _load_alembic_schema(**kwargs):
+    """Populate the plugin's template database with the full migration chain."""
+    config = Config(str(_BACKEND_ROOT / "alembic.ini"))
+    password = quote(kwargs.get("password") or "", safe="")
+    url = (
+        f"postgresql+asyncpg://{kwargs['user']}:{password}"
+        f"@{kwargs['host']}:{kwargs['port']}/{kwargs['dbname']}"
+    )
+    config.set_main_option("sqlalchemy.url", url)
+    command.upgrade(config, "head")
+    # alembic's env.py disposes its own engine before returning, so no
+    # connections hold the template open when the plugin clones it.
+
+
+_server = _server_params()
+
+gmc_postgres_noproc = factories.postgresql_noproc(
+    host=_server["host"],
+    port=_server["port"],
+    user=_server["user"],
+    password=_server["password"],
+    load=[_load_alembic_schema],
+)
+
+gmc_database = factories.postgresql("gmc_postgres_noproc")
+
+
+def _asyncpg_url(info) -> str:
+    password = quote(info.password or "", safe="")
+    return (
+        f"postgresql+asyncpg://{info.user}:{password}"
+        f"@{info.host}:{info.port}/{info.dbname}"
+    )
+
+
+@pytest.fixture
+def isolated_database_url(request):
+    _server_params()
+    connection = request.getfixturevalue("gmc_database")
+    return _asyncpg_url(connection.info)
+```
+
+Delete the entire old `isolated_database_url` fixture (the asyncpg CREATE/DROP DATABASE version).
+
+Notes for the implementer:
+- `_server_params()` is called twice by design: once at import to parametrize the factory, once inside the fixture to preserve the fail-fast contract when the env var is missing (the check runs *before* `getfixturevalue` spins up the plugin machinery).
+- The plugin's `postgresql` fixture yields a psycopg `Connection`; `.info` exposes host/port/dbname/user/password.
+- If the installed pytest-postgresql version names the loader parameter or kwarg shape differently than `load=[callable]` / `**kwargs` with `dbname`, consult its docs (`uv run python -c "import pytest_postgresql.factories as f; help(f.postgresql_noproc)"`) and adapt the call — the behavioral contract above is binding, not the literal signature.
+
+- [ ] **Step 2: Verify serially against the DB-heavy suites**
+
+```bash
+cd backend && export TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres
+uv run pytest tests/test_config_bundle.py tests/test_staging_step.py -q -n0
+```
+Expected: PASS. First test pays the one-time template migration; subsequent setups should be visibly faster (look at `--durations=5` if curious).
+
+- [ ] **Step 3: Full suite, serial**
+
+```bash
+uv run pytest -q -n0 2>&1 | tail -1
+```
+Expected: 366 passed. If any of the three migration-driving test files fail because they assumed an empty database, adapt ONLY those tests minimally (e.g. begin with `command.downgrade(config, "base")` before their upgrade flow) and justify each change in the report. Anything beyond those three files failing = stop and report BLOCKED.
+
+- [ ] **Step 4: Measure and record**
+
+Record the `-n0` wall time (from pytest's summary line) in a working note (final numbers go into decisions.md in Task 4).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/staging/config_resolver.py tests/test_config_merge.py
-git commit -m "feat: three-tier scope merge per spec 5.3"
+git add backend/tests/conftest.py backend/tests/test_migrations.py backend/tests/test_m2_migration.py backend/tests/test_m5_migration.py
+git commit -m "feat: template-database test isolation via pytest-postgresql"
 ```
+(Include migration-test files only if actually modified.)
 
 ---
 
