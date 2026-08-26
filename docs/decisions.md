@@ -340,3 +340,34 @@ binding product specification. Dates use ISO 8601 calendar dates.
   so the hashed bundle must mirror that document, not a storage-key nest.
   Internal shape until M6 wires plugin runtime; recorded here since Task 6
   hashes this exact structure.
+
+### M5 final verification
+
+- **Topic:** Milestone 5 (staging + delta) acceptance gate
+- **Decision:** M5 is complete. `content_hash`/`config_hash` delta mechanics
+  behave exactly as specified, including reactivation and purge. The new
+  acceptance suite (`test_m5_acceptance.py`, 8 scenarios) covers: first-run
+  staging of all products as new/active; identical rerun enqueuing nothing
+  (unchanged only, no new history); content change reprocessing exactly the
+  changed product with one new history row; config-only change (mutated
+  `module_instances.configuration`) reprocessing all products without any new
+  history; removal flipping status to `removed` with `removed_at` set and full
+  reactivation on resurface (`removed_at` cleared); `purge_expired` deleting an
+  expired removal plus its history end-to-end; missing-id rows counting as
+  failed without blocking a successful run; and Alembic head exposing
+  `removed_at` with a CASCADE FK from `staging_history`. The suite asserts
+  through public surfaces (REST endpoints + DB state) following the M4
+  acceptance pattern (engine/factory fixtures, API login, stub fetcher).
+  Full gate green: compileall; backend pytest 363 tests passed (prior ~355
+  plus the 8 new scenarios) against PostgreSQL via `TEST_DATABASE_URL`;
+  registry drift-check unchanged; `git diff --check` clean; frontend vitest
+  (8 tests), TypeScript typecheck, and production build all pass. RED
+  evidence: with `write_history` forced to `False` on content updates,
+  `test_content_change_reprocesses_with_history` fails as expected.
+- **Resolved dependency versions (verified 2026-08-26):** unchanged pins —
+  SQLAlchemy 2.0.43, asyncpg 0.30.0, Alembic 1.16.4, argon2-cffi 25.1.0,
+  pytest-asyncio 1.1.0, APScheduler 3.11.3.
+- **Deviation from plan:** none material. The runner's `processed_count`
+  accumulates across steps (ingest + mapping + staging), so the acceptance
+  tests assert staging counts and history/state invariants instead of
+  absolute `processed_count` values.
