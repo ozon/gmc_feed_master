@@ -442,3 +442,26 @@ binding product specification. Dates use ISO 8601 calendar dates.
 - **Rationale:** The delta set from M5 is exactly the write path; deferring
   would leave processed state unobservable until the writer exists and couple
   two milestones' acceptance criteria.
+
+### M6 final verification
+
+- **Topic:** Milestone 6 (plugin host) acceptance gate
+- **Decision:** M6 is complete. The full acceptance gate passes: plugin
+  discovery loads a fixture plugin from a temporary directory, registers it in
+  the database with `enabled=False` (third-party default), and
+  `contract_violations` returns empty. Idempotent re-discovery preserves
+  `enabled=True` across restarts and updates version on manifest bumps.
+  End-to-end runner execution stages two products, processes one through the
+  plugin (title uppercased + suffix), drops the other (`processed_data` null,
+  `excluded=True`), and records `plugins.processed == 1, dropped == 1`.
+  Error isolation preserves last-known-good when a plugin raises on a specific
+  product. Drop→pass reactivation verifies `excluded` reverts to `False` when
+  a later run passes. Toggle/config round-trip via API confirms enable, config
+  PUT/GET, and undeclared-scope rejection (422). The meta-gate runs the full
+  backend suite serial (`-n0`) and parallel (`-n auto`), compileall, and
+  `git diff --check`, all green. 479 tests total.
+- **Resolved dependency versions (verified 2026-08-26):** jsonschema 4.26.0,
+  pytest-postgresql 8.1.0, pytest-xdist 3.8.0 (unchanged pins: SQLAlchemy
+  2.0.43, asyncpg 0.30.0, Alembic 1.16.4, argon2-cffi 25.1.0,
+  pytest-asyncio 1.1.0, APScheduler 3.11.3).
+- **Deviation from plan:** none material.
