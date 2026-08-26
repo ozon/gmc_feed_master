@@ -31,3 +31,17 @@ class FieldMappingOut(BaseModel):
     auto_mapped: bool
     source_fields: list[SourceFieldOut]
     mappings: dict[str, MappingEntryOut]
+
+
+class RegistrySubFieldOut(BaseModel):
+    name: str
+    type: str
+    required: str
+
+
+class RegistryAttributeOut(BaseModel):
+    name: str
+    kind: str
+    required: str
+    sub_fields: list[RegistrySubFieldOut]
+    enum_values: list[str]

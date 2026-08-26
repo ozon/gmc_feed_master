@@ -29,7 +29,7 @@ from .session_store import SessionStore
 from .persistence.sessions import PostgresSessionStore
 from .db.engine import create_engine, create_session_factory, get_db_session
 from .persistence.users import change_password, seed_initial_user
-from .routes import clients_router, field_mapping_router
+from .routes import clients_router, field_mapping_router, registry_router
 
 
 def _configured_settings() -> Settings | None:
@@ -76,6 +76,7 @@ def create_app(
     app = FastAPI(lifespan=lifespan)
     app.include_router(clients_router)
     app.include_router(field_mapping_router)
+    app.include_router(registry_router)
     app.state.settings = settings
     app.state.session_store = session_store
     app.state.session_store_injected = session_store is not None
