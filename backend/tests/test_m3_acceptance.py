@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.models import Client, FeedSource, IngestionRun
 from app.pipeline import LockRegistry, StepContext, StepResult, default_steps
 from app.pipeline.runner import PipelineRunner
-from registry.model import RegistryDocument
+from registry.loader import load_registry
 
 
 pytestmark = pytest.mark.asyncio
@@ -76,14 +76,14 @@ async def test_happy_path_tsv_ingest_end_to_end(session_factory):
     )
     fetcher = StubFetcher(HAPPY_TSV)
     capture = CaptureProductsStep()
-    steps = [*default_steps(fetcher, RegistryDocument(attributes={})), capture]
+    steps = [*default_steps(fetcher, load_registry()), capture]
     runner = PipelineRunner(LockRegistry(), session_factory, steps)
 
     run_id = await runner.execute(fs_id)
 
     run = await _get_run(session_factory, run_id)
     assert run.status == "success"
-    assert run.processed_count == 3
+    assert run.processed_count == 6
     assert run.failed_count == 0
     assert run.completed_at is not None
     assert run.statistics["row_errors"] == []
@@ -99,14 +99,14 @@ async def test_row_errors_skipped_but_run_succeeds(session_factory):
     fs_id = await _seed_feed_source(session_factory, {})
     fetcher = StubFetcher(ROW_ERROR_TSV)
     capture = CaptureProductsStep()
-    steps = [*default_steps(fetcher, RegistryDocument(attributes={})), capture]
+    steps = [*default_steps(fetcher, load_registry()), capture]
     runner = PipelineRunner(LockRegistry(), session_factory, steps)
 
     run_id = await runner.execute(fs_id)
 
     run = await _get_run(session_factory, run_id)
     assert run.status == "success"
-    assert run.processed_count == 1
+    assert run.processed_count == 2
     assert run.failed_count == 1
     assert run.statistics["row_errors"] == [
         {

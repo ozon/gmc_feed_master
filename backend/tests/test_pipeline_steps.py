@@ -6,6 +6,7 @@ import pytest
 from app.pipeline import (
     ExportStep,
     IngestStep,
+    MappingStep,
     PipelineStep,
     PluginStep,
     QualityCheckStep,
@@ -68,19 +69,21 @@ async def test_no_op_steps_contract(step_cls, ctx):
 def test_step_names_are_distinct():
     steps = _steps()
     names = [step.name for step in steps]
-    assert len(set(names)) == 4
+    assert len(set(names)) == 5
 
 
 def test_default_steps_order():
     steps = _steps()
     assert [type(step) for step in steps] == [
         IngestStep,
+        MappingStep,
         PluginStep,
         QualityCheckStep,
         ExportStep,
     ]
     assert [step.name for step in steps] == [
         "ingest",
+        "mapping",
         "run_plugins",
         "quality_check",
         "export",

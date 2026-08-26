@@ -11,6 +11,7 @@ from registry.model import RegistryDocument
 
 from ..ingest import HttpFetcher, read_feed
 from ..ingest.report import SourceField
+from ..mapping import MappingDocument, apply_mapping, auto_match
 from ..models.feed_source import FeedSource
 
 
@@ -97,6 +98,49 @@ class IngestStep:
         )
 
 
+class MappingStep:
+    name = "mapping"
+
+    def __init__(self, registry: RegistryDocument) -> None:
+        self._registry = registry
+
+    async def execute(self, ctx: StepContext) -> StepResult:
+        async with ctx.session_factory() as session:
+            async with session.begin():
+                feed_source = await session.get(FeedSource, ctx.feed_source_id)
+                if feed_source is None:
+                    raise LookupError(f"feed source {ctx.feed_source_id} not found")
+                doc = MappingDocument.from_json(feed_source.field_mapping)
+                if not doc.auto_mapped:
+                    doc.mappings = auto_match(
+                        ctx.run_state.source_fields,
+                        self._registry,
+                        existing=doc.mappings,
+                    )
+                    doc.auto_mapped = True
+                doc.source_fields = list(ctx.run_state.source_fields)
+                feed_source.field_mapping = doc.to_json()
+
+        dropped_unmapped = 0
+        shape_mismatches = 0
+        for index, product in enumerate(ctx.run_state.products):
+            mapped, stats = apply_mapping(product, doc.mappings, self._registry)
+            ctx.run_state.products[index] = mapped
+            dropped_unmapped += stats.dropped_unmapped
+            shape_mismatches += stats.shape_mismatches
+
+        return StepResult(
+            processed_count=len(ctx.run_state.products),
+            statistics={
+                "mapping": {
+                    "applied": len(ctx.run_state.products),
+                    "dropped_unmapped_fields": dropped_unmapped,
+                    "shape_mismatches": shape_mismatches,
+                }
+            },
+        )
+
+
 class PluginStep(_NoOpStep):
     def __init__(self) -> None:
         super().__init__("run_plugins")
@@ -117,6 +161,7 @@ def default_steps(
 ) -> tuple[PipelineStep, ...]:
     return (
         IngestStep(fetcher, registry),
+        MappingStep(registry),
         PluginStep(),
         QualityCheckStep(),
         ExportStep(),
