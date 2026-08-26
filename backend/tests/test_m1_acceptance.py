@@ -44,7 +44,7 @@ EXPECTED_TABLES = {
 @pytest_asyncio.fixture
 async def m1_app(isolated_database_url):
     url = isolated_database_url
-    engine = create_async_engine(url)
+    engine = create_async_engine(url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
@@ -72,7 +72,7 @@ async def test_m1_acceptance(m1_app, isolated_database_url):
     app, _ = m1_app
 
     # --- Schema verification ---
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     try:
         async with engine.connect() as conn:
             tables = await conn.run_sync(

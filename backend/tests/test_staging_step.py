@@ -58,7 +58,7 @@ async def _staged_rows(factory):
 
 
 async def test_first_run_stages_all_products(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
@@ -77,7 +77,7 @@ async def test_first_run_stages_all_products(isolated_database_url):
 
 
 async def test_identical_rerun_touches_only(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
@@ -96,7 +96,7 @@ async def test_identical_rerun_touches_only(isolated_database_url):
 
 
 async def test_run_state_replaced_with_enqueue_set(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
@@ -116,7 +116,7 @@ async def test_run_state_replaced_with_enqueue_set(isolated_database_url):
 
 
 async def test_config_only_change_no_new_history(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
@@ -140,7 +140,7 @@ async def test_config_only_change_no_new_history(isolated_database_url):
 
 
 async def test_removal_then_reactivation_round_trip(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
@@ -165,7 +165,7 @@ async def test_removal_then_reactivation_round_trip(isolated_database_url):
 
 
 async def test_invalid_and_duplicate_ids_counted_failed(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
@@ -187,7 +187,7 @@ async def test_invalid_and_duplicate_ids_counted_failed(isolated_database_url):
 
 
 async def test_apply_staging_delta_maps_reactivations_in_pk_map(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
@@ -210,7 +210,7 @@ async def test_apply_staging_delta_maps_reactivations_in_pk_map(isolated_databas
 
 
 async def test_apply_staging_delta_maps_updates_in_pk_map(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
@@ -239,7 +239,7 @@ async def test_apply_staging_delta_maps_updates_in_pk_map(isolated_database_url)
 
 
 async def test_load_stored_rows_maps_snapshots(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():

@@ -15,7 +15,7 @@ def alembic_config(isolated_database_url):
 
 
 async def _columns(database_url, table):
-    engine = create_async_engine(database_url)
+    engine = create_async_engine(database_url, pool_size=2, max_overflow=0)
     try:
         async with engine.connect() as connection:
             result = await connection.execute(

@@ -18,7 +18,7 @@ pytestmark = pytest.mark.asyncio
 @pytest_asyncio.fixture
 async def postgres_store(isolated_database_url):
     url = isolated_database_url
-    engine = create_async_engine(url)
+    engine = create_async_engine(url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():

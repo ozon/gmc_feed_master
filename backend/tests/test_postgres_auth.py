@@ -18,7 +18,7 @@ from app.clock import TestClock
 @pytest_asyncio.fixture
 async def postgres_app(isolated_database_url):
     url = isolated_database_url
-    engine = create_async_engine(url)
+    engine = create_async_engine(url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
@@ -125,7 +125,7 @@ async def test_persisted_interaction_renews_idle_expiry(postgres_app):
 async def test_startup_seeds_once_and_session_survives_new_app_instance(
     isolated_database_url,
 ):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     settings = Settings(
         _env_file=None,

@@ -69,7 +69,7 @@ async def _database_command(database_url, statement):
 
 
 async def _execute(database_url, statement):
-    engine = create_async_engine(database_url)
+    engine = create_async_engine(database_url, pool_size=2, max_overflow=0)
     try:
         async with engine.begin() as connection:
             for command_text in statement.split(";"):
@@ -84,7 +84,7 @@ def _schema_url(database_url: str, schema: str) -> str:
 
 
 async def _table_names(database_url, schema):
-    engine = create_async_engine(database_url)
+    engine = create_async_engine(database_url, pool_size=2, max_overflow=0)
     try:
         async with engine.connect() as connection:
             result = await connection.execute(
@@ -97,7 +97,7 @@ async def _table_names(database_url, schema):
 
 
 async def _indexes_and_constraints(database_url, schema):
-    engine = create_async_engine(database_url)
+    engine = create_async_engine(database_url, pool_size=2, max_overflow=0)
     try:
         async with engine.connect() as connection:
             return await connection.run_sync(

@@ -16,7 +16,7 @@ def _alembic_config(url):
 
 
 async def _inspect_schema(url):
-    engine = create_async_engine(url)
+    engine = create_async_engine(url, pool_size=2, max_overflow=0)
 
     def _run(connection):
         inspector = inspect(connection)
@@ -63,7 +63,7 @@ async def test_downgrade_reverses_all_three(isolated_database_url):
 
 
 async def test_removal_deletes_history_via_cascade(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():

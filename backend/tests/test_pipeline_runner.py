@@ -37,7 +37,7 @@ class FailingStep:
 
 @pytest_asyncio.fixture
 async def session_factory(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     yield factory
     await engine.dispose()

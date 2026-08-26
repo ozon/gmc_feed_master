@@ -69,7 +69,7 @@ async def _product(factory, feed_source, pid, status, removed_at, recorded_at=NO
 
 
 async def test_purge_removes_expired_rows_only(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
@@ -104,7 +104,7 @@ async def test_purge_removes_expired_rows_only(isolated_database_url):
 
 
 async def test_purge_on_empty_tables_is_zero(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
 
     counts = await purge_expired(FactoryAdapter(factory), NOW)

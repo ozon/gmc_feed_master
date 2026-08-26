@@ -11,7 +11,7 @@ pytestmark = pytest.mark.asyncio
 
 
 def _make(url):
-    engine = create_async_engine(url)
+    engine = create_async_engine(url, pool_size=2, max_overflow=0)
     return engine, async_sessionmaker(engine, expire_on_commit=False)
 
 
@@ -128,7 +128,7 @@ async def test_undeclared_feed_source_scope_never_applies(isolated_database_url)
 
 
 async def test_declared_feed_source_scope_wins(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
