@@ -280,3 +280,47 @@ binding product specification. Dates use ISO 8601 calendar dates.
   rule keeps `source_fields` stable without a second pass. Shape conflicts are
   rare in GMC feeds and the mapping step still drops mismatched values per
   product with logging.
+
+## 2026-08-26
+
+### Persisted processed-output store
+
+- **Topic:** Export completeness across delta runs
+- **Decision:** Spec-owner decision (Option A). `staging_products` gains a
+  nullable `processed_data` JSONB column: the product state after the module
+  runner, per product and feed source. The plugin step is the write path — it
+  writes `processed_data` for every product it processes (the delta set from
+  the staging step: new/changed/reactivated); unchanged products keep their
+  stored output untouched. Filter drops are represented reversibly: when a
+  plugin returns `None`, the row is marked excluded from output (`processed_data`
+  cleared plus an exclusion flag); a product filtered in run N but passing in
+  run N+1 is included again automatically. The XML writer assembles the export
+  from rows with `status='active'` and not excluded. Rows flipping to
+  `status='removed'` are excluded regardless of stored output; their
+  `processed_data` is cleared in the same UPDATE that sets the removal status
+  (chosen over deferring to purge: no extra statement, tight storage,
+  unambiguous state; reactivation re-enqueues anyway).
+- **Consequences:** The Quality Check evaluates the full active processed set
+  per run, not only the delta — preserving "findings of the latest run"
+  semantics (spec §7) without per-product finding retention. `_`-prefixed
+  sidecars (e.g. `_category_provenance`) persist inside `processed_data`;
+  dashboards read them from there and they are stripped only during XML
+  serialization, never before. Export diff/rollback operate on ExportVersion
+  snapshots and are unaffected.
+- **Rationale:** Delta mechanics (M5) reduce pipeline input to
+  new/changed/reactivated products, but the export must contain the complete
+  active set after plugin processing; without a persisted output store,
+  unchanged products have no processed representation at export time. Applies
+  to the plugin-execution milestone; M5 as built needs no rework. Spec update
+  follows (v7: §3 data flow, §4 entity, plugin-step write path).
+
+### Scheduler system-job id namespace
+
+- **Topic:** Job ids for non-feed-source scheduled work (M5 review finding)
+- **Decision:** System jobs such as the daily staging purge register under ids
+  outside the `feed-source-{id}` namespace — the purge job uses
+  `system-staging-purge`. Feed-source lifecycle methods (`register`,
+  `unregister`, `has_job`) keep operating only on `feed-source-{id}`.
+- **Rationale:** `register_all`/`unregister` must never touch system jobs;
+  disjoint namespaces make that impossible by construction rather than by
+  call-site discipline.

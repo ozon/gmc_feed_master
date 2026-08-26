@@ -50,7 +50,7 @@ to exactly those products that downstream stages must process.
 | Products without usable `id` | Not staged, not enqueued, counted failed | Staging identity is `(feed_source_id, product_id)`; an unstorable row is an ingestion failure like any other |
 | Removed-product purge tracking | New nullable `removed_at` column set at removal time | Spec §4 purges "90 days after removal"; no existing column records removal time |
 | History lifetime | FK `staging_history.staging_product_id` switched to `ON DELETE CASCADE` | Spec §4: removed products' history rows are "purged together with the product"; cascade makes that atomic from one DELETE |
-| Purge scheduling | Fixed daily UTC maintenance job on `SchedulerService` | Same mechanism as feed-source cron jobs; retention is background hygiene, not operator work |
+| Purge scheduling | Fixed daily UTC maintenance job on `SchedulerService`, job id `system-staging-purge` | Same mechanism as feed-source cron jobs; retention is background hygiene, not operator work. The id sits outside the `feed-source-{id}` namespace (M5 review), so `register`/`unregister`/`register_all` can never touch system jobs |
 
 ## Pipeline placement & flow
 
@@ -137,7 +137,10 @@ Downgrade reverses all three.
 ## Purge job
 
 Registered once at startup on the existing `SchedulerService` as a fixed daily
-UTC cron (03:00):
+UTC cron (03:00) under the job id `system-staging-purge`. The id is outside
+the `feed-source-{id}` namespace used by `register`/`unregister`/`has_job`
+(backend/app/pipeline/scheduler.py:26), so feed-source lifecycle operations
+can never remove or replace the system job:
 
 - Delete `staging_products WHERE status='removed' AND removed_at < now() - interval '90 days'`
   (history rows go via cascade).
