@@ -420,6 +420,17 @@ binding product specification. Dates use ISO 8601 calendar dates.
 - **Rationale:** Minimal closure of a spec contract gap; zero-config for the
   common case, explicit escape hatch for multi-module plugins.
 
+### M6 plugin-host dependency pins
+
+- **Topic:** Exact Python dependency pin for plugin manifest schema validation
+- **Decision:** Add `jsonschema==4.26.0` as an exact-pinned runtime dependency
+  (resolved 2026-08-26, per the repo exact-pin rule). `Settings.plugins_dir`
+  defaults to `<repo>/plugins`, derived from `app/config.py`'s location
+  (`Path(__file__).resolve().parents[2] / "plugins"`).
+- **Rationale:** M6 validates plugin manifests and config/data payloads with
+  `jsonschema`; an exact pin keeps CI reproducible. A repo-relative default
+  keeps plugin discovery working regardless of the process working directory.
+
 ### Processed-output store milestone placement
 
 - **Topic:** When Option A (persisted processed output) gets implemented
