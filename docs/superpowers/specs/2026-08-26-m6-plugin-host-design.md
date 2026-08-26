@@ -24,8 +24,14 @@ plugin that passes without any core change.
   module loader/registry, DB registration (upsert), route mounting
 - `RunContext` and the `PipelineModulePlugin` protocol
 - `PluginStep` execution replacing the NoOp, consuming the M5 config bundle
-- API: `GET /plugins`, `PUT /plugins/{id}/enabled`,
-  `GET/PUT /plugins/{id}/config|data` (scope-aware, schema-validated)
+- **Processed-output store (spec-owner Option A):** migration adding
+  `staging_products.processed_data` (JSONB, nullable) + an exclusion marker;
+  `PluginStep` persists each product's post-pipeline state; exclusions are
+  reversible; plugin exceptions keep last-known-good output
+- API: `GET /plugins` (all registered plugins),
+  `PUT /plugins/{id}/enabled`,
+  `GET/PUT /plugins/{id}/config|data` (scope-aware, schema-validated,
+  declaration-checked)
 - Contract test suite + committed dummy third-party plugin fixture
 - Acceptance gate `test_m6_acceptance.py`
 
@@ -51,6 +57,10 @@ plugin that passes without any core change.
 | Schema validation | `jsonschema` library, exact-pinned | Declarative validation against manifest-provided schemas; 422 `{"errors": [...]}` shape per §8 |
 | Bundle reuse | `StagingStep` stashes the resolved config bundle (and original snapshots) on `RunState`; `PluginStep` consumes them | Identical resolution feeding both `config_hash` and execution — no second query pass, no drift |
 | Core-plugin detection | Path prefix `plugins/core/` ⇒ registers `enabled=true`; all others default `false` | §5.1 verbatim; no manifest flag needed |
+| Processed-output store | Implemented here (owner Option A, decided 2026-08-26): `PluginStep` is the write path. Product survives all instances → `processed_data = final product`, `excluded = false`. Any instance returns None → `processed_data = NULL`, `excluded = true` (reversible: a later run that passes rewrites both). Plugin exception → row untouched (last-known-good output preserved), product counted errored | Writer will read `status='active' AND NOT excluded`; QC evaluates the full active processed set; delta set is merely the write path |
+| `GET /plugins` payload | ALL registered plugins incl. disabled ones (`enabled` field meaningful); menu building filters enabled client-side | Toggle UI needs the disabled list; owner correction |
+| Scope-parameter validation | `client_id`/`feed_source_id` params must also be **declared** in the manifest's `config_scope`/`data_scope` respectively → 422 if undeclared | Owner correction; complements M5's ownership filtering in resolution |
+| `original_product` | This run's incoming mapped product, deep-copied before the first instance executes — never the previously stored snapshot | Owner clarification of §5.4 wording |
 
 ## Discovery & registration
 
@@ -81,7 +91,10 @@ class RunContext:
     feed_source_id: int
     run_id: int
     logger: logging.Logger
-    original_product: dict[str, Any]   # deep copy taken pre-pipeline
+    original_product: dict[str, Any]   # deep copy of THIS run's incoming
+                                       # mapped product, taken before the
+                                       # first instance runs — never a
+                                       # previously stored snapshot
 
 
 class PipelineModulePlugin(Protocol):
@@ -107,6 +120,24 @@ the active pipeline's instances in position order. For each instance, resolve
 
 Step statistics: `{"plugins": {"processed": n, "dropped": n, "errored": n}}`.
 
+**Persistence (per product, after the instance walk):**
+
+| Outcome | Staging row write |
+|---|---|
+| Survived all instances | `processed_data = final product`, `excluded = false` |
+| Dropped (any instance returned None) | `processed_data = NULL`, `excluded = true` |
+| Exception | No write — last-known-good output preserved |
+
+Writes are chunked like the staging writes and land on rows that M5's delta
+just enqueued (new/changed/reactivated), plus reactivations keep working
+because a passing run always rewrites `excluded = false`. The XML writer
+(reads `status='active' AND NOT excluded`) and QC (full active processed set)
+are future consumers; nothing else reads these columns yet.
+
+**Migration:** one Alembic revision adding
+`staging_products.processed_data JSONB NULL` and
+`staging_products.excluded BOOLEAN NOT NULL DEFAULT false`.
+
 Plugins may create any registry-known attribute regardless of input schema
 (virtual fields, §5.7) — nothing in the host restricts output keys; QC and the
 writer own downstream validation.
@@ -117,14 +148,16 @@ All session-authenticated, following the existing router patterns:
 
 | Endpoint | Behavior |
 |---|---|
-| `GET /plugins` | Enabled plugins: `{id, name, version, enabled, manifest}` list |
+| `GET /plugins` | **All registered plugins** (enabled and disabled): `{id, name, version, enabled, manifest}` list; menu building filters enabled |
 | `PUT /plugins/{id}/enabled` | Body `{"enabled": bool}`; 404 unknown id |
 | `GET /plugins/{id}/config?client_id=|feed_source_id=` | Stored payload for that scope; `{}` default; omitted params = global; 404 unknown plugin id. Readable regardless of `enabled` state — activation gates pipeline execution, not management |
 | `PUT /plugins/{id}/config…` | Full replace; validated against `config_schema`; 422 `{"errors": [...]}` on violation; writes flow into `config_hash` via M5 |
 | `GET/PUT /plugins/{id}/data…` | Same semantics against `data_schema` |
 
 Scope-parameter validation: `client_id`/`feed_source_id` must reference
-existing rows (404 otherwise); declaring both simultaneously → 422.
+existing rows (404 otherwise), must be **declared** in the manifest's
+`config_scope`/`data_scope` respectively (422 if undeclared), and both may
+not be combined (422).
 
 ## Contract test suite
 

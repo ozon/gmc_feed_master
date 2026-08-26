@@ -409,3 +409,25 @@ binding product specification. Dates use ISO 8601 calendar dates.
      `max_connections=100`.
   3. Coverage tooling is explicitly deferred: if pytest-cov is added later it
      will need `parallel-mode`/cov-context configuration under xdist.
+
+### M6 plugin entry point
+
+- **Topic:** How the host locates a plugin's Python class (spec §5.2 gap)
+- **Decision:** Manifests may declare `"entry_point": "module:ClassName"`.
+  When absent, the host loads `<plugin_dir>/plugin.py` and uses its
+  module-level `Plugin` attribute. Load failures reject the plugin like
+  invalid manifests.
+- **Rationale:** Minimal closure of a spec contract gap; zero-config for the
+  common case, explicit escape hatch for multi-module plugins.
+
+### Processed-output store milestone placement
+
+- **Topic:** When Option A (persisted processed output) gets implemented
+- **Decision:** Implemented in M6 (plugin host), not deferred to the export
+  milestone: migration adds `staging_products.processed_data` (JSONB,
+  nullable) + `excluded` boolean; `PluginStep` is the write path — survivors
+  persist their final product, drops persist exclusion (`processed_data`
+  cleared, reversible), exceptions write nothing (last-known-good preserved).
+- **Rationale:** The delta set from M5 is exactly the write path; deferring
+  would leave processed state unobservable until the writer exists and couple
+  two milestones' acceptance criteria.
