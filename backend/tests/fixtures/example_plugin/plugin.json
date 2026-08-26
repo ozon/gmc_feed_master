@@ -1,0 +1,15 @@
+{
+  "id": "example_upper",
+  "name": "Example Upper",
+  "version": "1.0.0",
+  "extension_point": "pipeline_module",
+  "entry_point": "plugin:UpperPlugin",
+  "config_scope": ["global", "client"],
+  "data_scope": [],
+  "config_schema": {
+    "type": "object",
+    "properties": {"suffix": {"type": "string"}},
+    "required": ["suffix"]
+  },
+  "data_schema": {"type": "object"}
+}

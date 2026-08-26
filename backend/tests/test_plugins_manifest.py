@@ -79,11 +79,10 @@ class TestScopeNormalization:
             parse_manifest(doc)
 
     @pytest.mark.parametrize("scope_key", ["config_scope", "data_scope"])
-    def test_empty_scope_list_rejected(self, scope_key):
+    def test_empty_scope_list_accepted(self, scope_key):
         doc = {**minimal_manifest(), scope_key: []}
-        with pytest.raises(ManifestError) as excinfo:
-            parse_manifest(doc)
-        assert excinfo.value.reason != ""
+        m = parse_manifest(doc)
+        assert getattr(m, scope_key) == ()
 
     def test_mixed_valid_invalid_scopes_rejected(self):
         doc = {**minimal_manifest(), "data_scope": ["client", "bogus"]}
@@ -193,7 +192,6 @@ class TestErrorReasons:
             {**minimal_manifest(), "extension_point": "quality_rule"},
             {**minimal_manifest(), "config_schema": {"type": "nope"}},
             {**minimal_manifest(), "config_scope": ["nope"]},
-            {**minimal_manifest(), "config_scope": []},
         ]
         for case in cases:
             try:

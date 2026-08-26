@@ -40,8 +40,6 @@ def _parse_scope(doc: dict[str, Any], key: str) -> tuple[str, ...]:
     if isinstance(value, str):
         items = [value]
     elif isinstance(value, (list, tuple)):
-        if not value:
-            raise ManifestError(f"{key} must not be empty")
         items = list(value)
     else:
         raise ManifestError(f"{key} must be a string or a list of strings")
