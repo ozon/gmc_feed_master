@@ -73,7 +73,7 @@ async def test_bundle_resolves_instances_and_merge(isolated_database_url):
     assert entry["plugin_version"] == "1.0.0"
     assert entry["instance_config"] == {"slot": "custom_label_0"}
     assert entry["resolved_config"] == {"min_price": "20"}
-    assert entry["resolved_data"] == {"ids": {"list": ["1"]}}
+    assert entry["resolved_data"] == {"list": ["1"]}
     await engine.dispose()
 
 

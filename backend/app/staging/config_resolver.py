@@ -84,9 +84,7 @@ async def resolve_config_bundle(session: Any, feed_source: Any) -> dict[str, Any
     for row in (await session.execute(select(PluginData))).scalars():
         datas_by_plugin.setdefault(row.plugin_id, []).append(row)
 
-    def scoped_rows(
-        rows: list[Any], attribute: str, *, keyed_by_row_key: bool
-    ) -> dict[str, dict[str, Any]]:
+    def scoped_rows(rows: list[Any], attribute: str) -> dict[str, dict[str, Any]]:
         scoped: dict[str, dict[str, Any]] = {}
         for row in rows:
             if row.scope == "global":
@@ -97,11 +95,7 @@ async def resolve_config_bundle(session: Any, feed_source: Any) -> dict[str, Any
                 bucket = scoped.setdefault("feed_source", {})
             else:
                 continue
-            payload = getattr(row, attribute)
-            if keyed_by_row_key:
-                bucket[row.key] = payload
-            else:
-                bucket.update(payload)
+            bucket.update(getattr(row, attribute))
         return scoped
 
     for instance in instances:
@@ -114,13 +108,11 @@ async def resolve_config_bundle(session: Any, feed_source: Any) -> dict[str, Any
             "instance_config": instance.configuration,
             "resolved_config": _resolve_declared(
                 _normalize_scopes(manifest.get("config_scope")),
-                scoped_rows(configs_by_plugin.get(plugin.id, []), "config",
-                            keyed_by_row_key=False),
+                scoped_rows(configs_by_plugin.get(plugin.id, []), "config"),
             ),
             "resolved_data": _resolve_declared(
                 _normalize_scopes(manifest.get("data_scope")),
-                scoped_rows(datas_by_plugin.get(plugin.id, []), "data",
-                            keyed_by_row_key=True),
+                scoped_rows(datas_by_plugin.get(plugin.id, []), "data"),
             ),
         })
 
