@@ -24,6 +24,7 @@ class RowUpsert:
     config_hash: str
     insert: bool
     write_history: bool
+    pk: int | None = None
 
 
 @dataclass
@@ -85,7 +86,7 @@ def classify(
                 delta.upserts.append(RowUpsert(
                     product_id=pid, product=product, content_hash=ch,
                     config_hash=config_hash, insert=False,
-                    write_history=ch != row.content_hash,
+                    write_history=ch != row.content_hash, pk=row.pk,
                 ))
                 delta.enqueue.append(product)
                 delta.counts.changed += 1
@@ -98,7 +99,7 @@ def classify(
                 delta.upserts.append(RowUpsert(
                     product_id=pid, product=product, content_hash=ch,
                     config_hash=config_hash, insert=False,
-                    write_history=content_changed,
+                    write_history=content_changed, pk=row.pk,
                 ))
             else:
                 delta.reactivations.append(row.pk)

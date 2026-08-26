@@ -95,14 +95,8 @@ async def apply_staging_delta(
                             last_seen_at=now,
                         )
                     )
-                    pk_map[u.product_id] = (
-                        await session.execute(
-                            select(StagingProduct.id).where(
-                                StagingProduct.feed_source_id == feed_source_id,
-                                StagingProduct.product_id == u.product_id,
-                            )
-                        )
-                    ).scalar_one()
+                    if u.pk is not None:
+                        pk_map[u.product_id] = u.pk
 
     for group in _chunks(delta.reactivations, chunk_size):
         async with session_factory() as session:

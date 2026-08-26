@@ -43,6 +43,7 @@ class TestClassify:
         delta = classify([product], {"1": _stored("1", content_hash(product), pk=7)}, "cfgNEW")
         assert delta.upserts[0].write_history is False
         assert delta.upserts[0].config_hash == "cfgNEW"
+        assert delta.upserts[0].pk == 7
         assert delta.counts.changed == 1
 
     def test_removal_when_active_row_absent(self):

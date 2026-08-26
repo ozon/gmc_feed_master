@@ -10,7 +10,7 @@ from app.models.ingestion import IngestionRun
 from app.models.staging import StagingHistory, StagingProduct
 from app.pipeline import RunState, StepContext
 from app.pipeline.steps import StagingStep
-from app.staging.delta import StagingDelta, StoredRow
+from app.staging.delta import RowUpsert, StagingDelta, StoredRow
 from app.staging.hashing import content_hash
 from app.staging.persistence import apply_staging_delta, load_stored_rows
 
@@ -206,6 +206,35 @@ async def test_apply_staging_delta_maps_reactivations_in_pk_map(isolated_databas
     )
 
     assert pk_map == {"1": pk}
+    await engine.dispose()
+
+
+async def test_apply_staging_delta_maps_updates_in_pk_map(isolated_database_url):
+    engine = create_async_engine(isolated_database_url)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with factory() as session:
+        async with session.begin():
+            feed_source = await _seed(session)
+    await StagingStep().execute(
+        _ctx(factory, feed_source.id, [{"id": "1", "title": "A"}], run_id=1)
+    )
+    rows = await _staged_rows(factory)
+    pk = rows["1"].id
+
+    product = {"id": "1", "title": "B"}
+    delta = StagingDelta(upserts=[RowUpsert(
+        product_id="1", product=product,
+        content_hash=content_hash(product), config_hash="cfgNEW",
+        insert=False, write_history=True, pk=pk,
+    )])
+    pk_map = await apply_staging_delta(
+        FactoryAdapter(factory), feed_source.id, 2, delta, "cfgNEW"
+    )
+
+    assert pk_map == {"1": pk}
+    async with factory() as session:
+        row = (await session.execute(select(StagingProduct))).scalar_one()
+        assert row.raw_data == product
     await engine.dispose()
 
 
