@@ -60,3 +60,17 @@ def test_default_env_file_is_repository_root_even_when_started_from_backend(monk
             env_file.write_bytes(original)
     assert settings.session_secret == "root-secret"
     assert settings.initial_username == "root-user"
+
+
+def test_settings_ignore_unrelated_env_keys(monkeypatch):
+    monkeypatch.setenv("POSTGRES_DB", "gmc_feed")
+    monkeypatch.setenv("TEST_DATABASE_URL", "postgresql+asyncpg://x/y")
+
+    settings = Settings(
+        _env_file=None,
+        session_secret="test-secret",
+        initial_username="test-user",
+        initial_password="test-password",
+    )
+
+    assert settings.session_secret == "test-secret"
