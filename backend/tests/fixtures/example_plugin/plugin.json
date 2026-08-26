@@ -5,7 +5,7 @@
   "extension_point": "pipeline_module",
   "entry_point": "plugin:UpperPlugin",
   "config_scope": ["global", "client"],
-  "data_scope": [],
+  "data_scope": ["global"],
   "config_schema": {
     "type": "object",
     "properties": {"suffix": {"type": "string"}},
