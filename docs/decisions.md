@@ -371,3 +371,18 @@ binding product specification. Dates use ISO 8601 calendar dates.
   accumulates across steps (ingest + mapping + staging), so the acceptance
   tests assert staging counts and history/state invariants instead of
   absolute `processed_count` values.
+
+### Pytest optimization tooling
+
+- **Topic:** Test-suite performance and integration-test database isolation.
+- **Decision:** Adopt `pytest-postgresql` (template-database isolation for
+  integration tests, replacing per-test DB creation where the spec calls for
+  it) and `pytest-xdist` (parallel test execution) as dev dependencies.
+- **Resolved exact versions (2026-08-26):** `pytest-postgresql==8.1.0`,
+  `pytest-xdist==3.8.0` (pinned with exact `==` specifiers in
+  `backend/pyproject.toml` per the repo dependency-pinning rule).
+- **Rationale:** The pytest-optimization design doc specifies template-DB
+  isolation via pytest-postgresql to cut integration-test setup time and
+  xdist-based parallelism to shorten wall-clock suite runs. Both plugins are
+  installed but inert in this task; later tasks wire them into fixtures and
+  CI invocation.
