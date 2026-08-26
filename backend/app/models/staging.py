@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Any
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, false, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
@@ -19,6 +19,8 @@ class StagingProduct(Base):
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     raw_data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    processed_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    excluded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
