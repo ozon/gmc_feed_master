@@ -386,3 +386,26 @@ binding product specification. Dates use ISO 8601 calendar dates.
   xdist-based parallelism to shorten wall-clock suite runs. Both plugins are
   installed but inert in this task; later tasks wire them into fixtures and
   CI invocation.
+- **Parallel by default (2026-08-26):** `backend/pyproject.toml` sets
+  `[tool.pytest.ini_options] addopts = "-n auto"`; opt out per-invocation with
+  `-n0` or cap workers with `PYTEST_XDIST_AUTO_NUM_WORKERS`.
+- **Wall-time results (366 tests, 4-core machine,
+  `TEST_DATABASE_URL=postgresql+asyncpg://…/postgres`):**
+  - Baseline serial (pre-optimization): ~100.8 s.
+  - After template-database isolation, serial (`-n0`): 51.9 s
+    (pytest-reported; Task 2 measured 51.88 s).
+  - After parallel-by-default (`-n auto`, 4 workers): 26.8 s / 27.3 s across
+    two consecutive stable runs — a ~3.8× speedup over baseline and ~1.9× over
+    post-template serial.
+- **Spec-owner notes as implemented:**
+  1. Template connection disposal happens inside the `load=` hook before it
+     returns, so `CREATE DATABASE … TEMPLATE` never fails against open
+     template connections (`backend/tests/conftest.py`,
+     `_load_alembic_schema`).
+  2. Test-engine pool caps (`pool_size=2, max_overflow=0`) were applied to all
+     test engine call sites: 36 call sites across 20 files under
+     `backend/tests/` (an earlier "57 sites" figure overcounted by including
+     import lines), keeping `-n auto` safely under Docker's default
+     `max_connections=100`.
+  3. Coverage tooling is explicitly deferred: if pytest-cov is added later it
+     will need `parallel-mode`/cov-context configuration under xdist.

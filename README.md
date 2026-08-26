@@ -27,6 +27,13 @@ the Alembic CLI. For migration tests, set `TEST_DATABASE_URL` to a PostgreSQL
 `postgresql+asyncpg://` URL; tests intentionally fail if it is absent or points
 to a non-PostgreSQL backend.
 
+Backend tests run in parallel by default (pytest-xdist, `-n auto`). Disable
+with `uv run pytest -n0` or cap workers with `PYTEST_XDIST_AUTO_NUM_WORKERS`.
+Integration tests still require `TEST_DATABASE_URL` pointing at a
+`postgresql+asyncpg://` server; each test runs against its own database cloned
+from an Alembic-migrated template, so the migration chain runs once per
+worker rather than once per test.
+
 Generate a local self-signed certificate and key for Vite:
 
 ```bash
