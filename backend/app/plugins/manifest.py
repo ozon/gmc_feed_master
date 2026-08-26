@@ -38,7 +38,7 @@ def _parse_scope(doc: dict[str, Any], key: str) -> tuple[str, ...]:
     if value is None:
         return ("global",)
     if isinstance(value, str):
-        items = [value] if value else []
+        items = [value]
     elif isinstance(value, (list, tuple)):
         if not value:
             raise ManifestError(f"{key} must not be empty")

@@ -1,5 +1,7 @@
 """Tests for plugin manifest parsing and validation (Task 2)."""
 
+import dataclasses
+
 import pytest
 
 from app.plugins.manifest import ManifestError, PluginManifest, parse_manifest
@@ -39,7 +41,7 @@ class TestValidMinimal:
 
     def test_result_is_immutable(self):
         m = parse_manifest(minimal_manifest())
-        with pytest.raises(Exception):
+        with pytest.raises(dataclasses.FrozenInstanceError):
             m.id = "changed"  # type: ignore[misc]
 
 
@@ -64,10 +66,11 @@ class TestScopeNormalization:
         assert m.config_scope == ("global", "client")
         assert m.data_scope == ("feed_source",)
 
-    def test_empty_string_scope_becomes_empty_tuple(self):
+    def test_empty_string_scope_rejected(self):
         doc = {**minimal_manifest(), "data_scope": ""}
-        m = parse_manifest(doc)
-        assert m.data_scope == ()
+        with pytest.raises(ManifestError) as excinfo:
+            parse_manifest(doc)
+        assert excinfo.value.reason != ""
 
     @pytest.mark.parametrize("scope_key", ["config_scope", "data_scope"])
     def test_undeclared_scope_value_rejected(self, scope_key):
