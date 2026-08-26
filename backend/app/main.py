@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 from datetime import timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -47,6 +48,7 @@ def create_app(
     clock: Clock | None = None,
     db_session_factory: async_sessionmaker[AsyncSession] | None = None,
     fetcher: HttpFetcher | None = None,
+    plugins_dir: Path | str | None = None,
 ) -> FastAPI:
     if settings is None and session_store is None and db_session_factory is None:
         settings = _configured_settings()
@@ -62,6 +64,10 @@ def create_app(
                 await seed_initial_user(
                     session, settings.initial_username, settings.initial_password
                 )
+            if application.state.plugins_dir is not None:
+                from .plugins.discovery import discover_and_mount
+
+                await discover_and_mount(application)
             scheduler_service = getattr(application.state, "scheduler_service", None)
             if scheduler_service is not None:
                 await scheduler_service.start()
@@ -103,6 +109,12 @@ def create_app(
     app.state.session_store_injected = session_store is not None
     app.state.db_session_factory = db_session_factory
     app.state.db_engine = None
+    app.state.plugins_dir = (
+        Path(plugins_dir)
+        if plugins_dir is not None
+        else (Path(settings.plugins_dir) if settings is not None else None)
+    )
+    app.state.plugin_registry = {}
     app.state.clock = clock if clock is not None else SystemClock()
     if settings is not None:
         app.dependency_overrides.setdefault(get_settings, lambda: settings)
