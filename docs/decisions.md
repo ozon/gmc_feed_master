@@ -465,3 +465,46 @@ binding product specification. Dates use ISO 8601 calendar dates.
   2.0.43, asyncpg 0.30.0, Alembic 1.16.4, argon2-cffi 25.1.0,
   pytest-asyncio 1.1.0, APScheduler 3.11.3).
 - **Deviation from plan:** none material.
+
+### M7 quality check design decisions
+
+- **Topic:** Milestone 7 (Quality Check engine) design
+- **Date:** 2026-08-27
+- **Decision:** Approved with owner amendments. Key implementation-level
+  decisions:
+  1. QC evaluates ALL active staged products (`status='active'`,
+     `excluded=false`) — the export-bound set — not just plugin survivors.
+  2. Image dimensions via Pillow (new pinned dep); httpx streaming fetch with
+     a 10 MB cap.
+  3. `export_runs.error_finding_count` renamed `critical_finding_count` to
+     match spec §7 severities.
+  4. Registry gains `Cardinality.min_items` + `item_max_length`; parser fixed
+     (e.g. `product_highlight` → min 2 / max 100 items, 150 chars each).
+  5. Volume-drop compares against previous `ExportRun.product_count`; skipped
+     when no prior ExportRun exists.
+  6. QC writes the ExportRun row this milestone (`export_version_id=NULL`).
+  7. `processed_data` NULL → fall back to `raw_data`.
+  8. Image cache: persistent `image_dimensions` table keyed by URL.
+  9. Findings API included (`GET /feed-sources/{id}/quality-findings`).
+  10. Rule registry with per-product + cross-product shapes; registry-driven
+      rules generated from `RegistryDocument`.
+- **Owner amendments (binding):**
+  - Findings are feed-scoped: `quality_findings` gains `feed_source_id`
+    (FK CASCADE); replace-delete strictly feed-keyed; `staging_product_id`
+    FK dropped (RESTRICT would block staging purge); each finding persists
+    `ingestion_run_id`.
+  - `brand_required` exemption is a hardcoded taxonomy-ID set (Books 784 +
+    children, DVDs & Videos 839 + children, Music & Sound Recordings 855 +
+    children; Google Product Taxonomy 2021-09-21) — no Category plugin
+    dependency.
+  - Image checks cover `image_link` and `additional_image_link[*]`; findings
+    address positions via path grammar (`additional_image_link.2`).
+- **Known limitations (accepted):**
+  - Image cache never re-fetches a URL whose image content changed in place
+    (same URL, new bytes). Accepted for MVP; revisit if stale dimensions
+    become a problem.
+  - Fetch cap is 10 MB vs GMC's 16 MB max image size: images between 10 and
+    16 MB are reported as unfetchable (info) rather than measured. Accepted
+    trade-off; raise the cap if real feeds hit it.
+- **Carry-forward for M8:** M8 must wire `ExportRun.export_version_id`
+  explicitly when the XML writer creates versions.

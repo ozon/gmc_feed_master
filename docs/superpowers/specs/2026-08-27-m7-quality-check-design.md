@@ -70,6 +70,23 @@ Owner-approved during brainstorming (2026-08-27):
     cross-product); registry-driven rules generated from `RegistryDocument`;
     hand-written rules register alongside. No declarative DSL.
 
+**Owner amendments on approval (2026-08-27):**
+
+11. **Findings are feed-scoped, not staging-row-scoped:** `quality_findings`
+    gains `feed_source_id` (FK → `feed_sources.id`, NOT NULL). The
+    replace-delete is strictly feed-keyed (`DELETE … WHERE feed_source_id =
+    ?`), so purged staging rows cannot orphan stale findings. Each finding
+    also persists `ingestion_run_id` (already on the model) — not only on the
+    ExportRun.
+12. **Brand exemption is a hardcoded taxonomy-ID list:** the Category plugin
+    is deferred, so `brand_required` must not depend on it. The exempt set
+    (movies/books/music) is a constant in the QC module, derived from
+    `gmc_def.md` and the Google Product Taxonomy (see Rule set below).
+13. **Image checks cover all image fields:** `image_requirements` applies to
+    `image_link` AND every element of `additional_image_link[*]`. Findings
+    address repeated-field positions via path grammar (e.g.
+    `additional_image_link.2`).
+
 ## Input set & product resolution
 
 `QualityCheckStep.execute(ctx)`:
@@ -126,7 +143,7 @@ persistence time.
 | rule_id | shape | source | severity |
 |---|---|---|---|
 | `baseline_required` | per-product | hand-written field list: `id`, `title`/`structured_title`, `description`/`structured_description`, `link`, `image_link`, `availability`, `price`, `condition` | critical |
-| `brand_required` | per-product | hand-written; exempt when `google_product_category` indicates movies/books/music taxonomy | warning |
+| `brand_required` | per-product | hand-written; exempt when `google_product_category` (ID form) is in the hardcoded media taxonomy set: Books {784, 543541, 543542, 543543}, DVDs & Videos {839, 543527, 543528, 543529}, Music & Sound Recordings {855, 543522, 543523, 543524, 543525, 543526} (Google Product Taxonomy 2021-09-21; string-path values are not exempted — ID preferred per `gmc_def.md`) | warning |
 | `gtin_mpn` | per-product | hand-written: missing `gtin` → `mpn`+`brand` required; present `gtin` → GS1 mod-10 checksum | critical |
 | `enum_values` | per-product | registry-driven: every attribute with `enum_values`, case-sensitive | critical |
 | `conditional_required` | per-product | hand-written table: `availability=preorder` → `availability_date`; `unit_pricing_base_measure` requires `unit_pricing_measure` | warning |
@@ -140,6 +157,9 @@ persistence time.
 
 ### Image requirements detail
 
+- Applies to `image_link` and every element of `additional_image_link[*]`.
+  Findings carry the path-grammar field address, e.g. `image_link` or
+  `additional_image_link.2`.
 - Format: check the URL extension against the GMC-allowed list (jpg/jpeg,
   webp, png, gif, bmp, tiff/tif); if the URL has no recognizable extension,
   sniff the fetched bytes' magic numbers. Disallowed format → warning.
@@ -174,14 +194,22 @@ persistence time.
    `width`/`height` Integer nullable, `fetch_error` String nullable,
    `fetched_at` timestamptz.
 3. `feed_sources.volume_drop_threshold_pct` Integer NOT NULL default 20.
-4. `quality_findings`: add `product_id` String(255) NOT NULL,
-   `field` String(255) nullable.
+4. `quality_findings`: add `feed_source_id` Integer NOT NULL (FK →
+   `feed_sources.id`, ondelete CASCADE — findings are feed-scoped and die
+   with the feed source), `product_id` String(255) NOT NULL,
+   `field` String(255) nullable. Index on `feed_source_id`. Drop
+   `staging_product_id` (and its index): with feed-scoped replace semantics
+   the RESTRICT FK would block staging purge of rows referenced by findings;
+   the denormalized `product_id` carries the reference instead.
 
 ## Persistence
 
-- Findings: replace-previous semantics — delete existing findings for the
-  feed source's staging rows, insert this run's findings, write ExportRun —
-  all in one transaction. Spec: "latest run per feed source only".
+- Findings: replace-previous semantics, strictly feed-keyed —
+  `DELETE FROM quality_findings WHERE feed_source_id = ?`, then insert this
+  run's findings (each carrying `feed_source_id`, `ingestion_run_id`,
+  `product_id`, severity, code, field, message, details), then write the
+  ExportRun — all in one transaction. Spec: "latest run per feed source
+  only". Feed-keyed delete means purged staging rows cannot orphan findings.
 - ExportRun: `feed_source_id`, `ingestion_run_id`, `status='completed'`,
   `product_count`, `critical_finding_count`, `warning_finding_count`,
   `info_finding_count`, `export_version_id=NULL`.
