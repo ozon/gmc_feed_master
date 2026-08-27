@@ -3,6 +3,7 @@ import logging
 
 import pytest
 
+from app.config import DEFAULT_EXPORT_DIR
 from app.pipeline import (
     ExportStep,
     IngestStep,
@@ -52,6 +53,16 @@ def test_export_step_is_wired():
     step = steps[-1]
     assert isinstance(step, ExportStep)
     assert step.name == "export"
+
+
+def test_default_steps_export_dir_fallback_matches_settings_default():
+    steps = default_steps(StubFetcher(), RegistryDocument(attributes={}))
+    step = steps[-1]
+    assert isinstance(step, ExportStep)
+    root = step._store._root
+    assert root == DEFAULT_EXPORT_DIR
+    assert root.is_absolute()
+    assert root.name == "exports"
 
 
 def test_step_names_are_distinct(_steps):

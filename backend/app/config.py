@@ -4,6 +4,8 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+DEFAULT_EXPORT_DIR = Path(__file__).resolve().parents[2] / "exports"
+
 
 class Settings(BaseSettings):
     session_idle_minutes: int = Field(default=30, gt=0)
@@ -13,7 +15,7 @@ class Settings(BaseSettings):
     initial_password: str
     database_url: str = "postgresql://postgres:postgres@localhost:5432/gmc_feed"
     plugins_dir: str = str(Path(__file__).resolve().parents[2] / "plugins")
-    export_dir: str = str(Path(__file__).resolve().parents[2] / "exports")
+    export_dir: str = str(DEFAULT_EXPORT_DIR)
     public_base_url: str = "http://localhost:8000"
 
     @property

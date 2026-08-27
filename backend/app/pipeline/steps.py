@@ -8,6 +8,7 @@ from typing import Any, Protocol, runtime_checkable
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import DEFAULT_EXPORT_DIR
 from registry.model import RegistryDocument
 
 from ..clock import Clock, SystemClock
@@ -410,7 +411,7 @@ def default_steps(
     if clock is None:
         clock = SystemClock()
     store = ExportFileStore(
-        Path(export_dir) if export_dir is not None else Path("exports")
+        Path(export_dir) if export_dir is not None else DEFAULT_EXPORT_DIR
     )
     base_url = public_base_url if public_base_url is not None else "http://localhost:8000"
     return (
