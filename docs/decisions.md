@@ -546,3 +546,21 @@ binding product specification. Dates use ISO 8601 calendar dates.
   not "clean"; the export token stays out of INFO-level request logs;
   `feed_type` (spec §4, default `'primary'`) is scheduled into the M8
   migration as the last untracked FeedSource column.
+
+### M8 final verification
+
+- **Topic:** Milestone 8 (XML writer, versioning, atomic publish, export
+  endpoint) completion
+- **Date:** 2026-08-27
+- **Decision:** Recorded as complete. Full pipeline run on a wide-format
+  TSV produces GMC-compliant RSS/g: XML, atomically published and
+  fetchable via the per-feed-source token URL; versions are deduplicated
+  by file_hash; field-based diff and append-only rollback work; token
+  rotation invalidates immediately. QC-written ExportRun rows finalize
+  via the writer (`pending_export` → `completed`/`failed`). `feed_type`
+  column added (default `primary`). Full backend suite green serial and
+  parallel; contract suite untouched.
+- **Deviations from plan:** the acceptance test's feed-source creation
+  payload needed a `source_url` added — the plan's verbatim test omitted
+  it, but `IngestStep` requires a configured `source_url` (the stub
+  fetcher ignores the URL value).
