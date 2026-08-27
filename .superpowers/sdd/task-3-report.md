@@ -1,66 +1,40 @@
-# Task 3 Report: Cap test-engine pools
+# Task 3 Report: Plugin Module Loader
 
-## Status: COMPLETE
+**Status:** Complete
+**Commit:** `b8a8de3` — `feat: plugin module loader with entry-point convention`
+**Branch:** `m6-plugin-host` (worktree `.worktrees/m6-plugin-host`)
 
-**Commit:** `4404c0b` — `perf: cap test-engine pools (pool_size=2, max_overflow=0)`
+## What was built
 
-## Scope correction
+- `backend/app/plugins/loader.py`
+  - `class PluginLoadError(Exception)`
+  - `def load_plugin_class(directory: Path, manifest: PluginManifest) -> Any`
+  - Entry point resolution: `manifest.raw.get("entry_point")` as `"module:ClassName"`; default convention `plugin.py` / attribute `Plugin`.
+  - Registers module under unique name `gmc_plugin_{manifest.id}` in `sys.modules` **before** exec.
+  - On success the registration is retained; on any failure the entry is deleted before re-raising so a half-executed module cannot poison later loads.
+- `backend/tests/test_plugins_loader.py` — 12 tests using real temp plugin dirs (`pathlib` + `tmp_path`).
 
-Brief said "21 files / 57 call sites". Actual repo state: 57 was the count of ALL
-`create_async_engine` matches including import lines (21 imports + 36 call sites).
-Call sites: **36**, across **20 files** under `backend/tests/` (conftest.py only
-imports; it has no call site). All 36 were single-line calls of exact form
-`create_async_engine(<identifier>)` with no pre-existing kwargs — verified before
-editing:
+## Failure modes → distinct `PluginLoadError` messages
 
-```
-grep -rn "create_async_engine(" backend/tests --include="*.py" \
-  | grep -vE "create_async_engine\([a-z_]+\)$"
-# (no output)
-```
+1. Malformed entry point — non-string, wrong number of `:` parts, or empty module/class parts ("malformed entry_point ... expected 'module:ClassName'").
+2. Module file missing — default and explicit entry-point paths ("module file not found: <path>").
+3. Exec raises — wrapped with original exception text ("error executing module ...").
+4. Attribute missing ("attribute 'X' not found in <path>").
+5. Instantiation raises — wrapped ("error instantiating 'X' ...").
+6. Result lacks callable `process` — covers both absent attr and non-callable attr ("does not provide a callable 'process' method").
 
-## Files touched (20)
+## TDD evidence
 
-test_m5_migration.py, test_runs_api.py, test_migrations.py, test_m4_acceptance.py,
-test_m2_migration.py, test_postgres_sessions.py, test_m3_acceptance.py,
-test_user_persistence.py, test_clients_api.py, test_staging_purge.py,
-test_m5_acceptance.py, test_field_mapping_api.py, test_postgres_auth.py,
-test_staging_step.py, test_config_bundle.py, test_registry_api.py,
-test_pipeline_runner.py, test_m2_acceptance.py, test_m1_acceptance.py,
-test_scheduler_startup.py
-
-Per-file site counts match diff line counts (e.g. test_staging_step.py: 9 sites,
-test_migrations.py: 3, others 1–2).
-
-## Verification
-
-1. Completeness grep:
-   ```
-   $ grep -rn "create_async_engine(" backend/tests | grep -v "pool_size=2" || echo CLEAN
-   CLEAN
-   ```
-2. Diff purity — every +/- line in the commit touches a `create_async_engine(...)` line:
-   ```
-   $ git diff backend/tests | grep "^[+-]" | grep -vE "^[+-][+-]|create_async_engine"
-   # (no output)
-   ```
-3. Full suite serial:
-   ```
-   $ TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres \
-     uv run pytest -q -n0
-   366 passed, 11 warnings in 51.91s
-   ```
+- **RED:** wrote tests first; run produced `ImportError: ModuleNotFoundError: No module named 'app.plugins.loader'`.
+- **GREEN:** implemented loader; `tests/test_plugins_loader.py`: **12 passed**.
+- **Full suite:** `TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest -q` → **417 passed** (405 prior + 12 new).
 
 ## Self-review
 
-- No `backend/app/` changes: commit contains exactly 20 paths, all `backend/tests/*`. ✅
-- No reformatting noise: 36 insertions / 36 deletions, one line swapped per site. ✅
-- Every site capped exactly once: 36 call-site lines changed; completeness grep CLEAN;
-  kwargs appear exactly once per call. ✅
-- Pre-existing uncommitted `.superpowers/sdd/` edits from earlier tasks were left out
-  of this commit (brief stages `backend/tests` only). ✅
+- All six failure modes covered with distinct, greppable messages: yes.
+- sys.modules semantics per contract: unique pre-exec registration; no cleanup needed on success (kept); failures delete their entry (no poisoning). Two-plugins-different-ids test asserts independent loading and both registrations present on success.
+- Exact interface names match brief: `PluginLoadError`, `load_plugin_class`.
 
 ## Concerns
 
-None blocking. Note for the plan owner: brief's "21 files / 57 call sites" figure
-overcounted (imports included); actuals are 20 files / 36 call sites.
+None blocking. Note: success retains the `sys.modules` entry by design (per contract); a future registry that loads many plugins may want an unload hook.

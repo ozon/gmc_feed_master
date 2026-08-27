@@ -1,219 +1,203 @@
-### Task 5: Migration — `removed_at`, cascade FK, purge index
+### Task 5: Migration + runtime contract execution
 
 **Files:**
-- Modify: `backend/app/models/staging.py`
-- Create: `backend/alembic/versions/20260826_0001_m5_staging_delta.py`
-- Test: `backend/tests/test_m5_migration.py`
+- Create: `backend/alembic/versions/20260827_0001_m6_plugin_host.py`
+- Modify: `backend/app/models/staging.py` (two columns)
+- Create: `backend/app/plugins/runtime.py`
+- Modify: `backend/app/pipeline/steps.py` (`RunState`, `StagingStep`, `PluginStep`, `default_steps`)
+- Modify: `backend/app/staging/persistence.py` (`apply_plugin_outcomes`)
+- Modify: `backend/app/main.py` (the deferred `default_steps` call-site change)
+- Test: `backend/tests/test_m6_migration.py`, `backend/tests/test_plugin_step.py`
 
 **Interfaces:**
-- Consumes: current head revision `20260825_0001`. The baseline created the FK unnamed, so PostgreSQL named it `staging_history_staging_product_id_fkey` (default `table_column_fkey` pattern).
-- Produces: `StagingProduct.removed_at: Mapped[datetime | None]`; `staging_history.staging_product_id` with `ON DELETE CASCADE`; partial index `ix_staging_products_removed_purge ON staging_products (removed_at) WHERE status = 'removed'`.
-
-- [ ] **Step 1: Write the failing test**
-
-Create `backend/tests/test_m5_migration.py`:
+- Consumes: M5's `apply_staging_delta(...) -> dict[str, int]` (pk_map), `resolve_config_bundle`.
+- Produces:
 
 ```python
-import pytest
-from alembic import command
-from alembic.config import Config
-from sqlalchemy import inspect, text
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+# runtime.py
+@dataclass(frozen=True)
+class RunContext:
+    client_id: int
+    feed_source_id: int
+    run_id: int
+    logger: logging.Logger
+    original_product: dict[str, Any]
 
-pytestmark = pytest.mark.asyncio
+# persistence.py
+@dataclass(frozen=True)
+class PluginOutcome:
+    product_id: str
+    pk: int
+    status: str                    # "processed" | "dropped"
+    final_product: dict[str, Any] | None
 
-
-def _alembic_config(url):
-    config = Config("alembic.ini")
-    config.set_main_option("sqlalchemy.url", url)
-    return config
-
-
-async def _inspect_schema(url):
-    engine = create_async_engine(url)
-
-    def _run(connection):
-        inspector = inspect(connection)
-        return (
-            {c["name"] for c in inspector.get_columns("staging_products")},
-            {i["name"]: i for i in inspector.get_indexes("staging_products")},
-            inspector.get_foreign_keys("staging_history"),
-        )
-
-    try:
-        async with engine.connect() as connection:
-            return await connection.run_sync(_run)
-    finally:
-        await engine.dispose()
-
-
-async def test_upgrade_adds_removed_at_cascade_and_index(isolated_database_url):
-    columns, indexes, fks = await _inspect_schema(isolated_database_url)
-
-    assert "removed_at" in columns
-    assert "ix_staging_products_removed_purge" in indexes
-    history_fk = [fk for fk in fks if fk["constrained_columns"] == ["staging_product_id"]]
-    assert history_fk and history_fk[0].get("ondelete") == "CASCADE"
-
-
-async def test_downgrade_reverses_all_three(isolated_database_url):
-    command.downgrade(_alembic_config(isolated_database_url), "20260825_0001")
-
-    columns, indexes, fks = await _inspect_schema(isolated_database_url)
-    assert "removed_at" not in columns
-    assert "ix_staging_products_removed_purge" not in indexes
-    history_fk = [fk for fk in fks if fk["constrained_columns"] == ["staging_product_id"]]
-    assert history_fk and history_fk[0].get("ondelete") == "RESTRICT"
-
-    command.upgrade(_alembic_config(isolated_database_url), "head")
-
-
-async def test_removal_deletes_history_via_cascade(isolated_database_url):
-    engine = create_async_engine(isolated_database_url)
-    factory = async_sessionmaker(engine, expire_on_commit=False)
-    async with factory() as session:
-        async with session.begin():
-            client = (await session.execute(
-                text("INSERT INTO clients (name) VALUES ('C') RETURNING id")
-            )).scalar_one()
-            fs = (await session.execute(
-                text(
-                    "INSERT INTO feed_sources (client_id, name, source_format) "
-                    "VALUES (:cid, 'F', 'tsv') RETURNING id"
-                ),
-                {"cid": client},
-            )).scalar_one()
-            run = (await session.execute(
-                text(
-                    "INSERT INTO ingestion_runs (feed_source_id, status) "
-                    "VALUES (:fid, 'running') RETURNING id"
-                ),
-                {"fid": fs},
-            )).scalar_one()
-            await session.execute(
-                text(
-                    "INSERT INTO staging_products "
-                    "(feed_source_id, ingestion_run_id, product_id, content_hash, "
-                    "config_hash, status, raw_data) "
-                    "VALUES (:fid, :rid, 'p1', 'h', 'c', 'active', '{}')"
-                ),
-                {"fid": fs, "rid": run},
-            )
-            await session.execute(text(
-                "INSERT INTO staging_history (staging_product_id, snapshot) "
-                "SELECT id, '{}' FROM staging_products"
-            ))
-
-    async with factory() as session:
-        async with session.begin():
-            await session.execute(text("DELETE FROM staging_products"))
-
-    async with factory() as session:
-        remaining = (await session.execute(
-            text("SELECT count(*) FROM staging_history")
-        )).scalar_one()
-    assert remaining == 0
-    await engine.dispose()
+async def apply_plugin_outcomes(
+    session_factory, feed_source_id: int, ingestion_run_id: int,
+    outcomes: Sequence[PluginOutcome], *, chunk_size: int = 1000,
+) -> None
 ```
 
-Note: if the `feed_sources` INSERT fails on additional NOT NULL columns, check `app/models/feed_source.py` and extend the column list accordingly.
-
-- [ ] **Step 2: Run tests to verify they fail**
-
-Run: `uv run pytest tests/test_m5_migration.py -v`
-Expected: FAIL — `removed_at` column missing on the upgraded database
-
-- [ ] **Step 3: Update the models**
-
-In `backend/app/models/staging.py` make exactly three changes:
-1. Add after the `last_seen_at` line of `StagingProduct`:
+Migration revision `20260827_0001` (down_revision `20260826_0001`):
 
 ```python
-    removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-```
-
-2. In `StagingHistory`, change the FK line from `ondelete="RESTRICT"` to:
-
-```python
-    staging_product_id: Mapped[int] = mapped_column(ForeignKey("staging_products.id", ondelete="CASCADE"), nullable=False)
-```
-
-3. Nothing else changes in the file.
-
-- [ ] **Step 4: Write the migration**
-
-Create `backend/alembic/versions/20260826_0001_m5_staging_delta.py`:
-
-```python
-"""M5 staging delta support
-
-Revision ID: 20260826_0001
-Revises: 20260825_0001
-Create Date: 2026-08-26 00:00:00.000000
-"""
-from typing import Sequence, Union
-from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
-
-revision: str = '20260826_0001'
-down_revision: Union[str, Sequence[str], None] = '20260825_0001'
-branch_labels: Union[str, Sequence[str], None] = None
-
-_PURGE_INDEX = 'ix_staging_products_removed_purge'
-_HISTORY_FK = 'staging_history_staging_product_id_fkey'
-
-
 def upgrade() -> None:
-    op.add_column(
-        'staging_products',
-        sa.Column('removed_at', postgresql.TIMESTAMP(timezone=True), nullable=True),
-    )
-    op.create_index(
-        _PURGE_INDEX,
-        'staging_products',
-        ['removed_at'],
-        unique=False,
-        postgresql_where=sa.text("status = 'removed'"),
-    )
-    op.drop_constraint(_HISTORY_FK, 'staging_history', type_='foreignkey')
-    op.create_foreign_key(
-        _HISTORY_FK,
-        'staging_history',
-        'staging_products',
-        ['staging_product_id'],
-        ['id'],
-        ondelete='CASCADE',
-    )
-
+    op.add_column('staging_products', sa.Column('processed_data', postgresql.JSONB(astext_type=sa.Text()), nullable=True))
+    op.add_column('staging_products', sa.Column('excluded', sa.Boolean(), nullable=False, server_default=sa.false()))
 
 def downgrade() -> None:
-    op.drop_constraint(_HISTORY_FK, 'staging_history', type_='foreignkey')
-    op.create_foreign_key(
-        _HISTORY_FK,
-        'staging_history',
-        'staging_products',
-        ['staging_product_id'],
-        ['id'],
-        ondelete='RESTRICT',
+    op.drop_column('staging_products', 'excluded')
+    op.drop_column('staging_products', 'processed_data')
+```
+
+Model additions on `StagingProduct` (after `raw_data`):
+
+```python
+    processed_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    excluded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
+```
+(import `false` from sqlalchemy alongside existing imports; extend the sqlalchemy import list.)
+
+RunState gains three fields (after `source_fields`):
+
+```python
+    client_id: int | None = None
+    config_bundle: dict[str, Any] = field(default_factory=dict)
+    product_pks: dict[str, int] = field(default_factory=dict)
+```
+
+`StagingStep.execute` additions (after resolving `bundle`, before classify):
+
+```python
+        ctx.run_state.client_id = feed_source.client_id
+        ctx.run_state.config_bundle = bundle
+```
+
+and capture the pk map: `pk_map = await apply_staging_delta(...)` followed by `ctx.run_state.product_pks = pk_map`.
+
+`apply_plugin_outcomes` writes, chunked like its sibling (single transaction per chunk):
+- `status == "processed"` → UPDATE by pk: `processed_data = final_product`, `excluded = False`, `ingestion_run_id`, `last_seen_at = now`
+- `status == "dropped"` → UPDATE by pk: `processed_data = NULL`, `excluded = True`, `ingestion_run_id`
+(`now = datetime.now(timezone.utc)` once per call.)
+
+New `PluginStep` (replaces the `_NoOpStep` subclass entirely; constructor takes the shared registry dict):
+
+```python
+class PluginStep:
+    name = "run_plugins"
+
+    def __init__(self, registry: dict[str, Any] | None = None) -> None:
+        self._registry = registry if registry is not None else {}
+
+    async def execute(self, ctx: StepContext) -> StepResult:
+        from copy import deepcopy
+
+        bundle = ctx.run_state.config_bundle or {"instances": []}
+        pks = ctx.run_state.product_pks
+        survivors: list[dict[str, Any]] = []
+        outcomes: list[PluginOutcome] = []
+        processed = dropped = errored = 0
+
+        for product in ctx.run_state.products:
+            pid = product.get("id")
+            current = product
+            drop = error = False
+            for instance in bundle.get("instances", []):
+                plugin_obj = self._registry.get(instance["plugin"])
+                if plugin_obj is None:
+                    continue
+                rctx = RunContext(
+                    client_id=ctx.run_state.client_id or 0,
+                    feed_source_id=ctx.feed_source_id,
+                    run_id=ctx.ingestion_run_id,
+                    logger=ctx.logger,
+                    original_product=deepcopy(product),
+                )
+                try:
+                    result = plugin_obj.process(
+                        current,
+                        instance["resolved_config"],
+                        instance["resolved_data"],
+                        rctx,
+                    )
+                except Exception as exc:
+                    ctx.logger.warning(
+                        "plugin %s errored on product %s: %s",
+                        instance["plugin"], pid, exc,
+                    )
+                    errored += 1
+                    error = True
+                    break
+                if result is None:
+                    drop = True
+                    break
+                current = result
+            if error:
+                continue
+            pk = pks.get(pid) if isinstance(pid, str) else None
+            if drop:
+                dropped += 1
+                if pk is not None:
+                    outcomes.append(PluginOutcome(pid, pk, "dropped", None))
+                continue
+            processed += 1
+            survivors.append(current)
+            if pk is not None:
+                outcomes.append(PluginOutcome(str(pid), pk, "processed", current))
+
+        await apply_plugin_outcomes(
+            ctx.session_factory,
+            ctx.feed_source_id,
+            ctx.ingestion_run_id,
+            outcomes,
+        )
+        ctx.run_state.products = survivors
+        return StepResult(
+            processed_count=len(survivors),
+            failed_count=errored,
+            statistics={
+                "plugins": {
+                    "processed": processed,
+                    "dropped": dropped,
+                    "errored": errored,
+                }
+            },
+        )
+```
+
+`default_steps` gains an optional third parameter and passes it through:
+
+```python
+def default_steps(
+    fetcher: HttpFetcher,
+    registry: RegistryDocument,
+    plugin_registry: dict[str, Any] | None = None,
+) -> tuple[PipelineStep, ...]:
+    return (
+        IngestStep(fetcher, registry),
+        MappingStep(registry),
+        StagingStep(),
+        PluginStep(plugin_registry),
+        QualityCheckStep(),
+        ExportStep(),
     )
-    op.drop_index(_PURGE_INDEX, table_name='staging_products')
-    op.drop_column('staging_products', 'removed_at')
 ```
 
-If `drop_constraint` reports the name does not exist, query the real name against the test database (`SELECT conname FROM pg_constraint WHERE conrelid = 'staging_history'::regclass AND contype = 'fkey';`) and use it verbatim in `_HISTORY_FK`.
+Apply the deferred main.py change (pass `app.state.plugin_registry`).
 
-- [ ] **Step 5: Run tests to verify they pass**
+Semantics locked by the design (assert these in tests):
+- Survivor of all instances → `processed_data` = final dict, `excluded = False`.
+- Any None → chain aborts for that product, `processed_data = NULL`, `excluded = True` (reversible next passing run).
+- Exception → chain aborts, NO staging write for that product, counted errored.
+- `original_product` equals a deep copy of the product as it entered THIS step, even after earlier instances mutate `current` (test mutates in first instance, asserts `rctx.original_product` unchanged in second).
+- Missing registry entry → instance skipped silently for that product (host has no registered plugin; logged skip acceptable).
+- Products whose id lacks a staged pk still flow through but get no outcome write.
 
-Run: `uv run pytest tests/test_m5_migration.py tests/test_migrations.py tests/test_models.py -v`
-Expected: PASS — new tests green; existing migration/model suites unaffected
+Testing:
+- Migration test mirrors `test_m5_migration.py` (columns present head, absent at `20260826_0001`).
+- Unit `test_plugin_step.py`: fake session-free? No — outcomes need DB; use the isolated-database pattern from `test_staging_step.py` (seed client/feed source/run, stage via `StagingStep` first, then run `PluginStep` with fake plugin objects). Cover: transform+persist, drop+persist-clear, exception leaves row untouched + failed_count, multi-instance ordering, original_product immutability, statistics shape, registry-miss skip.
+- Full suite serial `-n0`: 366 passed + new tests (M5 acceptance asserts `captured == []` semantics stay intact because registry defaults empty → PluginStep is pass-through when nothing registered; verify `test_m3/m4/m5_acceptance` remain green).
 
-- [ ] **Step 6: Commit**
-
-```bash
-git add app/models/staging.py alembic/versions/20260826_0001_m5_staging_delta.py tests/test_m5_migration.py
-git commit -m "feat: staging removed_at column, history cascade, purge index"
-```
+Commits: `feat: processed-output store migration` (migration+models+its test), then `feat: PluginStep executes registered pipeline plugins` (runtime+persistence+wiring+tests).
 
 ---
 

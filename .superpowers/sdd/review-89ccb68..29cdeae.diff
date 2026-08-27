@@ -1,0 +1,112 @@
+# Review package: 89ccb68..29cdeae
+
+## Commits
+29cdeae fix: restore empty scope list rejection in manifest parser
+
+## Files changed
+ backend/app/plugins/manifest.py                   | 2 ++
+ backend/tests/fixtures/example_plugin/plugin.json | 2 +-
+ backend/tests/test_plugins_manifest.py            | 8 +++++---
+ 3 files changed, 8 insertions(+), 4 deletions(-)
+
+## Diff
+diff --git a/backend/app/plugins/manifest.py b/backend/app/plugins/manifest.py
+index 766fdf3..416d68d 100644
+--- a/backend/app/plugins/manifest.py
++++ b/backend/app/plugins/manifest.py
+@@ -33,20 +33,22 @@ class PluginManifest:
+     raw: dict[str, Any]
+ 
+ 
+ def _parse_scope(doc: dict[str, Any], key: str) -> tuple[str, ...]:
+     value = doc.get(key)
+     if value is None:
+         return ("global",)
+     if isinstance(value, str):
+         items = [value]
+     elif isinstance(value, (list, tuple)):
++        if not value:
++            raise ManifestError(f"{key} must not be empty")
+         items = list(value)
+     else:
+         raise ManifestError(f"{key} must be a string or a list of strings")
+     for item in items:
+         if item not in _ALLOWED_SCOPES:
+             raise ManifestError(
+                 f"{key} contains undeclared scope {item!r}; "
+                 f"allowed scopes are {sorted(_ALLOWED_SCOPES)}"
+             )
+     return tuple(items)
+diff --git a/backend/tests/fixtures/example_plugin/plugin.json b/backend/tests/fixtures/example_plugin/plugin.json
+index 73df592..c2d0762 100644
+--- a/backend/tests/fixtures/example_plugin/plugin.json
++++ b/backend/tests/fixtures/example_plugin/plugin.json
+@@ -1,15 +1,15 @@
+ {
+   "id": "example_upper",
+   "name": "Example Upper",
+   "version": "1.0.0",
+   "extension_point": "pipeline_module",
+   "entry_point": "plugin:UpperPlugin",
+   "config_scope": ["global", "client"],
+-  "data_scope": [],
++  "data_scope": ["global"],
+   "config_schema": {
+     "type": "object",
+     "properties": {"suffix": {"type": "string"}},
+     "required": ["suffix"]
+   },
+   "data_schema": {"type": "object"}
+ }
+diff --git a/backend/tests/test_plugins_manifest.py b/backend/tests/test_plugins_manifest.py
+index 1d20fd8..8337e29 100644
+--- a/backend/tests/test_plugins_manifest.py
++++ b/backend/tests/test_plugins_manifest.py
+@@ -72,24 +72,25 @@ class TestScopeNormalization:
+             parse_manifest(doc)
+         assert excinfo.value.reason != ""
+ 
+     @pytest.mark.parametrize("scope_key", ["config_scope", "data_scope"])
+     def test_undeclared_scope_value_rejected(self, scope_key):
+         doc = {**minimal_manifest(), scope_key: ["global", "tenant"]}
+         with pytest.raises(ManifestError):
+             parse_manifest(doc)
+ 
+     @pytest.mark.parametrize("scope_key", ["config_scope", "data_scope"])
+-    def test_empty_scope_list_accepted(self, scope_key):
++    def test_empty_scope_list_rejected(self, scope_key):
+         doc = {**minimal_manifest(), scope_key: []}
+-        m = parse_manifest(doc)
+-        assert getattr(m, scope_key) == ()
++        with pytest.raises(ManifestError) as excinfo:
++            parse_manifest(doc)
++        assert excinfo.value.reason != ""
+ 
+     def test_mixed_valid_invalid_scopes_rejected(self):
+         doc = {**minimal_manifest(), "data_scope": ["client", "bogus"]}
+         with pytest.raises(ManifestError):
+             parse_manifest(doc)
+ 
+     def test_non_string_non_list_scope_rejected(self):
+         doc = {**minimal_manifest(), "config_scope": 42}
+         with pytest.raises(ManifestError):
+             parse_manifest(doc)
+@@ -185,17 +186,18 @@ class TestErrorReasons:
+ 
+     def test_distinct_reasons_for_distinct_failures(self):
+         reasons = set()
+         cases = [
+             None,
+             {},
+             {**minimal_manifest(), "id": "Bad-Id"},
+             {**minimal_manifest(), "extension_point": "quality_rule"},
+             {**minimal_manifest(), "config_schema": {"type": "nope"}},
+             {**minimal_manifest(), "config_scope": ["nope"]},
++            {**minimal_manifest(), "config_scope": []},
+         ]
+         for case in cases:
+             try:
+                 parse_manifest(case)
+             except ManifestError as e:
+                 reasons.add(e.reason)
+         assert len(reasons) == len(cases)

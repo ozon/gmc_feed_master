@@ -1,65 +1,90 @@
-### Task 4: Enable parallel-by-default + documentation + gate
+### Task 4: Discovery, registration, route mounting, startup wiring
 
 **Files:**
-- Modify: `backend/pyproject.toml` (`[tool.pytest.ini_options]`)
-- Modify: `README.md` (testing instructions)
-- Modify: `docs/decisions.md` (wall-time results)
+- Create: `backend/app/plugins/discovery.py`
+- Modify: `backend/app/main.py` (create_app signature, lifespan, include_router)
+- Test: `backend/tests/test_plugins_discovery.py` (unit/integration), `backend/tests/test_plugins_startup.py` (lifespan wiring)
 
 **Interfaces:**
-- Consumes: Tasks 1–3.
-- Produces: `uv run pytest` runs parallel by default; documented opt-outs.
+- Consumes: `parse_manifest`, `load_plugin_class`, models `Plugin`.
+- Produces:
 
-- [ ] **Step 1: Turn on xdist by default**
+```python
+@dataclass
+class Candidate:
+    manifest: PluginManifest
+    directory: Path
+    instance: Any                     # instantiated plugin object
+    core: bool                        # path prefix "core" under plugins_dir
+    router: APIRouter | None          # from optional register_routes()
 
-In `backend/pyproject.toml`:
+def discover(plugins_dir: Path) -> tuple[list[Candidate], list[str]]:
+    # returns (accepted candidates, rejection reason strings); missing dir → ([], [])
 
-```toml
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = "-n auto"
+async def register_candidates(session: AsyncSession,
+                              candidates: Sequence[Candidate]) -> dict[str, int]:
+    # upsert one Plugin row per candidate keyed by manifest id stored in the
+    # `name` column; refreshes version + manifest JSONB; preserves enabled;
+    # returns manifest id -> plugin row pk
+
+def collect_router(candidate: Candidate) -> APIRouter | None:
+    # calls instance.register_routes(router) when present; raises
+    # PluginLoadError if any contributed route path would land on the
+    # reserved sub-paths "/config" or "/data" (with or without trailing segments)
+
+async def discover_and_mount(app: FastAPI) -> None:
+    # orchestrates: scan app.state.plugins_dir → register via
+    # app.state.db_session_factory → fill app.state.plugin_registry
+    # ({manifest_id: instance}) → mount routers at prefix f"/plugins/{id}"
+    # logs "plugins: N registered, M rejected"
 ```
 
-- [ ] **Step 2: Run the parallel gate**
+Behavioral rules:
+- Rejection reasons are collected and returned; nothing raises for bad plugins.
+- Reserved-path check inspects every route in the contributed router: any path equal to `/config`, `/data` or starting with `/config/`, `/data/` ⇒ reject the whole candidate.
+- Upsert-in-place: `SELECT Plugin WHERE name == manifest.id`; found → update `version`, `manifest`; else insert with `enabled = candidate.core`. The row's `enabled` value is never modified by registration.
 
-```bash
-cd backend && TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest -q 2>&1 | tail -1
-```
-Expected: 366 passed. Run it twice if flaky-looking; investigate any failure individually with `-n0` reproduction before assuming parallelism is at fault (report BLOCKED if a genuine parallel-only defect appears).
+**main.py wiring:**
 
-Also verify the opt-out path: `uv run pytest -q -n0` → 366 passed.
+1. `create_app(...)` gains keyword param `plugins_dir: Path | str | None = None`; store on state:
 
-- [ ] **Step 3: Update README testing section**
-
-In `README.md`, extend the existing test guidance with:
-
-```markdown
-Backend tests run in parallel by default (pytest-xdist, `-n auto`). Disable
-with `uv run pytest -n0` or cap workers with `PYTEST_XDIST_AUTO_NUM_WORKERS`.
-Integration tests still require `TEST_DATABASE_URL` pointing at a
-`postgresql+asyncpg://` server; each test runs against its own database cloned
-from an Alembic-migrated template, so the migration chain runs once per
-worker rather than once per test.
+```python
+    app.state.plugins_dir = (
+        Path(plugins_dir)
+        if plugins_dir is not None
+        else (Path(settings.plugins_dir) if settings is not None else None)
+    )
+    app.state.plugin_registry: dict[str, Any] = {}
 ```
 
-- [ ] **Step 4: Record results in decisions.md**
+2. In lifespan, immediately before the scheduler block (`scheduler_service = getattr(...)` line):
 
-Extend the `Pytest optimization tooling` entry with: baseline (366 passed, ~100 s serial), after-template-serial time (Task 2 Step 4), after-parallel time (Step 2 above), and the three spec-owner notes as implemented (template connection disposal inside `load=`; pool caps swept across 57 sites; pytest-cov parallel-mode explicitly deferred).
+```python
+            if application.state.plugins_dir is not None:
+                from .plugins.discovery import discover_and_mount
 
-- [ ] **Step 5: Final gate + commit**
-
-```bash
-cd frontend && npm run test -- --run && npm run typecheck && npm run build && cd ../backend
-uv run python -m compileall app
-git diff --check
-git add backend/pyproject.toml ../README.md ../docs/decisions.md
-git commit -m "feat: parallel pytest by default with xdist"
+                await discover_and_mount(application)
 ```
-Expected: frontend green, compileall clean, diff check clean.
+
+3. With the other routers: `app.include_router(plugins_router)` (Task 6 adds the import; add it in Task 6 to keep this task's diff green — instead expose mounting purely via `discover_and_mount` here).
+
+4. In the runner-construction block, create the shared registry dict BEFORE `default_steps` and pass it through (see Task 5's `default_steps` change): replace `steps = default_steps(fetcher..., load_registry())` with:
+
+```python
+        steps = default_steps(
+            fetcher if fetcher is not None else HttpFetcher(),
+            load_registry(),
+            app.state.plugin_registry,
+        )
+```
+
+To keep this task self-contained and green before Task 5 lands, make ONLY the `app.state.plugin_registry = {}` assignment now; defer the `default_steps` call-site change to Task 5.
+
+Tests:
+- Unit (tmp dirs): valid plugin discovered with correct core flag (`<tmp>/core/x` vs `<tmp>/x`); invalid manifest rejected with reason; loader failure rejected; reserved-route plugin rejected; empty/missing dir → no candidates.
+- Integration (Postgres): register twice — second run updates version, preserves a manually-flipped `enabled`, keeps a single row; FK stability (a ModuleInstance referencing the row survives re-registration).
+- Startup: with an injected `db_session_factory` + `plugins_dir` tmp fixture, run the lifespan via `httpx.ASGITransport(lifespan="on")` OR invoke the lifespan context manually (`async with app.router.lifespan_context(app):`) and assert rows exist and `app.state.plugin_registry` is filled. Prefer manual lifespan-context invocation — existing tests never trigger lifespan.
+
+TDD per suite; commits: `feat: plugin discovery and DB registration` then wiring included in same commit (one commit for the task is fine: `feat: plugin discovery, registration, and startup wiring`).
 
 ---
-
-## Self-Review Checklist (completed during planning)
-
-- Spec coverage: template cloning via `load=` hook (Task 2), `TEST_DATABASE_URL` contract preserved (Task 2), pool caps incl. 57-site sweep (Task 3), `-n auto` default with opt-outs (Task 4), README + decisions.md updates incl. wall times and the three spec-owner notes (Tasks 1/4), migration-test contingency named (Task 2 Step 3).
-- Placeholder scan: none; every code step carries full code or exact edit rules.
-- Type consistency: fixture name/yield type unchanged; helper names (`_server_params`, `_load_alembic_schema`, `_asyncpg_url`, `gmc_postgres_noproc`, `gmc_database`) defined in Task 2 and referenced nowhere else.

@@ -1,0 +1,878 @@
+# Review package: 0c1fbb3..9bb3096
+
+## Commits
+9bb3096 feat: PluginStep executes registered pipeline plugins
+83dbda6 feat: processed-output store migration
+
+## Files changed
+ .../versions/20260827_0001_m6_plugin_host.py       |  28 ++
+ backend/app/main.py                                |   6 +-
+ backend/app/models/staging.py                      |   4 +-
+ backend/app/pipeline/steps.py                      | 106 ++++++-
+ backend/app/plugins/runtime.py                     |  16 ++
+ backend/app/staging/persistence.py                 |  45 ++-
+ backend/tests/test_m3_acceptance.py                |   6 +-
+ backend/tests/test_m6_migration.py                 |  48 ++++
+ backend/tests/test_pipeline_steps.py               |   2 +-
+ backend/tests/test_plugin_step.py                  | 315 +++++++++++++++++++++
+ 10 files changed, 563 insertions(+), 13 deletions(-)
+
+## Diff
+diff --git a/backend/alembic/versions/20260827_0001_m6_plugin_host.py b/backend/alembic/versions/20260827_0001_m6_plugin_host.py
+new file mode 100644
+index 0000000..5a2c3dc
+--- /dev/null
++++ b/backend/alembic/versions/20260827_0001_m6_plugin_host.py
+@@ -0,0 +1,28 @@
++"""processed output store for M6 plugin host
++
++Revision ID: 20260827_0001
++Revises: 20260826_0002
++Create Date: 2026-08-27
++"""
++
++from typing import Sequence, Union
++
++from alembic import op
++import sqlalchemy as sa
++from sqlalchemy.dialects import postgresql
++
++# revision identifiers, used by Alembic.
++revision: str = '20260827_0001'
++down_revision: Union[str, Sequence[str], None] = '20260826_0002'
++branch_labels: Union[str, Sequence[str], None] = None
++depends_on: Union[str, Sequence[str], None] = None
++
++
++def upgrade() -> None:
++    op.add_column('staging_products', sa.Column('processed_data', postgresql.JSONB(astext_type=sa.Text()), nullable=True))
++    op.add_column('staging_products', sa.Column('excluded', sa.Boolean(), nullable=False, server_default=sa.false()))
++
++
++def downgrade() -> None:
++    op.drop_column('staging_products', 'excluded')
++    op.drop_column('staging_products', 'processed_data')
+diff --git a/backend/app/main.py b/backend/app/main.py
+index fc1f3ea..ca1488d 100644
+--- a/backend/app/main.py
++++ b/backend/app/main.py
+@@ -128,21 +128,25 @@ def create_app(
+                 absolute=timedelta(hours=settings.session_absolute_hours),
+                 secret=settings.session_secret,
+             )
+ 
+     if app.state.db_session_factory is not None:
+         from registry.loader import load_registry
+ 
+         from .pipeline import LockRegistry, PipelineRunner, SchedulerService, default_steps
+ 
+         lock_registry = LockRegistry()
+-        steps = default_steps(fetcher if fetcher is not None else HttpFetcher(), load_registry())
++        steps = default_steps(
++            fetcher if fetcher is not None else HttpFetcher(),
++            load_registry(),
++            app.state.plugin_registry,
++        )
+         runner = PipelineRunner(lock_registry, app.state.db_session_factory, list(steps))
+         scheduler_service = SchedulerService(runner)
+         app.state.lock_registry = lock_registry
+         app.state.pipeline_runner = runner
+         app.state.scheduler_service = scheduler_service
+ 
+     @app.get("/health")
+     def health(_settings: Settings = Depends(get_settings)) -> dict[str, str]:
+         app.state.settings = _settings
+         return {"status": "ok"}
+diff --git a/backend/app/models/staging.py b/backend/app/models/staging.py
+index eb59812..6582d31 100644
+--- a/backend/app/models/staging.py
++++ b/backend/app/models/staging.py
+@@ -1,31 +1,33 @@
+ from datetime import datetime
+ from typing import Any
+-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, func
++from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, false, func
+ from sqlalchemy.dialects.postgresql import JSONB
+ from sqlalchemy.orm import Mapped, mapped_column
+ from app.db.base import Base
+ 
+ 
+ class StagingProduct(Base):
+     __tablename__ = "staging_products"
+     __table_args__ = (UniqueConstraint("feed_source_id", "product_id", name="uq_staging_products_source_product"), Index("ix_staging_products_feed_source_id", "feed_source_id"), Index("ix_staging_products_ingestion_run_id", "ingestion_run_id"))
+     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+     feed_source_id: Mapped[int] = mapped_column(ForeignKey("feed_sources.id", ondelete="RESTRICT"), nullable=False)
+     ingestion_run_id: Mapped[int] = mapped_column(ForeignKey("ingestion_runs.id", ondelete="RESTRICT"), nullable=False)
+     product_id: Mapped[str] = mapped_column(String(255), nullable=False)
+     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+     config_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+     removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+     raw_data: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
++    processed_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
++    excluded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false())
+     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+ 
+ 
+ class StagingHistory(Base):
+     __tablename__ = "staging_history"
+     __table_args__ = (Index("ix_staging_history_staging_product_id", "staging_product_id"),)
+     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+     staging_product_id: Mapped[int] = mapped_column(ForeignKey("staging_products.id", ondelete="CASCADE"), nullable=False)
+     snapshot: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+diff --git a/backend/app/pipeline/steps.py b/backend/app/pipeline/steps.py
+index 9a39b10..32af7d5 100644
+--- a/backend/app/pipeline/steps.py
++++ b/backend/app/pipeline/steps.py
+@@ -9,27 +9,36 @@ from sqlalchemy.ext.asyncio import AsyncSession
+ 
+ from registry.model import RegistryDocument
+ 
+ from ..ingest import HttpFetcher, read_feed
+ from ..ingest.report import SourceField
+ from ..mapping import MappingDocument, apply_mapping, auto_match
+ from ..models.feed_source import FeedSource
+ from ..staging.config_resolver import resolve_config_bundle
+ from ..staging.delta import classify
+ from ..staging.hashing import content_hash
+-from ..staging.persistence import apply_staging_delta, load_stored_rows
++from ..staging.persistence import (
++    PluginOutcome,
++    apply_plugin_outcomes,
++    apply_staging_delta,
++    load_stored_rows,
++)
++from ..plugins.runtime import RunContext
+ 
+ 
+ @dataclass
+ class RunState:
+     products: list[dict[str, Any]] = field(default_factory=list)
+     source_fields: list[SourceField] = field(default_factory=list)
++    client_id: int | None = None
++    config_bundle: dict[str, Any] = field(default_factory=dict)
++    product_pks: dict[str, int] = field(default_factory=dict)
+ 
+ 
+ @dataclass(frozen=True)
+ class StepContext:
+     feed_source_id: int
+     session_factory: Callable[[], AsyncSession]
+     logger: logging.Logger
+     run_state: RunState
+     ingestion_run_id: int = 0
+ 
+@@ -154,63 +163,146 @@ class StagingStep:
+ 
+     async def execute(self, ctx: StepContext) -> StepResult:
+         async with ctx.session_factory() as session:
+             async with session.begin():
+                 feed_source = await session.get(FeedSource, ctx.feed_source_id)
+         if feed_source is None:
+             raise LookupError(f"feed source {ctx.feed_source_id} not found")
+ 
+         async with ctx.session_factory() as session:
+             bundle = await resolve_config_bundle(session, feed_source)
++        ctx.run_state.client_id = feed_source.client_id
++        ctx.run_state.config_bundle = bundle
+         config_hash_value = content_hash(bundle)
+ 
+         stored = await load_stored_rows(ctx.session_factory, ctx.feed_source_id)
+         delta = classify(ctx.run_state.products, stored, config_hash_value)
+         if delta.counts.failed:
+             ctx.logger.warning(
+                 "staging: %d unusable products (missing/duplicate id)",
+                 delta.counts.failed,
+             )
+ 
+-        await apply_staging_delta(
++        pk_map = await apply_staging_delta(
+             ctx.session_factory,
+             ctx.feed_source_id,
+             ctx.ingestion_run_id,
+             delta,
+             config_hash_value,
+             chunk_size=self._chunk_size,
+         )
++        ctx.run_state.product_pks = pk_map
+ 
+         ctx.run_state.products = list(delta.enqueue)
+         return StepResult(
+             processed_count=len(delta.enqueue),
+             failed_count=delta.counts.failed,
+             statistics={"staging": asdict(delta.counts)},
+         )
+ 
+ 
+-class PluginStep(_NoOpStep):
+-    def __init__(self) -> None:
+-        super().__init__("run_plugins")
++class PluginStep:
++    name = "run_plugins"
++
++    def __init__(self, registry: dict[str, Any] | None = None) -> None:
++        self._registry = registry if registry is not None else {}
++
++    async def execute(self, ctx: StepContext) -> StepResult:
++        from copy import deepcopy
++
++        bundle = ctx.run_state.config_bundle or {"instances": []}
++        pks = ctx.run_state.product_pks
++        survivors: list[dict[str, Any]] = []
++        outcomes: list[PluginOutcome] = []
++        processed = dropped = errored = 0
++
++        for product in ctx.run_state.products:
++            pid = product.get("id")
++            current = product
++            original = deepcopy(product)
++            drop = error = False
++            for instance in bundle.get("instances", []):
++                plugin_obj = self._registry.get(instance["plugin"])
++                if plugin_obj is None:
++                    continue
++                rctx = RunContext(
++                    client_id=ctx.run_state.client_id or 0,
++                    feed_source_id=ctx.feed_source_id,
++                    run_id=ctx.ingestion_run_id,
++                    logger=ctx.logger,
++                    original_product=original,
++                )
++                try:
++                    result = plugin_obj.process(
++                        current,
++                        instance["resolved_config"],
++                        instance["resolved_data"],
++                        rctx,
++                    )
++                except Exception as exc:
++                    ctx.logger.warning(
++                        "plugin %s errored on product %s: %s",
++                        instance["plugin"], pid, exc,
++                    )
++                    errored += 1
++                    error = True
++                    break
++                if result is None:
++                    drop = True
++                    break
++                current = result
++            if error:
++                continue
++            pk = pks.get(pid) if isinstance(pid, str) else None
++            if drop:
++                dropped += 1
++                if pk is not None:
++                    outcomes.append(PluginOutcome(pid, pk, "dropped", None))
++                continue
++            processed += 1
++            survivors.append(current)
++            if pk is not None:
++                outcomes.append(PluginOutcome(str(pid), pk, "processed", current))
++
++        await apply_plugin_outcomes(
++            ctx.session_factory,
++            ctx.feed_source_id,
++            ctx.ingestion_run_id,
++            outcomes,
++        )
++        ctx.run_state.products = survivors
++        return StepResult(
++            processed_count=len(survivors),
++            failed_count=errored,
++            statistics={
++                "plugins": {
++                    "processed": processed,
++                    "dropped": dropped,
++                    "errored": errored,
++                }
++            },
++        )
+ 
+ 
+ class QualityCheckStep(_NoOpStep):
+     def __init__(self) -> None:
+         super().__init__("quality_check")
+ 
+ 
+ class ExportStep(_NoOpStep):
+     def __init__(self) -> None:
+         super().__init__("export")
+ 
+ 
+ def default_steps(
+-    fetcher: HttpFetcher, registry: RegistryDocument
++    fetcher: HttpFetcher,
++    registry: RegistryDocument,
++    plugin_registry: dict[str, Any] | None = None,
+ ) -> tuple[PipelineStep, ...]:
+     return (
+         IngestStep(fetcher, registry),
+         MappingStep(registry),
+         StagingStep(),
+-        PluginStep(),
++        PluginStep(plugin_registry),
+         QualityCheckStep(),
+         ExportStep(),
+     )
+diff --git a/backend/app/plugins/runtime.py b/backend/app/plugins/runtime.py
+new file mode 100644
+index 0000000..f5e98e9
+--- /dev/null
++++ b/backend/app/plugins/runtime.py
+@@ -0,0 +1,16 @@
++"""Runtime context handed to plugin instances during pipeline execution."""
++
++from __future__ import annotations
++
++import logging
++from dataclasses import dataclass
++from typing import Any
++
++
++@dataclass(frozen=True)
++class RunContext:
++    client_id: int
++    feed_source_id: int
++    run_id: int
++    logger: logging.Logger
++    original_product: dict[str, Any]
+diff --git a/backend/app/staging/persistence.py b/backend/app/staging/persistence.py
+index ec5da28..df56e72 100644
+--- a/backend/app/staging/persistence.py
++++ b/backend/app/staging/persistence.py
+@@ -1,23 +1,32 @@
+ from __future__ import annotations
+ 
+-from collections.abc import Callable
++from collections.abc import Callable, Sequence
++from dataclasses import dataclass
+ from datetime import datetime, timezone
+ from typing import Any
+ 
+ from sqlalchemy import select, update
+ from sqlalchemy.ext.asyncio import AsyncSession
+ 
+ from ..models.staging import StagingHistory, StagingProduct
+ from .delta import StagingDelta, StoredRow
+ 
+ 
++@dataclass(frozen=True)
++class PluginOutcome:
++    product_id: str
++    pk: int
++    status: str
++    final_product: dict[str, Any] | None
++
++
+ async def load_stored_rows(
+     session_factory: Callable[[], AsyncSession],
+     feed_source_id: int,
+ ) -> dict[str, StoredRow]:
+     async with session_factory() as session:
+         result = await session.execute(
+             select(StagingProduct).where(
+                 StagingProduct.feed_source_id == feed_source_id
+             )
+         )
+@@ -147,10 +156,44 @@ async def apply_staging_delta(
+     ]
+     for group in _chunks(history_rows, chunk_size):
+         async with session_factory() as session:
+             async with session.begin():
+                 session.add_all([
+                     StagingHistory(staging_product_id=pk, snapshot=snapshot)
+                     for pk, snapshot in group
+                 ])
+ 
+     return pk_map
++
++
++async def apply_plugin_outcomes(
++    session_factory: Callable[[], AsyncSession],
++    feed_source_id: int,
++    ingestion_run_id: int,
++    outcomes: Sequence[PluginOutcome],
++    *,
++    chunk_size: int = 1000,
++) -> None:
++    now = datetime.now(timezone.utc)
++
++    for group in _chunks(list(outcomes), chunk_size):
++        async with session_factory() as session:
++            async with session.begin():
++                for outcome in group:
++                    values: dict[str, Any] = {
++                        "ingestion_run_id": ingestion_run_id,
++                    }
++                    if outcome.status == "processed":
++                        values["processed_data"] = outcome.final_product
++                        values["excluded"] = False
++                        values["last_seen_at"] = now
++                    else:
++                        values["processed_data"] = None
++                        values["excluded"] = True
++                    await session.execute(
++                        update(StagingProduct)
++                        .where(
++                            StagingProduct.feed_source_id == feed_source_id,
++                            StagingProduct.id == outcome.pk,
++                        )
++                        .values(**values)
++                    )
+diff --git a/backend/tests/test_m3_acceptance.py b/backend/tests/test_m3_acceptance.py
+index b038f4c..741e17b 100644
+--- a/backend/tests/test_m3_acceptance.py
++++ b/backend/tests/test_m3_acceptance.py
+@@ -76,21 +76,22 @@ async def test_happy_path_tsv_ingest_end_to_end(session_factory):
+     )
+     fetcher = StubFetcher(HAPPY_TSV)
+     capture = CaptureProductsStep()
+     steps = [*default_steps(fetcher, load_registry()), capture]
+     runner = PipelineRunner(LockRegistry(), session_factory, steps)
+ 
+     run_id = await runner.execute(fs_id)
+ 
+     run = await _get_run(session_factory, run_id)
+     assert run.status == "success"
+-    assert run.processed_count == 9
++    # 3 ingest + 3 mapping + 3 staging + 3 plugin survivors
++    assert run.processed_count == 12
+     assert run.failed_count == 0
+     assert run.completed_at is not None
+     assert run.statistics["row_errors"] == []
+     assert capture.captured == [
+         {"id": "1", "title": "Red Shirt", "price": "19.99"},
+         {"id": "2", "title": "Blue Hat", "price": "9.50"},
+         {"id": "3", "title": "Green Pants", "price": "25.00"},
+     ]
+     assert fetcher.calls == [("http://test.local/feed.tsv", ("u", "p"))]
+ 
+@@ -99,21 +100,22 @@ async def test_row_errors_skipped_but_run_succeeds(session_factory):
+     fs_id = await _seed_feed_source(session_factory, {})
+     fetcher = StubFetcher(ROW_ERROR_TSV)
+     capture = CaptureProductsStep()
+     steps = [*default_steps(fetcher, load_registry()), capture]
+     runner = PipelineRunner(LockRegistry(), session_factory, steps)
+ 
+     run_id = await runner.execute(fs_id)
+ 
+     run = await _get_run(session_factory, run_id)
+     assert run.status == "success"
+-    assert run.processed_count == 3
++    # 1 ingest + 1 mapping + 1 staging + 1 plugin survivor
++    assert run.processed_count == 4
+     assert run.failed_count == 1
+     assert run.statistics["row_errors"] == [
+         {
+             "line": 2,
+             "message": "Column 'shipping' has 3 colon-separated parts but expected 2",
+         }
+     ]
+     assert capture.captured == [
+         {
+             "id": "2",
+diff --git a/backend/tests/test_m6_migration.py b/backend/tests/test_m6_migration.py
+new file mode 100644
+index 0000000..0d0e1d5
+--- /dev/null
++++ b/backend/tests/test_m6_migration.py
+@@ -0,0 +1,48 @@
++import asyncio
++
++import pytest
++from alembic import command
++from alembic.config import Config
++from sqlalchemy import inspect
++from sqlalchemy.ext.asyncio import create_async_engine
++
++pytestmark = pytest.mark.asyncio
++
++
++def _alembic_config(url):
++    config = Config("alembic.ini")
++    config.set_main_option("sqlalchemy.url", url)
++    return config
++
++
++async def _columns(url):
++    engine = create_async_engine(url, pool_size=2, max_overflow=0)
++
++    def _run(connection):
++        inspector = inspect(connection)
++        return {c["name"] for c in inspector.get_columns("staging_products")}
++
++    try:
++        async with engine.connect() as connection:
++            return await connection.run_sync(_run)
++    finally:
++        await engine.dispose()
++
++
++async def test_upgrade_adds_processed_data_and_excluded(isolated_database_url):
++    columns = await _columns(isolated_database_url)
++
++    assert "processed_data" in columns
++    assert "excluded" in columns
++
++
++async def test_downgrade_drops_processed_data_and_excluded(isolated_database_url):
++    await asyncio.to_thread(
++        command.downgrade, _alembic_config(isolated_database_url), "20260826_0002"
++    )
++
++    columns = await _columns(isolated_database_url)
++    assert "processed_data" not in columns
++    assert "excluded" not in columns
++
++    await asyncio.to_thread(command.upgrade, _alembic_config(isolated_database_url), "head")
+diff --git a/backend/tests/test_pipeline_steps.py b/backend/tests/test_pipeline_steps.py
+index 33aaad1..c5b11ea 100644
+--- a/backend/tests/test_pipeline_steps.py
++++ b/backend/tests/test_pipeline_steps.py
+@@ -51,21 +51,21 @@ def test_step_context_and_result_are_frozen():
+ 
+ def test_step_result_defaults():
+     result = StepResult()
+     assert result.processed_count == 0
+     assert result.failed_count == 0
+     assert result.statistics == {}
+ 
+ 
+ @pytest.mark.asyncio
+ @pytest.mark.parametrize(
+-    "step_cls", [PluginStep, QualityCheckStep, ExportStep]
++    "step_cls", [QualityCheckStep, ExportStep]
+ )
+ async def test_no_op_steps_contract(step_cls, ctx):
+     step = step_cls()
+     assert isinstance(step.name, str) and step.name
+     result = await step.execute(ctx)
+     assert result == StepResult(processed_count=0, failed_count=0)
+ 
+ 
+ def test_step_names_are_distinct():
+     steps = _steps()
+diff --git a/backend/tests/test_plugin_step.py b/backend/tests/test_plugin_step.py
+new file mode 100644
+index 0000000..852cebd
+--- /dev/null
++++ b/backend/tests/test_plugin_step.py
+@@ -0,0 +1,315 @@
++import logging
++
++import pytest
++from sqlalchemy import select
++from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
++
++from app.models.client import Client
++from app.models.feed_source import FeedSource
++from app.models.ingestion import IngestionRun
++from app.models.staging import StagingProduct
++from app.pipeline import RunState, StepContext
++from app.pipeline.steps import PluginStep, StagingStep
++
++pytestmark = pytest.mark.asyncio
++
++
++class FactoryAdapter:
++    def __init__(self, factory):
++        self._factory = factory
++
++    def __call__(self):
++        return self._factory()
++
++
++async def _seed(session):
++    client = Client(name="Acme")
++    session.add(client)
++    await session.flush()
++    feed_source = FeedSource(client_id=client.id, name="US", source_format="tsv")
++    session.add(feed_source)
++    await session.flush()
++    session.add(IngestionRun(id=1, feed_source_id=feed_source.id, status="completed"))
++    await session.flush()
++    return feed_source
++
++
++def _ctx(factory, feed_source_id, products, bundle=None):
++    state = RunState(
++        products=list(products),
++        client_id=feed_source_id,
++        config_bundle=bundle if bundle is not None else {"instances": []},
++        product_pks={},
++    )
++    return StepContext(
++        feed_source_id=feed_source_id,
++        session_factory=FactoryAdapter(factory),
++        logger=logging.getLogger(__name__),
++        run_state=state,
++        ingestion_run_id=1,
++    )
++
++
++class UpperPlugin:
++    def process(self, product, config, data, rctx):
++        return {**product, "title": product["title"].upper()}
++
++
++class MutatingPlugin:
++    def __init__(self):
++        self.seen_originals = []
++
++    def process(self, product, config, data, rctx):
++        self.seen_originals.append(rctx.original_product)
++        return {**product, "stage": len(self.seen_originals)}
++
++
++class DroppingPlugin:
++    def process(self, product, config, data, rctx):
++        return None
++
++
++class ExplodingPlugin:
++    def process(self, product, config, data, rctx):
++        raise RuntimeError("boom")
++
++
++async def _staged_rows(factory):
++    async with factory() as session:
++        result = await session.execute(select(StagingProduct))
++        return {row.product_id: row for row in result.scalars()}
++
++
++async def _prepare(factory, products):
++    async with factory() as session:
++        async with session.begin():
++            feed_source = await _seed(session)
++    staging_ctx = _ctx(factory, feed_source.id, products)
++    await StagingStep().execute(staging_ctx)
++    staged_pks = {
++        pid: row.id for pid, row in (await _staged_rows(factory)).items()
++    }
++    return feed_source, staged_pks
++
++
++async def _run_plugin_step(factory, feed_source, products, pks, bundle, registry):
++    ctx = _ctx(factory, feed_source.id, products, bundle)
++    ctx.run_state.product_pks.update(pks)
++    result = await PluginStep(registry).execute(ctx)
++    rows = await _staged_rows(factory)
++    return result, rows, ctx
++
++
++async def test_transform_survivor_persists_processed_data(isolated_database_url):
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
++    factory = async_sessionmaker(engine, expire_on_commit=False)
++    products = [{"id": "1", "title": "a"}]
++    feed_source, pks = await _prepare(factory, products)
++    bundle = {"instances": [
++        {"plugin": "upper", "resolved_config": {}, "resolved_data": {}},
++    ]}
++
++    result, rows, _ = await _run_plugin_step(
++        factory, feed_source, products, pks, bundle, {"upper": UpperPlugin()}
++    )
++
++    assert result.processed_count == 1
++    assert result.failed_count == 0
++    assert rows["1"].processed_data == {"id": "1", "title": "A"}
++    assert rows["1"].excluded is False
++    await engine.dispose()
++
++
++async def test_drop_clears_processed_data_and_sets_excluded(isolated_database_url):
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
++    factory = async_sessionmaker(engine, expire_on_commit=False)
++    products = [{"id": "1", "title": "a"}]
++    feed_source, pks = await _prepare(factory, products)
++    # First run passes so processed_data is populated.
++    pass_bundle = {"instances": [
++        {"plugin": "upper", "resolved_config": {}, "resolved_data": {}},
++    ]}
++    await _run_plugin_step(
++        factory, feed_source, products, pks, pass_bundle, {"upper": UpperPlugin()}
++    )
++    drop_bundle = {"instances": [
++        {"plugin": "drop", "resolved_config": {}, "resolved_data": {}},
++    ]}
++
++    result, rows, _ = await _run_plugin_step(
++        factory, feed_source, products, pks, drop_bundle, {"drop": DroppingPlugin()}
++    )
++
++    assert result.statistics["plugins"]["dropped"] == 1
++    assert result.processed_count == 0
++    assert rows["1"].excluded is True
++    assert rows["1"].processed_data is None
++    await engine.dispose()
++
++
++async def test_exception_aborts_product_without_staging_write(isolated_database_url):
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
++    factory = async_sessionmaker(engine, expire_on_commit=False)
++    products = [{"id": "1", "title": "a"}]
++    feed_source, pks = await _prepare(factory, products)
++
++    result, rows, _ = await _run_plugin_step(
++        factory, feed_source, products, pks,
++        {"instances": []},
++        {},
++    )
++    last_good_raw = dict(rows["1"].raw_data)
++    assert rows["1"].processed_data == {"id": "1", "title": "a"}
++    assert rows["1"].excluded is False
++
++    explode_bundle = {"instances": [
++        {"plugin": "explode", "resolved_config": {}, "resolved_data": {}},
++    ]}
++    result, rows, _ = await _run_plugin_step(
++        factory, feed_source, products, pks, explode_bundle,
++        {"explode": ExplodingPlugin()},
++    )
++
++    assert result.failed_count == 1
++    assert result.processed_count == 0  # errored product is not a survivor
++    assert result.statistics["plugins"] == {
++        "processed": 0, "dropped": 0, "errored": 1,
++    }
++    assert rows["1"].raw_data == last_good_raw
++    assert rows["1"].processed_data == {"id": "1", "title": "a"}
++    assert rows["1"].excluded is False
++    await engine.dispose()
++
++
++async def test_multi_instance_chains_in_order(isolated_database_url):
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
++    factory = async_sessionmaker(engine, expire_on_commit=False)
++    products = [{"id": "1", "title": "a"}]
++    feed_source, pks = await _prepare(factory, products)
++    mutating = MutatingPlugin()
++    bundle = {"instances": [
++        {"plugin": "mut", "resolved_config": {}, "resolved_data": {}},
++        {"plugin": "upper", "resolved_config": {}, "resolved_data": {}},
++    ]}
++
++    result, rows, _ = await _run_plugin_step(
++        factory, feed_source, products, pks, bundle,
++        {"mut": mutating, "upper": UpperPlugin()},
++    )
++
++    assert mutating.seen_originals[0] == {"id": "1", "title": "a"}
++    assert rows["1"].processed_data == {"id": "1", "title": "A", "stage": 1}
++    await engine.dispose()
++
++
++async def test_original_product_is_deep_copy_of_incoming(isolated_database_url):
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
++    factory = async_sessionmaker(engine, expire_on_commit=False)
++    products = [{"id": "1", "meta": {"tags": ["x"]}}]
++    feed_source, pks = await _prepare(factory, products)
++    seen = []
++
++    class Mutator:
++        def process(self, product, config, data, rctx):
++            seen.append(rctx.original_product)
++            if len(seen) == 1:
++                product["meta"]["tags"].append("y")
++            return product
++
++    bundle = {"instances": [
++        {"plugin": "m1", "resolved_config": {}, "resolved_data": {}},
++        {"plugin": "m2", "resolved_config": {}, "resolved_data": {}},
++    ]}
++
++    _, _, _ = await _run_plugin_step(
++        factory, feed_source, products, pks, bundle,
++        {"m1": Mutator(), "m2": Mutator()},
++    )
++
++    # Second instance's original_product reflects the incoming product of THIS
++    # step, not the mutated `current` from the first instance.
++    assert seen[1]["meta"]["tags"] == ["x"]
++    await engine.dispose()
++
++
++async def test_statistics_shape(isolated_database_url):
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
++    factory = async_sessionmaker(engine, expire_on_commit=False)
++    products = [
++        {"id": "1", "title": "a"},
++        {"id": "2", "title": "b"},
++    ]
++    feed_source, pks = await _prepare(factory, products)
++
++    class DropTwo:
++        def process(self, product, config, data, rctx):
++            return None if product["id"] == "2" else product
++
++    bundle = {"instances": [
++        {"plugin": "mixed", "resolved_config": {}, "resolved_data": {}},
++    ]}
++
++    result, _, _ = await _run_plugin_step(
++        factory, feed_source, products, pks, bundle, {"mixed": DropTwo()}
++    )
++
++    assert result.statistics["plugins"] == {
++        "processed": 1, "dropped": 1, "errored": 0,
++    }
++    await engine.dispose()
++
++
++async def test_registry_miss_skips_instance(isolated_database_url):
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
++    factory = async_sessionmaker(engine, expire_on_commit=False)
++    products = [{"id": "1", "title": "a"}]
++    feed_source, pks = await _prepare(factory, products)
++    bundle = {"instances": [
++        {"plugin": "missing", "resolved_config": {}, "resolved_data": {}},
++        {"plugin": "upper", "resolved_config": {}, "resolved_data": {}},
++    ]}
++
++    result, rows, _ = await _run_plugin_step(
++        factory, feed_source, products, pks, bundle, {"upper": UpperPlugin()}
++    )
++
++    assert result.failed_count == 0
++    assert rows["1"].processed_data == {"id": "1", "title": "A"}
++    await engine.dispose()
++
++
++async def test_products_without_staged_pk_flow_through_without_outcome_write(
++    isolated_database_url,
++):
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
++    factory = async_sessionmaker(engine, expire_on_commit=False)
++    products = [{"id": "ghost", "title": "a"}]
++    feed_source, _pks = await _prepare(factory, [])
++    bundle = {"instances": [
++        {"plugin": "upper", "resolved_config": {}, "resolved_data": {}},
++    ]}
++
++    result, rows, _ = await _run_plugin_step(
++        factory, feed_source, products, {}, bundle, {"upper": UpperPlugin()}
++    )
++
++    assert result.processed_count == 1
++    assert [p["title"] for p in _.run_state.products] == ["A"]
++    assert set(rows) == set()
++    await engine.dispose()
++
++
++async def test_empty_bundle_passes_everything_through(isolated_database_url):
++    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
++    factory = async_sessionmaker(engine, expire_on_commit=False)
++    products = [{"id": "1", "title": "a"}]
++    feed_source, pks = await _prepare(factory, products)
++
++    result, rows, ctx = await _run_plugin_step(
++        factory, feed_source, products, pks, {"instances": []}, {}
++    )
++
++    assert result.processed_count == 1
++    assert ctx.run_state.products == [{"id": "1", "title": "a"}]
++    assert rows["1"].processed_data == {"id": "1", "title": "a"}
++    await engine.dispose()

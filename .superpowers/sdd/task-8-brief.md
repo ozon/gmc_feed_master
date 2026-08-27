@@ -1,69 +1,30 @@
-### Task 8: M5 acceptance gate
+### Task 8: M6 acceptance gate
 
 **Files:**
-- Create: `backend/tests/test_m5_acceptance.py`
+- Create: `backend/tests/test_m6_acceptance.py`
+- Modify: `docs/decisions.md` (final verification entry)
 
 **Interfaces:**
-- Consumes: everything above; `create_app(settings=..., db_session_factory=factory)` pattern from `test_m4_acceptance.py`; `HttpFetcher` injection point of `create_app`.
+- Consumes: everything above; `discover_and_mount`, `contract_violations`, the fixture plugin, `PipelineRunner` with real steps.
 
-- [ ] **Step 1: Write the acceptance test**
+Scenarios (each a test, following the M4/M5 acceptance patterns — engine/factory from `isolated_database_url`, manual lifespan-context invocation for discovery):
 
-Create `backend/tests/test_m5_acceptance.py`. Structure it exactly like `test_m4_acceptance.py` (read that file first): same fixtures/helpers for engine/factory/login via the API, same stub-fetcher approach serving TSV bytes, but asserting staging behavior. Required scenarios (each is one test):
+1. `test_dummy_plugin_passes_contract_without_core_changes` — copy `tests/fixtures/example_plugin` into a tmp plugins dir; `create_app(settings=..., db_session_factory=factory, plugins_dir=tmp)`; run lifespan context; assert one registered row (`enabled=False`, third-party default) and `contract_violations` empty.
+2. `test_discovery_is_idempotent_across_restarts` — run discovery twice; single row; version updated when fixture version bumps in a copied manifest; `enabled=True` (manually flipped between runs) preserved.
+3. `test_end_to_end_execution_through_runner` — seed client/feed source/run; stage two products via `IngestStep+MappingStep+StagingStep`; register the dummy instance in a registry dict passed through `default_steps(...)`; active pipeline seeded with a `ModuleInstance` pointing at the registered Plugin row; runner executes: product A transformed (staging row `processed_data` written, `excluded=False`, title uppercased + suffix), product B named `"drop-me"` → `processed_data NULL`, `excluded=True`; run statistics contain `plugins.processed == 1, dropped == 1`.
+4. `test_error_isolation_preserves_last_known_good` — third product whose plugin raises for it specifically: staging row untouched from its previous state (seed a pre-existing `processed_data` value first), counted in `failed_count`/`errored`, run status still success.
+5. `test_toggle_and_config_round_trip_via_api` — login → `GET /plugins` shows the disabled plugin → `PUT enabled` true → `PUT /plugins/example_upper/config?client_id=...` with valid payload → GET returns it; undeclared `feed_source_id` scope → 422.
+6. `test_full_suite_serial_and_parallel_green` is the meta-gate: full backend suite under `-n0` and default `-n auto` both green; compileall clean; `git diff --check` clean.
 
-```python
-SCENARIOS = [
-    # (name, description of what is asserted)
-]
-```
+Record an `### M6 final verification` entry in `docs/decisions.md` following the M1/M2 template: milestone complete statement, test counts, resolved dependency versions (jsonschema pin), deviations.
 
-1. `test_first_run_stages_everything` — two products ingested through the full runner; `GET /clients/{id}/feed-sources/{fid}/ingestion-runs` statistics contain `"staging": {..., "new": 2}`; both rows exist with `status="active"`.
-2. `test_identical_second_run_enqueues_nothing` — rerun via `POST /feed-sources/{id}/run`; latest run statistics show `unchanged: 2, new: 0`; history row count still 2.
-3. `test_content_change_reprocesses_with_history` — change one product title in the stubbed source; rerun; statistics show `changed: 1`; history count 3.
-4. `test_config_change_reprocesses_without_history` — seed an active pipeline (Plugin row + ModulePipeline + ModuleInstance per Task 3 seeding), run once so hashes incorporate it, then mutate the instance `configuration` JSON directly in the DB; rerun; statistics show `changed: 2` while history count stays at 3.
-5. `test_removed_product_flips_status_and_returns` — serve a one-product source; rerun (`removed: 1`, row status `removed`, `removed_at` set); serve the original two-product source again; rerun (`reactivated: 1`, row active again, `removed_at` cleared).
-6. `test_purge_clears_expired_rows_end_to_end` — remove a product, backdate its `removed_at` by 91 days via SQL, run `purge_expired(factory, now)` directly, assert product and its history are gone.
-7. `test_invalid_ids_do_not_block_run` — include a row without an `id` column value; run completes `success` with `failed_count >= 1` and the invalid row is absent from `staging_products`.
-8. `test_migration_head_matches_models` — alembic upgrade head on a fresh database then `inspect()` shows `removed_at` and CASCADE FK (guards CI drift like prior milestones).
-
-Each scenario asserts through public surfaces where possible (API endpoints, DB state via SQL), never through internals of `app.staging.*`.
-
-- [ ] **Step 2: Run the acceptance suite**
-
-Run: `uv run pytest tests/test_m5_acceptance.py -v`
-Expected: PASS (all scenarios). Debug failures through the specific unit suites from Tasks 1–7.
-
-- [ ] **Step 3: Full milestone gate**
-
-Run all of:
-
-```bash
-uv run compileall app
-uv run pytest
-uv run python scripts/registry_check.py --source ../gmc_def.md --output registry/attributes.json --check
-git diff --check
-cd ../frontend && npm run test -- --run && npm run typecheck && npm run build && cd ../backend
-```
-
-Expected: backend suite green (prior ~155+ tests plus new ones), registry artifact unchanged, frontend untouched-and-green. This is the done criterion: "`content_hash`/`config_hash` behave exactly as specified, incl. reactivation & purge."
-
-- [ ] **Step 4: Record final verification in docs/decisions.md**
-
-Append under `## 2026-08-26` an entry `### M5 final verification` following the M1/M2 template: milestone complete statement, test counts, resolved dependency versions (unchanged pins), any deviations from this plan encountered during execution.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add tests/test_m5_acceptance.py ../docs/decisions.md
-git commit -m "feat: M5 acceptance gate — staging delta verified"
-```
+Commit: `feat: M6 acceptance gate — plugin host verified`.
 
 ---
 
 ## Self-Review Checklist (completed during planning)
 
-- Spec coverage: §4 delta mechanics (Tasks 4/6), reactivation (Task 4 matrix), purge (Task 7), config_hash over resolved configs incl. three-tier merge §5.3 (Tasks 2/3), content_hash canonical form incl. sidecar stripping (Task 1), history-on-content-change-only (Tasks 4/6), StepContext/run-state reduction (Task 6), system-job namespace decision (Task 7).
-- Type consistency: `StoredRow`/`RowUpsert`/`StagingDelta`/`PurgeCounts` field names identical across definition and consumer tasks; `resolve_config_bundle(session, feed_source)` signature matches Task 6 usage.
-- No placeholders: every code step contains full code or exact edit instructions.
-
-
-
+- Spec coverage: §5.1 discovery/validation/registration + core-default-enabled (Tasks 4), §5.2 manifest incl. entry-point gap (Task 2), §5.3 wiring via existing scopes + API declaration checks (Task 6), §5.4 runtime contract incl. RunContext/original_product/drop/error semantics (Task 5), §5.10 contract suite + no-core-change proof (Tasks 7–8), §8 endpoints all present (Task 6), owner Option A processed store incl. migration + exception semantics (Task 5), GET /plugins all-plugins correction (Task 6).
+- Placeholder scan: none — every task has concrete code, rules, or exact edit instructions; Task 2/3 tests are specified as enumerated case lists with exact inputs where values matter.
+- Type consistency: `Candidate`, `RunContext`, `PluginOutcome`, `contract_violations(candidate)`, `PluginStep(registry)` names identical across definition and consumer tasks; `default_steps(fetcher, registry, plugin_registry=None)` matches main.py call-site change in Task 5.
+- Ordering: Task 4 defers the `default_steps` call-site change to Task 5 to keep every commit green; Task 6's router import lands with the endpoints themselves.

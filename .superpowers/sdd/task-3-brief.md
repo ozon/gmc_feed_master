@@ -1,36 +1,21 @@
-### Task 3: Cap test-engine pools
+### Task 3: Module loader
 
 **Files:**
-- Modify: all 21 test files under `backend/tests/` containing `create_async_engine(` (57 call sites; authoritative list via `grep -rln create_async_engine backend/tests`)
+- Create: `backend/app/plugins/loader.py`
+- Test: `backend/tests/test_plugins_loader.py`
 
 **Interfaces:**
-- Consumes: nothing new.
-- Produces: every test engine created with `pool_size=2, max_overflow=0` (spec-owner decision).
+- Consumes: `PluginManifest`.
+- Produces: `class PluginLoadError(Exception)`; `def load_plugin_class(directory: Path, manifest: PluginManifest) -> Any` — returns an instantiated plugin object.
 
-- [ ] **Step 1: Mechanical sweep**
+Behavior:
+- Explicit entry point: `manifest.raw.get("entry_point")` formatted `"module:ClassName"` → loads `<directory>/<module>.py` and gets `ClassName`.
+- Default: `plugin.py` / attribute `Plugin`.
+- Registers under unique module name `gmc_plugin_{manifest.id}` in `sys.modules` before exec.
+- Failure modes → `PluginLoadError`: malformed entry_point, file missing, exec raises, attribute missing, instantiation raises, result lacks callable `process`.
 
-Every `create_async_engine(<url-expr>)` call in `backend/tests/**` becomes `create_async_engine(<url-expr>, pool_size=2, max_overflow=0)`. Multi-line calls get the kwargs appended to the argument list. Do NOT touch `backend/app/` production engine creation (`app/db/engine.py` or equivalent) — this cap applies to tests only.
+Tests build real temp plugin dirs (write `plugin.py` files with `pathlib`), covering: default convention happy path; explicit entry point; each failure mode; two plugins with different ids loading independently (unique sys.modules names).
 
-After the sweep, verify completeness:
-
-```bash
-grep -rn "create_async_engine(" backend/tests | grep -v "pool_size=2" || echo CLEAN
-```
-Expected: `CLEAN`.
-
-- [ ] **Step 2: Full suite, serial**
-
-```bash
-cd backend && TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest -q -n0 2>&1 | tail -1
-```
-Expected: 366 passed.
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add backend/tests
-git commit -m "perf: cap test-engine pools (pool_size=2, max_overflow=0)"
-```
+TDD: RED → implement → GREEN → commit `feat: plugin module loader with entry-point convention`.
 
 ---
-

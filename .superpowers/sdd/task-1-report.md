@@ -1,73 +1,54 @@
-# Task 1 Report: Install and pin the plugins
+# Task 1 Report: Dependency + settings plumbing
 
-**Status:** DONE
-**Commit:** `0a7192a` — chore: add pinned pytest-postgresql and pytest-xdist
+**Status:** COMPLETE
+**Commit:** `5806fc9` — `chore: add jsonschema and plugins_dir setting`
 
-## What was done
+## Steps performed
 
-1. **Step 1 — Add plugins.** Ran `uv add --dev pytest-postgresql pytest-xdist`
-   from `backend/`. Resolved: `pytest-postgresql==8.1.0`,
-   `pytest-xdist==3.8.0`, plus transitive deps (execnet 2.1.2, mirakuru 3.0.2,
-   port-for 1.0.0, psutil 7.2.2, psycopg 3.3.4).
-
-2. **Step 2 — Pin exact versions.** `uv add` wrote `>=` specifiers; edited
-   `backend/pyproject.toml` dev group to exact pins:
-   - `pytest-postgresql==8.1.0`
-   - `pytest-xdist==3.8.0`
-
-   Then `uv lock && uv sync --frozen`. Lockfile confirms:
+1. **Add and pin jsonschema** (`backend/`):
+   - `uv add jsonschema` → resolved `jsonschema==4.26.0`.
+   - Edited `backend/pyproject.toml` from `>=4.26.0` to exact pin `==4.26.0`
+     (per AGENTS.md exact-pin rule), then `uv lock && uv sync --frozen`.
+   - Lockfile now carries `specifier = "==4.26.0"` (uv.lock line 398).
+2. **plugins_dir setting**: added after `database_url` in
+   `backend/app/config.py:15`, exactly per brief:
+   ```python
+   plugins_dir: str = str(Path(__file__).resolve().parents[2] / "plugins")
    ```
-   [[package]]
-   name = "pytest-postgresql"
-   version = "8.1.0"
+3. **Pin record**: new dated entry "M6 plugin-host dependency pins" under
+   2026-08-26 in `docs/decisions.md`.
 
-   [[package]]
-   name = "pytest-xdist"
-   version = "3.8.0"
-   ```
+## Verification
 
-3. **Step 3 — Verify plugin registration.**
-   - `uv run pytest --co -q tests/test_config.py -p no:xdist` →
-     `5 tests collected in 0.01s`.
-   - `uv run pytest --version --version` lists registered third-party plugins:
-     `pytest-xdist-3.8.0` and `pytest-postgresql-8.1.0` (plus anyio,
-     pytest-asyncio).
-   - `uv run python -c "import pytest_postgresql.factories; import xdist"` →
-     `imports OK`.
-   - `uv run pytest tests/test_config.py -n0` → `5 passed`.
+```
+$ uv run python -c "...Settings(...).plugins_dir)"
+/home/ozon/gmc_feed_master/.worktrees/m6-plugin-host/plugins
+$ uv run python -c "import jsonschema; print(jsonschema.__version__)"
+4.26.0
+```
 
-4. **Full-suite greenness check** (baseline must stay green):
-   `TEST_DATABASE_URL=... uv run pytest -q` → **366 passed** in 100s.
-   Matches the serial baseline exactly.
+Both match expectations (repo-root `plugins` path, pinned version).
+Note: `jsonschema.__version__` emits a DeprecationWarning (deprecated access
+path); version confirmed as 4.26.0 regardless.
 
-5. **Step 4 — Record versions.** Appended `### Pytest optimization tooling`
-   entry dated 2026-08-26 to `docs/decisions.md` under the existing
-   `## 2026-08-26` section: topic, decision, exact resolved versions,
-   rationale referencing the pytest-optimization design doc.
+Regression check: full backend suite against
+`TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres`
+→ **366 passed, 21 warnings in 28.10s** (baseline held).
 
-6. **Step 5 — Commit.** Staged exactly `backend/pyproject.toml`,
-   `backend/uv.lock`, `docs/decisions.md`; committed with the brief's message.
+## Commit
 
-## Files changed
+Staged exactly the four brief-specified files:
+- `backend/pyproject.toml` (+1 line)
+- `backend/uv.lock` (+309 lines: jsonschema + transitive attrs,
+  jsonschema-specifications, referencing, rpds-py)
+- `backend/app/config.py` (+1 line)
+- `docs/decisions.md` (+11 lines)
 
-- `backend/pyproject.toml` — two exact-pinned dev deps added
-- `backend/uv.lock` — regenerated via `uv lock` after pinning
-- `docs/decisions.md` — new `### Pytest optimization tooling` entry
+The pre-existing dirty `.superpowers/sdd/task-1-brief.md` was left unstaged.
 
 ## Self-review
 
-- Pins truly exact (`==`) in pyproject? ✅ verified via diff and lockfile.
-- Lockfile consistent with pyproject? ✅ `uv sync --frozen` succeeded after
-  pin edit (frozen check passes only when lock matches manifest).
-- Decisions entry accurate (versions, date, rationale)? ✅ versions match
-  resolved/locked values; date 2026-08-26.
-- Only the three intended files committed? ✅ `git status --short` shows only
-  `.superpowers/sdd/task-1-brief.md` left modified (pre-existing unstaged
-  rewrite of that file from before this task started — intentionally not
-  touched or staged).
-
-## Concerns
-
-- None blocking. Environment note: a stale `VIRTUAL_ENV` pointing at the main
-  checkout's venv produced a harmless uv warning in every command; worktree's
-  own `.venv` was used correctly throughout.
+- Diff reviewed via `git show`; matches brief verbatim.
+- Pre-existing LSP diagnostic on `get_settings()` (missing required args) is
+  unrelated to this change and unchanged.
+- Concerns: none.

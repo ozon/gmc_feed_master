@@ -1,70 +1,38 @@
-# Task 5 Report: Migration — `removed_at`, cascade FK, purge index
+# Task 5 Report: Migration + runtime contract execution
 
-## Status
-COMPLETE
+## Status: COMPLETE
 
-## Commits (branch `m5-staging-delta`)
-- `41a2cf1` — `feat: staging removed_at column, history cascade, purge index`
-  (`backend/app/models/staging.py`, `backend/alembic/versions/20260826_0001_m5_staging_delta.py`, `backend/tests/test_m5_migration.py`)
-- `73f2562` — `test: pin m2 migration downgrade target to 20260824_0001` (required follow-up, see "Deviations")
+## Commits
+1. `83dbda6` — `feat: processed-output store migration` (migration `20260827_0001`, model columns, migration test)
+2. `9bb3096` — `feat: PluginStep executes registered pipeline plugins` (runtime.py, apply_plugin_outcomes, PluginStep, RunState/StagingStep stash, default_steps + main.py wiring, step tests, contract-test updates)
 
-## Implementation
-- **Model** (`app/models/staging.py`, exactly two edits as specified):
-  - `StagingProduct.removed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)` added after `last_seen_at`.
-  - `StagingHistory.staging_product_id` FK changed from `ondelete="RESTRICT"` to `ondelete="CASCADE"`.
-- **Migration** (`alembic/versions/20260826_0001_m5_staging_delta.py`): verbatim per brief.
-  - upgrade: add nullable timestamptz `removed_at`; create partial index `ix_staging_products_removed_purge ON staging_products (removed_at) WHERE status = 'removed'`; drop + recreate FK `staging_history_staging_product_id_fkey` with `ON DELETE CASCADE`.
-  - downgrade: exact reverse (FK back to RESTRICT, drop index, drop column).
-- The baseline FK name `staging_history_staging_product_id_fkey` was confirmed live (PostgreSQL default naming), matching `_HISTORY_FK`.
+## Tests
+- Full suite serial `-n0`: **447 passed** (437 baseline + 10 new)
+- Full suite parallel (default addopts `-n auto`): **447 passed**
+- New suites: `test_m6_migration.py` (2 tests, RED→GREEN), `test_plugin_step.py` (8 tests)
+- `alembic heads` shows a single head: `20260827_0001`
 
-## TDD evidence
+## Implementation notes
+- Migration `down_revision = '20260826_0002'` per the orchestrator correction (brief said `20260826_0001`; Task 4 added an intermediate revision).
+- `apply_plugin_outcomes` mirrors the chunked sibling pattern; one transaction per chunk; `now` computed once per call. Processed → `processed_data=final, excluded=False, last_seen_at=now`; dropped → `processed_data=NULL, excluded=True`.
+- `StagingStep` now stashes `client_id`, `config_bundle`, and the `product_pks` map on `RunState`.
 
-### RED (before model/migration changes)
-```
-tests/test_m5_migration.py::test_upgrade_adds_removed_at_cascade_and_index FAILED
-tests/test_m5_migration.py::test_downgrade_reverses_all_three FAILED
-tests/test_m5_migration.py::test_removal_deletes_history_via_cascade FAILED
-E   AssertionError: assert 'removed_at' in {'config_hash', 'content_hash', ...}
-E   asyncpg.exceptions.ForeignKeyViolationError: update or delete on table
-    "staging_products" violates foreign key constraint
-    "staging_history_staging_product_id_fkey" on table "staging_history"
-```
-Failures are for exactly the reasons the brief predicts (missing column; non-cascading FK blocks delete).
+## Deviations from brief / judgment calls (flag for review)
+1. **original_product deepcopy timing**: the brief's literal code does `deepcopy(product)` fresh inside each instance loop. Because plugins receive `current` (aliased to the run_state product), a mutating first plugin would leak mutations into the second instance's `original_product`. The locked semantic says original is "a deep copy of THIS run's incoming mapped product taken before first instance" and the brief's own test note asserts it unchanged in instance 2 after mutation in instance 1 — so I hoist one `deepcopy(product)` before the instance loop and reuse it for all instances of that product.
+2. **Empty-registry outcome writes**: with zero configured instances, every product is a survivor, so the brief's code still writes `processed_data = raw_data` outcomes for staged pks (and counts them in `plugins.processed`). This follows the brief's code literally; products flow through unchanged (`capture.captured` assertions intact).
+3. **M3 acceptance counters updated**: because PluginStep now returns `processed_count=len(survivors)` and PipelineRunner sums steps, two M3 assertions changed: happy path 9→12 (3×4 steps), row-error path 3→4. Product-content assertions (`capture.captured == [...]`) are untouched and pass. Without this update they cannot be green given the mandated StepResult shape; flagged in case the milestone owner prefers PluginStep contribute 0 to run totals when idle.
+4. **No-op contract test**: removed `PluginStep` from `test_no_op_steps_contract` parametrization in `test_pipeline_steps.py` (it is no longer a no-op; covered by `test_plugin_step.py`).
 
-### GREEN
-```
-tests/test_m5_migration.py          3 passed
-tests/test_migrations.py            1 passed
-tests/test_models.py                8 passed
-======================== 12 passed in 3.95s ========================
-```
+## Self-review checklist
+- down_revision correct / single head: YES
+- Exception path writes nothing to staging: YES (errored products excluded from outcomes; test asserts raw_data/processed_data/excluded preserved)
+- deepcopy semantics match locked design: YES (per deviation #1)
+- Statistics shape `{plugins: {processed, dropped, errored}}`: YES (tested)
+- Pass-through with empty registry: YES (products unchanged through run_state)
 
-### Full suite (before commit)
-```
-TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest -q
-343 passed, 93 warnings in 85.15s
-```
-340 baseline + 3 new tests. First full run had 1 failure (`tests/test_m2_migration.py`) — see Deviations; fixed and re-run to full green.
+## Concerns
+- Deviations #1–#3 above; #3 changes two M3 acceptance numbers — needs milestone-owner sign-off if exact legacy totals matter downstream (e.g., dashboards).
+- Pre-existing LSP/pyright noise in test files (StubFetcher vs HttpFetcher typing) unrelated to this task.
 
-### Downgrade verification
-- `test_downgrade_reverses_all_three` downgrades to `20260825_0001` against real Postgres, asserts no `removed_at`, no purge index, FK restored with `ondelete=RESTRICT`, then re-upgrades to head. PASSED.
-- `tests/test_m2_migration.py` now also cycles up → down to `20260824_0001` → up through the new revision. PASSED.
-
-## Files changed
-- Modified: `backend/app/models/staging.py`
-- Created: `backend/alembic/versions/20260826_0001_m5_staging_delta.py`
-- Created: `backend/tests/test_m5_migration.py`
-- Modified: `backend/tests/test_m2_migration.py` (one-line fix, separate commit)
-
-## Deviations from brief (all forced by environment, intent preserved)
-1. **Test inserts extended**: raw-SQL INSERTs needed NOT NULL JSONB columns that ORM defaults would normally supply: `clients.settings`/`contact_details`, `feed_sources.field_mapping`/`configuration`, `ingestion_runs.processed_count/failed_count/statistics`. Brief anticipated this ("extend the column list accordingly").
-2. **Alembic commands run via `asyncio.to_thread`** in the async test: `alembic/env.py` calls `asyncio.run()` internally, which raises `RuntimeError` when invoked from the running pytest-asyncio loop. Offloading to a thread keeps the brief's structure.
-3. **FK `ondelete` read helper**: SQLAlchemy 2.0.43's inspector nests `ondelete` under `fk["options"]` rather than top-level; added tiny `_fk_ondelete()` helper checking both locations so assertions work across versions.
-4. **`test_m2_migration.py` downgrade target pinned** from relative `-1` to `"20260824_0001"`: adding a new head changed what `-1` resolves to, breaking that pre-existing test's assumptions. Pinned explicitly to preserve its original semantics.
-
-## Self-review
-- Model diff contains only the two specified line changes — verified against committed diff.
-- Migration matches brief verbatim (style header, single-quoted identifiers).
-- Upgrade AND downgrade both verified against real PostgreSQL (isolated DB per test via `isolated_database_url` fixture).
-- Full suite green before committing; commits contain only intended files.
-- No concerns remaining.
+## Report path
+/home/ozon/gmc_feed_master/.worktrees/m6-plugin-host/.superpowers/sdd/task-5-report.md
