@@ -131,6 +131,7 @@ async def test_rollback_creates_new_version_and_republishes_old_content(app_fact
     assert rollback_run.warning_finding_count == 0
     assert rollback_run.info_finding_count == 0
     assert rollback_run.id == versions[2].export_run_id
+    assert rollback_run.export_version_id == versions[2].id
 
     published = ExportFileStore(settings.export_dir).published_path(feed_source_id).read_bytes()
     report = parse_xml(published, REGISTRY)
@@ -152,6 +153,47 @@ async def test_rollback_404_for_unknown_version_or_feed_source(app_factory):
     client = await logged_in_client(app_factory)
     assert (await client.post(f"/feed-sources/{feed_source_id}/export-history/9/rollback")).status_code == 404
     assert (await client.post("/feed-sources/999999/export-history/1/rollback")).status_code == 404
+
+
+async def test_rollback_publish_failure_marks_run_failed(app_factory, monkeypatch):
+    feed_source_id = await _seed_versions(app_factory, [BASE, CHANGED])
+    client = await logged_in_client(app_factory)
+
+    def publish_boom(self, feed_source_id, data):
+        raise RuntimeError("publish failed")
+
+    monkeypatch.setattr(ExportFileStore, "publish", publish_boom)
+
+    with pytest.raises(RuntimeError):
+        await client.post(f"/feed-sources/{feed_source_id}/export-history/1/rollback")
+
+    _, factory, _ = app_factory
+    async with factory() as session:
+        versions = list((await session.execute(
+            select(ExportVersion).where(ExportVersion.feed_source_id == feed_source_id)
+            .order_by(ExportVersion.version_number)
+        )).scalars().all())
+        runs = list((await session.execute(
+            select(ExportRun).where(ExportRun.feed_source_id == feed_source_id)
+            .order_by(ExportRun.id)
+        )).scalars().all())
+
+    assert [v.version_number for v in versions] == [1, 2, 3]
+    assert versions[2].source == "rollback"
+    rollback_run = runs[-1]
+    assert rollback_run.status == "failed"
+    assert rollback_run.completed_at is not None
+    assert rollback_run.id == versions[2].export_run_id
+
+
+async def test_rollback_missing_version_file_404(app_factory):
+    feed_source_id = await _seed_versions(app_factory, [BASE, CHANGED])
+    _, _, settings = app_factory
+    ExportFileStore(settings.export_dir).delete_version_file(feed_source_id, 1)
+    client = await logged_in_client(app_factory)
+
+    resp = await client.post(f"/feed-sources/{feed_source_id}/export-history/1/rollback")
+    assert resp.status_code == 404
 
 
 async def test_rollback_respects_retention(app_factory):

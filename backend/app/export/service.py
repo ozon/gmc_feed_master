@@ -303,12 +303,17 @@ class ExportService:
                     )
                     session.add(version)
                     await session.flush()
+                    run.export_version_id = version.id
         except Exception:
             if new_number is not None:
                 self._store.delete_version_file(feed_source_id, new_number)
             raise
 
-        self._store.publish(feed_source_id, rendered)
+        try:
+            self._store.publish(feed_source_id, rendered)
+        except Exception:
+            await self._mark_run_failed_by_id(version.export_run_id)
+            raise
         await self._prune_retention(feed_source_id, retention)
         return version
 
@@ -331,6 +336,17 @@ class ExportService:
             logger.exception(
                 "failed to mark export run failed for feed source %s", feed_source_id
             )
+
+    async def _mark_run_failed_by_id(self, run_id: int) -> None:
+        try:
+            async with self._session_factory() as session:
+                async with session.begin():
+                    run = await session.get(ExportRun, run_id)
+                    if run is not None:
+                        run.status = "failed"
+                        run.completed_at = self._clock.now()
+        except Exception:
+            logger.exception("failed to mark export run %s failed", run_id)
 
     async def _prune_retention(self, feed_source_id: int, retention: int) -> None:
         numbers: list[int] = []
