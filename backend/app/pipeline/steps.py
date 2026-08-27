@@ -9,10 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from registry.model import RegistryDocument
 
+from ..clock import Clock, SystemClock
 from ..ingest import HttpFetcher, read_feed
 from ..ingest.report import SourceField
 from ..mapping import MappingDocument, apply_mapping, auto_match
 from ..models.feed_source import FeedSource
+from ..qc.engine import ImageProbe
 from ..staging.config_resolver import resolve_config_bundle
 from ..staging.delta import classify
 from ..staging.hashing import content_hash
@@ -283,9 +285,99 @@ class PluginStep:
         )
 
 
-class QualityCheckStep(_NoOpStep):
-    def __init__(self) -> None:
-        super().__init__("quality_check")
+class QualityCheckStep:
+    name = "quality_check"
+
+    def __init__(
+        self,
+        registry: RegistryDocument,
+        clock: Clock,
+        image_probe: ImageProbe | None = None,
+    ) -> None:
+        self._registry = registry
+        self._clock = clock
+        self._image_probe = image_probe
+
+    async def execute(self, ctx: StepContext) -> StepResult:
+        async with ctx.session_factory() as session:
+            async with session.begin():
+                feed_source = await session.get(FeedSource, ctx.feed_source_id)
+
+        if feed_source is None:
+            raise LookupError(f"feed source {ctx.feed_source_id} not found")
+
+        async with ctx.session_factory() as session:
+            from sqlalchemy import select
+            from ..models.staging import StagingProduct
+            result = await session.execute(
+                select(StagingProduct).where(
+                    StagingProduct.feed_source_id == ctx.feed_source_id,
+                    StagingProduct.status == "active",
+                    StagingProduct.excluded == False,
+                )
+            )
+            rows = list(result.scalars().all())
+
+        products = []
+        product_ids = []
+        for row in rows:
+            product = row.processed_data if row.processed_data is not None else row.raw_data
+            products.append(product)
+            product_ids.append(row.product_id)
+
+        async with ctx.session_factory() as session:
+            from sqlalchemy import select, desc
+            from ..models.export import ExportRun
+            result = await session.execute(
+                select(ExportRun).where(
+                    ExportRun.feed_source_id == ctx.feed_source_id
+                ).order_by(desc(ExportRun.id)).limit(1)
+            )
+            previous_export_run = result.scalar_one_or_none()
+
+        from ..qc.engine import QcContext, run_engine
+        from ..qc.rules import (
+            BaselineRequired, BrandRequired, GtinMpn, EnumValues,
+            ConditionalRequired, DateFormat, LengthLimits, CardinalityRule,
+            CurrencyConsistency, ImageRequirements, VariantConsistency, VolumeDrop,
+        )
+        from ..qc.persistence import persist_findings
+
+        qc_ctx = QcContext(
+            feed_source_id=ctx.feed_source_id,
+            currency=feed_source.currency,
+            volume_drop_threshold_pct=feed_source.volume_drop_threshold_pct,
+            registry=self._registry,
+            clock=self._clock,
+            image_probe=self._image_probe,
+            previous_export_run=previous_export_run,
+        )
+
+        per_product_rules = [
+            BaselineRequired(), BrandRequired(), GtinMpn(), EnumValues(),
+            ConditionalRequired(), DateFormat(), LengthLimits(), CardinalityRule(),
+            CurrencyConsistency(), ImageRequirements(),
+        ]
+        cross_product_rules = [VariantConsistency(), VolumeDrop()]
+
+        findings = await run_engine(products, product_ids, qc_ctx, per_product_rules, cross_product_rules)
+
+        await persist_findings(
+            ctx.session_factory,
+            ctx.feed_source_id,
+            ctx.ingestion_run_id,
+            findings,
+            len(products),
+        )
+
+        counts = {"critical": 0, "warning": 0, "info": 0}
+        for f in findings:
+            counts[f.severity] = counts.get(f.severity, 0) + 1
+
+        return StepResult(
+            processed_count=len(products),
+            statistics={"qc": {"products": len(products), **counts}},
+        )
 
 
 class ExportStep(_NoOpStep):
@@ -297,12 +389,16 @@ def default_steps(
     fetcher: HttpFetcher,
     registry: RegistryDocument,
     plugin_registry: dict[str, Any] | None = None,
+    clock: Clock | None = None,
+    image_probe: ImageProbe | None = None,
 ) -> tuple[PipelineStep, ...]:
+    if clock is None:
+        clock = SystemClock()
     return (
         IngestStep(fetcher, registry),
         MappingStep(registry),
         StagingStep(),
         PluginStep(plugin_registry),
-        QualityCheckStep(),
+        QualityCheckStep(registry, clock, image_probe),
         ExportStep(),
     )

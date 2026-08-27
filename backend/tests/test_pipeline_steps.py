@@ -57,11 +57,8 @@ def test_step_result_defaults():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "step_cls", [QualityCheckStep, ExportStep]
-)
-async def test_no_op_steps_contract(step_cls, ctx):
-    step = step_cls()
+async def test_no_op_steps_contract(ctx):
+    step = ExportStep()
     assert isinstance(step.name, str) and step.name
     result = await step.execute(ctx)
     assert result == StepResult(processed_count=0, failed_count=0)
