@@ -69,3 +69,6 @@ frontend_new/node_modules/
 frontend_new/dist/
 frontend_new/.vite/
 .codegraph/
+
+# Exported feed files
+exports/

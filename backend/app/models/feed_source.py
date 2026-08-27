@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 from datetime import datetime
 from typing import Any
 from typing import TYPE_CHECKING
@@ -26,6 +27,9 @@ class FeedSource(Base):
     target_country: Mapped[str | None] = mapped_column(String(10), nullable=True)
     target_language: Mapped[str | None] = mapped_column(String(10), nullable=True)
     currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    feed_type: Mapped[str] = mapped_column(String(20), nullable=False, default="primary", server_default="primary")
+    export_token: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, default=lambda: secrets.token_urlsafe(32))
+    history_retention_count: Mapped[int] = mapped_column(Integer, nullable=False, default=30, server_default="30")
     source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     volume_drop_threshold_pct: Mapped[int] = mapped_column(Integer, nullable=False, default=20, server_default="20")
     field_mapping: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)

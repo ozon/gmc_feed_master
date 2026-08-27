@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     initial_password: str
     database_url: str = "postgresql://postgres:postgres@localhost:5432/gmc_feed"
     plugins_dir: str = str(Path(__file__).resolve().parents[2] / "plugins")
+    export_dir: str = str(Path(__file__).resolve().parents[2] / "exports")
+    public_base_url: str = "http://localhost:8000"
 
     @property
     def async_database_url(self) -> str:

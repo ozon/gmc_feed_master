@@ -110,3 +110,22 @@ def test_conceptual_json_columns_use_postgresql_jsonb():
         Base.metadata.tables["plugins"].c.manifest,
     ]
     assert all(isinstance(column.type, JSONB) for column in json_columns)
+
+
+def test_m8_feed_source_columns():
+    feed = Base.metadata.tables["feed_sources"]
+    assert {"feed_type", "export_token", "history_retention_count"} <= set(feed.c.keys())
+    assert any(
+        {c.name for c in constraint.columns} == {"export_token"}
+        for constraint in feed.constraints
+        if isinstance(constraint, UniqueConstraint)
+    )
+
+
+def test_m8_export_version_columns():
+    versions = Base.metadata.tables["export_versions"]
+    assert {"product_count", "source", "source_version_id"} <= set(versions.c.keys())
+    runs = Base.metadata.tables["export_runs"]
+    fk = next(iter(runs.c.export_version_id.foreign_keys))
+    assert str(fk.column) == "export_versions.id"
+    assert fk.ondelete == "SET NULL"

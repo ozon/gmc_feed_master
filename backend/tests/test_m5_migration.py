@@ -76,8 +76,8 @@ async def test_removal_deletes_history_via_cascade(isolated_database_url):
             fs = (await session.execute(
                 text(
                     "INSERT INTO feed_sources "
-                    "(client_id, name, source_format, field_mapping, configuration) "
-                    "VALUES (:cid, 'F', 'tsv', '{}', '{}') RETURNING id"
+                    "(client_id, name, source_format, field_mapping, configuration, export_token) "
+                    "VALUES (:cid, 'F', 'tsv', '{}', '{}', 'tok-m5-cascade') RETURNING id"
                 ),
                 {"cid": client},
             )).scalar_one()
