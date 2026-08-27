@@ -30,12 +30,21 @@ class PipelineRunner:
 
     async def execute(self, feed_source_id: int, run_id: int | None = None) -> int | None:
         if self._lock_registry.is_locked(feed_source_id):
+            logger.warning(
+                "previous run still active: skipping run for feed source %s",
+                feed_source_id,
+            )
             if run_id is None and not await self._feed_source_exists(feed_source_id):
                 logger.warning(
                     "feed source %s not found; no run recorded", feed_source_id
                 )
                 return None
-            return await self._finish(feed_source_id, run_id, "skipped")
+            return await self._finish(
+                feed_source_id,
+                run_id,
+                "skipped",
+                statistics={"reason": "previous run still active"},
+            )
 
         lock = self._lock_registry.get(feed_source_id)
         await lock.acquire()

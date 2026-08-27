@@ -183,3 +183,41 @@ async def test_execute_returns_run_id_in_all_paths(session_factory, feed_source_
     run_id = await runner.execute(feed_source_id)
     assert isinstance(run_id, int)
     assert await _get_run(session_factory, run_id) is not None
+
+
+async def test_locked_skip_logs_previous_run_still_active(session_factory, feed_source_id, caplog):
+    registry = LockRegistry()
+    runner = PipelineRunner(registry, session_factory, [RecordingStep()])
+    lock = registry.get(feed_source_id)
+    await lock.acquire()
+    try:
+        with caplog.at_level(logging.WARNING, logger="app.pipeline.runner"):
+            run_id = await runner.execute(feed_source_id)
+    finally:
+        lock.release()
+    run = await _get_run(session_factory, run_id)
+    assert run.status == "skipped"
+    assert run.statistics == {"reason": "previous run still active"}
+    assert run.error_message is None
+    assert any("previous run still active" in message for message in caplog.messages)
+
+
+async def test_locked_skip_precreated_run_carries_reason(session_factory, feed_source_id):
+    registry = LockRegistry()
+    async with session_factory() as session:
+        async with session.begin():
+            run = IngestionRun(feed_source_id=feed_source_id, status="pending")
+            session.add(run)
+            await session.flush()
+            run_id = run.id
+    runner = PipelineRunner(registry, session_factory, [RecordingStep()])
+    lock = registry.get(feed_source_id)
+    await lock.acquire()
+    try:
+        returned_id = await runner.execute(feed_source_id, run_id=run_id)
+    finally:
+        lock.release()
+    assert returned_id == run_id
+    run = await _get_run(session_factory, run_id)
+    assert run.status == "skipped"
+    assert run.statistics == {"reason": "previous run still active"}
