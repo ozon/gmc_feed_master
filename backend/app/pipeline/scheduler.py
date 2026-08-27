@@ -59,6 +59,7 @@ class SchedulerService:
             id=job_id(feed_source.id),
             replace_existing=True,
             misfire_grace_time=None,
+            max_instances=2,
         )
 
     def unregister(self, feed_source_id: int) -> None:
@@ -86,6 +87,7 @@ class SchedulerService:
             id=job_id,
             replace_existing=True,
             misfire_grace_time=None,
+            max_instances=1,
         )
 
     async def register_all(self, session: AsyncSession) -> int:

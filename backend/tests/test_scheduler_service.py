@@ -107,3 +107,29 @@ class TestSystemJobs:
         service.unregister(1)
 
         assert service._scheduler.get_job(SYSTEM_PURGE_JOB_ID) is not None
+
+
+def test_register_sets_max_instances_two(service):
+    service.register(feed_source(1, "0 * * * *"))
+    job = service._scheduler.get_job("feed-source-1")
+    assert job.max_instances == 2
+
+
+def test_system_job_keeps_default_max_instances():
+    from app.pipeline.scheduler import SYSTEM_PURGE_JOB_ID, SchedulerService
+
+    service = SchedulerService(runner=FakeRunner())
+    service.register_system_job(SYSTEM_PURGE_JOB_ID, "0 3 * * *", lambda: None)
+    job = service._scheduler.get_job(SYSTEM_PURGE_JOB_ID)
+    assert job.max_instances == 1
+
+
+def test_register_next_run_time_follows_cron_in_utc(service):
+    from datetime import datetime, timezone
+
+    service.register(feed_source(1, "0 * * * *"))
+    job = service._scheduler.get_job("feed-source-1")
+    now = datetime(2026, 1, 1, 10, 30, tzinfo=timezone.utc)
+    nxt = job.trigger.get_next_fire_time(None, now)
+    assert nxt == datetime(2026, 1, 1, 11, 0, tzinfo=timezone.utc)
+    assert str(nxt.tzinfo) == "UTC"
