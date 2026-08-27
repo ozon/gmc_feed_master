@@ -43,12 +43,31 @@ def _requirement(value: str) -> RequirementStatus:
     raise RegistryParseError(f"unsupported requirement status {value}")
 
 
-def _constraints(description: str) -> Constraints:
-    max_match = re.search(r"max\.?\s*(?:of\s*)?(\d+)\s*chars?", description, re.I)
-    if not max_match:
-        max_match = re.search(r"max\.?\s*(?:of\s*)?(\d+)\b", description, re.I)
-    min_match = re.search(r"(?:min\.?|at least)\s*(\d+)\s*chars?", description, re.I)
-    fmt = None
+def _constraints(description: str) -> tuple[Constraints, Cardinality]:
+    max_length: int | None = None
+    min_length: int | None = None
+    fmt: str | None = None
+    max_items: int | None = None
+    min_items: int | None = None
+    item_max_length: int | None = None
+
+    # Character-length patterns (primary)
+    if m := re.search(r"max(?:imum)?\s+(\d[\d,]*)\s+char", description, re.IGNORECASE):
+        max_length = int(m.group(1).replace(",", ""))
+    if m := re.search(r"min(?:imum)?\s+(\d[\d,]*)\s+char", description, re.IGNORECASE):
+        min_length = int(m.group(1).replace(",", ""))
+    if m := re.search(r"exactly\s+(\d[\d,]*)\s+char", description, re.IGNORECASE):
+        val = int(m.group(1).replace(",", ""))
+        max_length = min_length = val
+
+    # Fallback max_length: only match "max N" when followed by char/letter context
+    if max_length is None:
+        if m := re.search(r"max\.?\s*(\d+)\s*(?:char|letter)", description, re.IGNORECASE):
+            max_length = int(m.group(1))
+        elif m := re.search(r"max\.\s*(\d+)\s+(?=[A-Z])(?!MB\b|s\b|px\b|year\b|chars?\b)", description):
+            max_length = int(m.group(1))
+
+    # Format detection
     if re.search(r"ISO\s*3166(?:-1)?", description, re.I):
         fmt = "ISO 3166-1"
     elif re.search(r"\bIANA\b", description, re.I):
@@ -59,11 +78,34 @@ def _constraints(description: str) -> Constraints:
         fmt = "ISO 8601"
     elif re.search(r"RFC\s*(?:2396|3986|1738)", description, re.I):
         fmt = "RFC URL"
-    return Constraints(
-        max_length=int(max_match.group(1)) if max_match else None,
-        min_length=int(min_match.group(1)) if min_match else None,
-        format=fmt,
-    )
+    elif re.search(r"\bURL\b", description):
+        fmt = "url"
+
+    # Cardinality: max_items from "up to N" or "max. N" (non-char context)
+    if m := re.search(r"up\s+to\s+(\d+)", description, re.IGNORECASE):
+        max_items = int(m.group(1))
+    if m := re.search(r"max\.?\s*(\d+)\s*(?:item|product|entry|element|value)", description, re.IGNORECASE):
+        max_items = int(m.group(1))
+
+    # min_items from "min. N" patterns
+    if m := re.search(r"min\.?\s*(\d+)\s*(?:item|product|entry|element|value)", description, re.IGNORECASE):
+        min_items = int(m.group(1))
+
+    # Combined min/max cardinality from "min. N, max. N" patterns
+    if m := re.search(r"min\.?\s*(\d+)\s*,\s*max\.?\s*(\d+)", description, re.IGNORECASE):
+        if min_items is None:
+            min_items = int(m.group(1))
+        if max_items is None:
+            max_items = int(m.group(2))
+
+    # item_max_length from "1–150 chars each" or "up to 150 chars each"
+    if m := re.search(r"(?:up\s+to\s+)?(\d+)\s*[-–]\s*(\d+)\s*char", description, re.IGNORECASE):
+        item_max_length = int(m.group(2))
+    elif m := re.search(r"(\d+)\s+char\s+each", description, re.IGNORECASE):
+        item_max_length = int(m.group(1))
+
+    return Constraints(max_length=max_length, min_length=min_length, format=fmt), \
+           Cardinality(max_items=max_items, min_items=min_items, item_max_length=item_max_length)
 
 
 def _type_name(raw: str, line: int) -> str:
@@ -219,7 +261,8 @@ def _field_spec(name: str, spec: str, description: str, line: int) -> SubField:
         else _type_name(type_part, line)
     )
     enum_values = _enum_values(enum_text) if type_name == "Enum" else ()
-    return SubField(name, type_name, required, _constraints(spec + " " + description), enum_values)
+    constraints, _ = _constraints(spec + " " + description)
+    return SubField(name, type_name, required, constraints, enum_values)
 
 
 def _type_info(syntax: str, description: str, line: int):
@@ -238,14 +281,14 @@ def _type_info(syntax: str, description: str, line: int):
                     SubField("digital_source_type", "Enum", RequirementStatus.OPTIONAL,
                              enum_values=("default", "trained_algorithmic_media")),
                     SubField("content", "String", RequirementStatus.REQUIRED,
-                             constraints=_constraints(f"{text} {description}")),
+                             constraints=_constraints(f"{text} {description}")[0]),
                 )
                 return (AttributeKind.REPEATED_STRUCTURED if repeated else AttributeKind.STRUCTURED,
                         "Object", fields, enums, cardinality)
             raise RegistryParseError(f"line {line}: ambiguous structured attribute order")
         fields = []
         for raw_name, spec in _object_parts(object_match.group(0)):
-            fields.append(_field_spec(raw_name, spec, description, line) if spec else SubField(raw_name, "String", RequirementStatus.OPTIONAL, _constraints(description)))
+            fields.append(_field_spec(raw_name, spec, description, line) if spec else SubField(raw_name, "String", RequirementStatus.OPTIONAL, _constraints(description)[0]))
         if not fields:
             names = re.findall(r"`([A-Za-z][\w]*)`", object_match.group(0))
             if not names:
@@ -329,7 +372,13 @@ def parse_gmc_markdown(path: Path) -> RegistryDocument:
                         attributes[name] = RegistryAttribute(**{**old.__dict__, "source_lines": old.source_lines + (row_line,), "applicability": applicability + ((domain,) if domain not in applicability else ()), "qualifiers": tuple(dict.fromkeys(old.qualifiers + qualifiers))})
                     else:
                         applicability = (FeedDomain.VEHICLE_LISTINGS,) if deprecated_vehicle else ()
-                        attributes[name] = RegistryAttribute(name, kind, type_name, requirement, domain, status, fields, enums, cardinality, _constraints(description), row_line, (row_line,), applicability, qualifiers, (("description", description),))
+                        desc_constraints, desc_cardinality = _constraints(description)
+                        merged_cardinality = Cardinality(
+                            max_items=desc_cardinality.max_items if desc_cardinality.max_items is not None else cardinality.max_items,
+                            min_items=desc_cardinality.min_items if desc_cardinality.min_items is not None else cardinality.min_items,
+                            item_max_length=desc_cardinality.item_max_length if desc_cardinality.item_max_length is not None else cardinality.item_max_length,
+                        )
+                        attributes[name] = RegistryAttribute(name, kind, type_name, requirement, domain, status, fields, enums, merged_cardinality, desc_constraints, row_line, (row_line,), applicability, qualifiers, (("description", description),))
                         attribute_sections[name] = section
                 i += 1
             continue

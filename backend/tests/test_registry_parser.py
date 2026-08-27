@@ -128,3 +128,19 @@ def test_full_source_preserves_ranges_structured_plus_order_and_requirement_note
         assert "required_from:2026-09-30" in attribute.qualifiers
     window_days = next(field for field in document.attributes["returns"].fields if field.name == "window_days")
     assert window_days.required == "conditional"
+
+
+def test_cardinality_min_items_item_max_length_and_parser_regex_fixes():
+    document = parse_gmc_markdown(Path(__file__).parents[2] / "gmc_def.md")
+
+    ph = document.attributes["product_highlight"]
+    assert ph.cardinality.min_items == 2
+    assert ph.cardinality.max_items == 100
+    assert ph.cardinality.item_max_length == 150
+
+    assert document.attributes["availability_date"].constraints.max_length is None
+    assert document.attributes["video_link"].constraints.max_length is None
+    assert document.attributes["virtual_model_link"].constraints.max_length is None
+
+    assert document.attributes["additional_image_link"].cardinality.max_items == 10
+    assert document.attributes["additional_image_link"].constraints.max_length == 2000

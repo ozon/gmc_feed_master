@@ -35,7 +35,7 @@ def _coerce_str(value: Any, field: str, path: Path) -> str:
 def _parse_sub_fields(raw: list[dict[str, Any]], path: Path) -> tuple[SubField, ...]:
     result: list[SubField] = []
     for item in raw:
-        constraints_raw = item.get("constraints", {})
+        constraints_raw = item.get("constraints") or {}
         result.append(SubField(
             name=_coerce_str(item.get("name"), "field.name", path),
             type=_coerce_str(item.get("type"), "field.type", path),
@@ -53,8 +53,8 @@ def _parse_sub_fields(raw: list[dict[str, Any]], path: Path) -> tuple[SubField, 
 def _parse_attributes(raw: dict[str, Any], path: Path) -> dict[str, RegistryAttribute]:
     attributes: dict[str, RegistryAttribute] = {}
     for name, item in raw.items():
-        constraints_raw = item.get("constraints", {})
-        cardinality_raw = item.get("cardinality", {})
+        constraints_raw = item.get("constraints") or {}
+        cardinality_raw = item.get("cardinality") or {}
         attributes[name] = RegistryAttribute(
             name=name,
             kind=AttributeKind(_coerce_str(item.get("kind"), "kind", path)),
@@ -64,7 +64,11 @@ def _parse_attributes(raw: dict[str, Any], path: Path) -> dict[str, RegistryAttr
             export_status=ExportStatus(_coerce_str(item.get("export_status"), "export_status", path)),
             fields=_parse_sub_fields(item.get("fields", []), path),
             enum_values=tuple(item.get("enum_values", [])),
-            cardinality=Cardinality(max_items=cardinality_raw.get("max_items")),
+            cardinality=Cardinality(
+                max_items=cardinality_raw.get("max_items"),
+                min_items=cardinality_raw.get("min_items"),
+                item_max_length=cardinality_raw.get("item_max_length"),
+            ),
             constraints=Constraints(
                 max_length=constraints_raw.get("max_length"),
                 min_length=constraints_raw.get("min_length"),

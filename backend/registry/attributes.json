@@ -18,9 +18,7 @@
         "description": "Discontinued destination"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -54,7 +52,7 @@
       "constraints": {
         "max_length": 2000,
         "min_length": null,
-        "format": null
+        "format": "url"
       },
       "fields": []
     },
@@ -76,13 +74,11 @@
         "description": "Alternative click URL for tracking (ads only, not free listings)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
-        "format": null
+        "format": "url"
       },
       "fields": []
     },
@@ -105,9 +101,7 @@
         "yes",
         "no"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -137,9 +131,7 @@
         "kids",
         "adult"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -163,9 +155,7 @@
         "description": "Floor price for automated discounts/dynamic offers (MAP compliance)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -198,9 +188,7 @@
         "preorder",
         "backorder"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -228,11 +216,9 @@
         "description": "Required for `preorder` (recommended for `backorder`); max. 1 year in the future; must be visible on landing page"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
-        "max_length": 1,
+        "max_length": null,
         "min_length": null,
         "format": null
       },
@@ -265,9 +251,7 @@
         "station wagon",
         "full size van"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -291,9 +275,7 @@
         "description": "Max. 70 chars; exceptions: movies, books, music; do not use \"N/A\"/\"Generic\"; leave empty if truly unbranded"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": 70,
         "min_length": null,
@@ -317,13 +299,11 @@
         "description": "Canonical URL of the landing page (for tracking parameters/variant URLs), max. 2000 chars"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": 2000,
         "min_length": null,
-        "format": null
+        "format": "url"
       },
       "fields": []
     },
@@ -343,9 +323,7 @@
         "description": "Required for EPREL-mandated products in EU/EFTA/UK; replaces the energy efficiency attributes in the EU since 2025-04"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -414,9 +392,7 @@
         "description": "OEM-certified pre-owned"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -440,9 +416,7 @@
         "description": "CO₂ emissions"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -467,7 +441,7 @@
       },
       "enum_values": [],
       "cardinality": {
-        "max_items": null
+        "max_items": 3
       },
       "constraints": {
         "max_length": null,
@@ -500,9 +474,7 @@
         "refurbished",
         "used"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -526,9 +498,7 @@
         "description": "Legally required consumer notices/safety warnings (e.g. EU GPSR, California Prop 65); format: `notice_type:notice_message`"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -579,9 +549,7 @@
         "description": "Cost of goods for margin reporting in Merchant Center"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -606,7 +574,7 @@
       },
       "enum_values": [],
       "cardinality": {
-        "max_items": null
+        "max_items": 1000
       },
       "constraints": {
         "max_length": 100,
@@ -632,7 +600,7 @@
       },
       "enum_values": [],
       "cardinality": {
-        "max_items": null
+        "max_items": 1000
       },
       "constraints": {
         "max_length": 100,
@@ -657,9 +625,7 @@
         "description": "In stock since"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -683,9 +649,7 @@
         "description": "Dealership name / full address"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -709,9 +673,7 @@
         "description": "Dealership name / full address"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -739,9 +701,7 @@
         "description": "Product description, max. 5000 chars; no links/sales info/competitor mentions; formatting allowed"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": 5000,
         "min_length": null,
@@ -765,9 +725,7 @@
         "description": "Legacy dynamic remarketing attributes; no longer part of the specification"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -791,9 +749,7 @@
         "description": "Legacy dynamic remarketing attributes; no longer part of the specification"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -817,9 +773,7 @@
         "description": "Legacy dynamic remarketing attributes; no longer part of the specification"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -843,9 +797,7 @@
         "description": "Legacy dynamic remarketing attributes; no longer part of the specification"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -869,9 +821,7 @@
         "description": "Legacy dynamic remarketing attributes; no longer part of the specification"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -900,9 +850,7 @@
         "AWD",
         "4WD"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -931,9 +879,7 @@
       "enum_values": [
         "range:A+++..G"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -957,9 +903,7 @@
         "description": "Engine / transmission / fuel type / efficiency (MPG)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -983,9 +927,7 @@
         "description": "EV: battery / range"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1009,9 +951,7 @@
         "description": "EV: battery / range"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1035,9 +975,7 @@
         "description": "Exclude product from destinations; **takes precedence over `included_destination`**"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1061,9 +999,7 @@
         "description": "Does not exist in the official specification – was incorrectly listed in the template, removed here"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1087,9 +1023,7 @@
         "description": "Stop showing the item; < 30 days in the future"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1113,9 +1047,7 @@
         "description": "Colors (OEM designation / generic)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1139,9 +1071,7 @@
         "description": "Colors (OEM designation / generic)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1165,9 +1095,7 @@
         "description": "Unique seller ID of a marketplace seller; case-sensitive; allowed: ASCII alphanumeric + `_`, `-`, `.`, `~`; must not equal the internal `seller_id`"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1191,9 +1119,7 @@
         "description": "Minimum order value for free shipping"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1217,9 +1143,7 @@
         "description": "Engine / transmission / fuel type / efficiency (MPG)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1243,9 +1167,7 @@
         "description": "Engine / transmission / fuel type / efficiency (MPG)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1273,9 +1195,7 @@
         "female",
         "unisex"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1299,9 +1219,7 @@
         "description": "One single, most specific category from the Google Product Taxonomy; ID preferred; special rules for mobile devices (267), smartwatches (201), tablets (4745), gift cards (53), alcohol, subscription goods"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1325,11 +1243,9 @@
         "description": "Max. 14 digits per value: UPC (12), EAN (13), JAN (8/13), ISBN (13), ITF-14 (14); GS1 checksum must be valid; submit only if certain it is correct"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
-        "max_length": 14,
+        "max_length": null,
         "min_length": null,
         "format": null
       },
@@ -1351,9 +1267,7 @@
         "description": "Daily order cutoff for same-day processing; at offer, country, or shipping-override level"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1426,9 +1340,7 @@
         "description": "Unique product ID (ideally the SKU), max. 50 chars, stable across updates, valid Unicode only, identical across countries"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": 50,
         "min_length": null,
@@ -1455,9 +1367,7 @@
         "yes",
         "no"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1485,9 +1395,7 @@
         "description": "Main image, max. 2000 chars; formats: JPEG, WebP, PNG, GIF (non-animated), BMP, TIFF; no watermarks/promo text; **min. 500×500 px from 2027-01-31** (warnings since 2026-04-14); AI images: IPTC `DigitalSourceType` metadata must be preserved"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": 2000,
         "min_length": null,
@@ -1511,9 +1419,7 @@
         "description": "Additional serving destinations per product"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1537,9 +1443,7 @@
         "description": "Installment payment; `price` must hold the full upfront price; observe country/category restrictions"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1611,9 +1515,7 @@
         "description": "Colors (OEM designation / generic)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1637,9 +1539,7 @@
         "description": "Colors (OEM designation / generic)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1666,9 +1566,7 @@
         "yes",
         "no"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1692,9 +1590,7 @@
         "description": "Groups all variants of the same base product; consistent across all variants"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1718,9 +1614,7 @@
         "description": "Legal notices (taxes, fees)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1745,7 +1639,7 @@
       },
       "enum_values": [],
       "cardinality": {
-        "max_items": null
+        "item_max_length": 2000
       },
       "constraints": {
         "max_length": null,
@@ -1774,9 +1668,7 @@
         "description": "Landing page, max. 2000 chars, verified domain, http/https"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": 2000,
         "min_length": null,
@@ -1802,9 +1694,7 @@
         "description": "No longer part of the Shopping specification; still used in vehicle feeds"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1828,9 +1718,7 @@
         "description": "Member prices ONLY via this attribute (not via `price`/`sale_price`); must match the loyalty program settings in Merchant Center; available incl. US, UK, DE, FR, IT, ES, NL, JP (points)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1932,9 +1820,7 @@
         "description": "Make / model (without trim details)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1958,9 +1844,7 @@
         "description": "Business Profile matching; tracking number"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -1984,9 +1868,7 @@
         "description": "Material information"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2015,9 +1897,7 @@
       "enum_values": [
         "range:A+++..G"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2041,9 +1921,7 @@
         "description": "Processing time from order to carrier handover"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2067,9 +1945,7 @@
         "description": "Manufacturer-declared maximum retail price (MRP) for free listings in India; must match landing page/checkout"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2093,9 +1969,7 @@
         "description": "Odometer reading (km/miles)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2124,9 +1998,7 @@
       "enum_values": [
         "range:A+++..G"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2150,9 +2022,7 @@
         "description": "Processing time from order to carrier handover"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2253,9 +2123,7 @@
         "description": "Mobile landing page variant, max. 2000 chars; same requirements as `link`"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": 2000,
         "min_length": null,
@@ -2281,9 +2149,7 @@
         "description": "No longer part of the Shopping specification; still used in vehicle feeds"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2307,9 +2173,7 @@
         "description": "Make / model (without trim details)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2333,9 +2197,7 @@
         "description": "History report / Monroney sticker"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2359,9 +2221,7 @@
         "description": "Max. 70 chars; required if no GTIN; only manufacturer-assigned values"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": 70,
         "min_length": null,
@@ -2385,9 +2245,7 @@
         "description": "Number of identical single products in a multipack"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2411,9 +2269,7 @@
         "description": "Doors / seats / seating rows"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2437,9 +2293,7 @@
         "description": "Pattern/design"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2465,9 +2319,7 @@
       "enum_values": [
         "ads"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2493,9 +2345,7 @@
         "description": "Fee for online purchase/reservation with in-store pickup; without threshold the flat rate always applies"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2547,9 +2397,7 @@
         "ship_to_store",
         "not_supported"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2583,9 +2431,7 @@
         "7-day",
         "multi-week"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2609,9 +2455,7 @@
         "description": "Business Profile matching; tracking number"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2641,9 +2485,7 @@
         "description": "US/CA: excl. taxes; all other countries: incl. VAT/GST; must match checkout; not 0 (exceptions: mobile device with contract, physical subscription goods); **since 2025-04-08 no longer used for installment downpayments** (use `installment(downpayment)`)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2667,9 +2509,7 @@
         "description": "Structured technical details (e.g. battery, connectivity)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2727,9 +2567,7 @@
         "description": "Product dimensions (without packaging)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2754,10 +2592,12 @@
       },
       "enum_values": [],
       "cardinality": {
-        "max_items": null
+        "max_items": 100,
+        "min_items": 2,
+        "item_max_length": 150
       },
       "constraints": {
-        "max_length": 100,
+        "max_length": null,
         "min_length": null,
         "format": null
       },
@@ -2779,9 +2619,7 @@
         "description": "Product dimensions (without packaging)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2831,9 +2669,7 @@
         "description": "Product weight"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2857,9 +2693,7 @@
         "description": "Product dimensions (without packaging)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2883,9 +2717,7 @@
         "description": "Links the product to Merchant Center promotion(s)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2909,9 +2741,7 @@
         "description": "Available units in the store"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -2935,9 +2765,7 @@
         "description": "Regional price/availability overrides (RAAP; generally available since 2025-09, postal-code level in 22 countries)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3109,7 +2937,7 @@
           "constraints": {
             "max_length": null,
             "min_length": null,
-            "format": null
+            "format": "url"
           }
         }
       ]
@@ -3134,9 +2962,7 @@
         "description": "In addition to `price` (regular price stays in `price`); do not use for loyalty/member prices"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3160,9 +2986,7 @@
         "description": "Without it, `sale_price` applies permanently; start before end"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3186,9 +3010,7 @@
         "description": "Doors / seats / seating rows"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3212,9 +3034,7 @@
         "description": "Doors / seats / seating rows"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3238,9 +3058,7 @@
         "description": "Discontinued with \"Buy on Google\""
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3412,9 +3230,7 @@
         "description": "Package dimensions"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3438,9 +3254,7 @@
         "description": "Custom grouping for shipping rules (e.g. \"bulky\")"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3464,9 +3278,7 @@
         "description": "Package dimensions"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3490,9 +3302,7 @@
         "description": "Required for weight-based/carrier-calculated shipping"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3516,9 +3326,7 @@
         "description": "Package dimensions"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3542,9 +3350,7 @@
         "description": "Shipping origin country (if different from target country)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3568,9 +3374,7 @@
         "description": "Country exclusion specifically for Shopping ads"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3594,9 +3398,7 @@
         "description": "Required for size variants (apparel/shoes)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3632,9 +3434,7 @@
         "MEX",
         "AU"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3664,9 +3464,7 @@
         "big and tall",
         "maternity"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3694,9 +3492,7 @@
         "description": "Store code, must match the linked Business Profile"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3722,9 +3518,7 @@
         "description": "Required variant for AI-generated descriptions"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3776,9 +3570,7 @@
         "description": "Required variant for AI-generated titles"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3828,9 +3620,7 @@
         "description": "Only for eligible `google_product_category` IDs (wireless: 201, 267, 4745, 6030, 6544; physical subscriptions incl. 166, 491, 536, 1253, 2915, 5814, 1868, 2, 499676, 518); for physical subscriptions `price` = 0"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3892,9 +3682,7 @@
         "description": "US taxes at item level"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -3985,9 +3773,7 @@
         "description": "Tax category mapping"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -4011,9 +3797,7 @@
         "description": "Product name, max. 150 chars; no promotional text, no ALL CAPS, must match landing page; include distinguishing attribute (color/size) for variants"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": 150,
         "min_length": null,
@@ -4037,9 +3821,7 @@
         "description": "Business Profile matching; tracking number"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -4063,9 +3845,7 @@
         "description": "Label for transit time tables in Merchant Center"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -4089,9 +3869,7 @@
         "description": "Engine / transmission / fuel type / efficiency (MPG)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -4115,9 +3893,7 @@
         "description": "Trim level"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -4141,9 +3917,7 @@
         "description": "Only together with `unit_pricing_measure`; integers: 1, 10, 100, 2, 4, 8; additional allowed combos: `75cl`, `750ml`, `50kg`, `1000kg`"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -4167,9 +3941,7 @@
         "description": "Required where legally mandated (unit pricing); units: oz, lb, mg, g, kg, floz, pt, qt, gal, ml, cl, l, cbm, in, ft, yd, cm, m, sqft, sqm, ct"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -4197,9 +3969,7 @@
         "SHIP_TO_STORE",
         "ONLINE"
       ],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -4223,9 +3993,7 @@
         "description": "History report / Monroney sticker"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -4249,9 +4017,7 @@
         "description": "Deviating vehicle location"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -4275,9 +4041,7 @@
         "description": "MSRP in current configuration"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -4301,9 +4065,7 @@
         "description": "Standard/optional equipment (comma-separated)"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -4327,11 +4089,9 @@
         "description": "Product video (serving since 2026-06-30): 6–240 s, max. 500 MB, ≥720p, aspect ratio 9:16/16:9/1:1; formats: MPG, MP4, WMV, AVI, MOV, FLV, MPEG-1, MPEGPS; direct file link (no player), publicly crawlable"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
-        "max_length": 500,
+        "max_length": null,
         "min_length": null,
         "format": null
       },
@@ -4353,9 +4113,7 @@
         "description": "Vehicle identification number"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,
@@ -4379,11 +4137,9 @@
         "description": "3D model, max. 15 MB, textures max. 2K"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
-        "max_length": 15,
+        "max_length": null,
         "min_length": null,
         "format": null
       },
@@ -4405,9 +4161,7 @@
         "description": "Model year"
       },
       "enum_values": [],
-      "cardinality": {
-        "max_items": null
-      },
+      "cardinality": null,
       "constraints": {
         "max_length": null,
         "min_length": null,

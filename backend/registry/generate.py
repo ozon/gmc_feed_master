@@ -18,7 +18,15 @@ def _as_json(document: RegistryDocument, source_bytes: bytes) -> bytes:
             "applicability": [domain.value for domain in item.applicability],
             "qualifiers": list(item.qualifiers), "metadata": dict(item.metadata),
             "enum_values": list(item.enum_values),
-            "cardinality": {"max_items": item.cardinality.max_items},
+            "cardinality": {
+                key: value
+                for key, value in {
+                    "max_items": item.cardinality.max_items,
+                    "min_items": item.cardinality.min_items,
+                    "item_max_length": item.cardinality.item_max_length,
+                }.items()
+                if value is not None
+            } if item.cardinality.max_items is not None or item.cardinality.min_items is not None or item.cardinality.item_max_length is not None else None,
             "constraints": {"max_length": item.constraints.max_length, "min_length": item.constraints.min_length, "format": item.constraints.format},
             "fields": [
                 {"name": f.name, "type": f.type, "required": f.required.value,

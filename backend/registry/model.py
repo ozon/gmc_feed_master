@@ -33,6 +33,8 @@ class RequirementStatus(str, Enum):
 @dataclass(frozen=True)
 class Cardinality:
     max_items: int | None = None
+    min_items: int | None = None
+    item_max_length: int | None = None
 
 
 @dataclass(frozen=True)
