@@ -97,6 +97,9 @@ def create_app(
         scheduler_service = getattr(application.state, "scheduler_service", None)
         if scheduler_service is not None:
             await scheduler_service.shutdown()
+        image_http_client = getattr(application.state, "image_http_client", None)
+        if image_http_client is not None:
+            await image_http_client.aclose()
         if getattr(application.state, "db_engine", None) is not None:
             await application.state.db_engine.dispose()
 
@@ -132,15 +135,23 @@ def create_app(
             )
 
     if app.state.db_session_factory is not None:
+        import httpx
+
         from registry.loader import load_registry
 
         from .pipeline import LockRegistry, PipelineRunner, SchedulerService, default_steps
+        from .qc.image_probe import ImageProbeImpl
 
+        image_http_client = httpx.AsyncClient()
+        app.state.image_http_client = image_http_client
+        image_probe = ImageProbeImpl(app.state.db_session_factory, image_http_client)
         lock_registry = LockRegistry()
         steps = default_steps(
             fetcher if fetcher is not None else HttpFetcher(),
             load_registry(),
             app.state.plugin_registry,
+            clock=app.state.clock,
+            image_probe=image_probe,
         )
         runner = PipelineRunner(lock_registry, app.state.db_session_factory, list(steps))
         scheduler_service = SchedulerService(runner)

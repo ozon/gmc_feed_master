@@ -54,6 +54,23 @@ async def test_startup_registers_valid_cron_jobs(db):
         assert not app.state.scheduler_service.has_job(sources["Manual"].id)
 
 
+async def test_qc_step_wired_with_app_clock_and_image_probe(db):
+    factory, url = db
+    settings = Settings(_env_file=None, session_secret="test-s", initial_username="operator", initial_password="pw", database_url=url)
+    app = create_app(settings=settings, db_session_factory=factory)
+
+    async with app.router.lifespan_context(app):
+        runner = app.state.pipeline_runner
+        qc_step = next(s for s in runner._steps if s.name == "quality_check")
+        assert qc_step._clock is app.state.clock
+        from app.qc.image_probe import ImageProbeImpl
+
+        assert isinstance(qc_step._image_probe, ImageProbeImpl)
+        assert not app.state.image_http_client.is_closed
+
+    assert app.state.image_http_client.is_closed
+
+
 async def test_startup_skips_invalid_cron(db):
     factory, url = db
     async with factory() as session:
