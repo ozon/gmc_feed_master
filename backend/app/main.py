@@ -31,7 +31,7 @@ from .session_store import SessionStore
 from .persistence.sessions import PostgresSessionStore
 from .db.engine import create_engine, create_session_factory, get_db_session
 from .persistence.users import change_password, seed_initial_user
-from .routes import clients_router, field_mapping_router, plugins_router, registry_router
+from .routes import clients_router, field_mapping_router, plugins_router, quality_router, registry_router
 
 
 def _configured_settings() -> Settings | None:
@@ -104,6 +104,7 @@ def create_app(
     app.include_router(clients_router)
     app.include_router(field_mapping_router)
     app.include_router(plugins_router)
+    app.include_router(quality_router)
     app.include_router(registry_router)
     app.state.settings = settings
     app.state.session_store = session_store
