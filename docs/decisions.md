@@ -508,3 +508,18 @@ binding product specification. Dates use ISO 8601 calendar dates.
     trade-off; raise the cap if real feeds hit it.
 - **Carry-forward for M8:** M8 must wire `ExportRun.export_version_id`
   explicitly when the XML writer creates versions.
+
+## 2026-08-27
+
+### Four core plugins milestone deferred
+
+- **Topic:** Four core plugins (labelizer, rules, category, filter —
+  spec §5.9, milestone table M6)
+- **Decision:** Deferred by the owner. No core plugin is built now; the
+  milestone is resumed later by explicit owner instruction. Until then the
+  pipeline runs on the plugin host (internal M6) with whatever plugins are
+  discovered (currently the dummy third-party plugin from the contract
+  suite), and QC (internal M7) evaluates the export-bound set directly.
+- **Rationale:** Owner instruction of 2026-08-27: "Dont Build any Plugin
+  yet. We du it later." Build order otherwise unchanged; work proceeds on
+  the remaining non-plugin milestones.
