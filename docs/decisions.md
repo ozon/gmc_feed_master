@@ -564,3 +564,17 @@ binding product specification. Dates use ISO 8601 calendar dates.
   payload needed a `source_url` added — the plan's verbatim test omitted
   it, but `IngestStep` requires a configured `source_url` (the stub
   fetcher ignores the URL value).
+
+### Backlog: IngestionRun 90-day retention has no milestone
+
+- **Topic:** Spec §4 (IngestionRun entity) and §10 mandate 90-day retention
+  for `ingestion_runs`; no milestone implements it (StagingHistory's 90-day
+  retention is already implemented in `app/staging/purge.py`).
+- **Decision:** Tracked as backlog, raised by the owner during M9 spec
+  approval (2026-08-27). Natural home: the daily system purge job
+  (`system-staging-purge`). Not part of M9's approved scope.
+- **Constraint noted:** three RESTRICT FKs reference `ingestion_runs`
+  (`staging_products`, `quality_findings`, `export_runs` — the latter
+  nullable and linked to ExportVersions used by rollback). Dependent-row
+  semantics need an owner decision before implementation.
+- **Detailed entry:** `.superpowers/sdd/progress.md` backlog section.
