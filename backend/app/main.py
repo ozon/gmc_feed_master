@@ -125,6 +125,16 @@ def create_app(
                 scheduler_service.register_system_job(
                     SYSTEM_PURGE_JOB_ID, PURGE_CRON, run_staging_purge
                 )
+
+                from .pipeline.reconcile import reconcile_interrupted_runs
+
+                reconciled = await reconcile_interrupted_runs(
+                    application.state.db_session_factory, application.state.clock
+                )
+                logging.getLogger(__name__).info(
+                    "startup reconciliation: marked %s orphaned runs as interrupted",
+                    reconciled,
+                )
                 async with application.state.db_session_factory() as session:
                     await scheduler_service.register_all(session)
         yield
