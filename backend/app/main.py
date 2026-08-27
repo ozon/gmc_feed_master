@@ -50,6 +50,31 @@ def _configured_settings() -> Settings | None:
         # the persistence credentials configured.
         return None
 
+
+_EXPORT_PATH_PREFIX = "/export/"
+_EXPORT_PATH_REDACTED = "/export/[REDACTED]"
+
+
+class _ExportTokenRedactor(logging.Filter):
+    # The public feed endpoint is fetched by Google at /export/{token}.xml;
+    # uvicorn's default access log would otherwise write the token at INFO.
+    def filter(self, record: logging.LogRecord) -> bool:
+        args = record.args
+        if (
+            isinstance(args, tuple)
+            and len(args) == 5
+            and isinstance(args[2], str)
+            and args[2].startswith(_EXPORT_PATH_PREFIX)
+        ):
+            record.args = (args[0], args[1], _EXPORT_PATH_REDACTED, args[3], args[4])
+        return True
+
+
+def _install_export_token_log_redaction() -> None:
+    access_logger = logging.getLogger("uvicorn.access")
+    if not any(isinstance(f, _ExportTokenRedactor) for f in access_logger.filters):
+        access_logger.addFilter(_ExportTokenRedactor())
+
 def create_app(
     settings: Settings | None = None,
     session_store: SessionStore | None = None,
@@ -63,6 +88,7 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
+        _install_export_token_log_redaction()
         if (
             application.state.db_session_factory is not None
             and settings is not None
