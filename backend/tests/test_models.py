@@ -11,7 +11,7 @@ def test_m1_table_set_is_complete():
         "plugin_configs", "plugin_data", "module_pipelines",
         "module_instances", "ingestion_runs", "staging_products",
         "staging_history", "quality_findings", "export_runs",
-        "export_versions",
+        "export_versions", "image_dimensions",
     }
 
 
@@ -81,7 +81,9 @@ def test_review_contract_fields_and_foreign_key_indexes():
     assert {"content_hash", "config_hash", "status", "last_seen_at"} <= set(tables["staging_products"].c.keys())
     assert {"error_message", "error_stack_trace", "processed_count", "failed_count"} <= set(tables["ingestion_runs"].c.keys())
     assert {"ingestion_run_id"} <= set(tables["quality_findings"].c.keys())
-    assert {"product_count", "info_finding_count", "warning_finding_count", "error_finding_count", "export_version_id"} <= set(tables["export_runs"].c.keys())
+    assert {"product_count", "info_finding_count", "warning_finding_count", "critical_finding_count", "export_version_id"} <= set(tables["export_runs"].c.keys())
+    assert {"feed_source_id", "product_id", "ingestion_run_id"} <= set(tables["quality_findings"].c.keys())
+    assert "staging_product_id" not in set(tables["quality_findings"].c.keys())
     assert "manifest" in tables["plugins"].c
     for table in (tables["feed_sources"], tables["module_pipelines"], tables["ingestion_runs"], tables["staging_products"], tables["quality_findings"], tables["export_runs"]):
         assert table.indexes

@@ -27,6 +27,7 @@ class FeedSource(Base):
     target_language: Mapped[str | None] = mapped_column(String(10), nullable=True)
     currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    volume_drop_threshold_pct: Mapped[int] = mapped_column(Integer, nullable=False, default=20, server_default="20")
     field_mapping: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     configuration: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
