@@ -77,3 +77,27 @@ async def export_diff(
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post(
+    "/feed-sources/{feed_source_id}/export-history/{version_number}/rollback",
+    response_model=ExportVersionOut,
+    status_code=201,
+)
+async def export_rollback(
+    feed_source_id: int,
+    version_number: int,
+    request: Request,
+    _user: str = Depends(require_user),
+    db_session: AsyncSession | None = Depends(get_db_session),
+    settings: Settings = Depends(get_settings),
+):
+    session = _require_db(db_session)
+    async with session.begin():
+        await _require_feed_source(session, feed_source_id)
+    try:
+        return await _service(request, settings).rollback(
+            feed_source_id, version_number, load_registry()
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
