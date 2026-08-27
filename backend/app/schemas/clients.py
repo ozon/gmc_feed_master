@@ -40,6 +40,7 @@ class FeedSourceUpdate(BaseModel):
     target_language: str | None = Field(default=None, max_length=10)
     currency: str | None = Field(default=None, max_length=3)
     source_url: str | None = Field(default=None, max_length=2048)
+    history_retention_count: int | None = Field(default=None, ge=1)
 
 
 class FeedSourceOut(BaseModel):
@@ -54,6 +55,9 @@ class FeedSourceOut(BaseModel):
     target_language: str | None
     currency: str | None
     source_url: str | None
+    feed_type: str
+    history_retention_count: int
+    export_url: str = ""
     created_at: datetime
     updated_at: datetime
 
