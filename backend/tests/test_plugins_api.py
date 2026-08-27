@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
 from app.main import create_app
-from app.models import Client, FeedSource, IngestionRun
+from app.models import Client, ExportRun, FeedSource, IngestionRun
 from app.models.plugin import Plugin, PluginConfig, PluginData
 from app.models.session import Session
 from app.models.user import User
@@ -43,6 +43,7 @@ async def app_factory(isolated_database_url):
         async with session.begin():
             await session.execute(delete(PluginData))
             await session.execute(delete(PluginConfig))
+            await session.execute(delete(ExportRun))
             await session.execute(delete(IngestionRun))
             await session.execute(delete(FeedSource))
             await session.execute(delete(Client))
