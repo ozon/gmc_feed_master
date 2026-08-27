@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from registry.model import RegistryDocument
 
 from ..clock import Clock
+from ..ingest.xml_reader import parse_xml
 from ..models.client import Client
 from ..models.export import ExportRun, ExportVersion
 from ..models.feed_source import FeedSource
@@ -169,6 +170,66 @@ class ExportService:
             )
             return list(result.scalars().all())
 
+    async def diff(
+        self,
+        feed_source_id: int,
+        version_number: int,
+        against: int | None,
+        registry: RegistryDocument,
+    ) -> dict[str, Any]:
+        async with self._session_factory() as session:
+            version = (
+                await session.execute(
+                    select(ExportVersion).where(
+                        ExportVersion.feed_source_id == feed_source_id,
+                        ExportVersion.version_number == version_number,
+                    )
+                )
+            ).scalar_one_or_none()
+            if version is None:
+                raise LookupError(f"version {version_number} not found")
+            if against is None:
+                against = (
+                    await session.execute(
+                        select(ExportVersion.version_number)
+                        .where(
+                            ExportVersion.feed_source_id == feed_source_id,
+                            ExportVersion.version_number < version_number,
+                        )
+                        .order_by(ExportVersion.version_number.desc())
+                        .limit(1)
+                    )
+                ).scalar_one_or_none()
+                if against is None:
+                    raise LookupError(f"no preceding version for {version_number}")
+            against_version = (
+                await session.execute(
+                    select(ExportVersion).where(
+                        ExportVersion.feed_source_id == feed_source_id,
+                        ExportVersion.version_number == against,
+                    )
+                )
+            ).scalar_one_or_none()
+            if against_version is None:
+                raise LookupError(f"version {against} not found")
+
+        new_products = self._load_version_products(feed_source_id, version_number, registry)
+        old_products = self._load_version_products(feed_source_id, against, registry)
+        return _field_diff(old_products, new_products, version_number, against)
+
+    def _load_version_products(
+        self, feed_source_id: int, version_number: int, registry: RegistryDocument
+    ) -> dict[str, dict[str, Any]]:
+        data = self._store.read_version(feed_source_id, version_number)
+        if data is None:
+            raise LookupError(f"version file {version_number} missing")
+        report = parse_xml(data, registry)
+        return {
+            str(product["id"]): product
+            for product in report.products
+            if product.get("id")
+        }
+
     async def _mark_run_failed(self, feed_source_id: int, ingestion_run_id: int) -> None:
         try:
             async with self._session_factory() as session:
@@ -211,3 +272,30 @@ class ExportService:
             logger.exception(
                 "retention prune failed for feed source %s", feed_source_id
             )
+
+
+def _field_diff(
+    old: dict[str, dict[str, Any]],
+    new: dict[str, dict[str, Any]],
+    version_number: int,
+    against: int,
+) -> dict[str, Any]:
+    added = sorted(set(new) - set(old))
+    removed = sorted(set(old) - set(new))
+    changed: list[dict[str, Any]] = []
+    for product_id in sorted(set(old) & set(new)):
+        fields = []
+        for key in sorted(set(old[product_id]) | set(new[product_id])):
+            old_value = old[product_id].get(key)
+            new_value = new[product_id].get(key)
+            if old_value != new_value:
+                fields.append({"field": key, "old": old_value, "new": new_value})
+        if fields:
+            changed.append({"product_id": product_id, "fields": fields})
+    return {
+        "version": version_number,
+        "against": against,
+        "added": added,
+        "removed": removed,
+        "changed": changed,
+    }
