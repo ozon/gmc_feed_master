@@ -24,18 +24,9 @@ class StubFetcher:
         return b""
 
 
-def _steps():
-    return default_steps(StubFetcher(), RegistryDocument(attributes={}))
-
-
 @pytest.fixture
-def ctx():
-    return StepContext(
-        feed_source_id=1,
-        session_factory=lambda: None,
-        logger=logging.getLogger("test"),
-        run_state=RunState(),
-    )
+def _steps(tmp_path):
+    return default_steps(StubFetcher(), RegistryDocument(attributes={}), export_dir=tmp_path / "exports")
 
 
 def test_step_context_and_result_are_frozen():
@@ -56,23 +47,20 @@ def test_step_result_defaults():
     assert result.statistics == {}
 
 
-@pytest.mark.asyncio
-async def test_no_op_steps_contract(ctx):
-    step = ExportStep()
-    assert isinstance(step.name, str) and step.name
-    result = await step.execute(ctx)
-    assert result == StepResult(processed_count=0, failed_count=0)
+def test_export_step_is_wired():
+    steps = default_steps(StubFetcher(), RegistryDocument(attributes={}), export_dir="unused")
+    step = steps[-1]
+    assert isinstance(step, ExportStep)
+    assert step.name == "export"
 
 
-def test_step_names_are_distinct():
-    steps = _steps()
-    names = [step.name for step in steps]
+def test_step_names_are_distinct(_steps):
+    names = [step.name for step in _steps]
     assert len(set(names)) == 6
 
 
-def test_default_steps_order():
-    steps = _steps()
-    assert [type(step) for step in steps] == [
+def test_default_steps_order(_steps):
+    assert [type(step) for step in _steps] == [
         IngestStep,
         MappingStep,
         StagingStep,
@@ -80,7 +68,7 @@ def test_default_steps_order():
         QualityCheckStep,
         ExportStep,
     ]
-    assert [step.name for step in steps] == [
+    assert [step.name for step in _steps] == [
         "ingest",
         "mapping",
         "staging",
@@ -90,8 +78,8 @@ def test_default_steps_order():
     ]
 
 
-def test_steps_satisfy_protocol():
-    for step in _steps():
+def test_steps_satisfy_protocol(_steps):
+    for step in _steps:
         assert isinstance(step, PipelineStep)
 
 

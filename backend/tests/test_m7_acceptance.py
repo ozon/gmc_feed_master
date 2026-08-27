@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
 from app.main import create_app
-from app.models import Client, FeedSource, IngestionRun, ExportRun, QualityFinding
+from app.models import Client, FeedSource, IngestionRun, ExportRun, ExportVersion, QualityFinding
 from app.models.staging import StagingProduct
 from app.models.session import Session
 from app.models.user import User
@@ -25,6 +25,7 @@ async def app_factory(isolated_database_url):
     async with factory() as session:
         async with session.begin():
             await session.execute(delete(QualityFinding))
+            await session.execute(delete(ExportVersion))
             await session.execute(delete(ExportRun))
             await session.execute(delete(IngestionRun))
             await session.execute(delete(FeedSource))

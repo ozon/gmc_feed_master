@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
 from app.main import create_app
-from app.models import Client, ExportRun, FeedSource, IngestionRun
+from app.models import Client, ExportRun, ExportVersion, FeedSource, IngestionRun
 from app.models.pipeline import ModuleInstance, ModulePipeline
 from app.models.plugin import Plugin, PluginConfig
 from app.models.session import Session
@@ -55,6 +55,7 @@ async def app_factory(isolated_database_url):
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
+            await session.execute(delete(ExportVersion))
             await session.execute(delete(ExportRun))
             await session.execute(delete(IngestionRun))
             await session.execute(delete(FeedSource))
@@ -180,7 +181,7 @@ async def test_discovery_is_idempotent_across_restarts(app_factory):
 # ── Scenario 3 ──────────────────────────────────────────────────────────────
 
 
-async def test_end_to_end_execution_through_runner(app_factory):
+async def test_end_to_end_execution_through_runner(app_factory, tmp_path):
     _, factory, _, settings = app_factory
     client = await logged_in_client(app_factory)
 
@@ -251,7 +252,7 @@ async def test_end_to_end_execution_through_runner(app_factory):
 
         fetcher = StubFetcher(FEED_TSV)
         registry = load_registry()
-        steps = default_steps(fetcher, registry, plugin_registry)
+        steps = default_steps(fetcher, registry, plugin_registry, export_dir=tmp_path / "exports")
         runner = PipelineRunner(LockRegistry(), factory, list(steps))
         run_id = await runner.execute(feed_source_id)
 
@@ -281,7 +282,7 @@ async def test_end_to_end_execution_through_runner(app_factory):
 # ── Scenario 4 ──────────────────────────────────────────────────────────────
 
 
-async def test_error_isolation_preserves_last_known_good(app_factory):
+async def test_error_isolation_preserves_last_known_good(app_factory, tmp_path):
     _, factory, _, settings = app_factory
     client = await logged_in_client(app_factory)
 
@@ -367,7 +368,7 @@ async def test_error_isolation_preserves_last_known_good(app_factory):
 
         fetcher = StubFetcher(FEED_TSV)
         registry = load_registry()
-        steps = default_steps(fetcher, registry, plugin_registry)
+        steps = default_steps(fetcher, registry, plugin_registry, export_dir=tmp_path / "exports")
         runner = PipelineRunner(LockRegistry(), factory, list(steps))
         run_id = await runner.execute(feed_source_id)
 
@@ -392,7 +393,7 @@ async def test_error_isolation_preserves_last_known_good(app_factory):
 # ── Scenario 4b: drop→pass reactivation ─────────────────────────────────────
 
 
-async def test_drop_then_pass_reactivation(app_factory):
+async def test_drop_then_pass_reactivation(app_factory, tmp_path):
     _, factory, _, settings = app_factory
     client = await logged_in_client(app_factory)
 
@@ -478,7 +479,7 @@ async def test_drop_then_pass_reactivation(app_factory):
         tsv_run1 = b"sku\ttitle\tean\nA1\tX-dropped\t1234567890123\n"
         fetcher = StubFetcher(tsv_run1)
         registry = load_registry()
-        steps = default_steps(fetcher, registry, plugin_registry)
+        steps = default_steps(fetcher, registry, plugin_registry, export_dir=tmp_path / "exports")
         runner = PipelineRunner(LockRegistry(), factory, list(steps))
         run_id = await runner.execute(feed_source_id)
 
@@ -494,7 +495,7 @@ async def test_drop_then_pass_reactivation(app_factory):
 
         tsv_run2 = b"sku\ttitle\tean\nA1\tY-kept\t1234567890123\n"
         fetcher.data = tsv_run2
-        steps2 = default_steps(fetcher, registry, plugin_registry)
+        steps2 = default_steps(fetcher, registry, plugin_registry, export_dir=tmp_path / "exports")
         runner2 = PipelineRunner(LockRegistry(), factory, list(steps2))
         run_id2 = await runner2.execute(feed_source_id)
 

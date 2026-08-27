@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
 from app.main import create_app
-from app.models import Client, ExportRun, FeedSource, IngestionRun
+from app.models import Client, ExportRun, ExportVersion, FeedSource, IngestionRun
 from app.models.pipeline import ModuleInstance, ModulePipeline
 from app.models.plugin import Plugin
 from app.models.session import Session
@@ -52,12 +52,13 @@ class StubFetcher:
 
 
 @pytest_asyncio.fixture
-async def app_factory(isolated_database_url):
+async def app_factory(isolated_database_url, tmp_path):
     url = isolated_database_url
     engine = create_async_engine(url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
+            await session.execute(delete(ExportVersion))
             await session.execute(delete(ExportRun))
             await session.execute(delete(IngestionRun))
             await session.execute(delete(FeedSource))
@@ -71,6 +72,7 @@ async def app_factory(isolated_database_url):
         initial_username="operator",
         initial_password="pw",
         database_url=url,
+        export_dir=str(tmp_path / "exports"),
     )
     fetcher = StubFetcher(TWO_PRODUCTS_TSV)
     app = create_app(settings=settings, db_session_factory=factory, fetcher=cast(Any, fetcher))

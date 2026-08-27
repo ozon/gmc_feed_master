@@ -152,6 +152,8 @@ def create_app(
             app.state.plugin_registry,
             clock=app.state.clock,
             image_probe=image_probe,
+            export_dir=settings.export_dir if settings is not None else None,
+            public_base_url=settings.public_base_url if settings is not None else None,
         )
         runner = PipelineRunner(lock_registry, app.state.db_session_factory, list(steps))
         scheduler_service = SchedulerService(runner)

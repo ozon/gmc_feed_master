@@ -71,7 +71,7 @@ async def _run_count(factory):
         return len((await session.execute(select(IngestionRun))).scalars().all())
 
 
-async def test_success_path_with_default_steps(session_factory, feed_source_id):
+async def test_success_path_with_default_steps(session_factory, feed_source_id, tmp_path):
     from app.pipeline import default_steps
     from registry.model import RegistryDocument
 
@@ -79,7 +79,7 @@ async def test_success_path_with_default_steps(session_factory, feed_source_id):
         async def fetch(self, url, basic_auth=None, _client=None):
             return b"<rss><channel></channel></rss>"
 
-    steps = default_steps(StubFetcher(), RegistryDocument(attributes={}))
+    steps = default_steps(StubFetcher(), RegistryDocument(attributes={}), export_dir=tmp_path / "exports")
     runner = PipelineRunner(LockRegistry(), session_factory, list(steps))
     run_id = await runner.execute(feed_source_id)
     run = await _get_run(session_factory, run_id)

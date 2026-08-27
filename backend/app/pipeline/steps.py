@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from registry.model import RegistryDocument
 
 from ..clock import Clock, SystemClock
+from ..export.store import ExportFileStore
 from ..ingest import HttpFetcher, read_feed
 from ..ingest.report import SourceField
 from ..mapping import MappingDocument, apply_mapping, auto_match
@@ -57,15 +59,6 @@ class PipelineStep(Protocol):
     name: str
 
     async def execute(self, ctx: StepContext) -> StepResult: ...
-
-
-class _NoOpStep:
-    def __init__(self, name: str) -> None:
-        self.name = name
-
-    async def execute(self, ctx: StepContext) -> StepResult:
-        ctx.logger.info("%s: not implemented (M2 skeleton)", self.name)
-        return StepResult()
 
 
 class IngestStep:
@@ -367,9 +360,42 @@ class QualityCheckStep:
         )
 
 
-class ExportStep(_NoOpStep):
-    def __init__(self) -> None:
-        super().__init__("export")
+class ExportStep:
+    name = "export"
+
+    def __init__(
+        self,
+        registry: RegistryDocument,
+        store: ExportFileStore,
+        clock: Clock,
+        public_base_url: str,
+    ) -> None:
+        self._registry = registry
+        self._store = store
+        self._clock = clock
+        self._public_base_url = public_base_url
+
+    async def execute(self, ctx: StepContext) -> StepResult:
+        from ..export.service import ExportService
+        from ..staging.persistence import load_export_bound
+
+        bound = await load_export_bound(ctx.session_factory, ctx.feed_source_id)
+        products = [product for _, product in bound]
+        service = ExportService(
+            ctx.session_factory, self._store, self._clock, self._public_base_url
+        )
+        outcome = await service.export_for_run(
+            ctx.feed_source_id, ctx.ingestion_run_id, products, self._registry
+        )
+        return StepResult(
+            statistics={
+                "export": {
+                    "products": outcome.product_count,
+                    "version": outcome.version_number,
+                    "deduplicated": outcome.deduplicated,
+                }
+            }
+        )
 
 
 def default_steps(
@@ -378,14 +404,20 @@ def default_steps(
     plugin_registry: dict[str, Any] | None = None,
     clock: Clock | None = None,
     image_probe: ImageProbe | None = None,
+    export_dir: Path | str | None = None,
+    public_base_url: str | None = None,
 ) -> tuple[PipelineStep, ...]:
     if clock is None:
         clock = SystemClock()
+    store = ExportFileStore(
+        Path(export_dir) if export_dir is not None else Path("exports")
+    )
+    base_url = public_base_url if public_base_url is not None else "http://localhost:8000"
     return (
         IngestStep(fetcher, registry),
         MappingStep(registry),
         StagingStep(),
         PluginStep(plugin_registry),
         QualityCheckStep(registry, clock, image_probe),
-        ExportStep(),
+        ExportStep(registry, store, clock, base_url),
     )

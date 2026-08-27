@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
 from app.main import create_app
-from app.models import Client, ExportRun, FeedSource, IngestionRun
+from app.models import Client, ExportRun, ExportVersion, FeedSource, IngestionRun
 from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
@@ -50,6 +50,7 @@ async def app_factory(isolated_database_url):
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
+            await session.execute(delete(ExportVersion))
             await session.execute(delete(ExportRun))
             await session.execute(delete(IngestionRun))
             await session.execute(delete(FeedSource))
@@ -106,18 +107,18 @@ async def _get_field_mapping(factory, feed_source_id):
         return feed_source.field_mapping
 
 
-def _build_runner(factory, capture):
+def _build_runner(factory, capture, tmp_path):
     fetcher = StubFetcher(FEED_TSV)
-    steps = [*default_steps(fetcher, load_registry()), capture]
+    steps = [*default_steps(fetcher, load_registry(), export_dir=tmp_path / "exports"), capture]
     return PipelineRunner(LockRegistry(), factory, steps)
 
 
-async def test_field_mapping_end_to_end(app_factory):
+async def test_field_mapping_end_to_end(app_factory, tmp_path):
     _, factory = app_factory
     fs_id = await _seed_feed_source(factory)
 
     capture = CaptureProductsStep()
-    runner = _build_runner(factory, capture)
+    runner = _build_runner(factory, capture, tmp_path)
     run_id = await runner.execute(fs_id)
 
     run = await _get_run(factory, run_id)
@@ -163,7 +164,7 @@ async def test_field_mapping_end_to_end(app_factory):
     }
 
     rerun_capture = CaptureProductsStep()
-    rerun_runner = _build_runner(factory, rerun_capture)
+    rerun_runner = _build_runner(factory, rerun_capture, tmp_path)
     rerun_id = await rerun_runner.execute(fs_id)
 
     rerun = await _get_run(factory, rerun_id)

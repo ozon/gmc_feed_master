@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
 from app.main import create_app
-from app.models import Client, FeedSource, IngestionRun, ExportRun
+from app.models import Client, FeedSource, IngestionRun, ExportRun, ExportVersion
 from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
@@ -43,12 +43,13 @@ EXPECTED_TABLES = {
 
 
 @pytest_asyncio.fixture
-async def app_factory(isolated_database_url):
+async def app_factory(isolated_database_url, tmp_path):
     url = isolated_database_url
     engine = create_async_engine(url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with session.begin():
+            await session.execute(delete(ExportVersion))
             await session.execute(delete(ExportRun))
             await session.execute(delete(IngestionRun))
             await session.execute(delete(FeedSource))
@@ -62,6 +63,7 @@ async def app_factory(isolated_database_url):
         initial_username="operator",
         initial_password="pw",
         database_url=url,
+        export_dir=str(tmp_path / "exports"),
     )
     app = create_app(settings=settings, db_session_factory=factory, fetcher=cast(Any, StubFetcher()))
     yield app, factory
@@ -130,6 +132,7 @@ async def test_m2_acceptance(app_factory):
 
     async with factory() as session:
         async with session.begin():
+            await session.execute(delete(ExportVersion))
             await session.execute(delete(ExportRun))
             await session.execute(delete(IngestionRun).where(IngestionRun.feed_source_id == fs_id))
 

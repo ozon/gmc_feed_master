@@ -70,13 +70,13 @@ async def _get_run(factory, run_id):
         return await session.get(IngestionRun, run_id)
 
 
-async def test_happy_path_tsv_ingest_end_to_end(session_factory):
+async def test_happy_path_tsv_ingest_end_to_end(session_factory, tmp_path):
     fs_id = await _seed_feed_source(
         session_factory, {"basic_auth": {"username": "u", "password": "p"}}
     )
     fetcher = StubFetcher(HAPPY_TSV)
     capture = CaptureProductsStep()
-    steps = [*default_steps(fetcher, load_registry()), capture]
+    steps = [*default_steps(fetcher, load_registry(), export_dir=tmp_path / "exports"), capture]
     runner = PipelineRunner(LockRegistry(), session_factory, steps)
 
     run_id = await runner.execute(fs_id)
@@ -96,11 +96,11 @@ async def test_happy_path_tsv_ingest_end_to_end(session_factory):
     assert fetcher.calls == [("http://test.local/feed.tsv", ("u", "p"))]
 
 
-async def test_row_errors_skipped_but_run_succeeds(session_factory):
+async def test_row_errors_skipped_but_run_succeeds(session_factory, tmp_path):
     fs_id = await _seed_feed_source(session_factory, {})
     fetcher = StubFetcher(ROW_ERROR_TSV)
     capture = CaptureProductsStep()
-    steps = [*default_steps(fetcher, load_registry()), capture]
+    steps = [*default_steps(fetcher, load_registry(), export_dir=tmp_path / "exports"), capture]
     runner = PipelineRunner(LockRegistry(), session_factory, steps)
 
     run_id = await runner.execute(fs_id)
