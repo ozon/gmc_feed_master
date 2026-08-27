@@ -578,3 +578,58 @@ binding product specification. Dates use ISO 8601 calendar dates.
   nullable and linked to ExportVersions used by rollback). Dependent-row
   semantics need an owner decision before implementation.
 - **Detailed entry:** `.superpowers/sdd/progress.md` backlog section.
+
+### M9 uniform overlap semantics
+
+- **Topic:** Scheduled vs. manual run-overlap handling
+- **Decision:** Feed-source jobs are registered with `max_instances=2` so a
+  cron tick that fires while a run is still executing is dispatched into
+  `PipelineRunner.execute` instead of being swallowed by APScheduler. The
+  `LockRegistry` handles every overlap uniformly: the overlapping run
+  finalizes as `skipped` with
+  `statistics={"reason": "previous run still active"}` and the runner logs
+  WARNING "previous run still active: skipping run for feed source <id>"
+  (spec §2 wording). System jobs keep APScheduler's default
+  `max_instances=1`.
+- **Rationale:** Verified against installed APScheduler 3.11.3 source
+  (`schedulers/base.py`): the default is 1 and on `MaxInstancesReachedError`
+  the scheduler only logs a generic warning — no run row, asymmetric with
+  the manual path. The skip path is one small DB write, so at most one
+  running plus one briefly-skipping instance coexist; `max_instances=2`
+  suffices.
+
+### M9 startup reconciliation of crash-orphaned runs
+
+- **Topic:** `IngestionRun` rows left `running`/`pending` after a crash
+- **Decision:** Owner-approved (spec silent). At startup, before
+  `register_all`, a single UPDATE marks all `running`/`pending` runs as
+  `error` with `error_message='interrupted by restart'` and sets
+  `completed_at`; the count is logged at INFO. No new status value, no
+  migration. Implemented in `app/pipeline/reconcile.py` with an injectable
+  clock.
+- **Rationale:** Locks are in-memory; after a restart nothing is actually
+  running. Non-terminal rows would otherwise show "running" forever in run
+  history and in the M10 status icon.
+
+### M9 manual-trigger task references (amends the M2 decision)
+
+- **Topic:** Strong references for `POST /run` background tasks
+- **Decision:** Amendment to the M2 manual-trigger decision: the
+  `asyncio.create_task` dispatch is kept, but each task is added to
+  `app.state.background_tasks` (a set) with a done-callback that discards
+  it. No observable behavior change.
+- **Rationale:** CPython may garbage-collect an unreferenced task mid-run;
+  the M2 fire-and-forget semantics are preserved while removing the GC
+  hazard.
+
+### M9 seam-level cron-fire verification
+
+- **Topic:** How tests prove the scheduled path without real timers
+- **Decision:** Tests invoke the scheduled job the way APScheduler would
+  (`job.func(*job.args)` — the scheduler's job callable is
+  `runner.execute` itself) and assert registration correctness (job id,
+  UTC cron trigger, `max_instances=2`, `next_run_time` for a known cron).
+  No real-timer wait test.
+- **Rationale:** Cron is minute-granular; a live-fire test would wait up
+  to 60 s and stay flaky. The seam is the job callable — exercising it
+  exercises everything below APScheduler's dispatch.
