@@ -306,24 +306,11 @@ class QualityCheckStep:
         if feed_source is None:
             raise LookupError(f"feed source {ctx.feed_source_id} not found")
 
-        async with ctx.session_factory() as session:
-            from sqlalchemy import select
-            from ..models.staging import StagingProduct
-            result = await session.execute(
-                select(StagingProduct).where(
-                    StagingProduct.feed_source_id == ctx.feed_source_id,
-                    StagingProduct.status == "active",
-                    StagingProduct.excluded == False,
-                )
-            )
-            rows = list(result.scalars().all())
+        from ..staging.persistence import load_export_bound
 
-        products = []
-        product_ids = []
-        for row in rows:
-            product = row.processed_data if row.processed_data is not None else row.raw_data
-            products.append(product)
-            product_ids.append(row.product_id)
+        bound = await load_export_bound(ctx.session_factory, ctx.feed_source_id)
+        product_ids = [product_id for product_id, _ in bound]
+        products = [product for _, product in bound]
 
         async with ctx.session_factory() as session:
             from sqlalchemy import select, desc

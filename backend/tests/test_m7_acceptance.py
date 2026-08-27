@@ -211,6 +211,6 @@ async def test_end_to_end_qc_finds_issues(app_factory):
         )
         export_runs = list(result.scalars().all())
         assert len(export_runs) == 1
-        assert export_runs[0].status == "completed"
+        assert export_runs[0].status == "pending_export"
         assert export_runs[0].product_count == 3
         assert export_runs[0].critical_finding_count >= 1

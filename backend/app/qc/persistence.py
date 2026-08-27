@@ -47,7 +47,7 @@ async def persist_findings(
             session.add(ExportRun(
                 feed_source_id=feed_source_id,
                 ingestion_run_id=ingestion_run_id,
-                status="completed",
+                status="pending_export",
                 product_count=product_count,
                 critical_finding_count=counts["critical"],
                 warning_finding_count=counts["warning"],

@@ -197,3 +197,26 @@ async def apply_plugin_outcomes(
                         )
                         .values(**values)
                     )
+
+
+async def load_export_bound(
+    session_factory: Callable[[], AsyncSession], feed_source_id: int
+) -> list[tuple[str, dict[str, Any]]]:
+    async with session_factory() as session:
+        result = await session.execute(
+            select(StagingProduct)
+            .where(
+                StagingProduct.feed_source_id == feed_source_id,
+                StagingProduct.status == "active",
+                StagingProduct.excluded == False,  # noqa: E712
+            )
+            .order_by(StagingProduct.product_id)
+        )
+        rows = list(result.scalars().all())
+    return [
+        (
+            row.product_id,
+            row.processed_data if row.processed_data is not None else row.raw_data,
+        )
+        for row in rows
+    ]
