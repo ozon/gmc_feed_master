@@ -181,6 +181,23 @@ async def test_retention_prunes_oldest_versions_and_files(env):
     assert env["store"].read_version(env["feed_source_id"], 2) is not None
 
 
+async def test_render_failure_marks_run_failed(env, monkeypatch):
+    run_id = await _start_run(env)
+
+    def boom(*args, **kwargs):
+        raise ValueError("boom")
+
+    monkeypatch.setattr("app.export.service.render_feed", boom)
+    with pytest.raises(ValueError):
+        await env["service"].export_for_run(env["feed_source_id"], run_id, PRODUCTS, REGISTRY)
+
+    runs = await _export_runs(env["factory"], env["feed_source_id"])
+    assert runs[0].status == "failed"
+    assert runs[0].completed_at == datetime(2026, 8, 27, tzinfo=timezone.utc)
+    versions = await _versions(env["factory"], env["feed_source_id"])
+    assert versions == []
+
+
 async def test_publish_failure_marks_run_failed_and_keeps_version(env, monkeypatch):
     run_id = await _start_run(env)
 

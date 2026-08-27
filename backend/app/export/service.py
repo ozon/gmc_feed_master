@@ -7,7 +7,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from registry.model import RegistryDocument
@@ -73,9 +73,13 @@ class ExportService:
                 client_name = client.name if client is not None else ""
                 retention = feed_source.history_retention_count
 
-        channel = channel_metadata_for(feed_source, client_name, self._public_base_url)
-        data = render_feed(products, registry, channel)
-        file_hash = hashlib.sha256(data).hexdigest()
+        try:
+            channel = channel_metadata_for(feed_source, client_name, self._public_base_url)
+            data = render_feed(products, registry, channel)
+            file_hash = hashlib.sha256(data).hexdigest()
+        except Exception:
+            await self._mark_run_failed(feed_source_id, ingestion_run_id)
+            raise
 
         deduplicated = False
         version_number: int | None = None
