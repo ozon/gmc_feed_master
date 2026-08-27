@@ -15,6 +15,9 @@ Owner-approved decisions from brainstorming (2026-08-27):
 2. RSS channel metadata is per-feed-source configurable with fallbacks.
 3. Rollback creates a new ExportVersion AND a new ExportRun row.
 4. Layered `app/export/` package (renderer / store / service), thin ExportStep.
+5. Owner amendment 2026-08-27: versions are deduplicated by `file_hash` —
+   unchanged renders reuse the existing latest version (§6). Rollback is
+   exempt.
 
 ## 1. Module structure
 
@@ -97,6 +100,10 @@ and files together. Rollback-created versions are subject to the same rule
 
 ## 4. Schema changes (one Alembic revision)
 
+- `feed_sources.feed_type` — `String`, NOT NULL, default and server_default
+  `'primary'` (spec §4; MVP uses primary only, the column keeps supplemental
+  feeds extendable). This is the last untracked spec §4 FeedSource column
+  and is scheduled into this migration per owner review 2026-08-27.
 - `feed_sources.export_token` — `String`, NOT NULL, unique index. Generated
   with `secrets.token_urlsafe(32)` at feed source creation. Existing rows
   are backfilled with fresh tokens in the migration. Stored plaintext: the
@@ -135,19 +142,29 @@ Replaces the `_NoOpStep` subclass; positioned after `QualityCheckStep` in
    `QualityCheckStep` and `ExportStep` so the two cannot diverge.
 2. Load feed source + client (channel metadata, retention count).
 3. Render XML bytes.
-4. Allocate `version_number = max + 1` under `SELECT ... FOR UPDATE` on the
-   feed source row (serializes version allocation against concurrent
-   rollback API calls; the per-feed-source pipeline lock already prevents
-   concurrent runs).
-5. Write the version file (temp + `os.replace`).
-6. One transaction: insert `ExportVersion` (`source='run'`,
-   `export_run_id`, `product_count`, `file_hash` = SHA-256 of the bytes) →
-   update the ExportRun row (see §5). If this commit fails, the
-   just-written version file is deleted best-effort.
-7. Atomically publish the same bytes to
-   `published/{feed_source_id}.xml`.
-8. Prune retention (rows + files).
-9. Return `StepResult(statistics={"export": {"products": n, "version": v}})`.
+4. Compute `file_hash` = SHA-256 of the rendered bytes. Under
+   `SELECT ... FOR UPDATE` on the feed source row (the serialization point
+   that also guards concurrent rollback API calls; the per-feed-source
+   pipeline lock already prevents concurrent runs): load the latest
+   `ExportVersion` (max `version_number`) and compare its `file_hash`.
+5. **Hash matches — no-op export (owner decision 2026-08-27):** do not
+   write a version file, do not create an `ExportVersion` row, skip the
+   retention prune. Finalize the current ExportRun as `completed` with
+   `completed_at` and `export_version_id` pointing at the existing latest
+   version. Defensive check: if `published/{feed_source_id}.xml` is missing
+   on disk despite the hash match (e.g. manually deleted), atomically
+   publish the rendered bytes to restore it. Return statistics
+   `{"export": {"products": n, "version": v, "deduplicated": true}}` where
+   `v` is the reused version number.
+6. **Hash differs — including the first export, which has no previous
+   version:** allocate `version_number = max + 1`, write the version file
+   (temp + `os.replace`), then in one transaction insert `ExportVersion`
+   (`source='run'`, `export_run_id`, `product_count`, `file_hash`) and
+   update the ExportRun row (see §5); if the commit fails, delete the
+   just-written version file best-effort. Atomically publish the same bytes
+   to `published/{feed_source_id}.xml`. Prune retention (rows + files).
+   Return statistics
+   `{"export": {"products": n, "version": v, "deduplicated": false}}`.
 
 Products always carry `id` at this point (staging rejects id-less rows as
 failed).
@@ -161,7 +178,8 @@ failed).
   `published/{feed_source_id}.xml` via `FileResponse` with media type
   `application/xml`. 404 when the token is unknown, no export has been
   published yet, or the file is missing. No internal feed-source ID appears
-  in the URL (spec §8).
+  in the URL (spec §8). The token must stay out of INFO-level request logs
+  (the public endpoint's URL contains it).
 - `POST /feed-sources/{id}/export-token/rotate` (session auth) — replaces
   the token and returns the new `export_url`. Because serving resolves the
   token via DB lookup, the old URL is invalid immediately (spec §2/§8).
@@ -203,16 +221,26 @@ failed).
   `ingestion_run_id=NULL`) and the new ExportVersion (`source='rollback'`,
   `source_version_id=v`, `export_run_id` = the new run; if the commit
   fails, the just-written file is deleted best-effort) → atomic publish →
-  retention prune. Response: the new version object. The rollback keeps the
-  feed source's current channel metadata (it re-renders rather than copying
-  bytes, so channel edits apply; item content is byte-stable per §2
-  determinism).
+  retention prune. Response: the new version object. Rollback is **exempt
+  from dedupe** (owner decision 2026-08-27): it always creates a new
+  ExportVersion, even if its bytes equal the current state — an explicit
+  operator action whose audit trail matters more than avoiding a
+  duplicate-content row. The rollback keeps the feed source's current
+  channel metadata (it re-renders rather than copying bytes, so channel
+  edits apply; item content is byte-stable per §2 determinism). Rollback
+  ExportRuns carry finding counts 0 by construction — the M10 dashboard
+  must render them as "not QC'd", not "clean"; `status='rollback'`
+  disambiguates.
 
 ## 9. Concurrency & failure semantics
 
-- Pipeline runs hold the per-feed-source lock; rollback API calls serialize
-  version allocation via the feed source row lock (§6.4). Both publish
-  paths end in `os.replace()`, so Google never sees a partial file.
+- Pipeline runs hold the per-feed-source lock; the dedupe comparison and
+  version allocation both happen under the feed source row lock (§6.4),
+  which also serializes concurrent rollback API calls. Both publish paths
+  end in `os.replace()`, so Google never sees a partial file.
+- Dedupe no-op path failures (ExportRun finalize or defensive republish)
+  are treated like render failures: ExportRun set to `failed` (best
+  effort), IngestionRun finishes `error`.
 - Render or version-file write fails → nothing committed; ExportRun set to
   `failed` (best effort), IngestionRun finishes `error` with the stack
   trace, temp files cleaned up.
@@ -237,6 +265,11 @@ failed).
   version's item content); diff correctness including added/removed
   products and nested-value changes; retention enforcement at N; rotation
   invalidates the old token immediately.
+- **Dedupe (owner decision 2026-08-27):** a second consecutive run over an
+  unchanged source produces no new version and an ExportRun pointing at the
+  existing one; a run after a one-field source change creates a new
+  version; rollback after a deduplicated run still creates its version;
+  published-file-missing-on-dedupe restores the file.
 - **API tests:** public endpoint 200 with valid token, 404 with
   unknown/rotated token and before first export; export-history list;
   diff default-against behavior; rollback response shape.

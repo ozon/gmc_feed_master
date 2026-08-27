@@ -523,3 +523,26 @@ binding product specification. Dates use ISO 8601 calendar dates.
 - **Rationale:** Owner instruction of 2026-08-27: "Dont Build any Plugin
   yet. We du it later." Build order otherwise unchanged; work proceeds on
   the remaining non-plugin milestones.
+
+### M8 export version dedupe by file_hash
+
+- **Topic:** M8 XML writer — version creation deduplication
+- **Decision:** Owner decision of 2026-08-27. A scheduled run whose rendered
+  XML is byte-identical (SHA-256 `file_hash` match) to the latest
+  `ExportVersion` creates no new version: no version file, no
+  `ExportVersion` row, no retention prune. Its `ExportRun` is finalized
+  `completed` with `export_version_id` pointing at the existing latest
+  version. If the published file is missing on disk despite the hash match,
+  the rendered bytes are atomically republished to restore it. Rollback is
+  exempt from dedupe and always creates a new version
+  (`source='rollback'`). The spec row "every XML export is versioned" is
+  amended to: every export with changed content is versioned; unchanged
+  renders reuse the existing version (spec v7 carries this wording).
+- **Rationale:** With delta processing, most scheduled runs render
+  byte-identical XML. Without dedupe, the 30-version retention would hold
+  barely a day of history and the diff view would become noise.
+- **Related review items (same date):** rollback ExportRuns carry finding
+  counts 0 by construction — the M10 dashboard renders them as "not QC'd",
+  not "clean"; the export token stays out of INFO-level request logs;
+  `feed_type` (spec §4, default `'primary'`) is scheduled into the M8
+  migration as the last untracked FeedSource column.
