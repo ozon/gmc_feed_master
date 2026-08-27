@@ -166,6 +166,7 @@ def create_app(
         else (Path(settings.plugins_dir) if settings is not None else None)
     )
     app.state.plugin_registry = {}
+    app.state.background_tasks = set()
     app.state.clock = clock if clock is not None else SystemClock()
     if settings is not None:
         app.dependency_overrides.setdefault(get_settings, lambda: settings)

@@ -237,7 +237,11 @@ async def trigger_run(
         run = IngestionRun(feed_source_id=feed_source_id, status="pending")
         session.add(run)
     run_id = run.id
-    asyncio.create_task(runner.execute(feed_source_id, run_id=run_id))
+    task = asyncio.create_task(runner.execute(feed_source_id, run_id=run_id))
+    background_tasks = getattr(request.app.state, "background_tasks", None)
+    if background_tasks is not None:
+        background_tasks.add(task)
+        task.add_done_callback(background_tasks.discard)
     return {"run_id": run_id}
 
 
