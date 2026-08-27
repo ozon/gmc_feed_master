@@ -27,6 +27,7 @@ EXPECTED_TABLES = {
     "module_instances",
     "export_runs",
     "export_versions",
+    "image_dimensions",
 }
 
 

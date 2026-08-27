@@ -375,7 +375,7 @@ class QualityCheckStep:
             counts[f.severity] = counts.get(f.severity, 0) + 1
 
         return StepResult(
-            processed_count=len(products),
+            processed_count=0,
             statistics={"qc": {"products": len(products), **counts}},
         )
 

@@ -1,7 +1,6 @@
 import pytest
 import httpx
 from unittest.mock import AsyncMock, MagicMock
-from PIL import Image
 from io import BytesIO
 
 from app.qc.image_probe import ImageProbeImpl
@@ -23,6 +22,7 @@ class FakeTransport(httpx.AsyncBaseTransport):
 
 
 def _make_jpeg_bytes(width=100, height=100):
+    from PIL import Image
     buf = BytesIO()
     Image.new("RGB", (width, height)).save(buf, format="JPEG")
     return buf.getvalue()
