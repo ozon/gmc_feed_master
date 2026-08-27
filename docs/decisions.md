@@ -633,3 +633,38 @@ binding product specification. Dates use ISO 8601 calendar dates.
 - **Rationale:** Cron is minute-granular; a live-fire test would wait up
   to 60 s and stay flaky. The seam is the job callable — exercising it
   exercises everything below APScheduler's dispatch.
+
+### M9 final verification
+
+- **Topic:** Milestone 9 (scheduling hardening — overlap semantics, crash
+  reconciliation, manual-trigger task references) completion
+- **Date:** 2026-08-27
+- **Decision:** Recorded as complete. Overlapping cron ticks are dispatched
+  into `PipelineRunner.execute` (feed-source jobs registered with
+  `max_instances=2`) and finalize as `skipped` with
+  `statistics={"reason": "previous run still active"}` plus the spec §2
+  WARNING log; startup reconciliation marks crash-orphaned
+  `running`/`pending` runs as `error` with
+  `error_message='interrupted by restart'` before `register_all`; manual
+  `POST /run` background tasks are held in `app.state.background_tasks`
+  with a done-callback that discards them; scheduled-path tests exercise
+  the job-callable seam (`job.func(*job.args)`) with no real-timer waits.
+  The M9 gate (`backend/scripts/verify_m9_gate.py`) passes: full backend
+  suite green serial (`-n0`) and parallel (`-n auto`), 609 passed in both
+  modes (597 baseline + 12 new: 2 runner + 3 scheduler + 2 reconcile +
+  2 lifespan + 1 trigger-tracking + 2 acceptance); compileall clean;
+  `git diff --check` clean. Plugin contract suite untouched
+  (`tests/test_plugin_contract.py`, 9 passed).
+- **Deviations from plan:**
+  - Task 1: `backend/alembic/env.py` —
+    `fileConfig(..., disable_existing_loggers=False)` (commit 082bbbf).
+    Alembic's default `disable_existing_loggers=True` was disabling the
+    module-level `app.pipeline.runner` logger during in-process migration
+    loads in test fixtures, silently emptying caplog; the standard remedy
+    was applied, migration behavior unchanged.
+  - Task 2: `register_system_job` passes `max_instances=1` explicitly
+    (commit d343511). APScheduler 3.11.3 leaves `Job.max_instances` unset
+    on never-started schedulers unless passed explicitly (pending-job
+    path), which the plan's own guard test inspects; pinning 1 is
+    behavior-identical (the scheduler default was already 1) and makes the
+    contract explicit.
