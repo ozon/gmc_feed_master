@@ -1,90 +1,129 @@
-### Task 4: Discovery, registration, route mounting, startup wiring
+### Task 4: Update Models
+
+**Goal:** Update SQLAlchemy models to match the new schema.
 
 **Files:**
-- Create: `backend/app/plugins/discovery.py`
-- Modify: `backend/app/main.py` (create_app signature, lifespan, include_router)
-- Test: `backend/tests/test_plugins_discovery.py` (unit/integration), `backend/tests/test_plugins_startup.py` (lifespan wiring)
+- Modify: `backend/app/models/export.py`
+- Modify: `backend/app/models/quality.py`
+- Modify: `backend/app/models/feed_source.py`
+- Create: `backend/app/models/image_dimension.py`
+- Modify: `backend/app/models/__init__.py`
+- Modify: `backend/tests/test_models.py`
 
-**Interfaces:**
-- Consumes: `parse_manifest`, `load_plugin_class`, models `Plugin`.
-- Produces:
+#### Steps
 
-```python
-@dataclass
-class Candidate:
-    manifest: PluginManifest
-    directory: Path
-    instance: Any                     # instantiated plugin object
-    core: bool                        # path prefix "core" under plugins_dir
-    router: APIRouter | None          # from optional register_routes()
-
-def discover(plugins_dir: Path) -> tuple[list[Candidate], list[str]]:
-    # returns (accepted candidates, rejection reason strings); missing dir → ([], [])
-
-async def register_candidates(session: AsyncSession,
-                              candidates: Sequence[Candidate]) -> dict[str, int]:
-    # upsert one Plugin row per candidate keyed by manifest id stored in the
-    # `name` column; refreshes version + manifest JSONB; preserves enabled;
-    # returns manifest id -> plugin row pk
-
-def collect_router(candidate: Candidate) -> APIRouter | None:
-    # calls instance.register_routes(router) when present; raises
-    # PluginLoadError if any contributed route path would land on the
-    # reserved sub-paths "/config" or "/data" (with or without trailing segments)
-
-async def discover_and_mount(app: FastAPI) -> None:
-    # orchestrates: scan app.state.plugins_dir → register via
-    # app.state.db_session_factory → fill app.state.plugin_registry
-    # ({manifest_id: instance}) → mount routers at prefix f"/plugins/{id}"
-    # logs "plugins: N registered, M rejected"
-```
-
-Behavioral rules:
-- Rejection reasons are collected and returned; nothing raises for bad plugins.
-- Reserved-path check inspects every route in the contributed router: any path equal to `/config`, `/data` or starting with `/config/`, `/data/` ⇒ reject the whole candidate.
-- Upsert-in-place: `SELECT Plugin WHERE name == manifest.id`; found → update `version`, `manifest`; else insert with `enabled = candidate.core`. The row's `enabled` value is never modified by registration.
-
-**main.py wiring:**
-
-1. `create_app(...)` gains keyword param `plugins_dir: Path | str | None = None`; store on state:
+- [ ] **Step 1: Update `ExportRun` model**
 
 ```python
-    app.state.plugins_dir = (
-        Path(plugins_dir)
-        if plugins_dir is not None
-        else (Path(settings.plugins_dir) if settings is not None else None)
+# backend/app/models/export.py — ExportRun class
+class ExportRun(Base):
+    __tablename__ = "export_runs"
+    __table_args__ = (
+        Index("ix_export_runs_feed_source_id", "feed_source_id"),
+        Index("ix_export_runs_export_version_id", "export_version_id"),
+        Index("ix_export_runs_ingestion_run_id", "ingestion_run_id"),
     )
-    app.state.plugin_registry: dict[str, Any] = {}
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    feed_source_id: Mapped[int] = mapped_column(ForeignKey("feed_sources.id", ondelete="RESTRICT"), nullable=False)
+    export_version_id: Mapped[int | None] = mapped_column(ForeignKey("export_versions.id", ondelete="RESTRICT"))
+    ingestion_run_id: Mapped[int | None] = mapped_column(ForeignKey("ingestion_runs.id", ondelete="RESTRICT"))
+    status: Mapped[str] = mapped_column(String(50), nullable=False)
+    product_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    info_finding_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    warning_finding_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    critical_finding_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    options: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 ```
 
-2. In lifespan, immediately before the scheduler block (`scheduler_service = getattr(...)` line):
+- [ ] **Step 2: Update `QualityFinding` model**
 
 ```python
-            if application.state.plugins_dir is not None:
-                from .plugins.discovery import discover_and_mount
+# backend/app/models/quality.py
+from datetime import datetime
+from typing import Any
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, func
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column
+from app.db.base import Base
 
-                await discover_and_mount(application)
+
+class QualityFinding(Base):
+    __tablename__ = "quality_findings"
+    __table_args__ = (
+        Index("ix_quality_findings_feed_source_id", "feed_source_id"),
+        Index("ix_quality_findings_ingestion_run_id", "ingestion_run_id"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    feed_source_id: Mapped[int] = mapped_column(ForeignKey("feed_sources.id", ondelete="CASCADE"), nullable=False)
+    ingestion_run_id: Mapped[int] = mapped_column(ForeignKey("ingestion_runs.id", ondelete="RESTRICT"), nullable=False)
+    product_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    severity: Mapped[str] = mapped_column(String(50), nullable=False)
+    code: Mapped[str] = mapped_column(String(100), nullable=False)
+    field: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    message: Mapped[str] = mapped_column(String(2000), nullable=False)
+    details: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 ```
 
-3. With the other routers: `app.include_router(plugins_router)` (Task 6 adds the import; add it in Task 6 to keep this task's diff green — instead expose mounting purely via `discover_and_mount` here).
-
-4. In the runner-construction block, create the shared registry dict BEFORE `default_steps` and pass it through (see Task 5's `default_steps` change): replace `steps = default_steps(fetcher..., load_registry())` with:
+- [ ] **Step 3: Add `volume_drop_threshold_pct` to `FeedSource`**
 
 ```python
-        steps = default_steps(
-            fetcher if fetcher is not None else HttpFetcher(),
-            load_registry(),
-            app.state.plugin_registry,
-        )
+# backend/app/models/feed_source.py — add after source_url column
+    volume_drop_threshold_pct: Mapped[int] = mapped_column(Integer, nullable=False, default=20, server_default="20")
 ```
 
-To keep this task self-contained and green before Task 5 lands, make ONLY the `app.state.plugin_registry = {}` assignment now; defer the `default_steps` call-site change to Task 5.
+- [ ] **Step 4: Create `ImageDimension` model**
 
-Tests:
-- Unit (tmp dirs): valid plugin discovered with correct core flag (`<tmp>/core/x` vs `<tmp>/x`); invalid manifest rejected with reason; loader failure rejected; reserved-route plugin rejected; empty/missing dir → no candidates.
-- Integration (Postgres): register twice — second run updates version, preserves a manually-flipped `enabled`, keeps a single row; FK stability (a ModuleInstance referencing the row survives re-registration).
-- Startup: with an injected `db_session_factory` + `plugins_dir` tmp fixture, run the lifespan via `httpx.ASGITransport(lifespan="on")` OR invoke the lifespan context manually (`async with app.router.lifespan_context(app):`) and assert rows exist and `app.state.plugin_registry` is filled. Prefer manual lifespan-context invocation — existing tests never trigger lifespan.
+```python
+# backend/app/models/image_dimension.py
+from datetime import datetime
+from sqlalchemy import DateTime, Integer, String, func
+from sqlalchemy.orm import Mapped, mapped_column
+from app.db.base import Base
 
-TDD per suite; commits: `feat: plugin discovery and DB registration` then wiring included in same commit (one commit for the task is fine: `feat: plugin discovery, registration, and startup wiring`).
+
+class ImageDimension(Base):
+    __tablename__ = "image_dimensions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    url: Mapped[str] = mapped_column(String(2048), nullable=False, unique=True)
+    width: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    height: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    fetch_error: Mapped[str | None] = mapped_column(String(), nullable=True)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+```
+
+- [ ] **Step 5: Update `__init__.py` exports**
+
+```python
+# backend/app/models/__init__.py — add ImageDimension to imports and __all__
+from .image_dimension import ImageDimension
+```
+
+- [ ] **Step 6: Update `test_models.py` assertions**
+
+```python
+# backend/tests/test_models.py — test_review_contract_fields_and_foreign_key_indexes
+# Update the export_runs assertion:
+    assert {"product_count", "info_finding_count", "warning_finding_count", "critical_finding_count", "export_version_id"} <= set(tables["export_runs"].c.keys())
+
+# Update the quality_findings assertion:
+    assert {"feed_source_id", "product_id", "ingestion_run_id"} <= set(tables["quality_findings"].c.keys())
+    assert "staging_product_id" not in set(tables["quality_findings"].c.keys())
+```
+
+- [ ] **Step 7: Run model tests**
+
+Run: `cd backend && python -m pytest tests/test_models.py -v`
+Expected: PASS
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add backend/app/models/export.py backend/app/models/quality.py backend/app/models/feed_source.py backend/app/models/image_dimension.py backend/app/models/__init__.py backend/tests/test_models.py
+git commit -m "feat(models): update for M7 QC engine schema"
+```
 
 ---
+

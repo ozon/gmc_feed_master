@@ -1,54 +1,26 @@
-# Task 1 Report: Dependency + settings plumbing
+### Task 1: Registry Extension — Cardinality Fields + Parser Fix
 
-**Status:** COMPLETE
-**Commit:** `5806fc9` — `chore: add jsonschema and plugins_dir setting`
+**Status:** DONE
 
-## Steps performed
+**Commits:**
+- `7b8777f` feat(registry): add min_items/item_max_length to Cardinality, fix parser regex
 
-1. **Add and pin jsonschema** (`backend/`):
-   - `uv add jsonschema` → resolved `jsonschema==4.26.0`.
-   - Edited `backend/pyproject.toml` from `>=4.26.0` to exact pin `==4.26.0`
-     (per AGENTS.md exact-pin rule), then `uv lock && uv sync --frozen`.
-   - Lockfile now carries `specifier = "==4.26.0"` (uv.lock line 398).
-2. **plugins_dir setting**: added after `database_url` in
-   `backend/app/config.py:15`, exactly per brief:
-   ```python
-   plugins_dir: str = str(Path(__file__).resolve().parents[2] / "plugins")
-   ```
-3. **Pin record**: new dated entry "M6 plugin-host dependency pins" under
-   2026-08-26 in `docs/decisions.md`.
+**Test Summary:**
+- 13 passed, 0 failed — `test_registry_parser.py` (10 tests) + `test_registry_generation.py` (3 tests)
 
-## Verification
+**Changes Made:**
+1. `registry/model.py` — Added `min_items: int | None = None` and `item_max_length: int | None = None` to `Cardinality` dataclass (pre-existing)
+2. `registry/parser.py` — Fixed `_constraints()` fallback regex:
+   - Changed `max\.\s*(\d+)\.` to `max\.\s*(\d+)\s+(?=[A-Z])(?!MB\b|s\b|px\b|year\b|chars?\b)`
+   - This matches "max. N" in spec contexts (followed by space+uppercase letter) while rejecting unit contexts (MB, s, px, year, chars)
+3. `registry/generate.py` — Included `min_items` and `item_max_length` in `_as_json()` cardinality output (pre-existing)
+4. `registry/loader.py` — Parsed `min_items` and `item_max_length` from JSON in `_parse_attributes()` (pre-existing)
+5. `registry/attributes.json` — Regenerated from gmc_def.md
+6. `tests/test_registry_parser.py` — Added assertions for cardinality fields and parser regex fixes (pre-existing)
 
-```
-$ uv run python -c "...Settings(...).plugins_dir)"
-/home/ozon/gmc_feed_master/.worktrees/m6-plugin-host/plugins
-$ uv run python -c "import jsonschema; print(jsonschema.__version__)"
-4.26.0
-```
+**Key Regex Fix Detail:**
+The original fallback regex `max\.?\s*(?:of\s*)?(\d+)\b` matched "max 500 MB" as max_length=500. The fix uses:
+- Primary: `max\.?\s*(\d+)\s*(?:char|letter)` — matches "max N char/letter" patterns
+- Fallback: `max\.\s*(\d+)\s+(?=[A-Z])(?!MB\b|s\b|px\b|year\b|chars?\b)` — matches "max. N" only when followed by space+uppercase letter (spec context like "max. 150 Required"), excluding known units
 
-Both match expectations (repo-root `plugins` path, pinned version).
-Note: `jsonschema.__version__` emits a DeprecationWarning (deprecated access
-path); version confirmed as 4.26.0 regardless.
-
-Regression check: full backend suite against
-`TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres`
-→ **366 passed, 21 warnings in 28.10s** (baseline held).
-
-## Commit
-
-Staged exactly the four brief-specified files:
-- `backend/pyproject.toml` (+1 line)
-- `backend/uv.lock` (+309 lines: jsonschema + transitive attrs,
-  jsonschema-specifications, referencing, rpds-py)
-- `backend/app/config.py` (+1 line)
-- `docs/decisions.md` (+11 lines)
-
-The pre-existing dirty `.superpowers/sdd/task-1-brief.md` was left unstaged.
-
-## Self-review
-
-- Diff reviewed via `git show`; matches brief verbatim.
-- Pre-existing LSP diagnostic on `get_settings()` (missing required args) is
-  unrelated to this change and unchanged.
-- Concerns: none.
+**Concerns:** None — all tests pass, gate is green.

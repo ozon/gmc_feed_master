@@ -1,30 +1,20 @@
-## Task 7: Contract checker + example fixture — COMPLETE
+# Task 7: Image Probe — Pillow + Cache
 
-**Status:** Done
-**Commit:** `89ccb68 feat: plugin contract checker and example fixture`
+## Status: DONE
 
-### Files Created
-- `backend/app/plugins/contract.py` — `contract_violations(candidate) -> list[str]`
-- `backend/tests/fixtures/example_plugin/plugin.json` — manifest with required config_schema
-- `backend/tests/fixtures/example_plugin/plugin.py` — UpperPlugin (validate_config + process)
-- `backend/tests/test_plugin_contract.py` — 9 tests (1 positive, 5 negative classes)
+## Commits
 
-### Files Modified
-- `backend/app/plugins/manifest.py` — allow empty scope lists (data_scope: [] edge case)
-- `backend/tests/test_plugins_manifest.py` — updated 3 tests for empty-scope behavior
+- `05b217d` feat(qc): image probe with Pillow and DB cache
 
-### Test Summary
-- 472 passed (463 baseline + 9 new contract tests)
-- 0 failed, 0 errors
+## Test Summary
 
-### Implementation Details
-- `contract_violations` is synchronous (not async)
-- 5 checks: meta-schema, process return type, original_product mutation, validate_config rejection, reserved routes
-- Config gating: if `validate_config({})` raises, checks 2-4 are skipped (config-gated)
-- Reserved route check catches `PluginLoadError` from `collect_router` and converts to violation string
+6 tests pass: cache hit, cache hit (error), fetch success, HTTP error, content too large, corrupt image.
 
-### Concerns
-- Empty scope lists now accepted by `parse_manifest` (was previously rejected). This is required for the `data_scope: []` edge case but changes existing behavior. Tests updated accordingly.
+## Files Created
 
-## Fix Round 1
-Reverted empty scope list acceptance: restored `_parse_scope` guard that rejects `[]`, updated fixture to `"data_scope": ["global"]`, re-added 7th distinct-failure test case. 472 passed.
+- `backend/app/qc/image_probe.py` — `ImageProbeImpl` class
+- `backend/tests/test_image_probe.py` — unit tests with `FakeTransport` and mocked sessions
+
+## Notes
+
+- `session.begin()` in `_cache_dimensions`/`_cache_error` is a sync method returning an async context manager; the task brief's mock setup (`AsyncMock` for `begin`) was incorrect — fixed to `MagicMock` returning an async context manager mock.

@@ -1,40 +1,28 @@
-# Task 3 Report: Plugin Module Loader
+# Task 3: Migration — Schema Changes
 
-**Status:** Complete
-**Commit:** `b8a8de3` — `feat: plugin module loader with entry-point convention`
-**Branch:** `m6-plugin-host` (worktree `.worktrees/m6-plugin-host`)
+**Status:** DONE
 
-## What was built
+## Commits
 
-- `backend/app/plugins/loader.py`
-  - `class PluginLoadError(Exception)`
-  - `def load_plugin_class(directory: Path, manifest: PluginManifest) -> Any`
-  - Entry point resolution: `manifest.raw.get("entry_point")` as `"module:ClassName"`; default convention `plugin.py` / attribute `Plugin`.
-  - Registers module under unique name `gmc_plugin_{manifest.id}` in `sys.modules` **before** exec.
-  - On success the registration is retained; on any failure the entry is deleted before re-raising so a half-executed module cannot poison later loads.
-- `backend/tests/test_plugins_loader.py` — 12 tests using real temp plugin dirs (`pathlib` + `tmp_path`).
+- `9a3c383` — feat(migration): M7 schema changes for QC engine
 
-## Failure modes → distinct `PluginLoadError` messages
+## Test Summary
 
-1. Malformed entry point — non-string, wrong number of `:` parts, or empty module/class parts ("malformed entry_point ... expected 'module:ClassName'").
-2. Module file missing — default and explicit entry-point paths ("module file not found: <path>").
-3. Exec raises — wrapped with original exception text ("error executing module ...").
-4. Attribute missing ("attribute 'X' not found in <path>").
-5. Instantiation raises — wrapped ("error instantiating 'X' ...").
-6. Result lacks callable `process` — covers both absent attr and non-callable attr ("does not provide a callable 'process' method").
+2 tests passed: `test_upgrade_adds_qc_columns` and `test_downgrade_reverses_qc_changes` — verifies all M7 schema changes apply and revert cleanly.
 
-## TDD evidence
+## What Was Created
 
-- **RED:** wrote tests first; run produced `ImportError: ModuleNotFoundError: No module named 'app.plugins.loader'`.
-- **GREEN:** implemented loader; `tests/test_plugins_loader.py`: **12 passed**.
-- **Full suite:** `TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest -q` → **417 passed** (405 prior + 12 new).
+- `backend/alembic/versions/20260827_0002_m7_quality_check.py` — Alembic migration with upgrade/downgrade
+- `backend/tests/test_m7_migration.py` — Migration tests using isolated PostgreSQL database
 
-## Self-review
+## Schema Changes Applied
 
-- All six failure modes covered with distinct, greppable messages: yes.
-- sys.modules semantics per contract: unique pre-exec registration; no cleanup needed on success (kept); failures delete their entry (no poisoning). Two-plugins-different-ids test asserts independent loading and both registrations present on success.
-- Exact interface names match brief: `PluginLoadError`, `load_plugin_class`.
+1. `export_runs.error_finding_count` renamed → `critical_finding_count`
+2. `export_runs.ingestion_run_id` added (nullable FK → `ingestion_runs`)
+3. `image_dimensions` table created (id, url, width, height, fetch_error, fetched_at)
+4. `feed_sources.volume_drop_threshold_pct` added (server_default="20")
+5. `quality_findings`: added `feed_source_id`, `product_id`, `field`; dropped `staging_product_id` + FK + index
 
 ## Concerns
 
-None blocking. Note: success retains the `sys.modules` entry by design (per contract); a future registry that loads many plugins may want an unload hook.
+None.

@@ -1,60 +1,30 @@
-# Task 6 Report: Plugin API endpoints
+## Task 6: QC Rules — All 12 Implementations
 
 **Status:** DONE
-**Commit:** `37b0ae1 feat: plugin management API endpoints`
 
-## What was built
+### Commits
+- `2c0acf2` — feat(qc): implement all 12 QC rules
 
-- `backend/app/routes/plugins.py` — `plugins_router` with:
-  - `GET /plugins` → all `Plugin` rows as `[{"id": <name column>, "name": manifest["name"], "version", "enabled", "manifest"}]`, ordered by id (includes disabled and multiple versions).
-  - `PUT /plugins/{plugin_id}/enabled` → body `{"enabled": bool}`; 404 unknown; persists via ORM update in one transaction.
-  - `GET/PUT /plugins/{plugin_id}/config` and `/data` → shared `_get_payload`/`_put_payload` helpers over `PluginConfig`/`PluginData`.
-  - Shared `_resolve_target(plugin_id, client_id, feed_source_id, db_session, scope_kind)` implementing the exact validation order:
-    1. `_require_db` → 503 (route entry)
-    2. plugin row by `name == plugin_id` → 404 HTTPException
-    3. both scope params → 422 JSONResponse `{"errors": ["pass at most one of client_id, feed_source_id"]}`
-    4. non-global scope must be declared in manifest `config_scope`/`data_scope` → else 422 `{"errors": ["scope not declared for this plugin"]}`; global (no params) always allowed
-    5. ownership existence via `session.get(Client/FeedSource, ...)` → 404
-  - Storage: one row per (plugin, scope-owner) with `key = "default"`; PUT = validate (jsonschema against manifest `config_schema`/`data_schema`) → delete existing owner rows → insert, inside one `session.begin()` transaction. GET returns first payload or `{}`.
-  - Payload validation catches both `jsonschema.ValidationError` and `jsonschema.SchemaError` → 422 `{"errors": [<message>]}`.
-- `backend/app/schemas/plugins.py` — `EnabledPut(BaseModel)` with `enabled: bool`.
-- Wired: `routes/__init__.py` exports `plugins_router`; `main.py` imports + `include_router(plugins_router)`.
-- Auth: every route takes `Depends(require_user)` + `Depends(get_db_session)`.
+### Test Summary
+42 tests passing across all 12 rules (42/42 passed in 2.88s)
 
-## Implementation notes
+### Files Created
+- `backend/app/qc/rules.py` — All 12 rule classes
+- `backend/tests/test_qc_rules.py` — Unit tests for each rule
 
-- FastAPI rejects `dict | JSONResponse` return annotations without an explicit response model; the four config/data routes carry `response_model=None` (same pattern as returning JSONResponse from handlers in `field_mapping.py`).
-- `_resolve_target`'s SELECTs implicitly begin a session transaction, so PUT wraps resolution + delete + insert in a single `session.begin()` block; early 422 returns inside the block commit an empty transaction (same as field_mapping's validation-error returns).
-- Scope declaration normalization (`str | list | None → tuple`) mirrors `_normalize_scopes` semantics from `config_resolver.py`; an empty declared list yields `()`, so every scoped data/config request 422s while global stays allowed.
-- Multiple `Plugin` rows can share a name across versions (uq is name+version); lookups use `order_by(Plugin.id)` + `.first()` rather than `scalar_one_or_none`.
+### Rules Implemented
+1. **BaselineRequired** — Per-product, critical. Checks 6 required fields + title/structured_title + description/structured_description
+2. **BrandRequired** — Per-product, warning. Exempt taxonomy IDs for Books, DVDs, Music
+3. **GtinMpn** — Per-product, mixed. Missing GTIN → warning (requires mpn+brand); invalid GS1 checksum → critical
+4. **EnumValues** — Per-product, critical. Registry-driven enum validation
+5. **ConditionalRequired** — Per-product, warning. Preorder needs date; unit_pricing_base_measure needs unit_pricing_measure
+6. **DateFormat** — Per-product, critical. ISO 8601 with timezone for 3 date fields
+7. **LengthLimits** — Per-product, warning. Registry-driven max_length constraints
+8. **CardinalityRule** — Per-product, warning. Registry-driven min/max items + item_max_length
+9. **CurrencyConsistency** — Per-product, critical. Currency prefix must match ctx.currency
+10. **ImageRequirements** — Per-product, mixed. Format check, probe for dimensions, severity changes on enforcement date
+11. **VariantConsistency** — Cross-product, warning. Groups by item_group_id, checks 8 base attrs
+12. **VolumeDrop** — Cross-product, warning. Compares current vs previous export run count
 
-## Tests
-
-`backend/tests/test_plugins_api.py` — 16 tests mirroring `test_field_mapping_api.py` patterns (isolated DB engine, seeded user, `/auth/login`):
-
-- list-all incl. disabled rows, id/name/version/enabled/manifest shape
-- enabled toggle round-trip + unknown-plugin 404
-- config global default `{}`, PUT/GET round-trip per scope, full-replace semantics
-- unknown plugin 404 (GET+PUT), unknown client/feed-source 404
-- both-scopes 422 with exact error string (GET+PUT)
-- undeclared-scope 422 (feed_source not in config_scope)
-- schema violation PUT → 422 `errors` key, nothing persisted
-- data happy path round-trip; empty declared scopes reject every scoped request; data schema violation
-- all endpoints 401 without auth
-
-## Verification
-
-- RED confirmed before implementation (import failure → 4 failures).
-- Full suite: **463 passed** (447 baseline + 16 new) with `TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres`.
-- No lint/typecheck tooling configured in backend pyproject; nothing to run.
-
-## Self-review
-
-- Validation order matches spec exactly (503 → 404 → both-scopes 422 → undeclared-scope 422 → ownership 404). ✔
-- Empty `data_scope` tuple → every scoped request 422s; global still allowed. ✔ (covered by test)
-- Display `name` comes from `manifest["name"]` (fallback to column for malformed manifests); `id` is the `name` column. ✔
-- No reserved-path routes defined here (only `/plugins*`). ✔
-
-## Concerns
-
-- None blocking. Minor observation: `jsonschema.validate` is skipped if a DB-seeded manifest lacks a valid schema dict — real plugins always have one per `parse_manifest`, so this only affects hand-seeded rows.
+### Concerns
+- `CurrencyConsistency` expects price format `"USD 10"` (currency-first), not `"10 USD"`. This is intentional per the implementation in the task brief.
