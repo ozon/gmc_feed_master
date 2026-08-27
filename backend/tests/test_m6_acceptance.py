@@ -1,5 +1,6 @@
 """M6 acceptance gate — plugin host verified."""
 
+import os
 import shutil
 import tempfile
 from copy import deepcopy
@@ -563,13 +564,13 @@ async def test_toggle_and_config_round_trip_via_api(app_factory):
 # ── Scenario 6: meta-gate ──────────────────────────────────────────────────
 
 
+@pytest.mark.skipif(
+    not os.environ.get("M6_RUN_META_GATE"),
+    reason="meta-gate: run standalone with M6_RUN_META_GATE=1",
+)
 def test_full_suite_serial_and_parallel_green():
-    import os
     import subprocess
     import sys
-
-    if os.environ.get("_M6_META_GATE"):
-        pytest.skip("meta-gate: skipping recursive invocation")
 
     backend_dir = Path(__file__).resolve().parent.parent
     self_test = "tests/test_m6_acceptance.py::test_full_suite_serial_and_parallel_green"
