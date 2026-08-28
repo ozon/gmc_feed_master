@@ -154,3 +154,18 @@ async def test_put_pipeline_validation_failures(app_factory):
         "instances": [{"plugin_id": "example_upper", "configuration": {}}]})
     assert resp.status_code == 422
     assert any("suffix" in e for e in resp.json()["errors"])
+
+
+async def test_put_pipeline_same_feed_name_no_collision(app_factory):
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    await _register_plugin(factory)
+    first_client = (await client.post("/clients", json={"name": "Acme"})).json()
+    second_client = (await client.post("/clients", json={"name": "Zeta"})).json()
+    feed_a = (await client.post(f"/clients/{first_client['id']}/feed-sources",
+                                json={"name": "DE", "source_format": "wide_tsv"})).json()
+    feed_b = (await client.post(f"/clients/{second_client['id']}/feed-sources",
+                                json={"name": "DE", "source_format": "wide_tsv"})).json()
+    payload = {"instances": [{"plugin_id": "example_upper", "configuration": {"suffix": "!"}}]}
+    assert (await client.put(f"/feed-sources/{feed_a['id']}/pipeline", json=payload)).status_code == 200
+    assert (await client.put(f"/feed-sources/{feed_b['id']}/pipeline", json=payload)).status_code == 200

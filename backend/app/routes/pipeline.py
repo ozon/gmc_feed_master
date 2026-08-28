@@ -99,7 +99,8 @@ async def put_pipeline(
             pipeline = await session.get(ModulePipeline, feed_source.active_pipeline_id)
         if pipeline is None:
             pipeline = ModulePipeline(feed_source_id=feed_source_id,
-                                      name=feed_source.name, version="1", definition={})
+                                      name=f"{feed_source.name} #{feed_source_id}",
+                                      version="1", definition={})
             session.add(pipeline)
             await session.flush()
             feed_source.active_pipeline_id = pipeline.id
