@@ -47,6 +47,8 @@ class FeedSourceUpdate(BaseModel):
     currency: str | None = Field(default=None, max_length=3)
     source_url: str | None = Field(default=None, max_length=2048)
     history_retention_count: int | None = Field(default=None, ge=1)
+    volume_drop_threshold_pct: int | None = Field(default=None, ge=0, le=100)
+    configuration: dict[str, Any] | None = None
 
 
 class FeedSourceOut(BaseModel):
@@ -63,6 +65,8 @@ class FeedSourceOut(BaseModel):
     source_url: str | None
     feed_type: str
     history_retention_count: int
+    volume_drop_threshold_pct: int
+    configuration: dict[str, Any]
     export_url: str = ""
     created_at: datetime
     updated_at: datetime

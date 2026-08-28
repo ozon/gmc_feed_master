@@ -262,3 +262,38 @@ async def test_all_endpoints_require_auth(app_factory):
     assert (await client.get("/clients/1/feed-sources")).status_code == 401
     assert (await client.put("/feed-sources/1", json={"name": "X"})).status_code == 401
     assert (await client.delete("/feed-sources/1")).status_code == 401
+
+
+async def test_feed_source_update_volume_threshold_and_configuration(app_factory):
+    client = await logged_in_client(app_factory)
+    created_client = (await client.post("/clients", json={"name": "Acme"})).json()
+    feed = (
+        await client.post(
+            f"/clients/{created_client['id']}/feed-sources",
+            json={"name": "DE", "source_format": "wide_tsv"},
+        )
+    ).json()
+    resp = await client.put(
+        f"/feed-sources/{feed['id']}",
+        json={
+            "volume_drop_threshold_pct": 35,
+            "configuration": {"basic_auth": {"username": "u", "password": "p"}},
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["volume_drop_threshold_pct"] == 35
+    assert body["configuration"] == {"basic_auth": {"username": "u", "password": "p"}}
+
+
+async def test_feed_source_update_volume_threshold_out_of_range(app_factory):
+    client = await logged_in_client(app_factory)
+    created_client = (await client.post("/clients", json={"name": "Acme"})).json()
+    feed = (
+        await client.post(
+            f"/clients/{created_client['id']}/feed-sources",
+            json={"name": "DE", "source_format": "wide_tsv"},
+        )
+    ).json()
+    resp = await client.put(f"/feed-sources/{feed['id']}", json={"volume_drop_threshold_pct": 101})
+    assert resp.status_code == 422
