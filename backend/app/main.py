@@ -40,6 +40,7 @@ from .routes import (
     quality_router,
     registry_router,
 )
+from .routes.dashboard import router as dashboard_router
 
 
 def _configured_settings() -> Settings | None:
@@ -149,6 +150,7 @@ def create_app(
 
     app = FastAPI(lifespan=lifespan)
     app.include_router(clients_router)
+    app.include_router(dashboard_router)
     app.include_router(export_history_router)
     app.include_router(export_public_router)
     app.include_router(field_mapping_router)
