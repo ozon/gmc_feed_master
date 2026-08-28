@@ -156,3 +156,17 @@ async def test_summary_last_export_uses_latest_run(app_factory):
     body = (await client.get("/dashboard/summary")).json()
     assert body["counts"]["failed_last_exports"] == 0
     assert body["clients"][0]["feed_sources"][0]["last_export_status"] == "completed"
+
+
+async def test_summary_feed_without_runs_has_null_last_fields(app_factory):
+    client = await logged_in_client(app_factory)
+    created = (await client.post("/clients", json={"name": "Acme"})).json()
+    await client.post(f"/clients/{created['id']}/feed-sources",
+                      json={"name": "DE", "source_format": "wide_tsv"})
+    body = (await client.get("/dashboard/summary")).json()
+    feed = body["clients"][0]["feed_sources"][0]
+    assert feed["last_run_at"] is None
+    assert feed["last_run_status"] is None
+    assert feed["last_export_at"] is None
+    assert feed["last_export_status"] is None
+    assert feed["item_count"] == 0
