@@ -37,6 +37,7 @@ class RunState:
     client_id: int | None = None
     config_bundle: dict[str, Any] = field(default_factory=dict)
     product_pks: dict[str, int] = field(default_factory=dict)
+    dropped: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -251,6 +252,10 @@ class PluginStep:
             pk = pks.get(pid) if isinstance(pid, str) else None
             if drop:
                 dropped += 1
+                ctx.run_state.dropped.append({
+                    "product_id": str(pid) if pid is not None else "",
+                    "plugin_id": instance["plugin"],
+                })
                 if pk is not None:
                     outcomes.append(PluginOutcome(pid, pk, "dropped", None))
                 continue

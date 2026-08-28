@@ -41,6 +41,7 @@ from .routes import (
     registry_router,
 )
 from .routes.dashboard import router as dashboard_router
+from .routes.dry_run import router as dry_run_router
 from .routes.pipeline import router as pipeline_router
 from .routes.products import router as products_router
 
@@ -153,6 +154,7 @@ def create_app(
     app = FastAPI(lifespan=lifespan)
     app.include_router(clients_router)
     app.include_router(dashboard_router)
+    app.include_router(dry_run_router)
     app.include_router(export_history_router)
     app.include_router(export_public_router)
     app.include_router(field_mapping_router)
@@ -197,10 +199,13 @@ def create_app(
 
         image_http_client = httpx.AsyncClient()
         app.state.image_http_client = image_http_client
+        active_fetcher = fetcher if fetcher is not None else HttpFetcher()
+        app.state.fetcher = active_fetcher
         image_probe = ImageProbeImpl(app.state.db_session_factory, image_http_client)
+        app.state.image_probe = image_probe
         lock_registry = LockRegistry()
         steps = default_steps(
-            fetcher if fetcher is not None else HttpFetcher(),
+            active_fetcher,
             load_registry(),
             app.state.plugin_registry,
             clock=app.state.clock,
