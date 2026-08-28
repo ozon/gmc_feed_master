@@ -21,6 +21,7 @@ from ..pipeline import validate_cron
 from ..schemas.clients import (
     ClientCreate,
     ClientOut,
+    ClientUpdate,
     FeedSourceCreate,
     FeedSourceOut,
     FeedSourceUpdate,
@@ -90,6 +91,28 @@ async def list_clients(
     session = _require_db(db_session)
     result = await session.execute(select(Client).order_by(Client.name))
     return list(result.scalars())
+
+
+@router.put("/clients/{client_id}", response_model=ClientOut)
+async def update_client(
+    client_id: int,
+    payload: ClientUpdate,
+    _user: str = Depends(require_user),
+    db_session: AsyncSession | None = Depends(get_db_session),
+) -> Client:
+    session = _require_db(db_session)
+    updates = payload.model_dump(exclude_unset=True)
+    try:
+        async with session.begin():
+            client = await session.get(Client, client_id)
+            if client is None:
+                raise HTTPException(status_code=404, detail="client not found")
+            for key, value in updates.items():
+                setattr(client, key, value)
+    except IntegrityError as exc:
+        raise HTTPException(status_code=409, detail="client name already exists") from exc
+    await session.refresh(client)
+    return client
 
 
 @router.post("/clients/{client_id}/feed-sources", status_code=201, response_model=FeedSourceOut)

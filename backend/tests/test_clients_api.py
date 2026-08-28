@@ -218,6 +218,41 @@ async def test_delete_feed_source_unknown_returns_404(app_factory):
     assert resp.status_code == 404
 
 
+async def test_update_client_fields(app_factory):
+    client = await logged_in_client(app_factory)
+    created = (await client.post("/clients", json={"name": "Acme"})).json()
+    resp = await client.put(
+        f"/clients/{created['id']}",
+        json={"name": "Acme GmbH", "status": "paused", "contact_details": {"email": "a@b.c"}},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["name"] == "Acme GmbH"
+    assert body["status"] == "paused"
+    assert body["contact_details"] == {"email": "a@b.c"}
+
+
+async def test_update_client_partial_keeps_other_fields(app_factory):
+    client = await logged_in_client(app_factory)
+    created = (await client.post("/clients", json={"name": "Acme"})).json()
+    resp = await client.put(f"/clients/{created['id']}", json={"status": "paused"})
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "Acme"
+    assert resp.json()["status"] == "paused"
+
+
+async def test_update_client_not_found(app_factory):
+    client = await logged_in_client(app_factory)
+    assert (await client.put("/clients/99999", json={"name": "X"})).status_code == 404
+
+
+async def test_update_client_duplicate_name_returns_409(app_factory):
+    client = await logged_in_client(app_factory)
+    await client.post("/clients", json={"name": "Acme"})
+    other = (await client.post("/clients", json={"name": "Zeta"})).json()
+    assert (await client.put(f"/clients/{other['id']}", json={"name": "Acme"})).status_code == 409
+
+
 async def test_all_endpoints_require_auth(app_factory):
     app, _ = app_factory
     client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")

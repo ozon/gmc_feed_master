@@ -12,6 +12,12 @@ class ClientCreate(BaseModel):
     status: str = Field(default="active", min_length=1, max_length=50)
 
 
+class ClientUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    status: str | None = Field(default=None, max_length=50)
+    contact_details: dict[str, Any] | None = None
+
+
 class ClientOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
