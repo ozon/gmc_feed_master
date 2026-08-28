@@ -17,6 +17,7 @@ from ..export.store import ExportFileStore
 from ..models.client import Client
 from ..models.feed_source import FeedSource
 from ..models.ingestion import IngestionRun
+from ..persistence.cascade import delete_client_cascade, delete_feed_source_cascade
 from ..pipeline import validate_cron
 from ..schemas.clients import (
     ClientCreate,
@@ -200,18 +201,17 @@ async def delete_feed_source(
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> None:
     session = _require_db(db_session)
+    locks = _locks(request)
+    if locks is not None and locks.is_locked(feed_source_id):
+        raise HTTPException(status_code=409, detail="feed source has an active run")
     async with session.begin():
         feed_source = await session.get(FeedSource, feed_source_id)
         if feed_source is None:
             raise HTTPException(status_code=404, detail="feed source not found")
-        try:
-            await session.delete(feed_source)
-        except IntegrityError as exc:
-            raise HTTPException(status_code=409, detail="feed source has ingestion runs") from exc
+        await delete_feed_source_cascade(session, feed_source_id)
     scheduler = _scheduler(request)
     if scheduler is not None:
         scheduler.unregister(feed_source_id)
-    locks = _locks(request)
     if locks is not None:
         locks.discard(feed_source_id)
     settings = _resolve_settings(request)
@@ -222,6 +222,41 @@ async def delete_feed_source(
         import shutil
 
         shutil.rmtree(versions_dir, ignore_errors=True)
+
+
+@router.delete("/clients/{client_id}", status_code=204)
+async def delete_client(
+    client_id: int,
+    request: Request,
+    _user: str = Depends(require_user),
+    db_session: AsyncSession | None = Depends(get_db_session),
+) -> None:
+    session = _require_db(db_session)
+    locks = _locks(request)
+    async with session.begin():
+        client = await session.get(Client, client_id)
+        if client is None:
+            raise HTTPException(status_code=404, detail="client not found")
+        feed_ids = list((await session.execute(
+            select(FeedSource.id).where(FeedSource.client_id == client_id)
+        )).scalars())
+        if locks is not None and any(locks.is_locked(fid) for fid in feed_ids):
+            raise HTTPException(status_code=409, detail="client has a feed source with an active run")
+        deleted_ids = await delete_client_cascade(session, client_id)
+    scheduler = _scheduler(request)
+    settings = _resolve_settings(request)
+    store = ExportFileStore(settings.export_dir)
+    for feed_source_id in deleted_ids:
+        if scheduler is not None:
+            scheduler.unregister(feed_source_id)
+        if locks is not None:
+            locks.discard(feed_source_id)
+        store.published_path(feed_source_id).unlink(missing_ok=True)
+        versions_dir = Path(settings.export_dir) / "versions" / str(feed_source_id)
+        if versions_dir.is_dir():
+            import shutil
+
+            shutil.rmtree(versions_dir, ignore_errors=True)
 
 
 @router.post("/feed-sources/{feed_source_id}/export-token/rotate")
