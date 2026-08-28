@@ -5,7 +5,7 @@ from typing import Any
 import jsonschema
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import require_user
@@ -100,6 +100,13 @@ async def list_plugins(
 ) -> list[dict[str, Any]]:
     session = _require_db(db_session)
     result = await session.execute(select(Plugin).order_by(Plugin.id))
+    from ..models.pipeline import ModuleInstance, ModulePipeline
+
+    usage = dict((await session.execute(
+        select(ModuleInstance.plugin_id, func.count(func.distinct(ModulePipeline.feed_source_id)))
+        .join(ModulePipeline, ModuleInstance.pipeline_id == ModulePipeline.id)
+        .group_by(ModuleInstance.plugin_id)
+    )).all())
     return [
         {
             "id": plugin.name,
@@ -107,6 +114,7 @@ async def list_plugins(
             "version": plugin.version,
             "enabled": plugin.enabled,
             "manifest": plugin.manifest,
+            "used_by_feed_sources": usage.get(plugin.id, 0),
         }
         for plugin in result.scalars()
     ]

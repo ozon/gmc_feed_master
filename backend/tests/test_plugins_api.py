@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.config import Settings
 from app.main import create_app
 from app.models import Client, ExportRun, ExportVersion, FeedSource, IngestionRun
+from app.models.pipeline import ModuleInstance, ModulePipeline
 from app.models.plugin import Plugin, PluginConfig, PluginData
 from app.models.session import Session
 from app.models.user import User
@@ -295,3 +296,38 @@ async def test_plugin_endpoints_require_auth(app_factory):
     assert (await client.put("/plugins/title_case/config", json={})).status_code == 401
     assert (await client.get("/plugins/title_case/data")).status_code == 401
     assert (await client.put("/plugins/title_case/data", json={})).status_code == 401
+
+
+async def test_plugins_list_includes_usage_count(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+
+    async with factory() as session:
+        async with session.begin():
+            used = Plugin(name="used_plugin", version="1.0.0", enabled=True,
+                          manifest=make_manifest(id="used_plugin"))
+            unused = Plugin(name="unused_plugin", version="1.0.0", enabled=True,
+                            manifest=make_manifest(id="unused_plugin"))
+            session.add_all([used, unused])
+            await session.flush()
+            acme = Client(name="Acme")
+            session.add(acme)
+            await session.flush()
+            feed = FeedSource(client_id=acme.id, name="DE", source_format="wide_tsv")
+            session.add(feed)
+            await session.flush()
+            pipeline = ModulePipeline(feed_source_id=feed.id, name="p", version="1", definition={})
+            session.add(pipeline)
+            await session.flush()
+            session.add_all([
+                ModuleInstance(pipeline_id=pipeline.id, plugin_id=used.id,
+                               position=0, name="a", configuration={}),
+                ModuleInstance(pipeline_id=pipeline.id, plugin_id=used.id,
+                               position=1, name="b", configuration={}),
+            ])
+
+    resp = await client.get("/plugins")
+    assert resp.status_code == 200
+    by_id = {p["id"]: p for p in resp.json()}
+    assert by_id["used_plugin"]["used_by_feed_sources"] == 1
+    assert by_id["unused_plugin"]["used_by_feed_sources"] == 0
