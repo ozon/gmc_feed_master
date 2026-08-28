@@ -4,8 +4,8 @@
 > Implements: spec §2 (architecture), §5.10 (plugin frontend), §6 (field mapping),
 > §8 (API), §9 (frontend areas); governed by `m10-frontend-instructions.md`
 > (approved decisions D1–D5) and `i18n-agent-instructions.md` (binding in full).
-> Status: design approved by the human 2026-08-28; implementation follows in four
-> staged plans (M10-a … M10-d).
+> Status: design approved by the human 2026-08-28 (incl. second-pass review
+> changes §0.5–0.8); implementation follows in four staged plans (M10-a … M10-d).
 
 ## 0. Context & resolved questions
 
@@ -32,6 +32,29 @@ Questions resolved with the human during brainstorming:
 4. **Build strategy.** One design doc, four staged implementation plans
    (M10-a backend, M10-b frontend foundation, M10-c areas I, M10-d areas II +
    plugin infra), each TDD with review checkpoints; `main` stays green.
+
+Owner review changes (2026-08-28, second pass):
+
+5. **`POST /auth/password` already exists — no backend work.** The review asked
+   to add it to M10-a scope on the assumption it was missing. Verified: the
+   endpoint exists (`backend/app/main.py:248`) and already implements the M1
+   gate semantics — `change_password` increments `revocation_generation`
+   (`backend/app/persistence/users.py:65`), session validation rejects stale
+   generations (`backend/app/persistence/sessions.py:52`), and the M1
+   acceptance test verifies pre-existing sessions return 401 after a change
+   (`backend/tests/test_m1_acceptance.py:93–108`). M10 consumes it from the
+   user-menu modal only (§2.4/§4.1).
+6. **Mapping target grammar corrected.** Positional paths (`shipping.1.price`)
+   are NOT valid mapping targets — M4 scope accepts `attr` / `attr.subfield`
+   only; anything else is a guaranteed 422
+   (`backend/app/routes/field_mapping.py:42–56`). This contradicts the
+   `m10-frontend-instructions.md` §3.3 example (`shipping.1.price`); the
+   owner's clarification wins, the contradiction is flagged and recorded
+   (§7). §4.3 below is corrected accordingly.
+7. **Rollback versions badged "not QC'd"** in the export history (§4.7) —
+   finding counts of 0 on rollback-created versions would misread as "clean".
+8. **Dry-run latency documented** (§1.3): full passes on large feeds are
+   practically limited by the synchronous request; the UI prefills `limit=100`.
 
 Document naming note: `m10-frontend-instructions.md` references
 `i18n-agent-instructions-2.md` and `coding-agent-instructions-2.md`; the files on
@@ -140,9 +163,14 @@ Response:
   plugins return `None`. Reason string is `"<plugin_id> dropped the product"`.
   A structured reason is a future contract extension, out of scope.
 - Source fetch/parse failure → `422 {"errors": […]}` (spec §8 error convention).
-- The UI pre-fills `limit=100` to keep the synchronous call snappy but the
-  field may be cleared for a full pass (feeds up to 500 MB, spec §5.8 — the
-  caller accepts the latency).
+- **Latency:** the endpoint is synchronous by design. A full pass (no `limit`)
+  on a large source (up to 500 MB, spec §5.8) can exceed practical HTTP
+  request latencies — fetch + parse + per-product pipeline + QC (incl. image
+  probes on cache miss) all run inline. This is accepted for MVP; the UI
+  mitigates by prefilling `limit=100` (sample mode), which the operator may
+  clear knowingly. If full-pass dry runs prove too slow in practice, making
+  `limit` mandatory or moving dry-run to a background run is a future
+  decision, not part of M10.
 
 ### 1.4 D5 — cascade deletes
 
@@ -351,9 +379,15 @@ purely from `GET /plugins` (enabled + `manifest.frontend.menu_item`).
    credentials (§1.7), cron presets (hourly/daily/weekly) + free text with
    "interpreted in UTC" hint, Export URL block (shared component, §4.7).
    Mapping: auto-mapper button with loading notification; TanStack Table of
-   source fields → target Select built from `GET /registry/attributes`
-   including sub-field paths (spec §5.7 grammar, e.g. `shipping.1.price`);
-   synonym matches badged as suggestions; unmapped baseline-required
+   source fields → target Select built from `GET /registry/attributes`.
+   **Target grammar is `attr` / `attr.subfield` only** (e.g.
+   `installment.months`) — the M4 scope rejects positional paths such as
+   `shipping.1.price` with a guaranteed 422
+   (`backend/app/routes/field_mapping.py:42–56`), so the target dropdown must
+   not offer them (owner clarification §0.6; supersedes the
+   `m10-frontend-instructions.md` §3.3 example). Repeated/structured
+   attributes are offered as their bare attribute name or named sub-fields.
+   Synonym matches badged as suggestions; unmapped baseline-required
    attributes highlighted; persist via `PUT .../field-mapping`; 422 errors
    per-field.
 4. **Products** — TanStack Table against D2 with server-side pagination,
@@ -374,10 +408,13 @@ purely from `GET /plugins` (enabled + `manifest.frontend.menu_item`).
    filters, aggregated by rule with per-product drill-down. Dry run: trigger +
    sample-size input (prefill 100), read-only labeling, results panel per §1.3.
 7. **Export** — Export URL block (copy + rotate confirm warning the old URL
-   dies immediately); version list with per-severity finding counts; diff
-   view: two version selects (default latest vs previous), field-based table
-   grouped by product, one row per changed attribute, old → new — never
-   line-based; rollback confirm modal stating append-only semantics.
+   dies immediately); version list with per-severity finding counts; versions
+   created by rollback (`ExportVersionOut.source == "rollback"`) render a
+   distinct "not QC'd" badge — their finding counts are 0 because QC never
+   ran on them, which must not misread as "clean". Diff view: two version
+   selects (default latest vs previous), field-based table grouped by
+   product, one row per changed attribute, old → new — never line-based;
+   rollback confirm modal stating append-only semantics.
 8. **Plugin UIs** — §3 of this doc.
 
 ## 5. Testing
@@ -434,3 +471,10 @@ Each plan: TDD (RED-GREEN-REFACTOR), review checkpoint before the next plan,
   409 active-run guard).
 - Mantine primary color `blue`.
 - All new frontend dependency pins (one line each).
+- `POST /auth/password` verified pre-existing with M1 revocation semantics —
+  consumed, not rebuilt (§0.5).
+- Mapping target grammar clarification (`attr` / `attr.subfield` only);
+  contradiction with the `m10-frontend-instructions.md` §3.3 example flagged
+  (§0.6).
+- Rollback versions badged "not QC'd" in the export history (§4.7).
+- Dry-run full-pass latency accepted for MVP; UI prefills `limit=100` (§1.3).
