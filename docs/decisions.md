@@ -668,3 +668,94 @@ binding product specification. Dates use ISO 8601 calendar dates.
     path), which the plan's own guard test inspects; pinning 1 is
     behavior-identical (the scheduler default was already 1) and makes the
     contract explicit.
+
+## 2026-08-28
+
+### M10-a endpoint decisions (D1–D5)
+
+- **Topic:** Backend endpoints for the M10 frontend
+- **Decision:** Implemented per
+  `docs/superpowers/specs/2026-08-28-m10-frontend-design.md` §1:
+  `GET /dashboard/summary` (D1; active = status='active' AND NOT
+  excluded; failed_last_exports = latest ExportRun status 'failed'),
+  `GET /feed-sources/{id}/products` + detail (D2; stage=processed → 501
+  per D3), `POST /feed-sources/{id}/dry-run` (D4), cascade deletes (D5),
+  `GET/PUT /feed-sources/{id}/pipeline` (spec §8), `PUT /clients/{id}`,
+  `GET /plugins` usage counts.
+- **Rationale:** Approved design §1; m10-frontend-instructions D1–D5.
+
+### Pipeline API semantics
+
+- **Topic:** Pipeline read/write shape
+- **Decision:** One ModulePipeline per feed source, ModuleInstance rows
+  are the source of truth, `definition` JSONB mirrors the saved list;
+  pipeline name is `"<feed name> #<feed_source_id>"` to avoid the global
+  `uq_module_pipelines_name_version` collision across same-named feed
+  sources (fixed during M10-a).
+- **Rationale:** config_resolver reads instances; global unique
+  constraint forces collision-safe names.
+
+### Dry-run drop reason, parse_errors, sample caps
+
+- **Topic:** D4 response details
+- **Decision:** Drop reason string is `"<plugin_id> dropped the product"`
+  (no structured reason in the runtime contract today); response adds
+  `parse_errors` (malformed source rows) beyond the D4 minimum; processed
+  sample capped at 50, per-rule finding samples at 5.
+- **Rationale:** Design §1.3; contract extension for structured reasons
+  is future scope.
+
+### Cascade delete implementation
+
+- **Topic:** D5 mechanics
+- **Decision:** Explicit FK-safe ordered deletes in
+  `app/persistence/cascade.py`, no migration; 409 guard when a run is
+  active for any affected feed source (lock registry).
+- **Rationale:** Circular export_runs↔export_versions FKs require
+  explicit ordering (versions first, SET NULL); design §1.4.
+
+### POST /auth/password verified pre-existing
+
+- **Topic:** M10-a review asked to add it
+- **Decision:** Not rebuilt — endpoint exists (app/main.py) with M1
+  revocation semantics (revocation_generation bump invalidates all
+  sessions; verified by test_m1_acceptance.py). M10 consumes it from the
+  frontend user menu only.
+- **Rationale:** Design §0.5; verified against code 2026-08-28.
+
+### Mapping target grammar clarification
+
+- **Topic:** m10-frontend-instructions §3.3 example contradicts M4 scope
+- **Decision:** Mapping targets are `attr` / `attr.subfield` only;
+  positional paths (e.g. `shipping.1.price`) are rejected with 422 by the
+  existing field-mapping validation. Owner clarification 2026-08-28
+  supersedes the instruction's example.
+- **Rationale:** Design §0.6; routes/field_mapping.py
+  `_validate_mappings`.
+
+### example_upper demo plugin shipped
+
+- **Topic:** Plugin absence during M10
+- **Decision:** The contract-suite fixture is shipped at
+  `plugins/example_upper/` with a `frontend` manifest section
+  (`menu_item`, `icon`, no component) so M10's plugin UI infrastructure
+  is verifiable end-to-end; this is not a core plugin.
+- **Rationale:** Owner decision 2026-08-28 (design §0.1); core plugins
+  remain deferred.
+
+### Rollback versions render as "not QC'd"
+
+- **Topic:** Export history display
+- **Decision:** Versions created by rollback
+  (`ExportVersion.source == "rollback"`) get a distinct "not QC'd" badge
+  in the M10 export history; finding counts of 0 on them must not read
+  as "clean".
+- **Rationale:** Owner review change 2026-08-28 (design §0.7/§4.7).
+
+### Dry-run full-pass latency accepted
+
+- **Topic:** Synchronous D4 endpoint on large feeds
+- **Decision:** Full passes (no limit) may exceed practical HTTP
+  latencies; accepted for MVP; UI prefills limit=100. Making limit
+  mandatory or backgrounding dry-run is a future decision.
+- **Rationale:** Design §0.8/§1.3.
