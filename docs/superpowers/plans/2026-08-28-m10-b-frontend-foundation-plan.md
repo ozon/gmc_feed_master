@@ -63,7 +63,8 @@ frontend/
     │   ├── auth/LoginPage.tsx         # minimal Mantine login (guard target)
     │   └── placeholders.tsx           # placeholder pages for M10-c/d areas
     └── test/
-        ├── setup.ts                   # MODIFY: Mantine jsdom mocks
+        ├── setup.ts                   # MODIFY: Mantine jsdom mocks + default locale fetch + i18n init (Task 2)
+        ├── fetch.ts                   # locale-aware fetch stub helpers (Task 2)
         └── render.tsx                 # custom render with MantineProvider env="test"
 ```
 
@@ -95,14 +96,15 @@ Run from `frontend/`:
 npm install --save-exact \
   @mantine/core@9.5.2 @mantine/hooks@9.5.2 @mantine/notifications@9.5.2 @mantine/dates@9.5.2 \
   @tabler/icons-react@^3.0.0 \
-  @tanstack/react-query@^5.0.0 \
+  @tanstack/react-query@^5.0.0 @tanstack/react-table@^9.0.0 @tanstack/react-form@^1.0.0 \
+  @dnd-kit/core@^6.0.0 @dnd-kit/sortable@^10.0.0 \
   react-router@7.18.2 \
   i18next@^26.0.0 react-i18next@^17.0.0 i18next-browser-languagedetector@^8.0.0 i18next-http-backend@^4.0.0 \
   dayjs@^1.11.0
 npm install --save-exact --save-dev postcss@^8.5.0 postcss-preset-mantine@^1.18.0 postcss-simple-vars@^7.0.0
 ```
 
-Record the exact resolved versions (`npm ls --depth=0`) in your report — Task 9 writes them into `docs/decisions.md`. (`@tanstack/react-table`, `@tanstack/react-form`, `@dnd-kit/*` are M10-c/d concerns; do not install them here.)
+All packages from design §2.1 are installed now (pins are recorded in Task 9) even though `@tanstack/react-table`, `@tanstack/react-form`, and `@dnd-kit/*` are first used by M10-c/d. Record the exact resolved versions (`npm ls --depth=0`) in your report — Task 9 writes them into `docs/decisions.md`.
 
 - [ ] **Step 2: Create `postcss.config.cjs`**
 
@@ -288,7 +290,8 @@ git commit -m "feat(m10-b): pin frontend deps and add Mantine theme/provider fou
 **Files:**
 - Create: `frontend/src/i18n/index.ts`, `frontend/src/i18n/i18next.d.ts`, `frontend/src/i18n/LocaleProvider.tsx`, `frontend/src/i18n/LanguageSwitcher.tsx`
 - Create: `frontend/public/locales/en/*.json` and `frontend/public/locales/de/*.json` (11 namespaces each)
-- Modify: `frontend/src/main.tsx` (import i18n first), `frontend/src/App.tsx` (LocaleProvider + Suspense)
+- Create: `frontend/src/test/fetch.ts`
+- Modify: `frontend/src/main.tsx` (import i18n first), `frontend/src/App.tsx` (LocaleProvider + Suspense), `frontend/src/test/setup.ts` (default locale fetch + await i18n init)
 - Test: `frontend/src/i18n/i18n.test.tsx`
 
 **Interfaces:**
@@ -501,19 +504,21 @@ And the seven `de` stubs with `"title"`: `Übersicht`, `Einrichtung`, `Mapping`,
 
 - [ ] **Step 2: Create `src/i18n/index.ts` (single init module)**
 
+The backend uses a custom `request` function built on global `fetch` (documented `i18next-http-backend` option). This gives one code path in the browser and in tests, where `fetch` is stubbed — jsdom provides `XMLHttpRequest`, which the backend's default transport would otherwise prefer and which cannot be stubbed with `vi.stubGlobal('fetch', ...)`. The callback contract is `callback(err, { status, data })` with `data` as the response text. `initPromise` is exported so the test setup can await startup before any test runs.
+
 ```ts
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
-import HttpBackend from 'i18next-http-backend';
+import HttpBackend, { type HttpBackendOptions } from 'i18next-http-backend';
 
 export const SUPPORTED_LANGUAGES = ['en', 'de'] as const;
 
-void i18n
+export const initPromise = i18n
   .use(HttpBackend)
   .use(LanguageDetector)
   .use(initReactI18next)
-  .init({
+  .init<HttpBackendOptions>({
     fallbackLng: 'en',
     supportedLngs: [...SUPPORTED_LANGUAGES],
     ns: ['common'],
@@ -521,6 +526,19 @@ void i18n
     preload: ['common'],
     backend: {
       loadPath: '/locales/{{lng}}/{{ns}}.json',
+      request: (_options, url, _payload, callback) => {
+        void fetch(url)
+          .then(async (response) => {
+            if (!response.ok) {
+              callback(new Error(`Failed to load ${url}: ${response.status}`), null);
+              return;
+            }
+            callback(null, { status: response.status, data: await response.text() });
+          })
+          .catch((error: unknown) => {
+            callback(error instanceof Error ? error : new Error(String(error)), null);
+          });
+      },
     },
     detection: {
       order: ['querystring', 'localStorage', 'navigator'],
@@ -533,6 +551,8 @@ void i18n
 
 export default i18n;
 ```
+
+If the installed `i18next-http-backend` types do not export `HttpBackendOptions` or reject the `request` signature, adapt the typing (e.g. type the options parameter of `request` as the backend's options type via `Parameters<...>` or a minimal structural type) — do not drop the custom `request` function itself.
 
 - [ ] **Step 3: Create `src/i18n/i18next.d.ts` (typed keys from en resources)**
 
@@ -623,9 +643,9 @@ export function LanguageSwitcher() {
 }
 ```
 
-- [ ] **Step 6: Wire i18n into `src/main.tsx` and `src/App.tsx`**
+- [ ] **Step 6: Wire i18n into `src/main.tsx`, `src/App.tsx`, and the test harness**
 
-`src/main.tsx` — i18n import must be first:
+`src/main.tsx` — i18n import must be first (per `i18n-agent-instructions.md` §Initialization: imported exactly once, at the top of the application entry file):
 
 ```tsx
 import './i18n';
@@ -673,6 +693,61 @@ export default function App() {
     </MantineProvider>
   );
 }
+```
+
+Test harness — create `src/test/fetch.ts`. `localeResponse` serves `public/locales/<lng>/<ns>.json` from disk for any `/locales/...` URL; `stubFetch` installs a `fetch` mock that always serves locales first and delegates everything else to the test's handler (so component tests that render `App` can still lazy-load namespaces while mocking API URLs):
+
+```ts
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { vi } from 'vitest';
+
+const localesDir = resolve(dirname(fileURLToPath(import.meta.url)), '../../public/locales');
+
+export function localeResponse(url: string): Response | undefined {
+  const match = url.match(/^\/locales\/([^/]+)\/([^/]+)\.json$/);
+  if (!match) return undefined;
+  const file = resolve(localesDir, match[1], `${match[2]}.json`);
+  if (!existsSync(file)) return undefined;
+  return new Response(readFileSync(file, 'utf8'), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export function stubFetch(handler: (url: string) => Response | Promise<Response>) {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    const locale = localeResponse(url);
+    if (locale) return locale;
+    return handler(url);
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+```
+
+Modify `src/test/setup.ts` — keep the Mantine jsdom mocks from Task 1 and append: (1) a default global `fetch` that serves locale files and throws on anything else (so the module-level i18n preload can resolve before any test), and (2) a `beforeAll` that dynamically imports the i18n module *after* the stub is installed (static imports would be hoisted above the stub) and awaits `initPromise` so `common` is loaded before the first render of every test file:
+
+```ts
+import { beforeAll } from 'vitest';
+import { localeResponse } from './fetch';
+
+vi.stubGlobal(
+  'fetch',
+  vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    const locale = localeResponse(url);
+    if (locale) return locale;
+    throw new Error(`Unexpected fetch in test: ${url}`);
+  }),
+);
+
+beforeAll(async () => {
+  const { initPromise } = await import('../i18n');
+  await initPromise;
+});
 ```
 
 - [ ] **Step 7: Write the failing test `src/i18n/i18n.test.tsx`**
@@ -738,7 +813,7 @@ Expected: FAIL — `./index` / locale files missing.
 - [ ] **Step 9: Run test to verify it passes**
 
 Run: `npx vitest run src/i18n/i18n.test.tsx`
-Expected: PASS (3 tests). If `i18next-http-backend` cannot load `/locales/...` in jsdom (no network), stub `fetch` in this test to serve the JSON from `public/locales` via `vi.fn()` and assert the load path is requested — do not switch to static imports.
+Expected: PASS (3 tests). The harness from Step 6 already serves `/locales/...` from disk via the stubbed `fetch`, and the custom backend `request` function routes through it — no per-test stubbing should be needed here. If a load still fails, debug the stub/request wiring; do not switch to static locale imports.
 
 - [ ] **Step 10: Run the full gate**
 
@@ -748,7 +823,8 @@ Expected: all green. Confirm the production build emits the locale JSON as separ
 - [ ] **Step 11: Commit**
 
 ```bash
-git add frontend/src/i18n frontend/src/main.tsx frontend/src/App.tsx frontend/public/locales
+git add frontend/src/i18n frontend/src/main.tsx frontend/src/App.tsx frontend/public/locales \
+  frontend/src/test/fetch.ts frontend/src/test/setup.ts
 git commit -m "feat(m10-b): add i18n foundation with lazy namespaces and typed keys"
 ```
 
@@ -1140,13 +1216,7 @@ export const queryKeys = {
 
 ```ts
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  apiGet,
-  changePassword,
-  getCurrentUser,
-  logout,
-  type User,
-} from './client';
+import { apiGet, changePassword, getCurrentUser, logout } from './client';
 import { queryKeys } from './queryKeys';
 
 export type FeedSourceSummary = {
@@ -1228,7 +1298,7 @@ export function useLogout() {
   return useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      queryClient.setQueryData<User | undefined>(queryKeys.session, undefined);
+      void queryClient.resetQueries({ queryKey: queryKeys.session });
     },
   });
 }
@@ -1618,7 +1688,10 @@ export function LoginPage() {
 
 - [ ] **Step 3: Create `src/app/router.tsx`**
 
+The router is created per `AppRouter` mount (lazy ref), not at module scope: a module-level `createBrowserRouter` would keep its location state across test cases in one file, and each test needs a router initialized from the current `window.location`. The 401 handler is registered in an effect bound to the mounted router.
+
 ```tsx
+import { useEffect, useRef } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import {
   createBrowserRouter,
@@ -1660,7 +1733,7 @@ export function RequireSession() {
   return <Outlet />;
 }
 
-export const router = createBrowserRouter([
+const routes = [
   { path: '/login', element: <LoginPage /> },
   {
     element: <RequireSession />,
@@ -1681,16 +1754,27 @@ export const router = createBrowserRouter([
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },
-]);
-
-setUnauthorizedHandler(() => {
-  const current = router.state.location;
-  if (current.pathname !== '/login') {
-    void router.navigate('/login', { state: { from: current.pathname + current.search } });
-  }
-});
+];
 
 export function AppRouter() {
+  const routerRef = useRef<ReturnType<typeof createBrowserRouter> | null>(null);
+  if (routerRef.current === null) {
+    routerRef.current = createBrowserRouter(routes);
+  }
+  const router = routerRef.current;
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      const current = router.state.location;
+      if (current.pathname !== '/login') {
+        void router.navigate('/login', {
+          state: { from: current.pathname + current.search },
+        });
+      }
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [router]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
@@ -1745,15 +1829,16 @@ export default function App() {
 
 - [ ] **Step 5: Write the failing test `src/app/router.test.tsx`**
 
+Uses `stubFetch` from Task 2 so `/locales/...` namespace loads are served from disk while API URLs are handled per test:
+
 ```tsx
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { render } from '../test/render';
+import { stubFetch } from '../test/fetch';
 import App from '../App';
 import { queryClient } from '../api/queryClient';
-
-const fetchMock = vi.fn<typeof fetch>();
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -1762,17 +1847,19 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+const emptySummary = {
+  counts: { clients: 0, feed_sources: 0, active_products: 0, failed_last_exports: 0 },
+  clients: [],
+};
+
 beforeEach(() => {
-  vi.stubGlobal('fetch', fetchMock);
-  fetchMock.mockReset();
   queryClient.clear();
   window.history.replaceState({}, '', '/');
 });
 
 describe('auth route guard', () => {
   it('redirects unauthenticated users from a protected route to /login', async () => {
-    fetchMock.mockImplementation(async (input) => {
-      const url = String(input);
+    stubFetch((url) => {
       if (url === '/auth/me') return jsonResponse({ detail: 'Not authenticated' }, 401);
       return jsonResponse({});
     });
@@ -1782,12 +1869,9 @@ describe('auth route guard', () => {
   });
 
   it('renders the dashboard for an authenticated user', async () => {
-    fetchMock.mockImplementation(async (input) => {
-      const url = String(input);
+    stubFetch((url) => {
       if (url === '/auth/me') return jsonResponse({ username: 'operator' });
-      if (url === '/dashboard/summary') {
-        return jsonResponse({ counts: { clients: 0, feed_sources: 0, active_products: 0, failed_last_exports: 0 }, clients: [] });
-      }
+      if (url === '/dashboard/summary') return jsonResponse(emptySummary);
       if (url === '/plugins') return jsonResponse([]);
       return jsonResponse({});
     });
@@ -1799,8 +1883,7 @@ describe('auth route guard', () => {
   it('restores the originally requested route after login', async () => {
     window.history.replaceState({}, '', '/clients/1/feeds/2/products');
     let authenticated = false;
-    fetchMock.mockImplementation(async (input) => {
-      const url = String(input);
+    stubFetch((url) => {
       if (url === '/auth/me') {
         return authenticated
           ? jsonResponse({ username: 'operator' })
@@ -1810,9 +1893,7 @@ describe('auth route guard', () => {
         authenticated = true;
         return jsonResponse({ username: 'operator' });
       }
-      if (url === '/dashboard/summary') {
-        return jsonResponse({ counts: { clients: 0, feed_sources: 0, active_products: 0, failed_last_exports: 0 }, clients: [] });
-      }
+      if (url === '/dashboard/summary') return jsonResponse(emptySummary);
       if (url === '/plugins') return jsonResponse([]);
       return jsonResponse({});
     });
@@ -1889,17 +1970,17 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
-  IconArrowLeftToArc,
+  IconActivity,
   IconBox,
   IconChevronDown,
   IconDashboard,
   IconFileExport,
   IconGitBranch,
+  IconLogout,
   IconMoon,
   IconPuzzle,
   IconSettings,
   IconSun,
-  IconActivity,
   type Icon,
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
@@ -2013,7 +2094,7 @@ function UserMenu() {
             {t('actions.changePassword')}
           </Menu.Item>
           <Menu.Item
-            leftSection={<IconArrowLeftToArc size={14} />}
+            leftSection={<IconLogout size={14} />}
             onClick={() =>
               logoutMutation.mutate(undefined, { onSuccess: () => navigate('/login') })
             }
@@ -2177,15 +2258,16 @@ export function AppShell() {
 
 - [ ] **Step 2: Write the failing test `src/app/AppShell.test.tsx`**
 
+Uses `stubFetch` (locales served from disk, API URLs per handler). The logout test flips `/auth/me` to 401 after `/auth/logout` so the `resetQueries` refetch in `useLogout` drives the guard redirect realistically:
+
 ```tsx
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { render } from '../test/render';
+import { stubFetch } from '../test/fetch';
 import App from '../App';
 import { queryClient } from '../api/queryClient';
-
-const fetchMock = vi.fn<typeof fetch>();
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -2237,18 +2319,17 @@ const plugins = [
   },
 ];
 
+function authenticatedHandler(url: string) {
+  if (url === '/auth/me') return jsonResponse({ username: 'operator' });
+  if (url === '/dashboard/summary') return jsonResponse(summary);
+  if (url === '/plugins') return jsonResponse(plugins);
+  return jsonResponse({});
+}
+
 beforeEach(() => {
-  vi.stubGlobal('fetch', fetchMock);
-  fetchMock.mockReset();
   queryClient.clear();
   window.history.replaceState({}, '', '/');
-  fetchMock.mockImplementation(async (input) => {
-    const url = String(input);
-    if (url === '/auth/me') return jsonResponse({ username: 'operator' });
-    if (url === '/dashboard/summary') return jsonResponse(summary);
-    if (url === '/plugins') return jsonResponse(plugins);
-    return jsonResponse({});
-  });
+  stubFetch(authenticatedHandler);
 });
 
 describe('AppShell', () => {
@@ -2278,12 +2359,19 @@ describe('AppShell', () => {
   });
 
   it('logs out and returns to the login page', async () => {
-    fetchMock.mockImplementation(async (input) => {
-      const url = String(input);
-      if (url === '/auth/me') return jsonResponse({ username: 'operator' });
+    let loggedIn = true;
+    stubFetch((url) => {
+      if (url === '/auth/me') {
+        return loggedIn
+          ? jsonResponse({ username: 'operator' })
+          : jsonResponse({ detail: 'Not authenticated' }, 401);
+      }
+      if (url === '/auth/logout') {
+        loggedIn = false;
+        return jsonResponse({ status: 'ok' });
+      }
       if (url === '/dashboard/summary') return jsonResponse(summary);
       if (url === '/plugins') return jsonResponse(plugins);
-      if (url === '/auth/logout') return jsonResponse({ status: 'ok' });
       return jsonResponse({});
     });
     const user = userEvent.setup();
@@ -2634,7 +2722,7 @@ In the existing `server.proxy` object, keep `/auth` and `/health` and add the re
 Append under a new `## 2026-08-28` heading if not present (M10-a already added one — extend it), using the existing `### Title` + `**Topic/Decision/Rationale**` bullet format:
 
 1. `### M10 frontend primary color` — Topic: M10 theme. Decision: Mantine default theme with `primaryColor: 'blue'`; dark/light toggle persisted via Mantine color-scheme storage; text wordmark placeholder logo. Rationale: m10-frontend-instructions §4 requires one recorded primary-color choice; design §2.6.
-2. `### M10-b frontend dependency pins` — Topic: frontend foundation dependencies. Decision: pinned exactly (list each package@version resolved in Task 1, one line each: `@mantine/core@9.5.2`, `@mantine/hooks@9.5.2`, `@mantine/notifications@9.5.2`, `@mantine/dates@9.5.2`, `@tabler/icons-react@<resolved>`, `@tanstack/react-query@<resolved>`, `react-router@7.18.2`, `i18next@<resolved>`, `react-i18next@<resolved>`, `i18next-browser-languagedetector@<resolved>`, `i18next-http-backend@<resolved>`, `dayjs@<resolved>`, plus dev `postcss@<resolved>`, `postcss-preset-mantine@<resolved>`, `postcss-simple-vars@<resolved>`). Rationale: design §2.1 pins Mantine at 9.5.2 and requires every new pin recorded; versions resolved against current docs 2026-08-28.
+2. `### M10-b frontend dependency pins` — Topic: frontend foundation dependencies. Decision: pinned exactly (list each package@version resolved in Task 1, one line each: `@mantine/core@9.5.2`, `@mantine/hooks@9.5.2`, `@mantine/notifications@9.5.2`, `@mantine/dates@9.5.2`, `@tabler/icons-react@<resolved>`, `@tanstack/react-query@<resolved>`, `@tanstack/react-table@<resolved>`, `@tanstack/react-form@<resolved>`, `@dnd-kit/core@<resolved>`, `@dnd-kit/sortable@<resolved>`, `react-router@7.18.2`, `i18next@<resolved>`, `react-i18next@<resolved>`, `i18next-browser-languagedetector@<resolved>`, `i18next-http-backend@<resolved>`, `dayjs@<resolved>`, plus dev `postcss@<resolved>`, `postcss-preset-mantine@<resolved>`, `postcss-simple-vars@<resolved>`). Rationale: design §2.1 pins Mantine at 9.5.2 and requires every new pin recorded; versions resolved against current docs 2026-08-28.
 3. `### React Router v7 for M10 routing` — Topic: routing library major version. Decision: use `react-router@7.18.2` (data router, `createBrowserRouter`) rather than the newer v8 line. Rationale: design §2.3 specifies React Router v7; keeps the milestone on the reviewed spec.
 
 - [ ] **Step 3: Run the full gate**
@@ -2660,5 +2748,6 @@ git commit -m "chore(m10-b): extend dev proxy to all API prefixes and record M10
 
 - **Spec coverage (design §2):** §2.1 deps/pins → Task 1 + Task 9 decisions; §2.2 source layout → File Structure (all tasks); §2.3 routing + RequireSession guard + redirect-to-origin → Task 6; §2.4 AppShell (wordmark, breadcrumb Client>Feed, language switcher, dark/light, user menu w/ password change + logout, navbar with disabled feed-scoped items + dynamic plugin section) → Task 7; §2.5 query keys + polling + notifications → Tasks 4, 5; §2.6 theme + i18n → Tasks 1, 2. Shared components incl. JsonSchemaForm → Tasks 3, 8. Vite proxy extension → Task 9.
 - **DoD minimum tests (design §5) covered in M10-b:** auth route guards (Task 6), schema-form rendering (Task 8), notification on mutation failure (Task 5). Column-config persistence, diff-view rendering, and pipeline dirty tracking belong to M10-c/d areas and are out of scope here.
-- **Deviations to flag for review:** (1) minimal Mantine login is built in M10-b although §6 lists Login under M10-c — required so the §2.3 guard can restore the original route after a real login; M10-c polishes it. (2) `@tanstack/react-table`, `@tanstack/react-form`, `@dnd-kit/*` are deferred to the milestones that use them (M10-c/d) rather than installed unused. (3) `ExportUrlBlock` (design §2.2) is deferred to M10-d Export area since it needs export-token endpoints not consumed by the foundation.
+- **Deviations to flag for review:** (1) minimal Mantine login is built in M10-b although §6 lists Login under M10-c — required so the §2.3 guard can restore the original route after a real login; M10-c polishes it. (2) `ExportUrlBlock` (design §2.2) is deferred to M10-d Export area since it needs export-token endpoints not consumed by the foundation.
+- **Test-harness note:** i18n loads namespaces through a custom backend `request` function using global `fetch`; `src/test/setup.ts` installs a default locale-serving `fetch` stub and awaits `initPromise` before all tests, and `src/test/fetch.ts#stubFetch` layers locale serving under per-test API mocks. This keeps `i18n-agent-instructions.md`'s "no static locale imports" rule intact in tests.
 - **Type consistency:** `JsonSchema`/`JsonSchemaFormProps` (Task 8), `DashboardSummary`/`PluginInfo` (Task 4), `queryKeys` (Task 4) are the single definitions referenced by later tasks and by M10-c/d.
