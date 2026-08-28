@@ -41,6 +41,7 @@ from .routes import (
     registry_router,
 )
 from .routes.dashboard import router as dashboard_router
+from .routes.products import router as products_router
 
 
 def _configured_settings() -> Settings | None:
@@ -155,6 +156,7 @@ def create_app(
     app.include_router(export_public_router)
     app.include_router(field_mapping_router)
     app.include_router(plugins_router)
+    app.include_router(products_router)
     app.include_router(quality_router)
     app.include_router(registry_router)
     app.state.settings = settings
