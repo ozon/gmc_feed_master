@@ -325,9 +325,22 @@ async def test_plugins_list_includes_usage_count(app_factory):
                 ModuleInstance(pipeline_id=pipeline.id, plugin_id=used.id,
                                position=1, name="b", configuration={}),
             ])
+            beta = Client(name="Beta")
+            session.add(beta)
+            await session.flush()
+            feed2 = FeedSource(client_id=beta.id, name="FR", source_format="wide_tsv")
+            session.add(feed2)
+            await session.flush()
+            pipeline2 = ModulePipeline(feed_source_id=feed2.id, name="p2", version="1", definition={})
+            session.add(pipeline2)
+            await session.flush()
+            session.add(
+                ModuleInstance(pipeline_id=pipeline2.id, plugin_id=used.id,
+                               position=0, name="c", configuration={}),
+            )
 
     resp = await client.get("/plugins")
     assert resp.status_code == 200
     by_id = {p["id"]: p for p in resp.json()}
-    assert by_id["used_plugin"]["used_by_feed_sources"] == 1
+    assert by_id["used_plugin"]["used_by_feed_sources"] == 2
     assert by_id["unused_plugin"]["used_by_feed_sources"] == 0
