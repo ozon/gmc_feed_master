@@ -183,3 +183,17 @@ async def test_dry_run_404_and_auth(app_factory):
     assert (await anon.post("/feed-sources/1/dry-run", json={})).status_code == 401
     client = await logged_in_client(app_factory)
     assert (await client.post("/feed-sources/99999/dry-run", json={})).status_code == 404
+
+
+async def test_dry_run_source_deleted_before_execution_returns_404(app_factory, monkeypatch):
+    app, _, _ = app_factory
+    client = await logged_in_client(app_factory)
+    feed_id = await _make_feed(client)
+
+    async def _missing(**kwargs):
+        raise LookupError(f"feed source {kwargs['feed_source_id']} not found")
+
+    monkeypatch.setattr("app.routes.dry_run.run_dry_run", _missing)
+    resp = await client.post(f"/feed-sources/{feed_id}/dry-run", json={})
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "feed source not found"

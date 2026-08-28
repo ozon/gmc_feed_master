@@ -14,7 +14,7 @@ class ClientCreate(BaseModel):
 
 class ClientUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
-    status: str | None = Field(default=None, max_length=50)
+    status: str | None = Field(default=None, min_length=1, max_length=50)
     contact_details: dict[str, Any] | None = None
 
 

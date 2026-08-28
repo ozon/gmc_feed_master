@@ -253,6 +253,21 @@ async def test_update_client_duplicate_name_returns_409(app_factory):
     assert (await client.put(f"/clients/{other['id']}", json={"name": "Acme"})).status_code == 409
 
 
+async def test_update_client_explicit_null_name_is_ignored(app_factory):
+    client = await logged_in_client(app_factory)
+    created = (await client.post("/clients", json={"name": "Acme"})).json()
+    resp = await client.put(f"/clients/{created['id']}", json={"name": None})
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "Acme"
+
+
+async def test_update_client_empty_status_returns_422(app_factory):
+    client = await logged_in_client(app_factory)
+    created = (await client.post("/clients", json={"name": "Acme"})).json()
+    resp = await client.put(f"/clients/{created['id']}", json={"status": ""})
+    assert resp.status_code == 422
+
+
 async def test_all_endpoints_require_auth(app_factory):
     app, _ = app_factory
     client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")

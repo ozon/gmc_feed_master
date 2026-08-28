@@ -102,7 +102,11 @@ async def update_client(
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> Client:
     session = _require_db(db_session)
-    updates = payload.model_dump(exclude_unset=True)
+    updates = {
+        key: value
+        for key, value in payload.model_dump(exclude_unset=True).items()
+        if value is not None
+    }
     try:
         async with session.begin():
             client = await session.get(Client, client_id)

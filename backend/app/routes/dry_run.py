@@ -71,6 +71,8 @@ async def dry_run(
             image_probe=image_probe,
             limit=payload.limit if payload else None,
         )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="feed source not found") from exc
     except (FetchError, ValueError) as exc:
         return JSONResponse(status_code=422, content={"errors": [str(exc)]})
 
