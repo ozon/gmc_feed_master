@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiError,
   apiGet,
+  apiPut,
   changePassword,
   getCurrentUser,
   login,
@@ -39,6 +40,14 @@ describe('api client', () => {
     expect(error).toBeInstanceOf(ApiError);
     expect(error.status).toBe(401);
     expect(error.detail).toBe('Invalid credentials');
+  });
+
+  it('parses 422 error arrays into ApiError.errors', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ errors: ["title: invalid target path 'a.1'"] }, 422));
+    const error: unknown = await apiPut('/feed-sources/1/field-mapping', {}).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).errors).toEqual(["title: invalid target path 'a.1'"]);
+    expect((error as ApiError).detail).toBeUndefined();
   });
 
   it('invokes the unauthorized handler on non-login 401', async () => {

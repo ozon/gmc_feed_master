@@ -163,8 +163,8 @@ function FeedBreadcrumb() {
   const location = useLocation();
   const { data: summary } = useDashboardSummary();
 
-  const client = summary?.clients.find((entry) => String(entry.id) === clientId);
-  const feed = client?.feed_sources.find((entry) => String(entry.id) === feedSourceId);
+  const client = summary?.clients?.find((entry) => String(entry.id) === clientId);
+  const feed = client?.feed_sources?.find((entry) => String(entry.id) === feedSourceId);
   const area =
     /^\/clients\/[^/]+\/feeds\/[^/]+\/([^/?]+)/.exec(location.pathname)?.[1] ?? 'setup';
 
@@ -213,7 +213,7 @@ export function AppShell() {
 
   const pluginItems = useMemo(
     () =>
-      (plugins ?? []).filter(
+      (Array.isArray(plugins) ? plugins : []).filter(
         (plugin) => plugin.enabled && plugin.manifest?.frontend?.menu_item,
       ),
     [plugins],

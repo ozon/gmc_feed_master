@@ -1,3 +1,8 @@
 {
-  "title": "Export"
+  "title": "Export",
+  "urlTitle": "Export URL",
+  "publicUrl": "Public URL",
+  "rotate": "Rotate",
+  "rotateWarning": "Rotating the export token will invalidate the current URL immediately. All systems using the old URL will stop working.",
+  "rotated": "Export token rotated successfully"
 }

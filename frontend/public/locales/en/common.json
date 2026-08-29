@@ -20,7 +20,8 @@
     "add": "Add",
     "remove": "Remove",
     "logout": "Log out",
-    "changePassword": "Change password"
+    "changePassword": "Change password",
+    "typeToConfirm": "Type {{name}} to confirm"
   },
   "state": {
     "loading": "Loading…",

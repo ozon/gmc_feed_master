@@ -1,3 +1,58 @@
 {
-  "title": "Einrichtung"
+  "title": "Einrichtung",
+  "tabs": {
+    "settings": "Einstellungen",
+    "mapping": "Zuordnung"
+  },
+  "mappingPlaceholder": "Zuordnungskonfiguration wird in der nächsten Aktualisierung verfügbar sein.",
+  "mapping": {
+    "title": "Feldzuordnung",
+    "autoMapper": "Automatische Zuordnung ausführen",
+    "save": "Speichern",
+    "saved": "Zuordnung gespeichert",
+    "saveFailed": "Zuordnung konnte nicht gespeichert werden.",
+    "autoMapped": "Automatisch zugeordnet",
+    "noSourceFields": "Noch keine Quellfelder beobachtet.",
+    "requiredUncovered": "Erforderliche Registry-Attribute nicht abgedeckt",
+    "requiredUncoveredList": "Die folgenden erforderlichen Attribute sind nicht zugeordnet: {{names}}",
+    "table": {
+      "source": "Quellfeld",
+      "target": "Zielattribut",
+      "selectTarget": "Ziel auswählen"
+    },
+    "origins": {
+      "auto": "auto",
+      "synonym": "Vorschlag",
+      "manual": "manuell"
+    }
+  },
+  "fields": {
+    "name": "Name",
+    "sourceFormat": "Quellformat",
+    "sourceUrl": "Quell-URL",
+    "cronExpression": "Cron-Ausdruck",
+    "cronHint": "UTC",
+    "targetCountry": "Zielland",
+    "targetLanguage": "Zielsprache",
+    "currency": "Währung",
+    "volumeDropThreshold": "Schwellenwert für Mengenrückgang (%)",
+    "historyRetention": "Anzahl der zu behaltenden Verlaufsdaten"
+  },
+  "cron": {
+    "presets": {
+      "hourly": "Stündlich",
+      "daily": "Täglich",
+      "weekly": "Wöchentlich",
+      "monthly": "Monatlich"
+    },
+    "utcHint": "Zeitplan in UTC"
+  },
+  "basicAuth": {
+    "title": "Basis-Authentifizierung",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "passwordPlaceholder": "Neues Passwort eingeben"
+  },
+  "saved": "Einstellungen gespeichert",
+  "saveFailed": "Einstellungen konnten nicht gespeichert werden."
 }

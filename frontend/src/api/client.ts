@@ -3,12 +3,14 @@ export type User = { username: string };
 export class ApiError extends Error {
   readonly status: number;
   readonly detail: string | undefined;
+  readonly errors: string[] | null;
 
-  constructor(status: number, detail?: string) {
+  constructor(status: number, detail?: string, errors?: string[] | null) {
     super(detail ?? `Request failed with status ${status}`);
     this.name = 'ApiError';
     this.status = status;
     this.detail = detail;
+    this.errors = errors ?? null;
   }
 }
 
@@ -21,13 +23,18 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
 
 async function parseError(response: Response): Promise<ApiError> {
   let detail: string | undefined;
+  let errors: string[] | null = null;
   try {
-    const body = (await response.json()) as { detail?: string };
-    detail = body.detail;
+    const body = (await response.json()) as { detail?: string; errors?: unknown };
+    if (Array.isArray(body.errors) && body.errors.every((item) => typeof item === 'string')) {
+      errors = body.errors;
+    } else if (typeof body.detail === 'string') {
+      detail = body.detail;
+    }
   } catch {
     detail = undefined;
   }
-  return new ApiError(response.status, detail);
+  return new ApiError(response.status, detail, errors);
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {

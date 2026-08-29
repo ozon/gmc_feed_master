@@ -3,5 +3,8 @@
   "runFailed": "Run failed",
   "mutationSuccess": "Saved",
   "mutationError": "Request failed",
-  "validationError": "Please fix the highlighted fields."
+  "validationError": "Please fix the highlighted fields.",
+  "autoMappingRunning": "Running auto mapper…",
+  "autoMappingDone": "Auto mapping completed",
+  "autoMappingFailed": "Auto mapping failed"
 }

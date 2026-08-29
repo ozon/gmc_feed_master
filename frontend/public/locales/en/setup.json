@@ -1,3 +1,58 @@
 {
-  "title": "Setup"
+  "title": "Setup",
+  "tabs": {
+    "settings": "Settings",
+    "mapping": "Mapping"
+  },
+  "mappingPlaceholder": "Mapping configuration will be available in the next update.",
+  "mapping": {
+    "title": "Field Mapping",
+    "autoMapper": "Run auto mapper",
+    "save": "Save",
+    "saved": "Mapping saved",
+    "saveFailed": "Could not save mapping.",
+    "autoMapped": "Auto-mapped",
+    "noSourceFields": "No source fields observed yet.",
+    "requiredUncovered": "Required registry attributes not covered",
+    "requiredUncoveredList": "The following required attributes are not mapped: {{names}}",
+    "table": {
+      "source": "Source field",
+      "target": "Target attribute",
+      "selectTarget": "Select target"
+    },
+    "origins": {
+      "auto": "auto",
+      "synonym": "suggestion",
+      "manual": "manual"
+    }
+  },
+  "fields": {
+    "name": "Name",
+    "sourceFormat": "Source format",
+    "sourceUrl": "Source URL",
+    "cronExpression": "Cron expression",
+    "cronHint": "UTC",
+    "targetCountry": "Target country",
+    "targetLanguage": "Target language",
+    "currency": "Currency",
+    "volumeDropThreshold": "Volume drop threshold (%)",
+    "historyRetention": "History retention count"
+  },
+  "cron": {
+    "presets": {
+      "hourly": "Every hour",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "utcHint": "Schedule in UTC"
+  },
+  "basicAuth": {
+    "title": "Basic Auth",
+    "username": "Username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter new password"
+  },
+  "saved": "Settings saved",
+  "saveFailed": "Could not save settings."
 }

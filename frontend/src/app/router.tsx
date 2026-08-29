@@ -12,15 +12,15 @@ import { queryClient } from '../api/queryClient';
 import { useSession } from '../api/hooks';
 import { LoadingState } from '../components/StateViews';
 import { LoginPage } from '../features/auth/LoginPage';
+import { DashboardPage } from '../features/dashboard/DashboardPage';
+import { SetupPage } from '../features/setup/SetupPage';
 import {
-  DashboardPlaceholder,
   ExportPlaceholder,
   MonitoringPlaceholder,
   PipelinePlaceholder,
   PluginPlaceholder,
-  ProductsPlaceholder,
-  SetupPlaceholder,
 } from '../features/placeholders';
+import { ProductsPage } from '../features/products/ProductsPage';
 import { AppShell } from './AppShell';
 
 export function RequireSession() {
@@ -48,9 +48,9 @@ const routes = [
       {
         element: <AppShell />,
         children: [
-          { index: true, element: <DashboardPlaceholder /> },
-          { path: 'clients/:clientId/feeds/:feedSourceId/setup', element: <SetupPlaceholder /> },
-          { path: 'clients/:clientId/feeds/:feedSourceId/products', element: <ProductsPlaceholder /> },
+          { index: true, element: <DashboardPage /> },
+          { path: 'clients/:clientId/feeds/:feedSourceId/setup', element: <SetupPage /> },
+          { path: 'clients/:clientId/feeds/:feedSourceId/products', element: <ProductsPage /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/pipeline', element: <PipelinePlaceholder /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/monitoring', element: <MonitoringPlaceholder /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/export', element: <ExportPlaceholder /> },
