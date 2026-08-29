@@ -18,8 +18,8 @@ import {
   ExportPlaceholder,
   MonitoringPlaceholder,
   PipelinePlaceholder,
-  PluginPlaceholder,
 } from '../features/placeholders';
+import { PluginPage } from '../features/plugin/PluginPage';
 import { ProductsPage } from '../features/products/ProductsPage';
 import { AppShell } from './AppShell';
 
@@ -54,8 +54,8 @@ const routes = [
           { path: 'clients/:clientId/feeds/:feedSourceId/pipeline', element: <PipelinePlaceholder /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/monitoring', element: <MonitoringPlaceholder /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/export', element: <ExportPlaceholder /> },
-          { path: 'clients/:clientId/plugins/:pluginId', element: <PluginPlaceholder /> },
-          { path: 'plugins/:pluginId', element: <PluginPlaceholder /> },
+          { path: 'clients/:clientId/plugins/:pluginId', element: <PluginPage /> },
+          { path: 'plugins/:pluginId', element: <PluginPage /> },
         ],
       },
     ],

@@ -1,4 +1,9 @@
 {
   "section": "Plugins",
-  "empty": "No plugins available."
+  "empty": "No plugins available.",
+  "notFound": "Plugin not found.",
+  "noSchema": "This plugin has no configuration schema.",
+  "configSaved": "Configuration saved.",
+  "saveFailed": "Could not save plugin configuration.",
+  "save": "Save"
 }

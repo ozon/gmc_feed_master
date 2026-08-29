@@ -16,12 +16,14 @@ export function localeResponse(url: string): Response | undefined {
   });
 }
 
-export function stubFetch(handler: (url: string) => Response | Promise<Response>) {
+export function stubFetch(
+  handler: (url: string, init?: RequestInit) => Response | Promise<Response>,
+) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const locale = localeResponse(url);
     if (locale) return locale;
-    return handler(url);
+    return handler(url, init);
   });
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;

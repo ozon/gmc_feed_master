@@ -9,6 +9,7 @@ import type {
   FeedSourceSummary,
   FieldMappingDoc,
   IngestionRunRow,
+  PluginConfigResponse,
   PluginInfo,
   ProductDetail,
   ProductsPageResponse,
@@ -24,6 +25,7 @@ export type {
   FeedSourceSummary,
   FieldMappingDoc,
   IngestionRunRow,
+  PluginConfigResponse,
   PluginInfo,
   ProductDetail,
   ProductsPageResponse,
@@ -298,6 +300,51 @@ export function useAutoMap() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.feedSource(id).mapping,
       });
+    },
+  });
+}
+
+export function useUpdatePluginEnabled() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      apiPut<PluginInfo>(`/plugins/${id}`, { enabled }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.plugins });
+    },
+  });
+}
+
+export type PluginScope = { clientId?: number; feedSourceId?: number };
+
+function buildScopeQuery(scope?: PluginScope): string {
+  if (!scope) return '';
+  const params = new URLSearchParams();
+  if (scope.clientId !== undefined) params.set('client_id', String(scope.clientId));
+  if (scope.feedSourceId !== undefined) params.set('feed_source_id', String(scope.feedSourceId));
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
+}
+
+export function usePluginConfig(pluginId: string, scope?: PluginScope) {
+  return useQuery({
+    queryKey: queryKeys.pluginConfig(pluginId, scope),
+    queryFn: () =>
+      apiGet<PluginConfigResponse>(`/plugins/${pluginId}/config${buildScopeQuery(scope)}`),
+    enabled: Boolean(pluginId),
+  });
+}
+
+export function useSavePluginConfig(pluginId: string, scope?: PluginScope) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (config: PluginConfigResponse) =>
+      apiPut<PluginConfigResponse>(
+        `/plugins/${pluginId}/config${buildScopeQuery(scope)}`,
+        config,
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.pluginConfig(pluginId, scope) });
     },
   });
 }

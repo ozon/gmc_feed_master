@@ -1,4 +1,9 @@
 {
   "section": "Plugins",
-  "empty": "Keine Plugins verfügbar."
+  "empty": "Keine Plugins verfügbar.",
+  "notFound": "Plugin nicht gefunden.",
+  "noSchema": "Dieses Plugin hat kein Konfigurations-Schema.",
+  "configSaved": "Konfiguration gespeichert.",
+  "saveFailed": "Plugin-Konfiguration konnte nicht gespeichert werden.",
+  "save": "Speichern"
 }

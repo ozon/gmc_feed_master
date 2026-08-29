@@ -17,7 +17,3 @@ export function MonitoringPlaceholder() {
 export function ExportPlaceholder() {
   return <Placeholder ns="export" />;
 }
-
-export function PluginPlaceholder() {
-  return <Title order={2}>Plugin</Title>;
-}

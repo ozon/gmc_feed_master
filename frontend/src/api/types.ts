@@ -161,3 +161,5 @@ export type QualityFindingsResponse = {
   };
   findings: QualityFinding[];
 };
+
+export type PluginConfigResponse = Record<string, unknown>;
