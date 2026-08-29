@@ -152,9 +152,14 @@ export function useQualityFindings(feedSourceId: number | string, active: boolea
 }
 
 export function useRunDryRun(feedSourceId: number | string) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ limit }: { limit: number }) =>
       apiPost<unknown>(`/feed-sources/${feedSourceId}/dry-run`, { limit }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).runs });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).findings });
+    },
   });
 }
 

@@ -1,20 +1,23 @@
 import { Button, Group, NumberInput } from '@mantine/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useRunDryRun } from '../../api/hooks';
+import type { UseMutationResult } from '@tanstack/react-query';
+
+type DryRunInput = { limit: number };
 
 type Props = {
-  feedSourceId: string;
+  run: UseMutationResult<unknown, Error, DryRunInput>;
   onResult: (result: unknown) => void;
 };
 
-export function DryRunForm({ feedSourceId, onResult }: Props) {
+export function DryRunForm({ run, onResult }: Props) {
   const { t } = useTranslation('monitoring');
   const [limit, setLimit] = useState<number>(100);
-  const run = useRunDryRun(feedSourceId);
   async function onSubmit() {
-    const result = await run.mutateAsync({ limit });
-    onResult(result);
+    try {
+      const result = await run.mutateAsync({ limit });
+      onResult(result);
+    } catch {}
   }
   return (
     <Group align="end">

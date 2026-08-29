@@ -8,11 +8,20 @@ const TABS = [
   { value: 'dryRun', path: 'dry-run', labelKey: 'tabs.dryRun' },
 ] as const;
 
+function resolveTab(pathname: string): string {
+  for (const tab of TABS) {
+    if (pathname === `/${tab.path}` || pathname.endsWith(`/${tab.path}`)) {
+      return tab.value;
+    }
+  }
+  return 'runs';
+}
+
 export function MonitoringLayout() {
   const { t } = useTranslation('monitoring');
   const { clientId, feedSourceId } = useParams();
   const location = useLocation();
-  const currentTab = location.pathname.split('/').pop() ?? 'runs';
+  const currentTab = resolveTab(location.pathname);
   const base = `/clients/${clientId}/feeds/${feedSourceId}/monitoring`;
   return (
     <Tabs value={currentTab}>

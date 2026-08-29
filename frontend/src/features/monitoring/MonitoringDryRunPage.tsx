@@ -18,7 +18,7 @@ export function MonitoringDryRunPage() {
   return (
     <Stack gap="md" pt="md">
       <DryRunForm
-        feedSourceId={feedSourceId}
+        run={run}
         onResult={async (next) => {
           try {
             await withLoadingNotification(

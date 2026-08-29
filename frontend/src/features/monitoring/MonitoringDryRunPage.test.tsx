@@ -70,4 +70,20 @@ describe('MonitoringDryRunPage', () => {
     expect(captured!.body).toEqual({ limit: 100 });
     expect(await screen.findByTestId('dry-run-results')).toBeInTheDocument();
   });
+
+  it('renders a role="alert" when the dry-run mutation fails', async () => {
+    const user = userEvent.setup();
+    stubFetch((url, init) => {
+      if (url === '/feed-sources/1/dry-run' && init?.method === 'POST') {
+        return new Response(JSON.stringify({ detail: 'boom' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return jsonResponse({});
+    });
+    renderAt();
+    await user.click(screen.getByTestId('dry-run-submit'));
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+  });
 });
