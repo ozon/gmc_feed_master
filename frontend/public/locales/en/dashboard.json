@@ -1,3 +1,52 @@
 {
-  "title": "Dashboard"
+  "title": "Dashboard",
+  "addClient": "Add client",
+  "stats": {
+    "clients": "Clients",
+    "feeds": "Feed sources",
+    "products": "Active products",
+    "failedExports": "Failed exports"
+  },
+  "clientStatus": {
+    "active": "Active",
+    "paused": "Paused"
+  },
+  "addFeed": "Add feed",
+  "edit": "Edit",
+  "delete": "Delete",
+  "deleteCascade": "Deleting this client permanently removes its feed sources, staging products, ingestion runs, quality findings, export versions, published XML and plugin data.",
+  "deleteFeedCascade": "Deleting this feed source permanently removes its staging products, ingestion runs, quality findings, export versions, published XML and plugin data.",
+  "neverRun": "Never run",
+  "neverExported": "Never exported",
+  "runStatus": {
+    "success": "Success",
+    "error": "Error",
+    "skipped": "Skipped",
+    "running": "Running",
+    "pending": "Pending"
+  },
+  "exportStatus": {
+    "completed": "Completed",
+    "failed": "Failed",
+    "rollback": "Rollback"
+  },
+  "openSettings": "Open settings",
+  "deleteFeed": "Delete feed",
+  "addFeedModal": {
+    "title": "Add feed source",
+    "name": "Name",
+    "format": "Format",
+    "create": "Create"
+  },
+  "clientModal": {
+    "name": "Name",
+    "status": "Status",
+    "nameRequired": "Name is required."
+  },
+  "saved": "Saved",
+  "saveFailed": "Could not be saved.",
+  "deleteFailed": "Could not be deleted.",
+  "duplicateName": "A client with this name already exists.",
+  "typeToConfirm": "Type {{name}} to confirm",
+  "empty": "No clients yet. Create the first client to get started."
 }

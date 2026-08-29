@@ -11,7 +11,7 @@ import { LocaleProvider } from './i18n/LocaleProvider';
 
 export default function App() {
   return (
-    <MantineProvider theme={theme}>
+    <MantineProvider theme={theme} env={import.meta.env.VITEST ? 'test' : undefined}>
       <Notifications position="top-right" limit={5} />
       <LocaleProvider>
         <Suspense

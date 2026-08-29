@@ -12,8 +12,8 @@ import { queryClient } from '../api/queryClient';
 import { useSession } from '../api/hooks';
 import { LoadingState } from '../components/StateViews';
 import { LoginPage } from '../features/auth/LoginPage';
+import { DashboardPage } from '../features/dashboard/DashboardPage';
 import {
-  DashboardPlaceholder,
   ExportPlaceholder,
   MonitoringPlaceholder,
   PipelinePlaceholder,
@@ -48,7 +48,7 @@ const routes = [
       {
         element: <AppShell />,
         children: [
-          { index: true, element: <DashboardPlaceholder /> },
+          { index: true, element: <DashboardPage /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/setup', element: <SetupPlaceholder /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/products', element: <ProductsPlaceholder /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/pipeline', element: <PipelinePlaceholder /> },

@@ -1,3 +1,52 @@
 {
-  "title": "Übersicht"
+  "title": "Übersicht",
+  "addClient": "Mandant hinzufügen",
+  "stats": {
+    "clients": "Mandanten",
+    "feeds": "Feedquellen",
+    "products": "Aktive Produkte",
+    "failedExports": "Fehlgeschlagene Exporte"
+  },
+  "clientStatus": {
+    "active": "Aktiv",
+    "paused": "Pausiert"
+  },
+  "addFeed": "Feed hinzufügen",
+  "edit": "Bearbeiten",
+  "delete": "Löschen",
+  "deleteCascade": "Das Löschen dieses Mandanten entfernt dauerhaft seine Feedquellen, Staging-Produkte, Ingestion-Läufe, Qualitätsbefunde, Exportversionen, veröffentlichte XML-Daten und Plug-in-Daten.",
+  "deleteFeedCascade": "Das Löschen dieser Feedquelle entfernt dauerhaft ihre Staging-Produkte, Ingestion-Läufe, Qualitätsbefunde, Exportversionen, veröffentlichte XML-Daten und Plug-in-Daten.",
+  "neverRun": "Nie ausgeführt",
+  "neverExported": "Nie exportiert",
+  "runStatus": {
+    "success": "Erfolgreich",
+    "error": "Fehler",
+    "skipped": "Übersprungen",
+    "running": "Läuft",
+    "pending": "Ausstehend"
+  },
+  "exportStatus": {
+    "completed": "Abgeschlossen",
+    "failed": "Fehlgeschlagen",
+    "rollback": "Rollback"
+  },
+  "openSettings": "Einstellungen öffnen",
+  "deleteFeed": "Feed löschen",
+  "addFeedModal": {
+    "title": "Feedquelle hinzufügen",
+    "name": "Name",
+    "format": "Format",
+    "create": "Erstellen"
+  },
+  "clientModal": {
+    "name": "Name",
+    "status": "Status",
+    "nameRequired": "Der Name ist erforderlich."
+  },
+  "saved": "Gespeichert",
+  "saveFailed": "Konnte nicht gespeichert werden.",
+  "deleteFailed": "Konnte nicht gelöscht werden.",
+  "duplicateName": "Ein Mandant mit diesem Namen existiert bereits.",
+  "typeToConfirm": "Geben Sie {{name}} ein, um zu bestätigen",
+  "empty": "Noch keine Mandanten. Legen Sie den ersten Mandanten an, um zu starten."
 }

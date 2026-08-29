@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { DatesProvider } from '@mantine/dates';
 import dayjs from 'dayjs';
 import 'dayjs/locale/de';
+import { registerRelativeTime } from './relativeTime';
+
+registerRelativeTime();
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const { i18n } = useTranslation();
