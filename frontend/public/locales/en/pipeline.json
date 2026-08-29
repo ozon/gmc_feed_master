@@ -1,3 +1,18 @@
 {
-  "title": "Pipeline Editor"
+  "title": "Pipeline Editor",
+  "palette": "Palette",
+  "paletteEmpty": "No pipeline modules are enabled.",
+  "dragToAdd": "Drag to add",
+  "dragHandle": "Drag to reorder",
+  "emptyWorkspace": "Drag a plugin from the palette to start.",
+  "remove": "Remove",
+  "unsavedChanges": "You have unsaved pipeline changes. Leave anyway?",
+  "registryPanel": "Plugin registry",
+  "registryHelp": "Disabling a plugin affects every client and feed source.",
+  "inUse": "Used by {{count}} feed sources",
+  "disableConfirmTitle": "Disable {{name}}?",
+  "disableConfirmBody": "{{name}} is used by feed sources. Type the usage count to confirm.",
+  "disable": "Disable",
+  "saved": "Pipeline saved.",
+  "saveFailed": "Could not save pipeline."
 }

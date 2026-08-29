@@ -9,6 +9,7 @@ import type {
   FeedSourceSummary,
   FieldMappingDoc,
   IngestionRunRow,
+  PipelineDoc,
   PluginConfigResponse,
   PluginInfo,
   ProductDetail,
@@ -25,6 +26,7 @@ export type {
   FeedSourceSummary,
   FieldMappingDoc,
   IngestionRunRow,
+  PipelineDoc,
   PluginConfigResponse,
   PluginInfo,
   ProductDetail,
@@ -345,6 +347,25 @@ export function useSavePluginConfig(pluginId: string, scope?: PluginScope) {
       ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.pluginConfig(pluginId, scope) });
+    },
+  });
+}
+
+export function useFeedSourcePipeline(feedSourceId: number | string) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId).pipeline,
+    queryFn: () => apiGet<PipelineDoc>(`/feed-sources/${feedSourceId}/pipeline`),
+    enabled: Boolean(feedSourceId),
+  });
+}
+
+export function useSavePipeline(feedSourceId: number | string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (doc: PipelineDoc) =>
+      apiPut<PipelineDoc>(`/feed-sources/${feedSourceId}/pipeline`, doc),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).pipeline });
     },
   });
 }

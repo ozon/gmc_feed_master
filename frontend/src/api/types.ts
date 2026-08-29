@@ -163,3 +163,14 @@ export type QualityFindingsResponse = {
 };
 
 export type PluginConfigResponse = Record<string, unknown>;
+
+export type PipelineInstance = {
+  position: number;
+  plugin_id: string;
+  name: string;
+  configuration: Record<string, unknown>;
+};
+
+export type PipelineDoc = {
+  instances: PipelineInstance[];
+};
