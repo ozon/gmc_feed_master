@@ -161,3 +161,45 @@ export type QualityFindingsResponse = {
   };
   findings: QualityFinding[];
 };
+
+export type PluginConfigResponse = Record<string, unknown>;
+
+export type PipelineInstance = {
+  position: number;
+  plugin_id: string;
+  name: string;
+  configuration: Record<string, unknown>;
+};
+
+export type PipelineDoc = {
+  instances: PipelineInstance[];
+};
+
+export type ExportVersionOut = {
+  id: number;
+  version_number: number;
+  product_count: number;
+  file_hash: string;
+  source: 'run' | 'rollback' | string;
+  source_version_id: number | null;
+  created_at: string;
+};
+
+export type DiffFieldOut = {
+  field: string;
+  old: unknown;
+  new: unknown;
+};
+
+export type DiffProductOut = {
+  product_id: string;
+  fields: DiffFieldOut[];
+};
+
+export type DiffOut = {
+  version: number;
+  against: number;
+  added: string[];
+  removed: string[];
+  changed: DiffProductOut[];
+};

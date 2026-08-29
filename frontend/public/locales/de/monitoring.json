@@ -1,3 +1,41 @@
 {
-  "title": "Überwachung"
+  "title": "Überwachung",
+  "tabs": {
+    "runs": "Läufe",
+    "findings": "Befunde",
+    "dryRun": "Trockenlauf"
+  },
+  "columns": {
+    "startedAt": "Gestartet",
+    "status": "Status",
+    "processed": "Verarbeitet",
+    "failed": "Fehlgeschlagen",
+    "error": "Fehler",
+    "severity": "Schweregrad",
+    "code": "Code",
+    "field": "Feld",
+    "message": "Meldung",
+    "productId": "Produkt"
+  },
+  "runs": {
+    "empty": "Noch keine Läufe."
+  },
+  "findings": {
+    "empty": "Keine Befunde — alle Produkte bestehen die Qualitätsprüfung.",
+    "severityFilter": "Schweregrad",
+    "severityPlaceholder": "Alle Schweregrade",
+    "total": "Gesamt: {{count}}"
+  },
+  "dryRun": {
+    "limitLabel": "Stichprobengröße",
+    "limitHelp": "Das Backend gibt möglicherweise weniger zurück, wenn eine Stichprobenobergrenze erreicht wird.",
+    "run": "Trockenlauf starten",
+    "running": "Trockenlauf läuft...",
+    "success": "Trockenlauf abgeschlossen.",
+    "failed": "Trockenlauf fehlgeschlagen.",
+    "results": "Ergebnisse",
+    "processed": "Verarbeitet: {{count}}",
+    "dropped": "Verworfen: {{count}}",
+    "empty": "Starten Sie einen Trockenlauf, um Ergebnisse zu sehen."
+  }
 }

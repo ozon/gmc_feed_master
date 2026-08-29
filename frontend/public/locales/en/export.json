@@ -4,5 +4,40 @@
   "publicUrl": "Public URL",
   "rotate": "Rotate",
   "rotateWarning": "Rotating the export token will invalidate the current URL immediately. All systems using the old URL will stop working.",
-  "rotated": "Export token rotated successfully"
+  "rotated": "Export token rotated successfully",
+  "columns": {
+    "version": "Version",
+    "createdAt": "Created",
+    "source": "Source",
+    "products": "Products",
+    "diffA": "A",
+    "diffB": "B",
+    "rollback": "Rollback",
+    "field": "Field",
+    "old": "Old",
+    "new": "New"
+  },
+  "source": {
+    "run": "Run",
+    "rollback": "Rollback"
+  },
+  "productsLabel": "products",
+  "notQcd": "not QC'd",
+  "rollbackToVersion": "Rollback to version",
+  "rollback": "Rollback",
+  "rollbackConfirmTitle": "Rollback to version {{version}}?",
+  "rollbackConfirmBody": "This will create a new version with source=rollback. The new version is append-only and has not passed quality checks. This action cannot be undone.",
+  "rollbackSuccess": "Rollback to version {{version}} created.",
+  "rollbackFailed": "Could not rollback.",
+  "rollbackFailedWithErrors": "Could not rollback: {{errors}}",
+  "selectVersions": "Select two versions above to see the diff.",
+  "noChanges": "No changes between these versions.",
+  "added": "Added",
+  "removed": "Removed",
+  "diffTitle": "Diff: version {{version}} vs version {{against}}",
+  "fieldsChanged": "{{count}} field(s) changed",
+  "versions": {
+    "empty": "No export versions yet."
+  },
+  "feedNotFound": "Feed source not found."
 }

@@ -2,7 +2,42 @@
   "title": "Export",
   "urlTitle": "Export-URL",
   "publicUrl": "Öffentliche URL",
-  "rotate": "Routieren",
-  "rotateWarning": "Das Routieren des Export-Tokens macht die aktuelle URL sofort ungültig. Alle Systeme, die die alte URL verwenden, funktionieren nicht mehr.",
-  "rotated": "Export-Token erfolgreich routiert"
+  "rotate": "Rotieren",
+  "rotateWarning": "Das Rotieren des Export-Tokens macht die aktuelle URL sofort ungültig. Alle Systeme, die die alte URL verwenden, funktionieren nicht mehr.",
+  "rotated": "Export-Token erfolgreich rotiert",
+  "columns": {
+    "version": "Version",
+    "createdAt": "Erstellt",
+    "source": "Quelle",
+    "products": "Produkte",
+    "diffA": "A",
+    "diffB": "B",
+    "rollback": "Zurücksetzen",
+    "field": "Feld",
+    "old": "Alt",
+    "new": "Neu"
+  },
+  "source": {
+    "run": "Lauf",
+    "rollback": "Zurückgesetzt"
+  },
+  "productsLabel": "Produkte",
+  "notQcd": "nicht geprüft",
+  "rollbackToVersion": "Auf Version zurücksetzen",
+  "rollback": "Zurücksetzen",
+  "rollbackConfirmTitle": "Auf Version {{version}} zurücksetzen?",
+  "rollbackConfirmBody": "Dadurch wird eine neue Version mit Quelle=rollback erstellt. Die neue Version ist append-only und hat die Qualitätsprüfung nicht bestanden. Diese Aktion kann nicht rückgängig gemacht werden.",
+  "rollbackSuccess": "Rollback auf Version {{version}} erstellt.",
+  "rollbackFailed": "Rollback fehlgeschlagen.",
+  "rollbackFailedWithErrors": "Rollback fehlgeschlagen: {{errors}}",
+  "selectVersions": "Wählen Sie oben zwei Versionen aus, um den Diff zu sehen.",
+  "noChanges": "Keine Änderungen zwischen diesen Versionen.",
+  "added": "Hinzugefügt",
+  "removed": "Entfernt",
+  "diffTitle": "Diff: Version {{version}} vs Version {{against}}",
+  "fieldsChanged": "{{count}} Feld(er) geändert",
+  "versions": {
+    "empty": "Noch keine Export-Versionen."
+  },
+  "feedNotFound": "Feed-Quelle nicht gefunden."
 }

@@ -1,3 +1,19 @@
 {
-  "title": "Pipeline-Editor"
+  "title": "Pipeline-Editor",
+  "palette": "Palette",
+  "paletteEmpty": "Keine Pipeline-Module aktiviert.",
+  "dragToAdd": "Ziehen zum Hinzufügen",
+  "dragHandle": "Ziehen zum Neuanordnen",
+  "emptyWorkspace": "Ziehen Sie ein Plugin aus der Palette, um zu beginnen.",
+  "remove": "Entfernen",
+  "unsavedChanges": "Sie haben ungespeicherte Pipeline-Änderungen. Trotzdem verlassen?",
+  "registryPanel": "Plugin-Registry",
+  "registryHelp": "Das Deaktivieren eines Plugins betrifft alle Mandanten und Feed-Quellen.",
+  "inUse": "Wird von {{count}} Feed-Quellen verwendet",
+  "disableConfirmTitle": "{{name}} deaktivieren?",
+  "disableConfirmBody": "{{name}} wird von Feed-Quellen verwendet. Geben Sie die Anzahl zur Bestätigung ein.",
+  "disable": "Deaktivieren",
+  "saved": "Pipeline gespeichert.",
+  "saveFailed": "Pipeline konnte nicht gespeichert werden.",
+  "saveFailedWithErrors": "Pipeline konnte nicht gespeichert werden: {{errors}}"
 }

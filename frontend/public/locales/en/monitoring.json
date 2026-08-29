@@ -1,3 +1,41 @@
 {
-  "title": "Monitoring"
+  "title": "Monitoring",
+  "tabs": {
+    "runs": "Runs",
+    "findings": "Findings",
+    "dryRun": "Dry run"
+  },
+  "columns": {
+    "startedAt": "Started",
+    "status": "Status",
+    "processed": "Processed",
+    "failed": "Failed",
+    "error": "Error",
+    "severity": "Severity",
+    "code": "Code",
+    "field": "Field",
+    "message": "Message",
+    "productId": "Product"
+  },
+  "runs": {
+    "empty": "No runs yet."
+  },
+  "findings": {
+    "empty": "No findings — all products pass quality checks.",
+    "severityFilter": "Severity",
+    "severityPlaceholder": "All severities",
+    "total": "Total: {{count}}"
+  },
+  "dryRun": {
+    "limitLabel": "Sample size",
+    "limitHelp": "Backend may return fewer if a sample cap is reached.",
+    "run": "Run dry run",
+    "running": "Running dry run...",
+    "success": "Dry run complete.",
+    "failed": "Dry run failed.",
+    "results": "Results",
+    "processed": "Processed: {{count}}",
+    "dropped": "Dropped: {{count}}",
+    "empty": "Trigger a dry run to see results."
+  }
 }

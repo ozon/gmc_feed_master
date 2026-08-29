@@ -5,10 +5,14 @@ import type {
   ClientRow,
   ClientSummary,
   DashboardSummary,
+  DiffOut,
+  ExportVersionOut,
   FeedSourceRow,
   FeedSourceSummary,
   FieldMappingDoc,
   IngestionRunRow,
+  PipelineDoc,
+  PluginConfigResponse,
   PluginInfo,
   ProductDetail,
   ProductsPageResponse,
@@ -20,10 +24,14 @@ export type {
   ClientRow,
   ClientSummary,
   DashboardSummary,
+  DiffOut,
+  ExportVersionOut,
   FeedSourceRow,
   FeedSourceSummary,
   FieldMappingDoc,
   IngestionRunRow,
+  PipelineDoc,
+  PluginConfigResponse,
   PluginInfo,
   ProductDetail,
   ProductsPageResponse,
@@ -144,6 +152,18 @@ export function useQualityFindings(feedSourceId: number | string, active: boolea
     queryFn: () =>
       apiGet<QualityFindingsResponse>(`/feed-sources/${feedSourceId}/quality-findings`),
     refetchInterval: active ? 5000 : false,
+  });
+}
+
+export function useRunDryRun(feedSourceId: number | string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ limit }: { limit: number }) =>
+      apiPost<unknown>(`/feed-sources/${feedSourceId}/dry-run`, { limit }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).runs });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).findings });
+    },
   });
 }
 
@@ -298,6 +318,107 @@ export function useAutoMap() {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.feedSource(id).mapping,
       });
+    },
+  });
+}
+
+export function useUpdatePluginEnabled() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      apiPut<PluginInfo>(`/plugins/${id}/enabled`, { enabled }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.plugins });
+    },
+  });
+}
+
+export type PluginScope = { clientId?: number; feedSourceId?: number };
+
+function buildScopeQuery(scope?: PluginScope): string {
+  if (!scope) return '';
+  const params = new URLSearchParams();
+  if (scope.clientId !== undefined) params.set('client_id', String(scope.clientId));
+  if (scope.feedSourceId !== undefined) params.set('feed_source_id', String(scope.feedSourceId));
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
+}
+
+export function usePluginConfig(pluginId: string, scope?: PluginScope) {
+  return useQuery({
+    queryKey: queryKeys.pluginConfig(pluginId, scope),
+    queryFn: () =>
+      apiGet<PluginConfigResponse>(`/plugins/${pluginId}/config${buildScopeQuery(scope)}`),
+    enabled: Boolean(pluginId),
+  });
+}
+
+export function useSavePluginConfig(pluginId: string, scope?: PluginScope) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (config: PluginConfigResponse) =>
+      apiPut<PluginConfigResponse>(
+        `/plugins/${pluginId}/config${buildScopeQuery(scope)}`,
+        config,
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.pluginConfig(pluginId, scope) });
+    },
+  });
+}
+
+export function useFeedSourcePipeline(feedSourceId: number | string) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId).pipeline,
+    queryFn: () => apiGet<PipelineDoc>(`/feed-sources/${feedSourceId}/pipeline`),
+    enabled: Boolean(feedSourceId),
+  });
+}
+
+export function useExportHistory(feedSourceId: number | string) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId).exportHistory,
+    queryFn: () => apiGet<ExportVersionOut[]>(`/feed-sources/${feedSourceId}/export-history`),
+    enabled: Boolean(feedSourceId),
+  });
+}
+
+export function useExportVersionDiff(
+  feedSourceId: number | string,
+  version: number | undefined,
+  against: number | undefined,
+) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId).exportDiff({
+      version: version ?? -1,
+      against: against ?? -1,
+    }),
+    queryFn: () => {
+      const qs = against !== undefined ? `?against=${against}` : '';
+      return apiGet<DiffOut>(`/feed-sources/${feedSourceId}/export-history/${version}/diff${qs}`);
+    },
+    enabled: version !== undefined && against !== undefined,
+  });
+}
+
+export function useRollbackToVersion(feedSourceId: number | string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (version: number) =>
+      apiPost<unknown>(`/feed-sources/${feedSourceId}/export-history/${version}/rollback`, {}),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).exportHistory });
+    },
+  });
+}
+
+export function useSavePipeline(feedSourceId: number | string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (doc: PipelineDoc) =>
+      apiPut<PipelineDoc>(`/feed-sources/${feedSourceId}/pipeline`, doc),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).pipeline });
     },
   });
 }
