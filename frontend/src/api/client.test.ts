@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiError,
   apiGet,
+  changePassword,
   getCurrentUser,
   login,
   setUnauthorizedHandler,
@@ -53,6 +54,14 @@ describe('api client', () => {
     setUnauthorizedHandler(handler);
     fetchMock.mockResolvedValueOnce(jsonResponse({ detail: 'Invalid credentials' }, 401));
     await login('a', 'b').catch(() => undefined);
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('does not invoke the handler for a failed password change', async () => {
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    fetchMock.mockResolvedValueOnce(jsonResponse({ detail: 'Invalid credentials' }, 401));
+    await changePassword('wrong', 'new').catch(() => undefined);
     expect(handler).not.toHaveBeenCalled();
   });
 });

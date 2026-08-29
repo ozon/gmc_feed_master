@@ -33,7 +33,9 @@ async function parseError(response: Response): Promise<ApiError> {
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...init, credentials: 'include' });
   if (!response.ok) {
-    if (response.status === 401 && unauthorizedHandler && !url.startsWith('/auth/login')) {
+    const authExempt =
+      url.startsWith('/auth/login') || url.startsWith('/auth/password');
+    if (response.status === 401 && unauthorizedHandler && !authExempt) {
       unauthorizedHandler();
     }
     throw await parseError(response);

@@ -87,8 +87,12 @@ export function useLogout() {
 }
 
 export function useChangePassword() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) =>
       changePassword(currentPassword, newPassword),
+    onSuccess: () => {
+      void queryClient.resetQueries({ queryKey: queryKeys.session });
+    },
   });
 }
