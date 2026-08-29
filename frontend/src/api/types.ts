@@ -175,18 +175,14 @@ export type PipelineDoc = {
   instances: PipelineInstance[];
 };
 
-export type ExportFindingCounts = {
-  critical: number;
-  warning: number;
-  info: number;
-};
-
 export type ExportVersionOut = {
-  version: number;
+  id: number;
+  version_number: number;
+  product_count: number;
+  file_hash: string;
+  source: 'run' | 'rollback' | string;
+  source_version_id: number | null;
   created_at: string;
-  source: 'scheduled' | 'manual' | 'rollback';
-  findings: ExportFindingCounts;
-  url: string;
 };
 
 export type DiffFieldOut = {

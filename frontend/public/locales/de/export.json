@@ -9,7 +9,7 @@
     "version": "Version",
     "createdAt": "Erstellt",
     "source": "Quelle",
-    "findings": "Befunde",
+    "products": "Produkte",
     "diffA": "A",
     "diffB": "B",
     "rollback": "Zurücksetzen",
@@ -18,10 +18,10 @@
     "new": "Neu"
   },
   "source": {
-    "scheduled": "Geplant",
-    "manual": "Manuell",
+    "run": "Lauf",
     "rollback": "Zurückgesetzt"
   },
+  "productsLabel": "Produkte",
   "notQcd": "nicht geprüft",
   "rollbackToVersion": "Auf Version zurücksetzen",
   "rollback": "Zurücksetzen",

@@ -13,9 +13,8 @@ type Props = {
   onRollback: (v: number) => void;
 };
 
-const SOURCE_COLOR: Record<ExportVersionOut['source'], string> = {
-  scheduled: 'blue',
-  manual: 'teal',
+const SOURCE_COLOR: Record<string, string> = {
+  run: 'blue',
   rollback: 'orange',
 };
 
@@ -35,7 +34,7 @@ export function ExportVersionList({
           <Table.Th>{t('columns.version')}</Table.Th>
           <Table.Th>{t('columns.createdAt')}</Table.Th>
           <Table.Th>{t('columns.source')}</Table.Th>
-          <Table.Th>{t('columns.findings')}</Table.Th>
+          <Table.Th>{t('columns.products')}</Table.Th>
           <Table.Th>{t('columns.diffA')}</Table.Th>
           <Table.Th>{t('columns.diffB')}</Table.Th>
           <Table.Th>{t('columns.rollback')}</Table.Th>
@@ -43,10 +42,10 @@ export function ExportVersionList({
       </Table.Thead>
       <Table.Tbody>
         {versions.map((version) => (
-          <Table.Tr key={version.version} data-testid={`version-row-${version.version}`}>
+          <Table.Tr key={version.version_number} data-testid={`version-row-${version.version_number}`}>
             <Table.Td>
               <Group gap="xs">
-                <Text fw={500}>#{version.version}</Text>
+                <Text fw={500}>#{version.version_number}</Text>
                 {version.source === 'rollback' ? (
                   <Badge color="gray" variant="light" data-testid="not-qcd-badge">
                     {t('notQcd')}
@@ -60,45 +59,37 @@ export function ExportVersionList({
               </Text>
             </Table.Td>
             <Table.Td>
-              <Badge color={SOURCE_COLOR[version.source]} variant="light">
-                {t(`source.${version.source}`)}
+              <Badge color={SOURCE_COLOR[version.source] ?? 'gray'} variant="light">
+                {t(`source.${version.source}` as 'source.run' | 'source.rollback')}
               </Badge>
             </Table.Td>
             <Table.Td>
-              <Group gap={4}>
-                <Badge size="sm" color={version.findings.critical > 0 ? 'red' : 'gray'} variant="light">
-                  C {new Intl.NumberFormat(i18n.language).format(version.findings.critical)}
-                </Badge>
-                <Badge size="sm" color={version.findings.warning > 0 ? 'yellow' : 'gray'} variant="light">
-                  W {new Intl.NumberFormat(i18n.language).format(version.findings.warning)}
-                </Badge>
-                <Badge size="sm" color={version.findings.info > 0 ? 'blue' : 'gray'} variant="light">
-                  I {new Intl.NumberFormat(i18n.language).format(version.findings.info)}
-                </Badge>
-              </Group>
+              <Badge variant="light" color="gray">
+                {new Intl.NumberFormat(i18n.language).format(version.product_count)} {t('productsLabel')}
+              </Badge>
             </Table.Td>
             <Table.Td>
               <Radio
                 name="diffA"
-                checked={versionA === version.version}
-                onChange={() => onSelectA(version.version)}
-                aria-label={`${t('columns.diffA')} ${version.version}`}
+                checked={versionA === version.version_number}
+                onChange={() => onSelectA(version.version_number)}
+                aria-label={`${t('columns.diffA')} ${version.version_number}`}
               />
             </Table.Td>
             <Table.Td>
               <Radio
                 name="diffB"
-                checked={versionB === version.version}
-                onChange={() => onSelectB(version.version)}
-                aria-label={`${t('columns.diffB')} ${version.version}`}
+                checked={versionB === version.version_number}
+                onChange={() => onSelectB(version.version_number)}
+                aria-label={`${t('columns.diffB')} ${version.version_number}`}
               />
             </Table.Td>
             <Table.Td>
               <ActionIcon
                 variant="subtle"
-                onClick={() => onRollback(version.version)}
-                aria-label={`${t('rollbackToVersion')} ${version.version}`}
-                data-testid={`rollback-${version.version}`}
+                onClick={() => onRollback(version.version_number)}
+                aria-label={`${t('rollbackToVersion')} ${version.version_number}`}
+                data-testid={`rollback-${version.version_number}`}
               >
                 <IconArrowBackUp size={16} />
               </ActionIcon>

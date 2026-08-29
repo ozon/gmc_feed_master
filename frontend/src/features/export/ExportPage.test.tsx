@@ -37,9 +37,9 @@ const feed = {
 };
 
 const versions = [
-  { version: 3, created_at: '2026-08-29T10:00:00Z', source: 'scheduled', findings: { critical: 1, warning: 0, info: 0 }, url: '' },
-  { version: 2, created_at: '2026-08-28T10:00:00Z', source: 'rollback', findings: { critical: 0, warning: 0, info: 0 }, url: '' },
-  { version: 1, created_at: '2026-08-27T10:00:00Z', source: 'manual', findings: { critical: 0, warning: 2, info: 5 }, url: '' },
+  { id: 3, version_number: 3, product_count: 100, file_hash: 'h3', source: 'run', source_version_id: null, created_at: '2026-08-29T10:00:00Z' },
+  { id: 2, version_number: 2, product_count: 98, file_hash: 'h2', source: 'rollback', source_version_id: 3, created_at: '2026-08-28T10:00:00Z' },
+  { id: 1, version_number: 1, product_count: 90, file_hash: 'h1', source: 'run', source_version_id: null, created_at: '2026-08-27T10:00:00Z' },
 ];
 
 beforeAll(async () => {

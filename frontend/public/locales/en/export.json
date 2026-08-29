@@ -9,7 +9,7 @@
     "version": "Version",
     "createdAt": "Created",
     "source": "Source",
-    "findings": "Findings",
+    "products": "Products",
     "diffA": "A",
     "diffB": "B",
     "rollback": "Rollback",
@@ -18,10 +18,10 @@
     "new": "New"
   },
   "source": {
-    "scheduled": "Scheduled",
-    "manual": "Manual",
+    "run": "Run",
     "rollback": "Rollback"
   },
+  "productsLabel": "products",
   "notQcd": "not QC'd",
   "rollbackToVersion": "Rollback to version",
   "rollback": "Rollback",

@@ -31,10 +31,10 @@ export function ExportPage() {
 
   useEffect(() => {
     if (versions.length >= 2 && versionA === undefined && versionB === undefined) {
-      setVersionA(versions[0].version);
-      setVersionB(versions[1].version);
+      setVersionA(versions[0].version_number);
+      setVersionB(versions[1].version_number);
     } else if (versions.length === 1 && versionA === undefined) {
-      setVersionA(versions[0].version);
+      setVersionA(versions[0].version_number);
     }
   }, [versions, versionA, versionB]);
 
