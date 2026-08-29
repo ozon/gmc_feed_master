@@ -1,11 +1,11 @@
 import { Button, Group, Stack, Title } from '@mantine/core';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { usePluginConfig, useSavePluginConfig, usePlugins, type PluginScope } from '../../api/hooks';
 import { JsonSchemaForm, type JsonSchema } from '../../components/JsonSchemaForm';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
-import { notifyMutationError, notifySuccess } from '../../app/notifications';
+import { notifyError, notifyMutationError, notifySuccess } from '../../app/notifications';
 import { ApiError } from '../../api/client';
 
 export function PluginPage() {
@@ -24,10 +24,16 @@ export function PluginPage() {
   const saveConfig = useSavePluginConfig(pluginId ?? '', scope);
 
   const [formValue, setFormValue] = useState<Record<string, unknown>>({});
+  const hasSeededRef = useRef(false);
 
   useEffect(() => {
-    if (config.data) {
-      setFormValue((config.data ?? {}) as Record<string, unknown>);
+    hasSeededRef.current = false;
+  }, [pluginId]);
+
+  useEffect(() => {
+    if (config.data && !hasSeededRef.current) {
+      setFormValue(config.data as Record<string, unknown>);
+      hasSeededRef.current = true;
     }
   }, [config.data]);
 
@@ -43,10 +49,16 @@ export function PluginPage() {
   async function onSubmit(value: unknown) {
     if (!pluginId) return;
     try {
-      await saveConfig.mutateAsync((value ?? {}) as Record<string, unknown>);
+      const saved = (await saveConfig.mutateAsync((value ?? {}) as Record<string, unknown>)) as Record<string, unknown>;
+      setFormValue(saved);
+      hasSeededRef.current = true;
       notifySuccess(t('configSaved'));
     } catch (error) {
-      notifyMutationError(error, t('saveFailed'));
+      if (error instanceof ApiError && error.errors && error.errors.length > 0) {
+        notifyError(t('saveFailedWithErrors', { count: error.errors.length }));
+      } else {
+        notifyMutationError(error, t('saveFailed'));
+      }
     }
   }
 
