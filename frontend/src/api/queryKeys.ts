@@ -1,0 +1,15 @@
+export const queryKeys = {
+  session: ['session'] as const,
+  dashboardSummary: ['dashboard', 'summary'] as const,
+  clients: ['clients'] as const,
+  plugins: ['plugins'] as const,
+  feedSource: (id: number | string) => ({
+    detail: ['feed-source', id] as const,
+    products: (params: unknown) => ['feed-source', id, 'products', params] as const,
+    pipeline: ['feed-source', id, 'pipeline'] as const,
+    runs: ['feed-source', id, 'runs'] as const,
+    findings: ['feed-source', id, 'findings'] as const,
+    exportHistory: ['feed-source', id, 'export-history'] as const,
+    fieldMapping: ['feed-source', id, 'field-mapping'] as const,
+  }),
+};
