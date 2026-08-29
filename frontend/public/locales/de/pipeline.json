@@ -14,5 +14,6 @@
   "disableConfirmBody": "{{name}} wird von Feed-Quellen verwendet. Geben Sie die Anzahl zur Bestätigung ein.",
   "disable": "Deaktivieren",
   "saved": "Pipeline gespeichert.",
-  "saveFailed": "Pipeline konnte nicht gespeichert werden."
+  "saveFailed": "Pipeline konnte nicht gespeichert werden.",
+  "saveFailedWithErrors": "Pipeline konnte nicht gespeichert werden: {{errors}}"
 }

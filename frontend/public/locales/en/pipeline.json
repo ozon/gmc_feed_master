@@ -14,5 +14,6 @@
   "disableConfirmBody": "{{name}} is used by feed sources. Type the usage count to confirm.",
   "disable": "Disable",
   "saved": "Pipeline saved.",
-  "saveFailed": "Could not save pipeline."
+  "saveFailed": "Could not save pipeline.",
+  "saveFailedWithErrors": "Could not save pipeline: {{errors}}"
 }

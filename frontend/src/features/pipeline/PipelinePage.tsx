@@ -10,7 +10,7 @@ import {
 } from '../../api/hooks';
 import type { PipelineInstance, PluginInfo } from '../../api/types';
 import { ErrorState, LoadingState } from '../../components/StateViews';
-import { notifyMutationError, notifySuccess } from '../../app/notifications';
+import { notifyError, notifyMutationError, notifySuccess } from '../../app/notifications';
 import { ApiError } from '../../api/client';
 import { useBlocker } from 'react-router';
 import { PluginPalette } from './PluginPalette';
@@ -94,7 +94,11 @@ export function PipelinePage() {
       notifySuccess(t('saved'));
       setHydrated(false);
     } catch (error) {
-      notifyMutationError(error, t('saveFailed'));
+      if (error instanceof ApiError && error.errors && error.errors.length > 0) {
+        notifyError(t('saveFailedWithErrors', { errors: error.errors.join('; ') }));
+      } else {
+        notifyMutationError(error, t('saveFailed'));
+      }
     }
   }
 
