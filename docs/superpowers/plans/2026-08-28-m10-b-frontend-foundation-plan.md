@@ -1121,7 +1121,9 @@ async function parseError(response: Response): Promise<ApiError> {
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...init, credentials: 'include' });
   if (!response.ok) {
-    if (response.status === 401 && unauthorizedHandler && !url.startsWith('/auth/login')) {
+    const authExempt =
+      url.startsWith('/auth/login') || url.startsWith('/auth/password');
+    if (response.status === 401 && unauthorizedHandler && !authExempt) {
       unauthorizedHandler();
     }
     throw await parseError(response);
@@ -1304,9 +1306,13 @@ export function useLogout() {
 }
 
 export function useChangePassword() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) =>
       changePassword(currentPassword, newPassword),
+    onSuccess: () => {
+      void queryClient.resetQueries({ queryKey: queryKeys.session });
+    },
   });
 }
 ```
@@ -1320,6 +1326,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiError,
   apiGet,
+  changePassword,
   getCurrentUser,
   login,
   setUnauthorizedHandler,
@@ -1365,12 +1372,19 @@ describe('api client', () => {
     await apiGet('/dashboard/summary').catch(() => undefined);
     expect(handler).toHaveBeenCalledTimes(1);
   });
-
   it('does not invoke the handler for a failed login', async () => {
     const handler = vi.fn();
     setUnauthorizedHandler(handler);
     fetchMock.mockResolvedValueOnce(jsonResponse({ detail: 'Invalid credentials' }, 401));
     await login('a', 'b').catch(() => undefined);
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('does not invoke the handler for a failed password change', async () => {
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    fetchMock.mockResolvedValueOnce(jsonResponse({ detail: 'Invalid credentials' }, 401));
+    await changePassword('wrong', 'new').catch(() => undefined);
     expect(handler).not.toHaveBeenCalled();
   });
 });
@@ -1410,7 +1424,7 @@ Expected: FAIL — modules missing.
 
 Remove `frontend/src/api.ts` (its functions now live in `src/api/client.ts`).
 Run: `npx vitest run src/api`
-Expected: PASS (6 tests).
+Expected: PASS (7 tests).
 
 - [ ] **Step 8: Run the full gate**
 
@@ -1941,11 +1955,51 @@ git commit -m "feat(m10-b): add router with session guard, minimal login, and pl
 
 **Files:**
 - Modify/replace: `frontend/src/app/AppShell.tsx`
+- Modify: `frontend/src/api/client.ts` (401-exempt `/auth/password`), `frontend/src/api/client.test.ts` (+1 test), `frontend/src/api/hooks.ts` (`useChangePassword` resets session query)
 - Test: `frontend/src/app/AppShell.test.tsx`
 
 **Interfaces:**
 - Consumes: `useSession`, `useDashboardSummary`, `usePlugins`, `useLogout`, `useChangePassword` (Task 4); `LanguageSwitcher` (Task 2); notification helpers (Task 5); i18n `common`/`auth` namespaces.
 - Produces: the authenticated layout wrapping all area routes (already referenced by the router from Task 6).
+
+Note (Task 4 review follow-up, applied here because Task 4 is already committed): `POST /auth/password` returns 401 on a wrong current password while the session is still valid, and on success the backend revokes the session. Therefore: (1) the centralized 401 handler must also skip `/auth/password`; (2) `useChangePassword` must reset the session query on success so the guard re-checks `/auth/me` and redirects to login. Apply exactly:
+
+`src/api/client.ts` — in `request`, replace the login-only exemption with:
+
+```ts
+    const authExempt =
+      url.startsWith('/auth/login') || url.startsWith('/auth/password');
+    if (response.status === 401 && unauthorizedHandler && !authExempt) {
+      unauthorizedHandler();
+    }
+```
+
+`src/api/client.test.ts` — add `changePassword` to the import list from `'./client'` and append this test:
+
+```ts
+  it('does not invoke the handler for a failed password change', async () => {
+    const handler = vi.fn();
+    setUnauthorizedHandler(handler);
+    fetchMock.mockResolvedValueOnce(jsonResponse({ detail: 'Invalid credentials' }, 401));
+    await changePassword('wrong', 'new').catch(() => undefined);
+    expect(handler).not.toHaveBeenCalled();
+  });
+```
+
+`src/api/hooks.ts` — `useChangePassword` resets the session on success (the backend revokes the session on password change, and the guard must re-check `/auth/me`):
+
+```ts
+export function useChangePassword() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) =>
+      changePassword(currentPassword, newPassword),
+    onSuccess: () => {
+      void queryClient.resetQueries({ queryKey: queryKeys.session });
+    },
+  });
+}
+```
 
 - [ ] **Step 1: Replace `src/app/AppShell.tsx` with the full shell**
 
@@ -2404,7 +2458,8 @@ Expected: all green.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add frontend/src/app/AppShell.tsx frontend/src/app/AppShell.test.tsx
+git add frontend/src/app/AppShell.tsx frontend/src/app/AppShell.test.tsx \
+  frontend/src/api/client.ts frontend/src/api/client.test.ts frontend/src/api/hooks.ts
 git commit -m "feat(m10-b): add AppShell with header, breadcrumb, user menu, and dynamic plugin nav"
 ```
 
@@ -2749,5 +2804,7 @@ git commit -m "chore(m10-b): extend dev proxy to all API prefixes and record M10
 - **Spec coverage (design §2):** §2.1 deps/pins → Task 1 + Task 9 decisions; §2.2 source layout → File Structure (all tasks); §2.3 routing + RequireSession guard + redirect-to-origin → Task 6; §2.4 AppShell (wordmark, breadcrumb Client>Feed, language switcher, dark/light, user menu w/ password change + logout, navbar with disabled feed-scoped items + dynamic plugin section) → Task 7; §2.5 query keys + polling + notifications → Tasks 4, 5; §2.6 theme + i18n → Tasks 1, 2. Shared components incl. JsonSchemaForm → Tasks 3, 8. Vite proxy extension → Task 9.
 - **DoD minimum tests (design §5) covered in M10-b:** auth route guards (Task 6), schema-form rendering (Task 8), notification on mutation failure (Task 5). Column-config persistence, diff-view rendering, and pipeline dirty tracking belong to M10-c/d areas and are out of scope here.
 - **Deviations to flag for review:** (1) minimal Mantine login is built in M10-b although §6 lists Login under M10-c — required so the §2.3 guard can restore the original route after a real login; M10-c polishes it. (2) `ExportUrlBlock` (design §2.2) is deferred to M10-d Export area since it needs export-token endpoints not consumed by the foundation.
+- **Review-driven amendment (Task 4 review, Important):** the centralized 401 handler also exempts `/auth/password` (backend returns 401 on wrong current password with a still-valid session), and `useChangePassword` resets the session query on success (backend revokes the session). The deltas are folded into Task 7 (applied after Task 4's already-committed state) with one new client test; final-state code in Task 4 reflects them.
+- **Review-driven note (Task 4, Minor):** old `src/api.ts#recordInteraction` (idle keepalive button) is intentionally not carried over; nothing in M10-b/c/d references it. Backend sessions hard-expire `session_idle_minutes` after login (all routes renew_idle=False) — flagged to M10-c/d planning.
 - **Test-harness note:** i18n loads namespaces through a custom backend `request` function using global `fetch`; `src/test/setup.ts` installs a default locale-serving `fetch` stub and awaits `initPromise` before all tests, and `src/test/fetch.ts#stubFetch` layers locale serving under per-test API mocks. This keeps `i18n-agent-instructions.md`'s "no static locale imports" rule intact in tests.
 - **Type consistency:** `JsonSchema`/`JsonSchemaFormProps` (Task 8), `DashboardSummary`/`PluginInfo` (Task 4), `queryKeys` (Task 4) are the single definitions referenced by later tasks and by M10-c/d.
