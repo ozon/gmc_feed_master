@@ -151,6 +151,13 @@ export function useQualityFindings(feedSourceId: number | string, active: boolea
   });
 }
 
+export function useRunDryRun(feedSourceId: number | string) {
+  return useMutation({
+    mutationFn: ({ limit }: { limit: number }) =>
+      apiPost<unknown>(`/feed-sources/${feedSourceId}/dry-run`, { limit }),
+  });
+}
+
 export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({

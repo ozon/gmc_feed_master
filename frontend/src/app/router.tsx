@@ -16,11 +16,13 @@ import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { SetupPage } from '../features/setup/SetupPage';
 import {
   ExportPlaceholder,
-  MonitoringPlaceholder,
 } from '../features/placeholders';
 import { PluginPage } from '../features/plugin/PluginPage';
 import { PipelinePage } from '../features/pipeline/PipelinePage';
 import { ProductsPage } from '../features/products/ProductsPage';
+import { MonitoringRunsPage } from '../features/monitoring/MonitoringRunsPage';
+import { MonitoringFindingsPage } from '../features/monitoring/MonitoringFindingsPage';
+import { MonitoringDryRunPage } from '../features/monitoring/MonitoringDryRunPage';
 import { AppShell } from './AppShell';
 
 export function RequireSession() {
@@ -52,7 +54,22 @@ const routes = [
           { path: 'clients/:clientId/feeds/:feedSourceId/setup', element: <SetupPage /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/products', element: <ProductsPage /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/pipeline', element: <PipelinePage /> },
-          { path: 'clients/:clientId/feeds/:feedSourceId/monitoring', element: <MonitoringPlaceholder /> },
+          {
+            path: 'clients/:clientId/feeds/:feedSourceId/monitoring',
+            element: <Navigate to="runs" replace />,
+          },
+          {
+            path: 'clients/:clientId/feeds/:feedSourceId/monitoring/runs',
+            element: <MonitoringRunsPage />,
+          },
+          {
+            path: 'clients/:clientId/feeds/:feedSourceId/monitoring/findings',
+            element: <MonitoringFindingsPage />,
+          },
+          {
+            path: 'clients/:clientId/feeds/:feedSourceId/monitoring/dry-run',
+            element: <MonitoringDryRunPage />,
+          },
           { path: 'clients/:clientId/feeds/:feedSourceId/export', element: <ExportPlaceholder /> },
           { path: 'clients/:clientId/plugins/:pluginId', element: <PluginPage /> },
           { path: 'plugins/:pluginId', element: <PluginPage /> },
