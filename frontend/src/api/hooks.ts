@@ -1,50 +1,53 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiGet, changePassword, getCurrentUser, logout } from './client';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiDelete, apiGet, apiPost, apiPut, changePassword, getCurrentUser, logout } from './client';
 import { queryKeys } from './queryKeys';
+import type {
+  ClientRow,
+  ClientSummary,
+  DashboardSummary,
+  FeedSourceRow,
+  FeedSourceSummary,
+  FieldMappingDoc,
+  IngestionRunRow,
+  PluginInfo,
+  ProductDetail,
+  ProductsPageResponse,
+  QualityFindingsResponse,
+  RegistryAttribute,
+} from './types';
 
-export type FeedSourceSummary = {
-  id: number;
-  client_id: number;
-  name: string;
-  source_format: string;
-  item_count: number;
-  last_export_at: string | null;
-  last_export_status: string | null;
-  last_run_at: string | null;
-  last_run_status: string | null;
+export type {
+  ClientRow,
+  ClientSummary,
+  DashboardSummary,
+  FeedSourceRow,
+  FeedSourceSummary,
+  FieldMappingDoc,
+  IngestionRunRow,
+  PluginInfo,
+  ProductDetail,
+  ProductsPageResponse,
+  QualityFindingsResponse,
+  RegistryAttribute,
+} from './types';
+
+type ProductListParams = {
+  page: number;
+  page_size: number;
+  q?: string;
+  status?: string;
+  sort?: string;
 };
 
-export type ClientSummary = {
-  id: number;
-  name: string;
-  status: string;
-  feed_sources: FeedSourceSummary[];
-};
-
-export type DashboardSummary = {
-  counts: {
-    clients: number;
-    feed_sources: number;
-    active_products: number;
-    failed_last_exports: number;
-  };
-  clients: ClientSummary[];
-};
-
-export type PluginManifestFrontend = {
-  menu_item?: string;
-  icon?: string;
-  component?: string;
-};
-
-export type PluginInfo = {
-  id: string;
-  name: string;
-  version: string;
-  enabled: boolean;
-  manifest: { frontend?: PluginManifestFrontend; [key: string]: unknown } | null;
-  used_by_feed_sources: number;
-};
+function buildProductsQuery(params: ProductListParams): string {
+  const search = new URLSearchParams();
+  search.set('page', String(params.page));
+  search.set('page_size', String(params.page_size));
+  if (params.q) search.set('q', params.q);
+  if (params.status && params.status !== 'all') search.set('status', params.status);
+  if (params.sort) search.set('sort', params.sort);
+  return search.toString();
+}
 
 export function useSession() {
   return useQuery({
@@ -76,6 +79,74 @@ export function usePlugins() {
   });
 }
 
+export function useClients() {
+  return useQuery({
+    queryKey: queryKeys.clients,
+    queryFn: () => apiGet<ClientRow[]>('/clients'),
+  });
+}
+
+export function useFeedSource(id: number | string) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(id).detail,
+    queryFn: () => apiGet<FeedSourceRow>(`/feed-sources/${id}`),
+  });
+}
+
+export function useFieldMapping(feedSourceId: number | string) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId).mapping,
+    queryFn: () => apiGet<FieldMappingDoc>(`/feed-sources/${feedSourceId}/field-mapping`),
+  });
+}
+
+export function useRegistryAttributes() {
+  return useQuery({
+    queryKey: queryKeys.registryAttributes,
+    queryFn: () => apiGet<RegistryAttribute[]>('/registry/attributes'),
+    staleTime: Infinity,
+  });
+}
+
+export function useProductList(feedSourceId: number | string, params: ProductListParams) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId).products(params),
+    queryFn: () =>
+      apiGet<ProductsPageResponse>(
+        `/feed-sources/${feedSourceId}/products?${buildProductsQuery(params)}`,
+      ),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useProductDetail(feedSourceId: number | string, productId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.productDetail(feedSourceId, productId ?? ''),
+    queryFn: () =>
+      apiGet<ProductDetail>(
+        `/feed-sources/${feedSourceId}/products/${encodeURIComponent(productId!)}`,
+      ),
+    enabled: productId !== null,
+  });
+}
+
+export function useIngestionRuns(feedSourceId: number | string, active: boolean) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId).runs,
+    queryFn: () => apiGet<IngestionRunRow[]>(`/feed-sources/${feedSourceId}/ingestion-runs?limit=50`),
+    refetchInterval: active ? 5000 : false,
+  });
+}
+
+export function useQualityFindings(feedSourceId: number | string, active: boolean) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId).findings,
+    queryFn: () =>
+      apiGet<QualityFindingsResponse>(`/feed-sources/${feedSourceId}/quality-findings`),
+    refetchInterval: active ? 5000 : false,
+  });
+}
+
 export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -93,6 +164,140 @@ export function useChangePassword() {
       changePassword(currentPassword, newPassword),
     onSuccess: () => {
       void queryClient.resetQueries({ queryKey: queryKeys.session });
+    },
+  });
+}
+
+export function useCreateClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { name: string; status?: string }) => apiPost<ClientRow>('/clients', body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clients });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary });
+    },
+  });
+}
+
+export function useUpdateClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: number; name?: string; status?: string }) =>
+      apiPut<ClientRow>(`/clients/${id}`, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clients });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary });
+    },
+  });
+}
+
+export function useDeleteClient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => apiDelete(`/clients/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clients });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary });
+    },
+  });
+}
+
+export function useCreateFeedSource() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ clientId, ...body }: {
+      clientId: number | string;
+      name: string;
+      source_format: string;
+      cron_expression?: string | null;
+      target_country?: string | null;
+      target_language?: string | null;
+      currency?: string | null;
+      source_url?: string | null;
+    }) => apiPost<FeedSourceRow>(`/clients/${clientId}/feed-sources`, body),
+    onSuccess: (feedSource) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clients });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.feedSource(feedSource.id).detail,
+      });
+    },
+  });
+}
+
+export function useUpdateFeedSource() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: {
+      id: number | string;
+      name?: string;
+      source_format?: string;
+      cron_expression?: string | null;
+      target_country?: string | null;
+      target_language?: string | null;
+      currency?: string | null;
+      source_url?: string | null;
+      history_retention_count?: number;
+      volume_drop_threshold_pct?: number;
+      configuration?: Record<string, unknown>;
+    }) => apiPut<FeedSourceRow>(`/feed-sources/${id}`, body),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.feedSource(variables.id).detail,
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary });
+    },
+  });
+}
+
+export function useDeleteFeedSource() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number | string) => apiDelete(`/feed-sources/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.clients });
+    },
+  });
+}
+
+export function useRotateExportToken() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number | string) =>
+      apiPost<{ export_token: string; export_url: string }>(
+        `/feed-sources/${id}/export-token/rotate`,
+      ),
+    onSuccess: (_data, id) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.feedSource(id).detail,
+      });
+    },
+  });
+}
+
+export function useSaveFieldMapping() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, mappings }: { id: number | string; mappings: Record<string, { target: string }> }) =>
+      apiPut<FieldMappingDoc>(`/feed-sources/${id}/field-mapping`, { mappings }),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.feedSource(variables.id).mapping,
+      });
+    },
+  });
+}
+
+export function useAutoMap() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number | string) =>
+      apiPost<FieldMappingDoc>(`/feed-sources/${id}/field-mapping/auto`),
+    onSuccess: (_data, id) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.feedSource(id).mapping,
+      });
     },
   });
 }

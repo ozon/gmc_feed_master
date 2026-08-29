@@ -3,6 +3,9 @@ export const queryKeys = {
   dashboardSummary: ['dashboard', 'summary'] as const,
   clients: ['clients'] as const,
   plugins: ['plugins'] as const,
+  registryAttributes: ['registry', 'attributes'] as const,
+  productDetail: (feedSourceId: number | string, productId: string) =>
+    ['feed-source', feedSourceId, 'products', 'detail', productId] as const,
   feedSource: (id: number | string) => ({
     detail: ['feed-source', id] as const,
     products: (params: unknown) => ['feed-source', id, 'products', params] as const,
@@ -11,5 +14,6 @@ export const queryKeys = {
     findings: ['feed-source', id, 'findings'] as const,
     exportHistory: ['feed-source', id, 'export-history'] as const,
     fieldMapping: ['feed-source', id, 'field-mapping'] as const,
+    mapping: ['feed-source', id, 'field-mapping'] as const,
   }),
 };

@@ -17,7 +17,7 @@ export function localeResponse(url: string): Response | undefined {
 }
 
 export function stubFetch(handler: (url: string) => Response | Promise<Response>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const locale = localeResponse(url);
     if (locale) return locale;
