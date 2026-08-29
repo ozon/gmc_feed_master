@@ -802,3 +802,142 @@ binding product specification. Dates use ISO 8601 calendar dates.
   `createBrowserRouter`) rather than the newer v8 line.
 - **Rationale:** design §2.3 specifies React Router v7; keeps the
   milestone on the reviewed spec.
+
+## 2026-08-29
+
+### dnd-kit for M10 Pipeline Editor drag-drop
+
+- **Topic:** Drag-drop library for the Pipeline Editor
+- **Decision:** Use `@dnd-kit/core@6.3.1` + `@dnd-kit/sortable@10.0.0`
+  (already pinned in M10-b) for palette → workspace drag and
+  within-workspace reorder. Pure state-mutation functions
+  (`addInstance`, `reorderInstances`, `removeInstance`,
+  `isInstancesEqual`) live in `frontend/src/features/pipeline/dndUtils.ts`
+  and are the testable contract; drag-drop interaction tests are
+  deferred (jsdom + dnd-kit pointer events are brittle).
+- **Rationale:** design §4.5 explicitly mandates dnd-kit for the
+  Pipeline Editor. Pure-function extraction lets us lock the state
+  contract without depending on jsdom dnd-event behavior.
+
+### Monitoring split into 3 separate routes
+
+- **Topic:** URL shape for the Monitoring area
+- **Decision:** Three routes
+  (`/clients/:clientId/feeds/:feedSourceId/monitoring/runs`,
+  `/monitoring/findings`, `/monitoring/dry-run`) with a default
+  redirect from `/monitoring` to `/monitoring/runs`. Rejected
+  `?tab=runs|findings|dry-run` in favor of real routes.
+- **Rationale:** Owner decision during M10-d brainstorming
+  (2026-08-29). Deep-linkability (each tab is bookmarkable),
+  isolated tests per page, and a consistent URL shape across
+  Monitoring's three independent concerns (history table,
+  findings aggregation, dry-run trigger). Trade-off: three
+  page components instead of one with a tab switcher.
+
+### Export single page with inline diff
+
+- **Topic:** URL shape for the Export area
+- **Decision:** Single page
+  (`/clients/:clientId/feeds/:feedSourceId/export`) with the
+  version list at the top and the diff (between two selected
+  versions) rendered inline below. Default diff selection:
+  A=latest, B=previous. Diff is field-based (grouped by product,
+  one row per changed attribute) and never line-based per
+  spec §4.7. Rejected a separate `/diff` route and a modal
+  diff.
+- **Rationale:** Owner decision during M10-d brainstorming
+  (2026-08-29). Inline diff keeps the user in one screen;
+  version radios make the A/B selection obvious; the
+  "not QC'd" badge for `source === 'rollback'` rows prevents
+  misreading finding counts of 0 as "clean".
+
+### Plugin enable toggle in Pipeline Editor registry panel
+
+- **Topic:** Where the global plugin enable/disable switch lives
+- **Decision:** The toggle for `PUT /plugins/{id}/enabled` lives
+  in the Pipeline Editor's registry panel (collapsible
+  `Accordion` section, open/closed state persisted in
+  `localStorage` key `pipeline.registryPanelOpen`). Disabling
+  a plugin with `used_by_feed_sources > 0` requires a
+  `ConfirmModal` with `typeToConfirm` set to the usage count.
+  Rejected a separate top-level `/plugins` page.
+- **Rationale:** Spec §3 "Pipeline Editor registry panel
+  (fulfills spec §9 area 4)". The toggle is contextual to the
+  pipeline building flow where plugins are referenced.
+
+### Demo plugin `example_upper` shipped in M10
+
+- **Topic:** Demo plugin for M10 verification
+- **Decision:** `plugins/example_upper/` (copied from
+  `backend/tests/fixtures/example_upper/`) ships with the
+  `frontend: {menu_item: 'Example Upper', icon: 'letter-e'}`
+  manifest key, exercising the auto-rendered plugin page path
+  (no `component` field). The contract suite continues to pass
+  unchanged.
+- **Rationale:** design §3; M10-a task 40. The plugin has no
+  custom React component, so the `PluginPage` auto-form is
+  the only path exercised by the demo.
+
+### Auto-rendered `JsonSchemaForm` only for plugin pages
+
+- **Topic:** Plugin page rendering strategy
+- **Decision:** Every plugin page renders a `JsonSchemaForm`
+  bound to `manifest.config_schema` (falling back to
+  `manifest.data_schema` if only data is editable). No
+  build-time Vite plugin scans `plugins/*/frontend/` for
+  custom React components; no per-plugin-component registry.
+- **Rationale:** Owner decision during M10-d brainstorming
+  (2026-08-29). All shipped plugins use the auto-form path
+  today. The build-time discovery scaffold is deferred until
+  a plugin needs a custom UI (the registry will start empty).
+
+### Export `DiffOut` shape matches backend
+
+- **Topic:** Frontend types for export diff
+- **Decision:** The frontend's `DiffOut` type
+  (`version, against, added: [str], removed: [str],
+  changed: [DiffProductOut{product_id, fields: [DiffFieldOut{field, old, new}]}]`)
+  matches the backend schema
+  (`backend/app/schemas/export.py:32-36`) exactly.
+  `DiffFieldOut.old` and `.new` are `unknown` (typed as JSON),
+  rendered via `JSON.stringify` in the UI.
+- **Rationale:** Field-based diff per spec §4.7 ("NEVER
+  line-based"). Unknown typing of old/new is the only honest
+  shape for arbitrary product field values.
+
+### `ExportVersionOut` realigned to backend reality
+
+- **Topic:** Spec/plan vs backend mismatch on export version
+  fields
+- **Decision:** The plan/spec stated
+  `ExportVersionOut: {version, created_at, source, findings: {critical, warning, info}, url}`.
+  The actual backend returns
+  `{id, version_number, product_count, file_hash, source, source_version_id, created_at}`
+  (source ∈ {'run', 'rollback'}, no `findings`, no `url`).
+  M10-d commit `981c32d` realigned the frontend to the
+  backend. The spec/plan will be updated in a follow-up
+  (TODO.md Task 2.1 adds `findings` and `url` to the
+  backend).
+- **Rationale:** The frontend cannot work against a backend
+  that doesn't provide the claimed fields. Realigning to
+  backend reality is the only correct short-term fix;
+  closing the spec/backend gap from the backend side is the
+  proper resolution (TODO.md Task 2.1).
+
+### 422 errors summary notification pattern
+
+- **Topic:** How to surface backend `{"errors": [...]}` 422
+  responses
+- **Decision:** When a mutation catch block sees
+  `error instanceof ApiError && error.errors && error.errors.length > 0`,
+  call `notifyError` with a joined message
+  (e.g. `t('saveFailedWithErrors', { errors: error.errors.join('; ') })`).
+  The field-level errors map (colon-split keys) is computed
+  inline and passed to `JsonSchemaForm`'s `errors` prop.
+  Applied in PluginPage, PipelinePage, ExportPage
+  (3 commits: `40c7a94`, `16330b5`, M10-d Task 4).
+  Centralization into one helper is TODO.md Task 1.1.
+- **Rationale:** Global constraint: "422 `{"errors":[...]}` 
+  rendered per-field + summary notification" (M10-d plan).
+  `notifyMutationError` only reads `error.detail`, so a
+  dedicated branch is needed for the errors-array case.
