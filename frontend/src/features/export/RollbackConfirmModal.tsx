@@ -11,7 +11,7 @@ type Props = {
 
 export function RollbackConfirmModal({ opened, version, onClose, onConfirm, pending }: Props) {
   const { t } = useTranslation('export');
-  if (!version) return null;
+  if (version === null) return null;
   return (
     <ConfirmModal
       opened={opened}
