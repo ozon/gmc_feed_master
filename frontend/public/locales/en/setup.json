@@ -5,6 +5,27 @@
     "mapping": "Mapping"
   },
   "mappingPlaceholder": "Mapping configuration will be available in the next update.",
+  "mapping": {
+    "title": "Field Mapping",
+    "autoMapper": "Run auto mapper",
+    "save": "Save",
+    "saved": "Mapping saved",
+    "saveFailed": "Could not save mapping.",
+    "autoMapped": "Auto-mapped",
+    "noSourceFields": "No source fields observed yet.",
+    "requiredUncovered": "Required registry attributes not covered",
+    "requiredUncoveredList": "The following required attributes are not mapped: {{names}}",
+    "table": {
+      "source": "Source field",
+      "target": "Target attribute",
+      "selectTarget": "Select target"
+    },
+    "origins": {
+      "auto": "auto",
+      "synonym": "suggestion",
+      "manual": "manual"
+    }
+  },
   "fields": {
     "name": "Name",
     "sourceFormat": "Source format",

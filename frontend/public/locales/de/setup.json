@@ -5,6 +5,27 @@
     "mapping": "Zuordnung"
   },
   "mappingPlaceholder": "Zuordnungskonfiguration wird in der nächsten Aktualisierung verfügbar sein.",
+  "mapping": {
+    "title": "Feldzuordnung",
+    "autoMapper": "Automatische Zuordnung ausführen",
+    "save": "Speichern",
+    "saved": "Zuordnung gespeichert",
+    "saveFailed": "Zuordnung konnte nicht gespeichert werden.",
+    "autoMapped": "Automatisch zugeordnet",
+    "noSourceFields": "Noch keine Quellfelder beobachtet.",
+    "requiredUncovered": "Erforderliche Registry-Attribute nicht abgedeckt",
+    "requiredUncoveredList": "Die folgenden erforderlichen Attribute sind nicht zugeordnet: {{names}}",
+    "table": {
+      "source": "Quellfeld",
+      "target": "Zielattribut",
+      "selectTarget": "Ziel auswählen"
+    },
+    "origins": {
+      "auto": "auto",
+      "synonym": "Vorschlag",
+      "manual": "manuell"
+    }
+  },
   "fields": {
     "name": "Name",
     "sourceFormat": "Quellformat",

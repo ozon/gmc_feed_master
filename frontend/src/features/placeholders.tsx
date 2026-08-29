@@ -1,17 +1,13 @@
 import { Title } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 
-function Placeholder({ ns }: { ns: 'setup' | 'products' | 'pipeline' | 'monitoring' | 'export' }) {
+function Placeholder({ ns }: { ns: 'setup' | 'pipeline' | 'monitoring' | 'export' }) {
   const { t } = useTranslation(ns);
   return <Title order={2}>{t('title')}</Title>;
 }
 
 export function SetupPlaceholder() {
   return <Placeholder ns="setup" />;
-}
-
-export function ProductsPlaceholder() {
-  return <Placeholder ns="products" />;
 }
 
 export function PipelinePlaceholder() {

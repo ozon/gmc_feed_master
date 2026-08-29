@@ -19,8 +19,8 @@ import {
   MonitoringPlaceholder,
   PipelinePlaceholder,
   PluginPlaceholder,
-  ProductsPlaceholder,
 } from '../features/placeholders';
+import { ProductsPage } from '../features/products/ProductsPage';
 import { AppShell } from './AppShell';
 
 export function RequireSession() {
@@ -50,7 +50,7 @@ const routes = [
         children: [
           { index: true, element: <DashboardPage /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/setup', element: <SetupPage /> },
-          { path: 'clients/:clientId/feeds/:feedSourceId/products', element: <ProductsPlaceholder /> },
+          { path: 'clients/:clientId/feeds/:feedSourceId/products', element: <ProductsPage /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/pipeline', element: <PipelinePlaceholder /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/monitoring', element: <MonitoringPlaceholder /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/export', element: <ExportPlaceholder /> },

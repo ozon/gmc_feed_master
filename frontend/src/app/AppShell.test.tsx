@@ -71,6 +71,9 @@ function authenticatedHandler(url: string) {
   if (url === '/auth/me') return jsonResponse({ username: 'operator' });
   if (url === '/dashboard/summary') return jsonResponse(summary);
   if (url === '/plugins') return jsonResponse(plugins);
+  if (url.startsWith('/feed-sources/') && url.includes('/products')) {
+    return jsonResponse({ items: [], total: 0, page: 1, page_size: 50 });
+  }
   return jsonResponse({});
 }
 

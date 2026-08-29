@@ -61,6 +61,8 @@ describe('SetupPage', () => {
     fetchMock = stubFetch((url) => {
       if (url === '/auth/me') return jsonResponse({ username: 'operator' });
       if (url === '/feed-sources/1') return jsonResponse(feed);
+      if (url === '/feed-sources/1/field-mapping') return jsonResponse({ version: 1, auto_mapped: false, source_fields: [], mappings: {} });
+      if (url === '/registry/attributes') return jsonResponse([]);
       return jsonResponse({});
     });
 
@@ -74,6 +76,6 @@ describe('SetupPage', () => {
       expect(window.location.search).toContain('tab=mapping');
     });
 
-    expect(await screen.findByText(/mapping configuration will be available/i)).toBeInTheDocument();
+    expect(await screen.findByText(/field mapping/i)).toBeInTheDocument();
   });
 });
