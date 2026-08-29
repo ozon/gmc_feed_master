@@ -803,6 +803,59 @@ binding product specification. Dates use ISO 8601 calendar dates.
 - **Rationale:** design §2.3 specifies React Router v7; keeps the
   milestone on the reviewed spec.
 
+### M10-c ConfirmModal `typeToConfirm` (cascade delete)
+
+- **Topic:** Confirmation UX for destructive actions
+- **Decision:** Extend `ConfirmModal` (M10-b) with an optional
+  `typeToConfirm?: string` prop. When set, the modal renders
+  a `TextInput` in the body and the confirm button stays
+  disabled until the input matches exactly. Used by the
+  cascade-delete flow (delete client, delete feed) so a
+  typo cannot trigger a destructive multi-table cascade.
+- **Rationale:** design §4.2, M10-c plan §3.5. Owner rejected
+  a generic "type YES" pattern as too gameable.
+
+### M10-c `form.Subscribe` for reactive `isDirty`
+
+- **Topic:** How to read `isDirty` from TanStack Form
+- **Decision:** `form.state.isDirty` is NOT reactive in
+  `@tanstack/react-form@1.33.5` — it is a plain getter on the
+  form api object, not a subscribed store value. Components
+  that depend on `isDirty` (Save/Reset button enable state)
+  must wrap the relevant render in `form.Subscribe`, or use
+  `useStore` to subscribe to the form's reactive store.
+  Applied in `FeedSettingsForm` and other M10-c/M10-d forms.
+- **Rationale:** Discovered during M10-c Task 3
+  (Setup/FeedSettingsForm); the docs are silent on this
+  detail. Captured as a binding lesson for future forms.
+
+### M10-c Mantine v9 `ff` prop has no `'numeric'` token
+
+- **Topic:** Numeric font shorthand in Mantine
+- **Decision:** Mantine v9 `ff` prop accepts only
+  `'monospace' | 'text' | 'heading' | string`. Use
+  `ff="monospace"` plus CSS `font-variant-numeric: tabular-nums`
+  (or the `tnum` Tailwind class) for numeric columns. Rejected
+  the design's `ff="numeric"` literal.
+- **Rationale:** The `ff="numeric"` shorthand referenced in
+  some pre-M10 components does not exist in Mantine 9.5.2;
+  using it produces a TypeScript error and a silent CSS
+  fallback. Discovered during M10-c Task 2 (Dashboard stat
+  cards). M10-d plan §1 globally codifies this.
+
+### M10-c tests: `notifications.clean()` between tests
+
+- **Topic:** Mantine notification leakage between test cases
+- **Decision:** All M10-c test files that render a component
+  which may call `notifySuccess` / `notifyError` include
+  `notifications.clean()` in `beforeEach` to clear queued
+  toasts from prior tests. Otherwise late-finishing
+  background mutations can fire a toast in the next test's
+  render and cause `findByText` to match the wrong node.
+- **Rationale:** Discovered during M10-c Task 6
+  (ExportPage/Notification interaction). Carried forward
+  as a binding pattern.
+
 ## 2026-08-29
 
 ### dnd-kit for M10 Pipeline Editor drag-drop

@@ -360,7 +360,7 @@ Owner decision needed. Document the choice in `backend/docs/decisions.md` when i
 
 ## Section 8 — Backlog (longer-term)
 
-### 8.1 [ ] [ ] M11+ scope planning [P0]
+### 8.1 [ ] M11+ scope planning [P0]
 
 **Why:** M10 is done. M11+ requirements need to be gathered (from spec gaps, from the IngestionRun 90-day retention need, from Core plugin UIs, from any new business requirements). Without a plan, coding agents have no roadmap.
 
@@ -379,9 +379,9 @@ Owner decision needed. Document the choice in `backend/docs/decisions.md` when i
 - **M10 gate per task:** `cd /home/ozon/gmc_feed_master/frontend && npm test -- --run && npm run typecheck && npm run build`. Backend tasks: `cd /home/ozon/gmc_feed_master && pytest -n auto` (requires `TEST_DATABASE_URL`).
 - **Conventions** (binding): no comments in code; all strings via `t()`; en+de identical i18n trees; 422 errors summary notification; query-key invalidation; Loading/Empty/ErrorState on every data view.
 - **M10-d lessons** (binding): TanStack Form dirty uses `form.Subscribe`; `notifications.clean()` in `beforeEach`; `beforeAll(loadNamespaces)` for non-default namespaces; `useBlocker` requires data router (`createMemoryRouter`+`RouterProvider` in tests); nullable fields in `plugin.manifest` need optional chaining.
-- **Per-task workflow:** Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans`. Each task is sized for a single subagent + reviewer cycle. After each task, merge to main and update `docs/superpowers/specs/progress.md` (or the equivalent ledger).
-- **Originals:** this file is derived from `.superpowers/sdd/progress.md` (M10-d final review + M10-b carry-forwards). Read that file too for full context.
+- **Per-task workflow:** Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans`. Each task is sized for a single subagent + reviewer cycle. After each task, merge to main and update `.superpowers/sdd/progress.md` (the SDD ledger; gitignored, lives on disk only).
+- **Originals:** this file is derived from `.superpowers/sdd/progress.md` (M10-d final review + M10-b carry-forwards; gitignored, read it for full context). Specs at `docs/superpowers/specs/2026-08-29-m10-d-areas-2-design.md` and `docs/superpowers/specs/2026-08-28-m10-frontend-design.md`.
 
 ---
 
-_Generated 2026-08-29 after M10-d merge (`aa86c10`). Total: 15 tasks across 8 sections, mixed P0/P1/P2 priorities._
+_Generated 2026-08-29 after M10-d merge (`aa86c10`). Total: 15 tasks across 8 sections, mixed P0/P1/P2 priorities. Last touch: M10-d decisions recorded at `6215c8f`._
