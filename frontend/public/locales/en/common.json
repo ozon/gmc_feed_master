@@ -1,0 +1,43 @@
+{
+  "appName": "GMC Feed Master",
+  "nav": {
+    "dashboard": "Dashboard",
+    "setup": "Setup",
+    "products": "Products",
+    "pipeline": "Pipeline Editor",
+    "monitoring": "Monitoring",
+    "export": "Export",
+    "plugins": "Plugins"
+  },
+  "actions": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "retry": "Retry",
+    "copy": "Copy",
+    "copied": "Copied",
+    "add": "Add",
+    "remove": "Remove",
+    "logout": "Log out",
+    "changePassword": "Change password"
+  },
+  "state": {
+    "loading": "Loading…",
+    "empty": "Nothing here yet.",
+    "error": "Something went wrong."
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "de": "German"
+  },
+  "colorScheme": {
+    "toLight": "Switch to light mode",
+    "toDark": "Switch to dark mode"
+  },
+  "breadcrumbs": {
+    "selectClient": "Select client",
+    "selectFeed": "Select feed"
+  }
+}

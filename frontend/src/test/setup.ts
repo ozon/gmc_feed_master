@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom/vitest';
-import { vi } from 'vitest';
+import { beforeAll, vi } from 'vitest';
+import { localeResponse } from './fetch';
 
 const { getComputedStyle } = window;
 window.getComputedStyle = (elt) => getComputedStyle(elt);
@@ -33,3 +34,18 @@ class ResizeObserver {
 }
 
 window.ResizeObserver = ResizeObserver;
+
+vi.stubGlobal(
+  'fetch',
+  vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    const locale = localeResponse(url);
+    if (locale) return locale;
+    throw new Error(`Unexpected fetch in test: ${url}`);
+  }),
+);
+
+beforeAll(async () => {
+  const { initPromise } = await import('../i18n');
+  await initPromise;
+});

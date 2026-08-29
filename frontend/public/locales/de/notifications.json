@@ -1,0 +1,7 @@
+{
+  "runFinished": "Lauf abgeschlossen",
+  "runFailed": "Lauf fehlgeschlagen",
+  "mutationSuccess": "Gespeichert",
+  "mutationError": "Anfrage fehlgeschlagen",
+  "validationError": "Bitte korrigieren Sie die markierten Felder."
+}
