@@ -759,3 +759,46 @@ binding product specification. Dates use ISO 8601 calendar dates.
   latencies; accepted for MVP; UI prefills limit=100. Making limit
   mandatory or backgrounding dry-run is a future decision.
 - **Rationale:** Design §0.8/§1.3.
+
+### M10 frontend primary color
+
+- **Topic:** M10 theme
+- **Decision:** Mantine default theme with `primaryColor: 'blue'`;
+  dark/light toggle persisted via Mantine color-scheme storage; text
+  wordmark placeholder logo.
+- **Rationale:** m10-frontend-instructions §4 requires one recorded
+  primary-color choice; design §2.6.
+
+### M10-b frontend dependency pins
+
+- **Topic:** Frontend foundation dependencies
+- **Decision:** Pinned exactly (resolved 2026-08-28):
+  - `@mantine/core@9.5.2`
+  - `@mantine/hooks@9.5.2`
+  - `@mantine/notifications@9.5.2`
+  - `@mantine/dates@9.5.2`
+  - `@tabler/icons-react@3.46.0`
+  - `@tanstack/react-query@5.102.8`
+  - `@tanstack/react-table@9.2.3`
+  - `@tanstack/react-form@1.33.5`
+  - `@dnd-kit/core@6.3.1`
+  - `@dnd-kit/sortable@10.0.0`
+  - `react-router@7.18.2`
+  - `i18next@26.4.0`
+  - `react-i18next@17.0.12`
+  - `i18next-browser-languagedetector@8.2.1`
+  - `i18next-http-backend@4.0.1`
+  - `dayjs@1.11.23`
+  - dev: `postcss@8.5.26`
+  - dev: `postcss-preset-mantine@1.18.0`
+  - dev: `postcss-simple-vars@7.0.1`
+- **Rationale:** design §2.1 pins Mantine at 9.5.2 and requires every
+  new pin recorded; versions resolved 2026-08-28.
+
+### React Router v7 for M10 routing
+
+- **Topic:** Routing library major version
+- **Decision:** Use `react-router@7.18.2` (data router,
+  `createBrowserRouter`) rather than the newer v8 line.
+- **Rationale:** design §2.3 specifies React Router v7; keeps the
+  milestone on the reviewed spec.

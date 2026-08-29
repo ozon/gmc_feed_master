@@ -35,6 +35,30 @@ export default defineConfig(({ mode }) => {
           target: 'http://127.0.0.1:8000',
           changeOrigin: true,
         },
+        '/clients': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
+        '/feed-sources': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
+        '/dashboard': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
+        '/plugins': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
+        '/registry': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
+        '/export': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
       },
     },
     test: {
