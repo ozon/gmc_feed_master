@@ -308,7 +308,7 @@ export function useUpdatePluginEnabled() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
-      apiPut<PluginInfo>(`/plugins/${id}`, { enabled }),
+      apiPut<PluginInfo>(`/plugins/${id}/enabled`, { enabled }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.plugins });
     },

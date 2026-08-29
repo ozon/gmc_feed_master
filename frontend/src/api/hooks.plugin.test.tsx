@@ -29,7 +29,7 @@ describe('useUpdatePluginEnabled', () => {
   it('PUTs /plugins/{id}/enabled and invalidates the plugins query', async () => {
     let captured: { url: string; body: unknown } | null = null;
     stubFetch((url, init) => {
-      if (url === '/plugins/example_upper' && init?.method === 'PUT') {
+      if (url === '/plugins/example_upper/enabled' && init?.method === 'PUT') {
         captured = { url, body: JSON.parse(String(init.body)) };
         return jsonResponse({ id: 'example_upper', enabled: false });
       }
@@ -40,7 +40,7 @@ describe('useUpdatePluginEnabled', () => {
     result.current.mutate({ id: 'example_upper', enabled: false });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(captured).toEqual({ url: '/plugins/example_upper', body: { enabled: false } });
+    expect(captured).toEqual({ url: '/plugins/example_upper/enabled', body: { enabled: false } });
   });
 });
 
