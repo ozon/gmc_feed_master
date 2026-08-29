@@ -3,6 +3,8 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '../api/client';
 
+export { notifyApiError, mapFieldErrors } from './notifyApiError';
+
 export function notifySuccess(message: string) {
   notifications.show({ color: 'teal', message, autoClose: 4000 });
 }

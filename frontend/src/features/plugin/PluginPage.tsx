@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { usePluginConfig, useSavePluginConfig, usePlugins, type PluginScope } from '../../api/hooks';
 import { JsonSchemaForm, type JsonSchema } from '../../components/JsonSchemaForm';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
-import { notifyError, notifyMutationError, notifySuccess } from '../../app/notifications';
+import { notifySuccess, mapFieldErrors, notifyApiError } from '../../app/notifications';
 import { ApiError } from '../../api/client';
 
 export function PluginPage() {
@@ -54,11 +54,13 @@ export function PluginPage() {
       hasSeededRef.current = true;
       notifySuccess(t('configSaved'));
     } catch (error) {
-      if (error instanceof ApiError && error.errors && error.errors.length > 0) {
-        notifyError(t('saveFailedWithErrors', { count: error.errors.length }));
-      } else {
-        notifyMutationError(error, t('saveFailed'));
-      }
+      notifyApiError(
+        error,
+        t('saveFailed'),
+        error instanceof ApiError && error.errors && error.errors.length > 0
+          ? t('saveFailedWithErrors', { count: error.errors.length })
+          : undefined,
+      );
     }
   }
 
@@ -74,7 +76,7 @@ export function PluginPage() {
           schema={schema}
           value={formValue}
           onChange={(next) => setFormValue((next ?? {}) as Record<string, unknown>)}
-          errors={saveConfig.error instanceof ApiError ? mapErrors(saveConfig.error.errors) : {}}
+          errors={saveConfig.error instanceof ApiError ? mapFieldErrors(saveConfig.error.errors) : {}}
         />
       )}
       <Group justify="flex-end">
@@ -84,18 +86,4 @@ export function PluginPage() {
       </Group>
     </Stack>
   );
-}
-
-function mapErrors(errors: string[] | null): Record<string, string> {
-  if (!errors) return {};
-  const out: Record<string, string> = {};
-  for (const e of errors) {
-    const idx = e.indexOf(':');
-    if (idx > 0) {
-      out[e.slice(0, idx).trim()] = e.slice(idx + 1).trim();
-    } else {
-      out._form = e;
-    }
-  }
-  return out;
 }

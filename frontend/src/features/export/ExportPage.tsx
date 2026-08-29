@@ -10,7 +10,7 @@ import {
 } from '../../api/hooks';
 import { ExportUrlBlock } from '../../components/ExportUrlBlock';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
-import { notifyError, notifyMutationError, notifySuccess } from '../../app/notifications';
+import { notifySuccess, notifyApiError } from '../../app/notifications';
 import { ApiError } from '../../api/client';
 import { ExportVersionList } from './ExportVersionList';
 import { ExportVersionDiff } from './ExportVersionDiff';
@@ -51,11 +51,13 @@ export function ExportPage() {
       notifySuccess(t('rollbackSuccess', { version }));
       setRollbackTarget(null);
     } catch (error) {
-      if (error instanceof ApiError && error.errors && error.errors.length > 0) {
-        notifyError(t('rollbackFailedWithErrors', { errors: error.errors.join('; ') }));
-      } else {
-        notifyMutationError(error, t('rollbackFailed'));
-      }
+      notifyApiError(
+        error,
+        t('rollbackFailed'),
+        error instanceof ApiError && error.errors && error.errors.length > 0
+          ? t('rollbackFailedWithErrors', { errors: error.errors.join('; ') })
+          : undefined,
+      );
     }
   }
 
