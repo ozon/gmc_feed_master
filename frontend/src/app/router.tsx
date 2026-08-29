@@ -14,9 +14,7 @@ import { LoadingState } from '../components/StateViews';
 import { LoginPage } from '../features/auth/LoginPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { SetupPage } from '../features/setup/SetupPage';
-import {
-  ExportPlaceholder,
-} from '../features/placeholders';
+import { ExportPage } from '../features/export/ExportPage';
 import { PluginPage } from '../features/plugin/PluginPage';
 import { PipelinePage } from '../features/pipeline/PipelinePage';
 import { ProductsPage } from '../features/products/ProductsPage';
@@ -70,7 +68,7 @@ const routes = [
             path: 'clients/:clientId/feeds/:feedSourceId/monitoring/dry-run',
             element: <MonitoringDryRunPage />,
           },
-          { path: 'clients/:clientId/feeds/:feedSourceId/export', element: <ExportPlaceholder /> },
+          { path: 'clients/:clientId/feeds/:feedSourceId/export', element: <ExportPage /> },
           { path: 'clients/:clientId/plugins/:pluginId', element: <PluginPage /> },
           { path: 'plugins/:pluginId', element: <PluginPage /> },
         ],

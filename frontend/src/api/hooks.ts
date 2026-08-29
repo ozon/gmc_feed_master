@@ -5,6 +5,8 @@ import type {
   ClientRow,
   ClientSummary,
   DashboardSummary,
+  DiffOut,
+  ExportVersionOut,
   FeedSourceRow,
   FeedSourceSummary,
   FieldMappingDoc,
@@ -22,6 +24,8 @@ export type {
   ClientRow,
   ClientSummary,
   DashboardSummary,
+  DiffOut,
+  ExportVersionOut,
   FeedSourceRow,
   FeedSourceSummary,
   FieldMappingDoc,
@@ -368,6 +372,43 @@ export function useFeedSourcePipeline(feedSourceId: number | string) {
     queryKey: queryKeys.feedSource(feedSourceId).pipeline,
     queryFn: () => apiGet<PipelineDoc>(`/feed-sources/${feedSourceId}/pipeline`),
     enabled: Boolean(feedSourceId),
+  });
+}
+
+export function useExportHistory(feedSourceId: number | string) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId).exportHistory,
+    queryFn: () => apiGet<ExportVersionOut[]>(`/feed-sources/${feedSourceId}/export-history`),
+    enabled: Boolean(feedSourceId),
+  });
+}
+
+export function useExportVersionDiff(
+  feedSourceId: number | string,
+  version: number | undefined,
+  against: number | undefined,
+) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId).exportDiff({
+      version: version ?? -1,
+      against: against ?? -1,
+    }),
+    queryFn: () => {
+      const qs = against !== undefined ? `?against=${against}` : '';
+      return apiGet<DiffOut>(`/feed-sources/${feedSourceId}/export-history/${version}/diff${qs}`);
+    },
+    enabled: version !== undefined && against !== undefined,
+  });
+}
+
+export function useRollbackToVersion(feedSourceId: number | string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (version: number) =>
+      apiPost<unknown>(`/feed-sources/${feedSourceId}/export-history/${version}/rollback`, {}),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).exportHistory });
+    },
   });
 }
 

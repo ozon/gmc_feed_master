@@ -174,3 +174,36 @@ export type PipelineInstance = {
 export type PipelineDoc = {
   instances: PipelineInstance[];
 };
+
+export type ExportFindingCounts = {
+  critical: number;
+  warning: number;
+  info: number;
+};
+
+export type ExportVersionOut = {
+  version: number;
+  created_at: string;
+  source: 'scheduled' | 'manual' | 'rollback';
+  findings: ExportFindingCounts;
+  url: string;
+};
+
+export type DiffFieldOut = {
+  field: string;
+  old: unknown;
+  new: unknown;
+};
+
+export type DiffProductOut = {
+  product_id: string;
+  fields: DiffFieldOut[];
+};
+
+export type DiffOut = {
+  version: number;
+  against: number;
+  added: string[];
+  removed: string[];
+  changed: DiffProductOut[];
+};

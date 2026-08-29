@@ -13,6 +13,8 @@ export const queryKeys = {
     runs: ['feed-source', id, 'runs'] as const,
     findings: ['feed-source', id, 'findings'] as const,
     exportHistory: ['feed-source', id, 'export-history'] as const,
+    exportDiff: (params: { version: number; against: number }) =>
+      ['feed-source', id, 'export-diff', params] as const,
     fieldMapping: ['feed-source', id, 'field-mapping'] as const,
     mapping: ['feed-source', id, 'field-mapping'] as const,
   }),
