@@ -1,0 +1,90 @@
+import { useEffect, useRef } from 'react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import {
+  createBrowserRouter,
+  Navigate,
+  Outlet,
+  RouterProvider,
+  useLocation,
+} from 'react-router';
+import { setUnauthorizedHandler } from '../api/client';
+import { queryClient } from '../api/queryClient';
+import { useSession } from '../api/hooks';
+import { LoadingState } from '../components/StateViews';
+import { LoginPage } from '../features/auth/LoginPage';
+import {
+  DashboardPlaceholder,
+  ExportPlaceholder,
+  MonitoringPlaceholder,
+  PipelinePlaceholder,
+  PluginPlaceholder,
+  ProductsPlaceholder,
+  SetupPlaceholder,
+} from '../features/placeholders';
+import { AppShell } from './AppShell';
+
+export function RequireSession() {
+  const location = useLocation();
+  const { status } = useSession();
+
+  if (status === 'pending') return <LoadingState />;
+  if (status === 'error') {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname + location.search }}
+      />
+    );
+  }
+  return <Outlet />;
+}
+
+const routes = [
+  { path: '/login', element: <LoginPage /> },
+  {
+    element: <RequireSession />,
+    children: [
+      {
+        element: <AppShell />,
+        children: [
+          { index: true, element: <DashboardPlaceholder /> },
+          { path: 'clients/:clientId/feeds/:feedSourceId/setup', element: <SetupPlaceholder /> },
+          { path: 'clients/:clientId/feeds/:feedSourceId/products', element: <ProductsPlaceholder /> },
+          { path: 'clients/:clientId/feeds/:feedSourceId/pipeline', element: <PipelinePlaceholder /> },
+          { path: 'clients/:clientId/feeds/:feedSourceId/monitoring', element: <MonitoringPlaceholder /> },
+          { path: 'clients/:clientId/feeds/:feedSourceId/export', element: <ExportPlaceholder /> },
+          { path: 'clients/:clientId/plugins/:pluginId', element: <PluginPlaceholder /> },
+          { path: 'plugins/:pluginId', element: <PluginPlaceholder /> },
+        ],
+      },
+    ],
+  },
+  { path: '*', element: <Navigate to="/" replace /> },
+];
+
+export function AppRouter() {
+  const routerRef = useRef<ReturnType<typeof createBrowserRouter> | null>(null);
+  if (routerRef.current === null) {
+    routerRef.current = createBrowserRouter(routes);
+  }
+  const router = routerRef.current;
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      const current = router.state.location;
+      if (current.pathname !== '/login') {
+        void router.navigate('/login', {
+          state: { from: current.pathname + current.search },
+        });
+      }
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [router]);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
+  );
+}

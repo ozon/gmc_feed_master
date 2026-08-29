@@ -3,9 +3,10 @@ import '@mantine/dates/styles.css';
 import '@mantine/notifications/styles.css';
 
 import { Suspense } from 'react';
-import { Center, Loader, MantineProvider, Text } from '@mantine/core';
+import { Center, Loader, MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { theme } from './app/theme';
+import { AppRouter } from './app/router';
 import { LocaleProvider } from './i18n/LocaleProvider';
 
 export default function App() {
@@ -20,9 +21,7 @@ export default function App() {
             </Center>
           }
         >
-          <Center h="100vh">
-            <Text>GMC Feed Master</Text>
-          </Center>
+          <AppRouter />
         </Suspense>
       </LocaleProvider>
     </MantineProvider>
