@@ -20,7 +20,8 @@
     "add": "Hinzufügen",
     "remove": "Entfernen",
     "logout": "Abmelden",
-    "changePassword": "Passwort ändern"
+    "changePassword": "Passwort ändern",
+    "typeToConfirm": "Geben Sie {{name}} ein, um zu bestätigen"
   },
   "state": {
     "loading": "Wird geladen…",

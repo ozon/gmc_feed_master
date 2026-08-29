@@ -64,8 +64,8 @@ export function useDashboardSummary() {
     queryFn: () => apiGet<DashboardSummary>('/dashboard/summary'),
     refetchInterval: (query) => {
       const data = query.state.data as DashboardSummary | undefined;
-      const anyRunning = data?.clients.some((client) =>
-        client.feed_sources.some((feed) => feed.last_run_status === 'running'),
+      const anyRunning = data?.clients?.some((client) =>
+        client.feed_sources?.some((feed) => feed.last_run_status === 'running'),
       );
       return anyRunning ? 5000 : 30000;
     },

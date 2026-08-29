@@ -1,3 +1,8 @@
 {
-  "title": "Export"
+  "title": "Export",
+  "urlTitle": "Export-URL",
+  "publicUrl": "Öffentliche URL",
+  "rotate": "Routieren",
+  "rotateWarning": "Das Routieren des Export-Tokens macht die aktuelle URL sofort ungültig. Alle Systeme, die die alte URL verwenden, funktionieren nicht mehr.",
+  "rotated": "Export-Token erfolgreich routiert"
 }

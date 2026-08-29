@@ -26,4 +26,34 @@ describe('ConfirmModal', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
+
+  it('disables confirm until typeToConfirm matches exactly', async () => {
+    const onConfirm = vi.fn();
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ConfirmModal
+        opened
+        title="Delete feed"
+        message="This cannot be undone."
+        typeToConfirm="Acme"
+        danger
+        onConfirm={onConfirm}
+        onClose={onClose}
+      />,
+    );
+
+    const confirm = screen.getByRole('button', { name: 'Confirm' });
+    expect(confirm).toBeDisabled();
+
+    const input = screen.getByLabelText(/type acme to confirm/i);
+    await user.type(input, 'Ac');
+    expect(confirm).toBeDisabled();
+
+    await user.type(input, 'me');
+    expect(confirm).toBeEnabled();
+
+    await user.click(confirm);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
 });

@@ -13,13 +13,13 @@ import { useSession } from '../api/hooks';
 import { LoadingState } from '../components/StateViews';
 import { LoginPage } from '../features/auth/LoginPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
+import { SetupPage } from '../features/setup/SetupPage';
 import {
   ExportPlaceholder,
   MonitoringPlaceholder,
   PipelinePlaceholder,
   PluginPlaceholder,
   ProductsPlaceholder,
-  SetupPlaceholder,
 } from '../features/placeholders';
 import { AppShell } from './AppShell';
 
@@ -49,7 +49,7 @@ const routes = [
         element: <AppShell />,
         children: [
           { index: true, element: <DashboardPage /> },
-          { path: 'clients/:clientId/feeds/:feedSourceId/setup', element: <SetupPlaceholder /> },
+          { path: 'clients/:clientId/feeds/:feedSourceId/setup', element: <SetupPage /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/products', element: <ProductsPlaceholder /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/pipeline', element: <PipelinePlaceholder /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/monitoring', element: <MonitoringPlaceholder /> },

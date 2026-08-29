@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
-import { Button, Group, Modal, Stack, Text, TextInput } from '@mantine/core';
-import { useTranslation } from 'react-i18next';
 import { useDeleteClient } from '../../api/hooks';
 import { notifyMutationError, notifySuccess } from '../../app/notifications';
 import type { ClientSummary } from '../../api/types';
+import { useTranslation } from 'react-i18next';
+import { ConfirmModal } from '../../components/ConfirmModal';
 
 export function DeleteClientModal({
   opened,
@@ -15,17 +14,7 @@ export function DeleteClientModal({
   onClose: () => void;
 }) {
   const { t } = useTranslation('dashboard');
-  const { t: tCommon } = useTranslation('common');
   const deleteClient = useDeleteClient();
-  const [confirmText, setConfirmText] = useState('');
-
-  useEffect(() => {
-    if (opened) {
-      setConfirmText('');
-    }
-  }, [opened]);
-
-  const confirmed = client !== null && confirmText === client.name;
 
   function onConfirm() {
     if (!client) return;
@@ -39,31 +28,15 @@ export function DeleteClientModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t('delete')} centered>
-      <Stack gap="md">
-        <Text size="sm">{t('deleteCascade')}</Text>
-        {client ? (
-          <TextInput
-            label={t('typeToConfirm', { name: client.name })}
-            value={confirmText}
-            onChange={(event) => setConfirmText(event.currentTarget.value)}
-            withAsterisk
-          />
-        ) : null}
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose} disabled={deleteClient.isPending}>
-            {tCommon('actions.cancel')}
-          </Button>
-          <Button
-            color="red"
-            disabled={!confirmed}
-            loading={deleteClient.isPending}
-            onClick={onConfirm}
-          >
-            {tCommon('actions.confirm')}
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
+    <ConfirmModal
+      opened={opened}
+      title={t('delete')}
+      message={t('deleteCascade')}
+      danger
+      typeToConfirm={client?.name}
+      loading={deleteClient.isPending}
+      onConfirm={onConfirm}
+      onClose={onClose}
+    />
   );
 }

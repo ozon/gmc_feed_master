@@ -4,11 +4,9 @@ import {
   Badge,
   Button,
   Group,
-  Modal,
   Paper,
   Stack,
   Text,
-  TextInput,
 } from '@mantine/core';
 import { IconSettings, IconTrash } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +15,7 @@ import dayjs from 'dayjs';
 import { useDeleteFeedSource } from '../../api/hooks';
 import { notifyMutationError, notifySuccess } from '../../app/notifications';
 import type { FeedSourceSummary } from '../../api/types';
+import { ConfirmModal } from '../../components/ConfirmModal';
 
 const RUN_DOT_COLORS: Record<string, string> = {
   success: 'var(--mantine-color-green-6)',
@@ -50,12 +49,10 @@ export function FeedSourceCard({
   feed: FeedSourceSummary;
 }) {
   const { t, i18n } = useTranslation('dashboard');
-  const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
   const location = useLocation();
   const deleteFeedSource = useDeleteFeedSource();
   const [deleteOpened, setDeleteOpened] = useState(false);
-  const [confirmText, setConfirmText] = useState('');
 
   const runColor =
     feed.last_run_status && feed.last_run_status in RUN_DOT_COLORS
@@ -68,7 +65,6 @@ export function FeedSourceCard({
       onSuccess: () => {
         notifySuccess(t('saved'));
         setDeleteOpened(false);
-        setConfirmText('');
         if (location.pathname.startsWith(`/clients/${clientId}/feeds/${feed.id}`)) {
           navigate('/');
         }
@@ -134,39 +130,16 @@ export function FeedSourceCard({
         </Text>
       </Stack>
       <style>{`@keyframes gmc-run-pulse{from{opacity:1}to{opacity:.3}}`}</style>
-      <Modal
+      <ConfirmModal
         opened={deleteOpened}
-        onClose={() => setDeleteOpened(false)}
         title={t('deleteFeed')}
-        centered
-      >
-        <Stack gap="md">
-          <Text size="sm">{t('deleteFeedCascade', { name: feed.name })}</Text>
-          <TextInput
-            label={t('typeToConfirm', { name: feed.name })}
-            value={confirmText}
-            onChange={(event) => setConfirmText(event.currentTarget.value)}
-            withAsterisk
-          />
-          <Group justify="flex-end">
-            <Button
-              variant="default"
-              onClick={() => setDeleteOpened(false)}
-              disabled={deleteFeedSource.isPending}
-            >
-              {tCommon('actions.cancel')}
-            </Button>
-            <Button
-              color="red"
-              disabled={confirmText !== feed.name}
-              loading={deleteFeedSource.isPending}
-              onClick={confirmDelete}
-            >
-              {t('delete')}
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+        message={t('deleteFeedCascade', { name: feed.name })}
+        danger
+        typeToConfirm={feed.name}
+        loading={deleteFeedSource.isPending}
+        onConfirm={confirmDelete}
+        onClose={() => setDeleteOpened(false)}
+      />
     </Paper>
   );
 }
