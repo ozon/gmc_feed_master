@@ -19,21 +19,20 @@ export function MonitoringDryRunPage() {
     <Stack gap="md" pt="md">
       <DryRunForm
         run={run}
-        onResult={async (next) => {
-          try {
-            await withLoadingNotification(
-              'dry-run',
-              t('dryRun.running'),
-              async () => {
-                setResult(next);
-                return next;
-              },
-              t('dryRun.success'),
-              t('dryRun.failed'),
-            );
-          } catch {
+        onResult={async (next, error) => {
+          await withLoadingNotification(
+            'dry-run',
+            t('dryRun.running'),
+            async () => {
+              if (error) throw error;
+              setResult(next);
+              return next;
+            },
+            t('dryRun.success'),
+            t('dryRun.failed'),
+          ).catch(() => {
             setResult(null);
-          }
+          });
         }}
       />
       {result ? <DryRunResults result={result} /> : <EmptyState message={t('dryRun.empty')} />}

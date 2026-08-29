@@ -84,6 +84,7 @@ describe('MonitoringDryRunPage', () => {
     });
     renderAt();
     await user.click(screen.getByTestId('dry-run-submit'));
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    const alerts = await screen.findAllByRole('alert');
+    expect(alerts.length).toBeGreaterThan(0);
   });
 });

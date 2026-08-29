@@ -1,5 +1,5 @@
 import { Stack, Title } from '@mantine/core';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
@@ -27,7 +27,7 @@ export function ExportPage() {
   const [versionB, setVersionB] = useState<number | undefined>();
   const [rollbackTarget, setRollbackTarget] = useState<number | null>(null);
 
-  const versions = history.data ?? [];
+  const versions = useMemo(() => history.data ?? [], [history.data]);
 
   useEffect(() => {
     if (versions.length >= 2 && versionA === undefined && versionB === undefined) {

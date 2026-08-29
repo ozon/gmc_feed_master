@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useUpdatePluginEnabled, usePluginConfig, useSavePluginConfig } from './hooks';
 import { queryClient as defaultClient } from './queryClient';
+import { queryKeys } from './queryKeys';
 import { stubFetch } from '../test/fetch';
 
 function jsonResponse(body: unknown, status = 200) {
@@ -36,11 +37,22 @@ describe('useUpdatePluginEnabled', () => {
       return jsonResponse({});
     });
 
-    const { result } = renderHook(() => useUpdatePluginEnabled(), { wrapper: withClient() });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useUpdatePluginEnabled(), { wrapper });
     result.current.mutate({ id: 'example_upper', enabled: false });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(captured).toEqual({ url: '/plugins/example_upper/enabled', body: { enabled: false } });
+    const invalidated = invalidateSpy.mock.calls.map((c) => c[0]);
+    const hasPluginsKey = invalidated.some(
+      (q) => JSON.stringify(q?.queryKey) === JSON.stringify(queryKeys.plugins),
+    );
+    expect(hasPluginsKey).toBe(true);
   });
 });
 
@@ -67,7 +79,7 @@ describe('usePluginConfig', () => {
 });
 
 describe('useSavePluginConfig', () => {
-  it('PUTs /plugins/{id}/config with scope query params and body', async () => {
+  it('PUTs /plugins/{id}/config with scope query params and invalidates the config query', async () => {
     let captured: { url: string; body: unknown } | null = null;
     stubFetch((url, init) => {
       if (url.startsWith('/plugins/example_upper/config') && init?.method === 'PUT') {
@@ -77,13 +89,23 @@ describe('useSavePluginConfig', () => {
       return jsonResponse({});
     });
 
-    const { result } = renderHook(
-      () => useSavePluginConfig('example_upper', {}),
-      { wrapper: withClient() },
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
+    const scope = {};
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
     );
+
+    const { result } = renderHook(() => useSavePluginConfig('example_upper', scope), { wrapper });
     result.current.mutate({ suffix: 'X' });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(captured).toEqual({ url: '/plugins/example_upper/config', body: { suffix: 'X' } });
+    const invalidated = invalidateSpy.mock.calls.map((c) => c[0]);
+    const expectedKey = queryKeys.pluginConfig('example_upper', scope);
+    const hasConfigKey = invalidated.some(
+      (q) => JSON.stringify(q?.queryKey) === JSON.stringify(expectedKey),
+    );
+    expect(hasConfigKey).toBe(true);
   });
 });

@@ -7,7 +7,7 @@ type DryRunInput = { limit: number };
 
 type Props = {
   run: UseMutationResult<unknown, Error, DryRunInput>;
-  onResult: (result: unknown) => void;
+  onResult: (result: unknown, error?: unknown) => void;
 };
 
 export function DryRunForm({ run, onResult }: Props) {
@@ -17,7 +17,9 @@ export function DryRunForm({ run, onResult }: Props) {
     try {
       const result = await run.mutateAsync({ limit });
       onResult(result);
-    } catch {}
+    } catch (error) {
+      onResult(null, error);
+    }
   }
   return (
     <Group align="end">
