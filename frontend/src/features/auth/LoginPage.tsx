@@ -51,6 +51,7 @@ export function LoginPage() {
             value={username}
             onChange={(event) => setUsername(event.currentTarget.value)}
             autoComplete="username"
+            autoFocus
             required
           />
           <PasswordInput
