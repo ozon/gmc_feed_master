@@ -32,6 +32,17 @@ const summary = {
           last_run_at: null,
           last_run_status: null,
         },
+        {
+          id: 3,
+          client_id: 1,
+          name: 'Secondary Feed',
+          source_format: 'csv',
+          item_count: 0,
+          last_export_at: null,
+          last_export_status: null,
+          last_run_at: null,
+          last_run_status: null,
+        },
       ],
     },
   ],
@@ -92,7 +103,18 @@ describe('AppShell', () => {
     window.history.replaceState({}, '', '/clients/1/feeds/2/products');
     render(<App />);
     expect(await screen.findByText('Acme')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Acme' })).toHaveAttribute('href', '/');
     expect(await screen.findByText('Main Feed')).toBeInTheDocument();
+  });
+
+  it('keeps the current area when switching feeds from the breadcrumb dropdown', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState({}, '', '/clients/1/feeds/2/products');
+    render(<App />);
+    await screen.findByText('Main Feed');
+    await user.click(screen.getByRole('button', { name: 'Select feed' }));
+    const secondary = await screen.findByRole('menuitem', { name: 'Secondary Feed' });
+    expect(secondary).toHaveAttribute('href', '/clients/1/feeds/3/products');
   });
 
   it('logs out and returns to the login page', async () => {

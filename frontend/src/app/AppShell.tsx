@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import {
   ActionIcon,
+  Anchor,
   AppShell as MantineAppShell,
   Burger,
   Button,
@@ -32,7 +33,7 @@ import {
   type Icon,
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { Link, Outlet, useNavigate, useParams } from 'react-router';
+import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
 import { useChangePassword, useDashboardSummary, useLogout, usePlugins, useSession } from '../api/hooks';
 import { LanguageSwitcher } from '../i18n/LanguageSwitcher';
 import { notifyError, notifyMutationError, notifySuccess } from './notifications';
@@ -159,18 +160,21 @@ function UserMenu() {
 function FeedBreadcrumb() {
   const { t } = useTranslation();
   const { clientId, feedSourceId } = useParams();
+  const location = useLocation();
   const { data: summary } = useDashboardSummary();
 
   const client = summary?.clients.find((entry) => String(entry.id) === clientId);
   const feed = client?.feed_sources.find((entry) => String(entry.id) === feedSourceId);
+  const area =
+    /^\/clients\/[^/]+\/feeds\/[^/]+\/([^/?]+)/.exec(location.pathname)?.[1] ?? 'setup';
 
   if (!clientId) return null;
 
   return (
     <Group gap={4}>
-      <Text size="sm" c="dimmed">
+      <Anchor component={Link} to="/" size="sm" c="dimmed" underline="never">
         {client?.name ?? t('breadcrumbs.selectClient')}
-      </Text>
+      </Anchor>
       <Text size="sm" c="dimmed">
         ›
       </Text>
@@ -188,7 +192,7 @@ function FeedBreadcrumb() {
             <Menu.Item
               key={entry.id}
               component={Link}
-              to={`/clients/${clientId}/feeds/${entry.id}/setup`}
+              to={`/clients/${clientId}/feeds/${entry.id}/${area}${location.search}`}
             >
               {entry.name}
             </Menu.Item>
