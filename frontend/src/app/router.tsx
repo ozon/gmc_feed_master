@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { lazy, useEffect, useRef } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import {
   createBrowserRouter,
@@ -13,16 +13,41 @@ import { queryKeys } from '../api/queryKeys';
 import { useSession } from '../api/hooks';
 import { ErrorState, LoadingState } from '../components/StateViews';
 import { LoginPage } from '../features/auth/LoginPage';
-import { DashboardPage } from '../features/dashboard/DashboardPage';
-import { SetupPage } from '../features/setup/SetupPage';
-import { ExportPage } from '../features/export/ExportPage';
-import { PluginPage } from '../features/plugin/PluginPage';
-import { PipelinePage } from '../features/pipeline/PipelinePage';
-import { ProductsPage } from '../features/products/ProductsPage';
-import { MonitoringRunsPage } from '../features/monitoring/MonitoringRunsPage';
-import { MonitoringFindingsPage } from '../features/monitoring/MonitoringFindingsPage';
-import { MonitoringDryRunPage } from '../features/monitoring/MonitoringDryRunPage';
 import { AppShell } from './AppShell';
+
+const DashboardPage = lazy(() =>
+  import('../features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })),
+);
+const SetupPage = lazy(() =>
+  import('../features/setup/SetupPage').then((m) => ({ default: m.SetupPage })),
+);
+const ProductsPage = lazy(() =>
+  import('../features/products/ProductsPage').then((m) => ({ default: m.ProductsPage })),
+);
+const PipelinePage = lazy(() =>
+  import('../features/pipeline/PipelinePage').then((m) => ({ default: m.PipelinePage })),
+);
+const MonitoringRunsPage = lazy(() =>
+  import('../features/monitoring/MonitoringRunsPage').then((m) => ({
+    default: m.MonitoringRunsPage,
+  })),
+);
+const MonitoringFindingsPage = lazy(() =>
+  import('../features/monitoring/MonitoringFindingsPage').then((m) => ({
+    default: m.MonitoringFindingsPage,
+  })),
+);
+const MonitoringDryRunPage = lazy(() =>
+  import('../features/monitoring/MonitoringDryRunPage').then((m) => ({
+    default: m.MonitoringDryRunPage,
+  })),
+);
+const ExportPage = lazy(() =>
+  import('../features/export/ExportPage').then((m) => ({ default: m.ExportPage })),
+);
+const PluginPage = lazy(() =>
+  import('../features/plugin/PluginPage').then((m) => ({ default: m.PluginPage })),
+);
 
 export function RequireSession() {
   const location = useLocation();

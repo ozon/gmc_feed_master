@@ -1041,3 +1041,17 @@ binding product specification. Dates use ISO 8601 calendar dates.
   new run); export history is independent of ingestion
   retention, so the FK is detached rather than the history
   deleted (option 2 rejected).
+
+### Frontend bundle code-splitting strategy
+
+- **Topic:** Route-based lazy loading and vendor chunking for
+  the >500kB entry bundle (TODO 4.1)
+- **Decision:** The 9 feature pages (dashboard, setup, products,
+  pipeline, monitoring runs/findings/dry-run, export, plugin)
+  are `React.lazy` dynamic imports in `router.tsx`;
+  `LoginPage` and `AppShell` stay eager. Vendor code is split
+  via rolldown `codeSplitting.groups` (`vendor-react`,
+  `vendor-mantine`, `vendor`) — Vite 8 removed
+  `build.rollupOptions.output.manualChunks` in favor of
+  `build.rolldownOptions.output.codeSplitting`.
+

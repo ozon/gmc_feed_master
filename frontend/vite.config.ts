@@ -17,6 +17,20 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    build: {
+      // vendor chunking: stable caches for framework code
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [
+              { name: 'vendor-react', test: /node_modules[\\/]react(-dom|-router)?[\\/]/, priority: 20 },
+              { name: 'vendor-mantine', test: /node_modules[\\/]@mantine[\\/]/, priority: 15 },
+              { name: 'vendor', test: /node_modules/, priority: 10 },
+            ],
+          },
+        },
+      },
+    },
     server: {
       ...(certPath && keyPath
         ? {
