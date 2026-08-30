@@ -107,6 +107,8 @@ async def test_rollback_creates_new_version_and_republishes_old_content(app_fact
     assert body["version_number"] == 3
     assert body["source"] == "rollback"
     assert body["source_version_id"] is not None
+    assert body["findings"] is None
+    assert body["url"] == "http://test.public/export/tok-rollback-test.xml"
 
     _, factory, settings = app_factory
     async with factory() as session:

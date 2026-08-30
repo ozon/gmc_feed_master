@@ -17,6 +17,7 @@ from ..ingest.xml_reader import parse_xml
 from ..models.client import Client
 from ..models.export import ExportRun, ExportVersion
 from ..models.feed_source import FeedSource
+from ..schemas.export import ExportFindingCounts, ExportVersionOut
 from .renderer import ChannelMetadata, render_feed
 from .store import ExportFileStore
 
@@ -161,14 +162,48 @@ class ExportService:
             deduplicated=deduplicated,
         )
 
-    async def list_versions(self, feed_source_id: int) -> list[ExportVersion]:
+    async def list_versions(self, feed_source_id: int) -> list[ExportVersionOut]:
         async with self._session_factory() as session:
+            feed_source = await session.get(FeedSource, feed_source_id)
+            export_token = feed_source.export_token if feed_source is not None else None
             result = await session.execute(
-                select(ExportVersion)
+                select(ExportVersion, ExportRun)
+                .join(ExportRun, ExportVersion.export_run_id == ExportRun.id)
                 .where(ExportVersion.feed_source_id == feed_source_id)
                 .order_by(ExportVersion.version_number.desc())
             )
-            return list(result.scalars().all())
+            return [
+                self._version_out(version, run, export_token)
+                for version, run in result.all()
+            ]
+
+    def _version_out(
+        self,
+        version: ExportVersion,
+        run: ExportRun | None,
+        export_token: str | None,
+    ) -> ExportVersionOut:
+        findings = None
+        if version.source != "rollback" and run is not None:
+            findings = ExportFindingCounts(
+                critical=run.critical_finding_count,
+                warning=run.warning_finding_count,
+                info=run.info_finding_count,
+            )
+        url = None
+        if export_token is not None:
+            url = f"{self._public_base_url.rstrip('/')}/export/{export_token}.xml"
+        return ExportVersionOut(
+            id=version.id,
+            version_number=version.version_number,
+            product_count=version.product_count,
+            file_hash=version.file_hash,
+            source=version.source,
+            source_version_id=version.source_version_id,
+            created_at=version.created_at,
+            findings=findings,
+            url=url,
+        )
 
     async def diff(
         self,
@@ -232,7 +267,7 @@ class ExportService:
 
     async def rollback(
         self, feed_source_id: int, version_number: int, registry: RegistryDocument
-    ) -> ExportVersion:
+    ) -> ExportVersionOut:
         async with self._session_factory() as session:
             async with session.begin():
                 feed_source = await session.get(FeedSource, feed_source_id)
@@ -315,7 +350,7 @@ class ExportService:
             await self._mark_run_failed_by_id(version.export_run_id)
             raise
         await self._prune_retention(feed_source_id, retention)
-        return version
+        return self._version_out(version, None, feed_source.export_token)
 
     async def _mark_run_failed(self, feed_source_id: int, ingestion_run_id: int) -> None:
         try:

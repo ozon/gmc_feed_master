@@ -6,6 +6,12 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 
+class ExportFindingCounts(BaseModel):
+    critical: int
+    warning: int
+    info: int
+
+
 class ExportVersionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -16,6 +22,8 @@ class ExportVersionOut(BaseModel):
     source: str
     source_version_id: int | None
     created_at: datetime
+    findings: ExportFindingCounts | None = None
+    url: str | None = None
 
 
 class DiffFieldOut(BaseModel):

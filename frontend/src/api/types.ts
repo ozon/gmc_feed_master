@@ -183,6 +183,8 @@ export type ExportVersionOut = {
   source: 'run' | 'rollback' | string;
   source_version_id: number | null;
   created_at: string;
+  findings?: { critical: number; warning: number; info: number } | null;
+  url?: string | null;
 };
 
 export type DiffFieldOut = {

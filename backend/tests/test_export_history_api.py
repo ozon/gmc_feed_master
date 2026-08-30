@@ -58,7 +58,7 @@ async def logged_in_client(app_factory):
     return client
 
 
-async def _seed_versions(app_factory, product_sets):
+async def _seed_versions(app_factory, product_sets, finding_counts=None):
     """Run export_for_run once per product set; returns feed_source_id."""
     _, factory, settings = app_factory
     clock = TestClock(datetime(2026, 8, 27, tzinfo=timezone.utc))
@@ -76,7 +76,8 @@ async def _seed_versions(app_factory, product_sets):
             feed_source_id = feed_source.id
 
     service = ExportService(factory, ExportFileStore(settings.export_dir), clock, "http://test.public")
-    for products in product_sets:
+    for index, products in enumerate(product_sets):
+        counts = finding_counts[index] if finding_counts else (0, 0, 0)
         async with factory() as session:
             async with session.begin():
                 run = IngestionRun(feed_source_id=feed_source_id, status="completed")
@@ -85,6 +86,9 @@ async def _seed_versions(app_factory, product_sets):
                 session.add(ExportRun(
                     feed_source_id=feed_source_id, ingestion_run_id=run.id,
                     status="pending_export", product_count=len(products),
+                    critical_finding_count=counts[0],
+                    warning_finding_count=counts[1],
+                    info_finding_count=counts[2],
                 ))
                 run_id = run.id
         await service.export_for_run(feed_source_id, run_id, products, REGISTRY)
@@ -107,6 +111,42 @@ async def test_history_lists_versions_descending(app_factory):
     assert body[0]["product_count"] == 2
     assert len(body[0]["file_hash"]) == 64
     assert body[0]["source_version_id"] is None
+    assert body[0]["findings"] == {"critical": 0, "warning": 0, "info": 0}
+    assert body[0]["url"] == "http://test.public/export/tok-history-test.xml"
+    assert body[1]["findings"] == {"critical": 0, "warning": 0, "info": 0}
+    assert body[1]["url"] == "http://test.public/export/tok-history-test.xml"
+
+
+async def test_history_reports_run_finding_counts_per_version(app_factory):
+    feed_source_id = await _seed_versions(
+        app_factory, [BASE, CHANGED], finding_counts=[(0, 0, 0), (1, 2, 3)]
+    )
+    client = await logged_in_client(app_factory)
+
+    resp = await client.get(f"/feed-sources/{feed_source_id}/export-history")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body[0]["version_number"] == 2
+    assert body[0]["findings"] == {"critical": 1, "warning": 2, "info": 3}
+    assert body[1]["version_number"] == 1
+    assert body[1]["findings"] == {"critical": 0, "warning": 0, "info": 0}
+
+
+async def test_history_shows_rollback_version_as_not_qc_d(app_factory):
+    feed_source_id = await _seed_versions(app_factory, [BASE, CHANGED])
+    client = await logged_in_client(app_factory)
+    rollback_resp = await client.post(f"/feed-sources/{feed_source_id}/export-history/1/rollback")
+    assert rollback_resp.status_code == 201
+
+    resp = await client.get(f"/feed-sources/{feed_source_id}/export-history")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body[0]["version_number"] == 3
+    assert body[0]["source"] == "rollback"
+    assert body[0]["findings"] is None
+    assert body[0]["url"] == "http://test.public/export/tok-history-test.xml"
+    assert body[1]["source"] == "run"
+    assert body[1]["findings"] == {"critical": 0, "warning": 0, "info": 0}
 
 
 async def test_history_requires_auth_and_known_feed_source(app_factory):

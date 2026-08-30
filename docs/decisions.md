@@ -994,3 +994,26 @@ binding product specification. Dates use ISO 8601 calendar dates.
   rendered per-field + summary notification" (M10-d plan).
   `notifyMutationError` only reads `error.detail`, so a
   dedicated branch is needed for the errors-array case.
+
+## 2026-08-30
+
+### ExportVersionOut findings sourced from ExportRun counts
+
+- **Topic:** Data source for per-version finding counts in
+  `ExportVersionOut` (TODO 2.1, spec §4.7)
+- **Decision:** `findings` counts come from the joined
+  `ExportRun` denormalized columns
+  (`critical/warning/info_finding_count`), not from
+  `quality_findings` rows — QC persistence deletes all
+  feed-keyed findings on every run, so older runs' rows no
+  longer exist and only the ExportRun snapshot is accurate.
+  Rollback versions return `findings: null` ("not QC'd",
+  distinct from 0/0/0 "clean", per the 2026-08-28 badge
+  decision). `url` is the feed source's public export URL
+  (`{public_base_url}/export/{export_token}.xml`) on every
+  version row; both fields are computed in `ExportService`
+  (`list_versions`/`rollback` now return `ExportVersionOut`).
+- **Rationale:** `persist_findings` replace-delete semantics
+  make per-version reconstruction from live rows impossible;
+  the denormalized counts written at QC time are the only
+  accurate per-version source.
