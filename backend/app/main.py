@@ -112,8 +112,12 @@ def create_app(
 
                 from datetime import datetime, timezone
 
-                from .pipeline.scheduler import PURGE_CRON, SYSTEM_PURGE_JOB_ID
-                from .staging.purge import purge_expired
+                from .pipeline.scheduler import (
+                    INGESTION_PURGE_JOB_ID,
+                    PURGE_CRON,
+                    SYSTEM_PURGE_JOB_ID,
+                )
+                from .staging.purge import purge_expired, purge_expired_ingestion_runs
 
                 async def run_staging_purge() -> None:
                     counts = await purge_expired(
@@ -128,6 +132,23 @@ def create_app(
 
                 scheduler_service.register_system_job(
                     SYSTEM_PURGE_JOB_ID, PURGE_CRON, run_staging_purge
+                )
+
+                async def run_ingestion_run_purge() -> None:
+                    counts = await purge_expired_ingestion_runs(
+                        application.state.db_session_factory,
+                        datetime.now(timezone.utc),
+                    )
+                    logging.getLogger(__name__).info(
+                        "ingestion run purge: %s runs purged, "
+                        "%s export runs detached, %s findings deleted",
+                        counts.runs_purged,
+                        counts.export_runs_detached,
+                        counts.findings_deleted,
+                    )
+
+                scheduler_service.register_system_job(
+                    INGESTION_PURGE_JOB_ID, PURGE_CRON, run_ingestion_run_purge
                 )
 
                 from .pipeline.reconcile import reconcile_interrupted_runs

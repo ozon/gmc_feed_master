@@ -1017,3 +1017,27 @@ binding product specification. Dates use ISO 8601 calendar dates.
   make per-version reconstruction from live rows impossible;
   the denormalized counts written at QC time are the only
   accurate per-version source.
+
+### IngestionRun 90-day retention purge dependent resolution
+
+- **Topic:** Dependent handling for the `ingestion_runs`
+  90-day retention purge (TODO 2.3, spec §4 line 73)
+- **Decision:** Purge candidates are runs with
+  `started_at < now - 90 days`. Runs still referenced by
+  `staging_products.ingestion_run_id` are skipped entirely
+  (protected). For purged runs, in one transaction:
+  `export_runs.ingestion_run_id` is set to NULL (owner
+  decision 2026-08-29, option 1 — export history is
+  preserved independently of ingestion retention),
+  `quality_findings` rows for the run are deleted, then the
+  run row itself is deleted. Runs daily as system job
+  `system-ingestion-run-purge` alongside
+  `system-staging-purge`.
+- **Rationale:** A run referenced by staging products is that
+  feed's current live state, so deleting it would be
+  destructive; findings retention follows their run (the
+  findings API surfaces only the latest run's findings, and
+  `persist_findings` already deletes older findings on every
+  new run); export history is independent of ingestion
+  retention, so the FK is detached rather than the history
+  deleted (option 2 rejected).

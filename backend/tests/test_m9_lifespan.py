@@ -10,7 +10,11 @@ from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
 from app.pipeline.reconcile import INTERRUPTED_MESSAGE
-from app.pipeline.scheduler import SYSTEM_PURGE_JOB_ID, job_id
+from app.pipeline.scheduler import (
+    INGESTION_PURGE_JOB_ID,
+    SYSTEM_PURGE_JOB_ID,
+    job_id,
+)
 
 
 pytestmark = pytest.mark.asyncio
@@ -76,6 +80,7 @@ async def test_lifespan_starts_scheduler_registers_jobs_and_shuts_down(app_env):
         assert job is not None
         assert job.max_instances == 2
         assert scheduler._scheduler.get_job(SYSTEM_PURGE_JOB_ID) is not None
+        assert scheduler._scheduler.get_job(INGESTION_PURGE_JOB_ID) is not None
     assert not app.state.scheduler_service._scheduler.running
 
 

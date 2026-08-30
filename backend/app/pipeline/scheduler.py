@@ -28,6 +28,7 @@ def job_id(feed_source_id: int) -> str:
 
 
 SYSTEM_PURGE_JOB_ID = "system-staging-purge"
+INGESTION_PURGE_JOB_ID = "system-ingestion-run-purge"
 PURGE_CRON = "0 3 * * *"
 
 
