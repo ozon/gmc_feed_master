@@ -9,6 +9,7 @@ import {
 } from 'react-router';
 import { setUnauthorizedHandler } from '../api/client';
 import { queryClient } from '../api/queryClient';
+import { queryKeys } from '../api/queryKeys';
 import { useSession } from '../api/hooks';
 import { LoadingState } from '../components/StateViews';
 import { LoginPage } from '../features/auth/LoginPage';
@@ -78,6 +79,23 @@ const routes = [
   { path: '*', element: <Navigate to="/" replace /> },
 ];
 
+type UnauthorizedRouter = {
+  state: { location: Pick<Location, 'pathname' | 'search'> };
+  navigate: (to: string, opts?: { state?: unknown }) => void | Promise<void>;
+};
+
+export function makeUnauthorizedHandler(router: UnauthorizedRouter): () => void {
+  return () => {
+    queryClient.removeQueries({ queryKey: queryKeys.session });
+    const current = router.state.location;
+    if (current.pathname !== '/login') {
+      void router.navigate('/login', {
+        state: { from: current.pathname + current.search },
+      });
+    }
+  };
+}
+
 export function AppRouter() {
   const routerRef = useRef<ReturnType<typeof createBrowserRouter> | null>(null);
   if (routerRef.current === null) {
@@ -86,14 +104,7 @@ export function AppRouter() {
   const router = routerRef.current;
 
   useEffect(() => {
-    setUnauthorizedHandler(() => {
-      const current = router.state.location;
-      if (current.pathname !== '/login') {
-        void router.navigate('/login', {
-          state: { from: current.pathname + current.search },
-        });
-      }
-    });
+    setUnauthorizedHandler(makeUnauthorizedHandler(router));
     return () => setUnauthorizedHandler(null);
   }, [router]);
 
