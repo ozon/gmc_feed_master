@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { notifications } from '@mantine/notifications';
 import { render } from '../test/render';
 import { stubFetch } from '../test/fetch';
 import App from '../App';
@@ -96,9 +97,11 @@ describe('unauthorized handler', () => {
     };
   }
 
-  beforeEach(() => {
-    queryClient.clear();
-  });
+beforeEach(() => {
+  queryClient.clear();
+  notifications.clean();
+  window.history.replaceState({}, '', '/');
+});
 
   it('removes the session query before navigating to /login', () => {
     queryClient.setQueryData(queryKeys.session, { username: 'operator' });
@@ -156,5 +159,72 @@ describe('unauthorized handler', () => {
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
     expect(queryClient.getQueryData(queryKeys.session)).toBeUndefined();
     expect(window.location.pathname).toBe('/login');
+  });
+});
+
+describe('RequireSession non-401 session errors', () => {
+  it('shows ErrorState with retry instead of redirecting when the session probe returns 503', async () => {
+    stubFetch((url) => {
+      if (url === '/auth/me') return jsonResponse({ detail: 'Service unavailable' }, 503);
+      return jsonResponse({});
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong.');
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Sign in' })).not.toBeInTheDocument();
+    expect(window.location.pathname).toBe('/');
+  });
+
+  it('shows ErrorState with retry when the session probe rejects (network offline)', async () => {
+    stubFetch((url) => {
+      if (url === '/auth/me') throw new TypeError('Failed to fetch');
+      return jsonResponse({});
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong.');
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Sign in' })).not.toBeInTheDocument();
+  });
+
+  it('still redirects to /login when the session probe returns 401', async () => {
+    stubFetch((url) => {
+      if (url === '/auth/me') return jsonResponse({ detail: 'Not authenticated' }, 401);
+      return jsonResponse({});
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('refetches the session and renders the guarded content after clicking retry', async () => {
+    let sessionAvailable = false;
+    stubFetch((url) => {
+      if (url === '/auth/me') {
+        return sessionAvailable
+          ? jsonResponse({ username: 'operator' })
+          : jsonResponse({ detail: 'Service unavailable' }, 503);
+      }
+      if (url === '/dashboard/summary') return jsonResponse(emptySummary);
+      if (url === '/plugins') return jsonResponse([]);
+      return jsonResponse({});
+    });
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong.');
+    expect(screen.queryByRole('heading', { name: 'Dashboard' })).not.toBeInTheDocument();
+
+    sessionAvailable = true;
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

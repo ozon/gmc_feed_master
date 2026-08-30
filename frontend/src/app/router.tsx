@@ -7,11 +7,11 @@ import {
   RouterProvider,
   useLocation,
 } from 'react-router';
-import { setUnauthorizedHandler } from '../api/client';
+import { setUnauthorizedHandler, ApiError } from '../api/client';
 import { queryClient } from '../api/queryClient';
 import { queryKeys } from '../api/queryKeys';
 import { useSession } from '../api/hooks';
-import { LoadingState } from '../components/StateViews';
+import { ErrorState, LoadingState } from '../components/StateViews';
 import { LoginPage } from '../features/auth/LoginPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { SetupPage } from '../features/setup/SetupPage';
@@ -26,17 +26,20 @@ import { AppShell } from './AppShell';
 
 export function RequireSession() {
   const location = useLocation();
-  const { status } = useSession();
+  const { status, error, refetch } = useSession();
 
   if (status === 'pending') return <LoadingState />;
   if (status === 'error') {
-    return (
-      <Navigate
-        to="/login"
-        replace
-        state={{ from: location.pathname + location.search }}
-      />
-    );
+    if (error instanceof ApiError && error.status === 401) {
+      return (
+        <Navigate
+          to="/login"
+          replace
+          state={{ from: location.pathname + location.search }}
+        />
+      );
+    }
+    return <ErrorState onRetry={() => void refetch()} />;
   }
   return <Outlet />;
 }
