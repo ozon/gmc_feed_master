@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Each item below is sized for a single subagent task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> **For human readers:** This file is the working backlog. Tasks were collected from the M10-d final review (`docs/superpowers/sdd/progress.md`) and earlier carry-forwards. Each task is self-contained: it names the file(s), the change, the acceptance bar, and the references needed to start.
+> **For human readers:** This file is the working backlog. Tasks were collected from the M10-d final review (`docs/superpowers/sdd/progress.md`), earlier carry-forwards, and the 2026-08-30 cycle's final review. Each task is self-contained: it names the file(s), the change, the acceptance bar, and the references needed to start.
 
 **Status legend:** `[ ]` not started · `[~]` in progress · `[x]` complete · `[!]` blocked
 
@@ -10,29 +10,19 @@
 
 ---
 
+## Cycle log
+
+- **2026-08-30 (branch `m11-followups`, fast-forward merged to main at `4bdc3a8`):** executed 1.1, 2.1, 2.3, 3.1, 3.2, 4.1 via subagent-driven development (per-task reviews clean; final whole-branch review: merge-ready, no Critical). 7.1 turned out to be already complete (`6215c8f`). **3.4 was inadvertently omitted from the cycle's approved scope — it is the only P1 still open.** New tasks 1.7 and 1.8 were added from the cycle's final review. Gates on merged main: backend 654/654 (`pytest -n auto`, real PostgreSQL); frontend 151/151 + typecheck + build clean, no chunk-size warning.
+
+---
+
 ## Section 1 — Frontend correctness (M10 review carry-overs)
 
-### 1.1 [ ] Centralize 422 per-field + summary notification in one helper [P1]
+### 1.1 [x] Centralize 422 per-field + summary notification in one helper [P1]
 
-**Why:** The 422 errors summary notification pattern was applied in three places by hand (`PluginPage.tsx`, `PipelinePage.tsx`, `ExportPage.tsx`). All three follow the same shape: branch on `error instanceof ApiError && error.errors && error.errors.length > 0`, call `notifyError` with a joined message, fall through to `notifyMutationError` otherwise. The drift is real — `PluginPage` only counts errors, the others join them. One helper would prevent future drift.
+**Done (2026-08-30, `676ed29`):** `frontend/src/app/notifyApiError.ts` exports `notifyApiError(error, fallback, errorsSummary?) → Record<string,string>` (surfaces the summary/joined toast; returns the colon-split per-field map) plus pure `mapFieldErrors` for render paths (no toast during render). Re-exported from `notifications.ts`. PluginPage/PipelinePage/ExportPage migrated; PluginPage's local `mapErrors` deleted. MonitoringDryRunPage verified: query-only failure path via `withLoadingNotification`, no 422 branch — no change needed. 10 new tests.
 
-**Files:**
-- Create: `frontend/src/app/notifyApiError.ts` — single helper
-- Modify: `frontend/src/app/notifications.ts` (re-export or co-locate)
-- Modify: `frontend/src/features/plugin/PluginPage.tsx` (use helper)
-- Modify: `frontend/src/features/pipeline/PipelinePage.tsx` (use helper)
-- Modify: `frontend/src/features/export/ExportPage.tsx` (use helper)
-- Modify: `frontend/src/features/monitoring/MonitoringDryRunPage.tsx` (already uses `withLoadingNotification`; verify pattern is consistent)
-- Test: `frontend/src/app/notifyApiError.test.ts`
-
-**Acceptance:**
-- New helper signature (suggested): `notifyApiError(error: unknown, fallback: string, fieldErrorsKey?: string): void`
-- Always surfaces a notification. When `error.errors` is non-empty, joins them into one toast. When only `error.detail` exists, surfaces the detail.
-- Returns a per-field-errors map `Record<string,string>` for callers that want to render field-level messages (e.g. `PluginPage`'s `JsonSchemaForm`).
-- Existing tests for all 4 pages still pass; behavior unchanged from the user perspective.
-- New helper test: ApiError with `errors[]` → joins + returns map; ApiError with `detail` only → surfaces detail; plain Error → uses fallback; non-Error → uses fallback.
-
-**Reference:** `frontend/src/app/notifications.ts:14-20` (current `notifyMutationError`), the three call sites above.
+*Leftover (Minor, optional):* the convenience re-export creates a benign module cycle `notifications.ts ↔ notifyApiError.ts` (safe today — function declarations, live bindings, no module-scope calls). Co-locating the helper in `notifications.ts` would remove the hazard.
 
 ---
 
@@ -124,24 +114,47 @@
 
 ---
 
-## Section 2 — Backend follow-ups (from M10-d implementer flags)
+### 1.7 [ ] Route error boundary for lazy chunk-load failures [P1] — added 2026-08-30 (final review)
 
-### 2.1 [ ] Backend: add `findings` and `url` to `ExportVersionOut` to match spec §4.7 [P1]
-
-**Why:** The M10 spec (`docs/superpowers/specs/2026-08-28-m10-frontend-design.md` §4.7) says `ExportVersionOut` includes `findings: {critical, warning, info}` (so the frontend can show per-version finding counts in the version list). The actual backend response (`backend/app/schemas/export.py:9-19`) has only `product_count` and no `findings`. The frontend was built to match the backend (commit `981c32d` in M10-d), but the spec is the binding document. Closing this gap means the frontend can show the planned per-version QC summary.
+**Why:** Task 4.1 moved all 9 feature pages into on-demand chunks. After any deploy, a stale open tab that navigates gets `Failed to fetch dynamically imported module` and react-router's built-in `DefaultErrorComponent` (raw "Unexpected Application Error!" + stack trace, no retry). This is now the most common user-visible error after every deploy; a reload always fixes it, so the UI should offer one.
 
 **Files:**
-- Modify: `backend/app/schemas/export.py` (add `findings: ExportFindingCounts | None` to `ExportVersionOut`; `url: str | None`)
-- Modify: `backend/app/services/export.py` (compute findings from `QualityFinding` rows for the run that produced this version; populate `url` from `ExportFileStore.published_path`)
-- Test: `backend/tests/test_export_history.py` (add tests for the new fields; verify default `None` for rollback-source versions since QC didn't run)
+- Modify: `frontend/src/app/router.tsx` (route-level `errorElement` or a small `RouteErrorBoundary` component offering a reload)
+- Modify: `frontend/public/locales/{en,de}/common.json` (new keys for the error message + reload label; en+de identical)
+- Test: `frontend/src/app/router.test.tsx` (simulate a lazy import rejection)
 
 **Acceptance:**
-- For `source='run'` versions: `findings` is non-null with counts sourced from the latest `QualityFinding` rows for that run; `url` is the public export URL of the latest version.
-- For `source='rollback'` versions: `findings` is `null` (or `0/0/0`); `url` is the rollback's URL.
-- The frontend's current code path (which already handles `findings: undefined` gracefully per the review) will start showing the per-version findings without further frontend change.
-- New tests run in the existing test suite; `pytest -n auto` passes.
+- A chunk-load failure (dynamic `import()` rejection) renders a friendly error state with a Reload button (e.g. `window.location.assign(current location)`), not the default stack dump.
+- The 401/session-guard behaviors from tasks 3.1/3.2 are unchanged.
+- New test covers the rejection path; all existing tests pass.
 
-**Reference:** `backend/app/schemas/export.py:9-19`, `backend/app/services/export.py`, `docs/superpowers/specs/2026-08-28-m10-frontend-design.md` §4.7.
+**Reference:** `frontend/src/app/router.tsx` (lazy route components + `RequireSession`), react-router v7 `errorElement` docs (Context7).
+
+---
+
+### 1.8 [ ] ExportVersionList: render per-version QC findings badges [P2] — added 2026-08-30 (split from 2.1)
+
+**Why:** 2.1's original acceptance claimed the frontend would show per-version findings "without further frontend change" — that was wrong. The backend now returns `findings: {critical, warning, info} | null` and `url` on every `ExportVersionOut` (spec §4.7), but `ExportVersionList` has no findings column; the data currently dead-ends in an unused optional type field.
+
+**Files:**
+- Modify: `frontend/src/features/export/ExportVersionList.tsx` (per-severity counts column)
+- Modify: `frontend/public/locales/{en,de}/export.json` (column label and any count labels; en+de identical)
+- Test: `frontend/src/features/export/ExportVersionList.test.tsx` (or the ExportPage test)
+
+**Acceptance:**
+- `source='run'` versions render critical/warning/info counts from `version.findings`.
+- `source='rollback'` versions (`findings: null`) keep the existing "not QC'd" badge and show no counts (must not read as 0/0/0 "clean").
+- `url` remains available for future use; no rendering required in this task.
+
+**Reference:** spec `2026-08-28-m10-frontend-design.md` §4.7, `frontend/src/api/types.ts` (`ExportVersionOut`), `backend/app/schemas/export.py`.
+
+---
+
+## Section 2 — Backend follow-ups (from M10-d implementer flags)
+
+### 2.1 [x] Backend: add `findings` and `url` to `ExportVersionOut` to match spec §4.7 [P1]
+
+**Done (2026-08-30, `a48ffd6`):** `ExportVersionOut` gained `findings: ExportFindingCounts | None` and `url: str | None`. **Sourcing decision:** counts come from the joined `ExportRun`'s denormalized `critical/warning/info_finding_count` — NOT from `QualityFinding` rows (`persist_findings` deletes feed-keyed findings on every run, so older runs' rows no longer exist). `source='rollback'` → `findings=None` ("not QC'd", distinct from 0/0/0 "clean", per spec §4.7). `url` = `{public_base_url}/export/{export_token}.xml` (mirrors `routes/clients.py:56-57`), the feed source's current public URL on every row. Service layer (`list_versions`/`rollback`) returns Pydantic models via a shared `_version_out` helper; routes stay thin; frontend `types.ts` extended with optional fields only. Decision recorded in `docs/decisions.md` (2026-08-30). Frontend rendering is Task 1.8.
 
 ---
 
@@ -156,70 +169,27 @@
 **Acceptance:**
 - This task is **deferred** until the backend decides whether to keep the 2-value `'run'/'rollback'` enum or expand to the 3-value spec. File a backend question: ask before implementing. If backend stays at 2 values, this task is moot.
 
-**Reference:** `backend/app/services/export.py:135,301`, spec §4.7.
+**Reference:** `backend/app/export/service.py:136,336`, spec §4.7.
 
 ---
 
-### 2.3 [ ] Backend: IngestionRun 90-day retention (spec §4 line 73, §10 line 284) [P1]
+### 2.3 [x] Backend: IngestionRun 90-day retention (spec §4 line 73, §10 line 284) [P1]
 
-**Why:** The spec mandates a 90-day retention purge for `ingestion_runs` (StagingHistory 90-day retention is already implemented in `app/staging/purge.py`). Currently `ingestion_runs` grows unbounded. The natural home is the daily system purge job (`system-staging-purge`, `0 3 * * *`). Three RESTRICT FKs reference `ingestion_runs` (`staging_products.ingestion_run_id`, `quality_findings.ingestion_run_id`, `export_runs.ingestion_run_id` nullable). A purge must resolve dependents first.
-
-**Files:**
-- Modify: `backend/app/staging/purge.py` (add `purge_expired_ingestion_runs`; pick a dependent-resolution strategy)
-- Modify: `backend/app/scheduler/registry.py` (or wherever `system-staging-purge` is registered — register the new purge alongside)
-- Migration: new Alembic revision for the purge index/column if needed (likely none — table already exists)
-- Test: `backend/tests/test_purge_ingestion_runs.py` — covers the dependent-resolution strategy
-
-**Open question (resolve before implementing):** What happens to `export_runs.ingestion_run_id` for runs older than 90 days? Three options:
-1. `NULL` the column on purge (preserves the export run record; export history is independent of ingestion retention).
-2. Delete `export_runs` whose `ingestion_run_id` is being purged (loses history; reject).
-3. Block purge for any run that still has `export_runs` pointing to it (default-deny).
-
-Owner decision needed. Document the choice in `backend/docs/decisions.md` when implemented.
-
-**Acceptance:**
-- New purge job runs daily at the same time as the staging purge.
-- Purge respects 90 days; respects the chosen dependent-resolution strategy.
-- `pytest -n auto` green; M9 acceptance suite still green.
-
-**Reference:** `backend/app/staging/purge.py` (existing staging purge), `backend/docs/decisions.md`, spec §4 line 73.
+**Done (2026-08-30, `ccefd08`):** `purge_expired_ingestion_runs` in `backend/app/staging/purge.py` plus a second daily system job `system-ingestion-run-purge` (same `0 3 * * *` cron as the staging purge; `replace_existing=True` prevents double-registration). **Owner decision (2026-08-29):** NULL `export_runs.ingestion_run_id` on purge (option 1 — export history preserved; option 2 delete-export-runs was rejected). **Dependent-resolution strategy (single transaction):** candidates = runs with `started_at < now−90d`; runs still referenced by `staging_products.ingestion_run_id` are SKIPPED entirely (a feed's live staging state is never destroyed); for purged runs: NULL the export_runs FK → delete their `quality_findings` → delete the runs. Safe against running pipelines (a recent `started_at` is never a candidate); timezone-clean end-to-end. Decision + rationale recorded in `docs/decisions.md` (2026-08-30). Tests: `backend/tests/test_purge_ingestion_runs.py` (7 scenarios incl. protection, detach, rollback-NULL, empty tables) + lifespan registration assertion in `test_m9_lifespan.py`.
 
 ---
 
 ## Section 3 — M10-b carry-forwards
 
-### 3.1 [ ] 401 handler: reset session query on 401 [P1]
+### 3.1 [x] 401 handler: reset session query on 401 [P1]
 
-**Why:** The centralized 401 handler in `frontend/src/api/client.ts` navigates to `/login` but does not reset the `queryKeys.session` query. After a 401, the next page that reads the session may see a stale "authenticated" value until the next refetch. The plan noted this in the M10-b carry-forwards.
-
-**Files:**
-- Modify: `frontend/src/api/client.ts` (in the 401 handler registered via `setUnauthorizedHandler`)
-- Test: `frontend/src/api/client.test.ts` (add a 401 → session reset test)
-
-**Acceptance:**
-- On 401, the handler calls `queryClient.removeQueries({ queryKey: queryKeys.session })` (or `setQueryData(session, null)`) before navigating.
-- The login page renders without flicker after a 401.
-- The session query is reset even if navigation is to the same page.
-
-**Reference:** `frontend/src/api/client.ts:42-48` (current handler), `frontend/src/api/hooks.ts:52-60` (`useSession`).
+**Done (2026-08-30, `36eeaa3`):** `makeUnauthorizedHandler` in `frontend/src/app/router.tsx` calls `queryClient.removeQueries({ queryKey: queryKeys.session })` unconditionally (even when already on `/login`, before the navigation guard) and BEFORE `router.navigate(...)`, so a login-page `useSession` mount refetches instead of reading stale cache. `router.test.tsx` extended: invocation-order assertion (`invocationCallOrder`), already-on-login reset case, and an end-to-end 401 repro through the real App (redirect + login renders + cache `undefined`).
 
 ---
 
-### 3.2 [ ] Guard redirects: handle 503 (and other errors) with ErrorState, not silent redirect [P1]
+### 3.2 [x] Guard redirects: handle 503 (and other errors) with ErrorState, not silent redirect [P1]
 
-**Why:** `RequireSession` in `frontend/src/app/router.tsx` redirects to `/login` only on `status === 'error'`. This conflates 401 (correct redirect) with 503 / network errors (should show `ErrorState` + retry). The plan flagged this in M10-b.
-
-**Files:**
-- Modify: `frontend/src/app/router.tsx` (`RequireSession` component)
-- Test: `frontend/src/app/router.test.tsx` (new) — covers 401 → login, 503 → ErrorState + retry, network → ErrorState
-
-**Acceptance:**
-- When the session query returns 401: redirect to `/login` (current behavior).
-- When it returns 503 or any other error: render `ErrorState` with a retry button.
-- When the network request throws (offline): render `ErrorState` with a retry button.
-- The retry button calls `refetch()` on the session query.
-
-**Reference:** `frontend/src/app/router.tsx:26-41` (`RequireSession`).
+**Done (2026-08-30, `f8874bb`):** `RequireSession` now branches: `error instanceof ApiError && error.status === 401` → unchanged `<Navigate to="/login" replace state={{ from }} />`; any other error (503, other statuses, network TypeError/offline) → `<ErrorState onRetry={() => void refetch()} />` with the default `state.error` message (no new i18n keys). Four new tests in `router.test.tsx`: 401→login, 503→ErrorState (not redirected), network rejection→ErrorState, retry→refetch→guarded content renders.
 
 ---
 
@@ -236,11 +206,13 @@ Owner decision needed. Document the choice in `backend/docs/decisions.md` when i
 - Still clear the local session query (the user clicked Log out — they expect to be logged out locally).
 - Navigation: stay on the current page; the notification tells the user the server didn't acknowledge the logout.
 
-**Reference:** `frontend/src/api/hooks.ts:150-159` (`useLogout`), `frontend/src/app/notifications.ts`.
+**Reference:** `frontend/src/api/hooks.ts:170` (`useLogout`), `frontend/src/app/notifications.ts`.
 
 ---
 
 ### 3.4 [ ] Plugin nav routing: route by `manifest.config_scope` / `data_scope` [P1]
+
+> **Note (2026-08-30):** this is the only P1 NOT completed by the 2026-08-30 cycle — it was inadvertently omitted from the cycle's approved scope (1.1, 2.1, 2.3, 3.1, 3.2, 4.1). Pick this up first.
 
 **Why:** The current AppShell renders ALL plugin nav items as `/plugins/:pluginId` (global). The spec says plugins declaring `'client'` in `config_scope` should route to `/clients/:clientId/plugins/:pluginId` (scoped to the current client). The plan flagged this in M10-b as a carry-forward.
 
@@ -276,21 +248,9 @@ Owner decision needed. Document the choice in `backend/docs/decisions.md` when i
 
 ## Section 4 — Bundle / build hygiene
 
-### 4.1 [ ] Code-split the frontend bundle (M10 chunk > 500kB warning) [P1]
+### 4.1 [x] Code-split the frontend bundle (M10 chunk > 500kB warning) [P1]
 
-**Why:** After M10, the production bundle is ~980kB minified / ~296kB gzipped. Vite warns about the >500kB threshold. The plan flagged this in M10-b and the warning persists. Manual chunks can reduce the entry chunk and let route-based code splitting load area-specific code on demand.
-
-**Files:**
-- Modify: `frontend/vite.config.ts` (add `build.rollupOptions.output.manualChunks`)
-
-**Acceptance:**
-- The main `dist/assets/index-*.js` chunk drops below 500kB minified.
-- Each of the 4 areas (plugin, pipeline, monitoring, export) gets its own chunk loaded only when the user navigates to that area.
-- Lazy-load the area pages via `React.lazy` + `Suspense` in `router.tsx` (or the equivalent in the data-router pattern).
-- Full gate still green; no test regressions.
-- Document the chunking strategy in `frontend/vite.config.ts` comments (one line — repo permits config comments).
-
-**Reference:** `frontend/vite.config.ts`, Vite docs on `manualChunks` (Context7).
+**Done (2026-08-30, `4bdc3a8`):** `React.lazy` for the 9 feature pages (LoginPage + AppShell stay eager); vendor chunking via Vite 8/rolldown `build.rolldownOptions.output.codeSplitting.groups` — note `manualChunks` is REMOVED in Vite 8 (the original task text was stale). Entry `index-*.js` 980kB → 21kB; largest chunk `vendor-mantine` 376kB; Vite chunk-size warning gone; zero test edits; vendor-mantine CSS emitted and linked (no FOUC). Chunking strategy documented in `frontend/vite.config.ts` (one-line comment) + `docs/decisions.md` (2026-08-30). Follow-up: Task 1.7 (chunk-load error boundary).
 
 ---
 
@@ -342,19 +302,9 @@ Owner decision needed. Document the choice in `backend/docs/decisions.md` when i
 
 ## Section 7 — Documentation
 
-### 7.1 [ ] Record M10-d decisions in `docs/decisions.md` [P1]
+### 7.1 [x] Record M10-d decisions in `docs/decisions.md` [P1]
 
-**Why:** The M10-d design doc (§7) listed 5 decisions to record: dnd-kit pinning, Monitoring 3 routes, Export inline diff, plugin enable toggle location, demo plugin manifest. M10-a/b/c recorded their decisions; M10-d did not.
-
-**Files:**
-- Modify: `docs/decisions.md` (or the equivalent — locate the existing decisions file)
-
-**Acceptance:**
-- Each of the 5 M10-d decisions has a one-line entry with a date and a short rationale.
-- The decisions are placed in the correct section (likely "M10 frontend" or similar).
-- No new file; only append to the existing decisions document.
-
-**Reference:** M10-d design §7, M10-a/b/c decisions in `docs/decisions.md`.
+**Done (pre-cycle, `6215c8f`, 2026-08-29):** all 9 M10-d decisions recorded under `## 2026-08-29` (dnd-kit pinning, Monitoring 3 routes, Export inline diff, plugin enable toggle location, demo plugin manifest, auto-form only, DiffOut shape, ExportVersionOut realignment, 422 pattern). The 2026-08-30 cycle appended further entries under `## 2026-08-30` (findings/url sourcing, retention purge strategy, chunking strategy).
 
 ---
 
@@ -362,11 +312,11 @@ Owner decision needed. Document the choice in `backend/docs/decisions.md` when i
 
 ### 8.1 [ ] M11+ scope planning [P0]
 
-**Why:** M10 is done. M11+ requirements need to be gathered (from spec gaps, from the IngestionRun 90-day retention need, from Core plugin UIs, from any new business requirements). Without a plan, coding agents have no roadmap.
+**Why:** M10 is done. M11+ requirements need to be gathered (from spec gaps, from the remaining follow-ups, from Core plugin UIs, from any new business requirements). Without a plan, coding agents have no roadmap.
 
 **Owner action:** Decide M11 scope. Options:
-- M11a: Backend follow-ups (IngestionRun retention, ExportVersionOut findings/url, source enum expansion)
-- M11b: Core plugin implementation (Labelizer, Category, Rules)
+- M11a: Backend follow-ups — IngestionRun retention and ExportVersionOut findings/url are DONE (2026-08-30); only the source enum expansion (Task 2.2) remains
+- M11b: Core plugin implementation (Labelizer, Category, Rules) — unblocks Task 5.1
 - M11c: New feature work (TBD by product)
 
 **Acceptance:** A brainstorming session produces a new design spec; a plan follows; a new cycle begins. Until then, agents should pick from the tasks above — each is independently valuable.
@@ -375,13 +325,15 @@ Owner decision needed. Document the choice in `backend/docs/decisions.md` when i
 
 ## Working notes for the next agent
 
-- **All tasks above are independent** — you can pick any `[ ]` and start. Tasks 1.1-1.6 are P1/P2 frontend quality work; Tasks 2.1-2.3 are backend spec gaps; Tasks 3.1-3.5 are M10-b carry-forwards; Task 4.1 is bundle hygiene; Task 7.1 is documentation. Task 8.1 is the meta-task.
+- **Start with the remaining P1s:** Task 3.4 (missed by the 2026-08-30 cycle) and the new Task 1.7. Each is independently valuable and sized for one subagent + reviewer cycle.
+- **P2 pool:** 1.2-1.6, 1.8, 2.2, 3.3, 3.5, 6.1, 6.2. Task 5.1 is blocked on core plugin implementation; Task 8.1 is the owner's planning meta-task.
 - **M10 gate per task:** `cd /home/ozon/gmc_feed_master/frontend && npm test -- --run && npm run typecheck && npm run build`. Backend tasks: `cd /home/ozon/gmc_feed_master && pytest -n auto` (requires `TEST_DATABASE_URL`).
-- **Conventions** (binding): no comments in code; all strings via `t()`; en+de identical i18n trees; 422 errors summary notification; query-key invalidation; Loading/Empty/ErrorState on every data view.
+- **Conventions** (binding): no comments in code; all strings via `t()`; en+de identical i18n trees; 422 errors summary notification (now via `notifyApiError` in `frontend/src/app/notifyApiError.ts`); query-key invalidation; Loading/Empty/ErrorState on every data view.
 - **M10-d lessons** (binding): TanStack Form dirty uses `form.Subscribe`; `notifications.clean()` in `beforeEach`; `beforeAll(loadNamespaces)` for non-default namespaces; `useBlocker` requires data router (`createMemoryRouter`+`RouterProvider` in tests); nullable fields in `plugin.manifest` need optional chaining.
-- **Per-task workflow:** Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans`. Each task is sized for a single subagent + reviewer cycle. After each task, merge to main and update `.superpowers/sdd/progress.md` (the SDD ledger; gitignored, lives on disk only).
-- **Originals:** this file is derived from `.superpowers/sdd/progress.md` (M10-d final review + M10-b carry-forwards; gitignored, read it for full context). Specs at `docs/superpowers/specs/2026-08-29-m10-d-areas-2-design.md` and `docs/superpowers/specs/2026-08-28-m10-frontend-design.md`.
+- **2026-08-30 cycle notes:** Vite 8 uses rolldown — `manualChunks` is gone, use `build.rolldownOptions.output.codeSplitting.groups`. Frontend full-suite runs can flake when a heavy backend suite runs concurrently (load-induced jsdom timing); re-run solo before diagnosing. Task 1.7 (route error boundary) should land before the next deploy-heavy cycle.
+- **Per-task workflow:** Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans`. After each task, merge to main and update `.superpowers/sdd/progress.md` (the SDD ledger; gitignored, lives on disk only).
+- **Originals:** specs at `docs/superpowers/specs/2026-08-29-m10-d-areas-2-design.md` and `docs/superpowers/specs/2026-08-28-m10-frontend-design.md`; full 2026-08-30 cycle history in `.superpowers/sdd/progress.md`.
 
 ---
 
-_Generated 2026-08-29 after M10-d merge (`aa86c10`). Total: 15 tasks across 8 sections, mixed P0/P1/P2 priorities. Last touch: M10-d decisions recorded at `6215c8f`._
+_Generated 2026-08-29 after M10-d merge (`aa86c10`). Updated 2026-08-30 after the `m11-followups` cycle (merged at `4bdc3a8`): 22 tasks across 8 sections, 7 complete (1.1, 2.1, 2.3, 3.1, 3.2, 4.1, 7.1), 2 new (1.7, 1.8). Task 3.4 is the remaining P1._
