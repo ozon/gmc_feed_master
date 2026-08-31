@@ -35,6 +35,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
 import { useChangePassword, useDashboardSummary, useLogout, usePlugins, useSession } from '../api/hooks';
+import type { PluginInfo } from '../api/types';
 import { LanguageSwitcher } from '../i18n/LanguageSwitcher';
 import { notifyError, notifyMutationError, notifySuccess } from './notifications';
 
@@ -43,6 +44,23 @@ const PLUGIN_ICONS: Record<string, Icon> = {};
 function pluginIcon(name: string | undefined) {
   if (name && name in PLUGIN_ICONS) return PLUGIN_ICONS[name];
   return IconPuzzle;
+}
+
+function manifestScopes(
+  manifest: PluginInfo['manifest'],
+  key: 'config_scope' | 'data_scope',
+): string[] {
+  const value = manifest?.[key];
+  if (typeof value === 'string') return [value];
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string');
+  return [];
+}
+
+function isClientScoped(manifest: PluginInfo['manifest']): boolean {
+  return (
+    manifestScopes(manifest, 'config_scope').includes('client') ||
+    manifestScopes(manifest, 'data_scope').includes('client')
+  );
 }
 
 function ColorSchemeToggle() {
@@ -282,7 +300,8 @@ export function AppShell() {
               {pluginItems.map((plugin) => {
                 const PluginIcon = pluginIcon(plugin.manifest?.frontend?.icon);
                 const scope = plugin.manifest?.frontend;
-                const to = clientId
+                if (isClientScoped(plugin.manifest) && !clientId) return null;
+                const to = isClientScoped(plugin.manifest)
                   ? `/clients/${clientId}/plugins/${plugin.id}`
                   : `/plugins/${plugin.id}`;
                 return (

@@ -65,6 +65,40 @@ const plugins = [
     manifest: { frontend: { menu_item: 'Hidden' } },
     used_by_feed_sources: 0,
   },
+  {
+    id: 'global_tool',
+    name: 'Global Tool',
+    version: '1.0.0',
+    enabled: true,
+    manifest: {
+      frontend: { menu_item: 'Global Tool' },
+      config_scope: ['global'],
+      data_scope: 'global',
+    },
+    used_by_feed_sources: 0,
+  },
+  {
+    id: 'client_widget',
+    name: 'Client Widget',
+    version: '1.0.0',
+    enabled: true,
+    manifest: {
+      frontend: { menu_item: 'Client Widget' },
+      config_scope: ['client'],
+    },
+    used_by_feed_sources: 0,
+  },
+  {
+    id: 'data_scoped_widget',
+    name: 'Data Widget',
+    version: '1.0.0',
+    enabled: true,
+    manifest: {
+      frontend: { menu_item: 'Data Widget' },
+      data_scope: 'client',
+    },
+    used_by_feed_sources: 0,
+  },
 ];
 
 function authenticatedHandler(url: string) {
@@ -144,5 +178,50 @@ describe('AppShell', () => {
     await user.click(await screen.findByText('Log out'));
 
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+  });
+
+  it('links a global-scoped plugin to the global plugin route', async () => {
+    render(<App />);
+    expect(await screen.findByText('Global Tool')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Global Tool' })).toHaveAttribute(
+      'href',
+      '/plugins/global_tool',
+    );
+  });
+
+  it('links a client-scoped plugin to the client route while on a client page', async () => {
+    window.history.replaceState({}, '', '/clients/1/feeds/2/products');
+    render(<App />);
+    expect(await screen.findByText('Client Widget')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Client Widget' })).toHaveAttribute(
+      'href',
+      '/clients/1/plugins/client_widget',
+    );
+  });
+
+  it('hides a client-scoped plugin from the nav when no client is selected', async () => {
+    render(<App />);
+    expect(await screen.findByText('Global Tool')).toBeInTheDocument();
+    expect(screen.queryByText('Client Widget')).not.toBeInTheDocument();
+  });
+
+  it('treats a plugin with client data_scope as client-scoped', async () => {
+    window.history.replaceState({}, '', '/clients/1/feeds/2/products');
+    render(<App />);
+    expect(await screen.findByText('Data Widget')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Data Widget' })).toHaveAttribute(
+      'href',
+      '/clients/1/plugins/data_scoped_widget',
+    );
+  });
+
+  it('defaults a manifest without scope fields to the global route on a client page', async () => {
+    window.history.replaceState({}, '', '/clients/1/feeds/2/products');
+    render(<App />);
+    expect(await screen.findByText('Example Upper')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Example Upper' })).toHaveAttribute(
+      'href',
+      '/plugins/example_upper',
+    );
   });
 });
