@@ -36,6 +36,8 @@
     "title": "Feedquelle hinzufügen",
     "name": "Name",
     "format": "Format",
+    "sourceUrl": "Quell-URL",
+    "sourceUrlPlaceholder": "https://example.com/feed.xml",
     "create": "Erstellen"
   },
   "clientModal": {

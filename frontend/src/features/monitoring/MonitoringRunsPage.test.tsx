@@ -1,5 +1,6 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { notifications, Notifications } from '@mantine/notifications';
 import type { ReactNode } from 'react';
@@ -33,6 +34,8 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
+  vi.spyOn(notifications, 'show').mockClear();
+  vi.spyOn(notifications, 'update').mockClear();
   queryClient.clear();
   notifications.clean();
 });
@@ -42,6 +45,13 @@ function withQueryClient() {
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   );
+}
+
+function postCalls(url: string): number {
+  const fm = vi.mocked(globalThis.fetch);
+  return fm.mock.calls.filter(
+    ([input, init]) => String(input) === url && init?.method === 'POST',
+  ).length;
 }
 
 function renderAt() {
@@ -77,5 +87,46 @@ describe('MonitoringRunsPage', () => {
     });
     renderAt();
     expect(await screen.findByText(/no runs/i)).toBeInTheDocument();
+  });
+
+  it('shows a Run pipeline button and triggers a run', async () => {
+    const user = userEvent.setup();
+    stubFetch((url) => {
+      if (url.startsWith('/feed-sources/1/ingestion-runs')) return jsonResponse([]);
+      if (url === '/feed-sources/1/run') return jsonResponse({ run_id: 5 }, 202);
+      return jsonResponse({});
+    });
+    renderAt();
+    await screen.findByText(/no runs/i);
+
+    const btn = screen.getByRole('button', { name: /run pipeline/i });
+    expect(btn).toBeEnabled();
+
+    await user.click(btn);
+
+    await waitFor(() => expect(postCalls('/feed-sources/1/run')).toBe(1));
+  });
+
+  it('shows exactly one failure notification when the run trigger fails', async () => {
+    const user = userEvent.setup();
+    stubFetch((url) => {
+      if (url.startsWith('/feed-sources/1/ingestion-runs')) return jsonResponse([]);
+      if (url === '/feed-sources/1/run') return jsonResponse({ detail: 'boom' }, 500);
+      return jsonResponse({});
+    });
+    renderAt();
+    await screen.findByText(/no runs/i);
+
+    await user.click(screen.getByRole('button', { name: /run pipeline/i }));
+
+    await waitFor(() => {
+      expect(notifications.show).toHaveBeenCalledTimes(1);
+    });
+    expect(notifications.show).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Pipeline is running...' }),
+    );
+    expect(notifications.update).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Could not start pipeline.', color: 'red' }),
+    );
   });
 });

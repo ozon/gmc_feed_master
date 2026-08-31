@@ -167,6 +167,18 @@ export function useRunDryRun(feedSourceId: number | string) {
   });
 }
 
+export function useTriggerRun(feedSourceId: number | string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiPost<{ run_id: number }>(`/feed-sources/${feedSourceId}/run`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).runs });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary });
+    },
+  });
+}
+
 export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -215,6 +215,7 @@ describe('DashboardPage', () => {
     await user.type(await screen.findByLabelText(/^name/i), 'New Feed');
     await user.click(await screen.findByRole('combobox', { name: 'Format' }));
     await user.click(await screen.findByRole('option', { name: 'XML' }));
+    await user.type(await screen.findByLabelText(/source url/i), 'https://example.com/feed.xml');
     await user.click(screen.getByRole('button', { name: 'Create' }));
 
     await waitFor(() => expect(postCalls('/clients/1/feed-sources')).toBe(1));

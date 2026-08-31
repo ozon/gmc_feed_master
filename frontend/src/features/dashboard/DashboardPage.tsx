@@ -56,6 +56,7 @@ function ClientSection({ client }: { client: ClientSummary }) {
   const [addFeedOpened, setAddFeedOpened] = useState(false);
   const [feedName, setFeedName] = useState('');
   const [feedFormat, setFeedFormat] = useState<string>('xml');
+  const [feedSourceUrl, setFeedSourceUrl] = useState('');
 
   function createFeed() {
     createFeedSource.mutate(
@@ -63,12 +64,14 @@ function ClientSection({ client }: { client: ClientSummary }) {
         clientId: client.id,
         name: feedName,
         source_format: feedFormat,
+        source_url: feedSourceUrl || null,
       },
       {
         onSuccess: (feed) => {
           notifySuccess(t('saved'));
           setAddFeedOpened(false);
           setFeedName('');
+          setFeedSourceUrl('');
           navigate(`/clients/${client.id}/feeds/${feed.id}/setup`);
         },
         onError: (error) => notifyMutationError(error, t('saveFailed')),
@@ -129,6 +132,12 @@ function ClientSection({ client }: { client: ClientSummary }) {
                 value={feedFormat}
                 onChange={(value) => setFeedFormat(value ?? 'xml')}
                 allowDeselect={false}
+              />
+              <TextInput
+                label={t('addFeedModal.sourceUrl')}
+                placeholder={t('addFeedModal.sourceUrlPlaceholder')}
+                value={feedSourceUrl}
+                onChange={(event) => setFeedSourceUrl(event.currentTarget.value)}
               />
               <Group justify="flex-end">
                 <Button onClick={createFeed} loading={createFeedSource.isPending}>

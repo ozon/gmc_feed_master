@@ -18,7 +18,11 @@
     "productId": "Product"
   },
   "runs": {
-    "empty": "No runs yet."
+    "empty": "No runs yet.",
+    "trigger": "Run pipeline",
+    "triggerRunning": "Pipeline is running...",
+    "triggerSuccess": "Pipeline run started.",
+    "triggerFailed": "Could not start pipeline."
   },
   "findings": {
     "empty": "No findings — all products pass quality checks.",
