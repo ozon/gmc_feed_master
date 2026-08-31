@@ -152,7 +152,25 @@ check: lint test ## Run full CI check (lint + typecheck + all tests)
 # ==============================================================================
 
 .PHONY: help
-help: ## Show this help
+help: ## Show this help with commands
 	@echo "GMC Feed Master — Available targets:"
 	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
+	@awk 'BEGIN { in_help = 0; last_target = "" } \
+	/^\.PHONY: help/ { in_help = 1; next } \
+	/^help:/ { in_help = 1; next } \
+	in_help && /^\t/ { next } \
+	!/^[a-zA-Z_-]/ { in_help = 0 } \
+	in_help { next } \
+	/^[a-zA-Z_-]+:.*## / { \
+		if (last_target != "" && cmd != "") printf "  \033[90m%-24s\033[0m \033[37m$$ %s\033[0m\n", "", cmd; \
+		last_target = $$1; sub(/:$$/, "", last_target); sub(/^[^:]*:.*## /, "", $$0); desc = $$0; cmd = ""; \
+		printf "  \033[36m%-24s\033[0m %s\n", last_target, desc; \
+		next \
+	} \
+	/^\t[^\t@#]/ { \
+		if (cmd == "") cmd = $$0; else cmd = cmd " && " $$0; \
+		gsub(/^\t/, "", cmd); \
+	} \
+	END { \
+		if (last_target != "" && cmd != "") printf "  \033[90m%-24s\033[0m \033[37m$$ %s\033[0m\n", "", cmd \
+	}' $(MAKEFILE_LIST)

@@ -5,7 +5,7 @@ Shortcuts for common development tasks. All commands run from the project root.
 ## Quick Start
 
 ```bash
-make help            # List all available targets
+make help            # List all available targets with commands
 make dev             # Start everything (postgres + backend + frontend)
 make dev-stop        # Stop dev servers
 ```
