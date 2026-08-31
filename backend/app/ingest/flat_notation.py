@@ -101,12 +101,9 @@ def parse_header(
                     AttributeKind.STRUCTURED,
                     AttributeKind.REPEATED_STRUCTURED,
                 ):
-                    raise HeaderError(
-                        f"Column '{header}' is a structured attribute and requires annotation "
-                        f"'{header}(...)'",
-                        column=header,
-                    )
-                kind = "scalar"
+                    kind = "generic"
+                else:
+                    kind = "scalar"
             else:
                 kind = "generic"
 

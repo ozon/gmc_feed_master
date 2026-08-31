@@ -121,16 +121,18 @@ class TestParseHeaderGeneric:
         ]
 
 
-class TestParseHeaderBareStructuredError:
-    def test_bare_structured_column_raises(self) -> None:
+class TestParseHeaderBareStructured:
+    def test_bare_structured_becomes_generic(self) -> None:
         reg = _registry({
             "shipping": _structured("shipping", (
                 SubField("country", "String", RequirementStatus.REQUIRED),
                 SubField("price", "Price", RequirementStatus.OPTIONAL),
             )),
         })
-        with pytest.raises(HeaderError, match="shipping"):
-            parse_header(["shipping"], reg)
+        plan = parse_header(["shipping"], reg)
+        assert plan.columns == [
+            ColumnSpec(name="shipping", kind="generic", sub_fields=[]),
+        ]
 
 
 class TestParseHeaderUnknownSubFieldError:
