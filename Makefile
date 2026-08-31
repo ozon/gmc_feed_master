@@ -138,6 +138,10 @@ dev-stop: ## Stop backend and frontend dev servers
 	@pkill -f "uvicorn app.main:app" 2>/dev/null && echo "Backend stopped" || echo "Backend not running"
 	@pkill -f "vite" 2>/dev/null && echo "Frontend stopped" || echo "Frontend not running"
 
+.PHONY: prod
+prod: ## Start Caddy production server (requires DOMAIN and BACKEND_URL env vars)
+	caddy run --config Caddyfile --adapter caddyfile
+
 .PHONY: test
 test: backend-test frontend-test plugin-test ## Run all tests
 

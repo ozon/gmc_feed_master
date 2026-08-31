@@ -1,0 +1,32 @@
+{$DOMAIN:localhost} {
+	handle /auth/* {
+		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
+	}
+	handle /health {
+		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
+	}
+	handle /clients/* {
+		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
+	}
+	handle /feed-sources/* {
+		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
+	}
+	handle /dashboard/* {
+		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
+	}
+	handle /plugins/* {
+		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
+	}
+	handle /registry/* {
+		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
+	}
+	handle /export/* {
+		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
+	}
+
+	handle {
+		root * /path/to/frontend/dist
+		try_files {path} /index.html
+		file_server
+	}
+}
