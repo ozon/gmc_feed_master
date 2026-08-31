@@ -32,6 +32,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      allowedHosts: ['localhost', 'x.hermes-tower.com'],
       ...(certPath && keyPath
         ? {
             https: {

@@ -142,6 +142,10 @@ dev-stop: ## Stop backend and frontend dev servers
 prod: ## Start Caddy production server (requires DOMAIN and BACKEND_URL env vars)
 	caddy run --config Caddyfile --adapter caddyfile
 
+.PHONY: dev-caddy
+dev-caddy: ## Start Caddy dev server (http://localhost, no TLS)
+	caddy run --config Caddyfile.dev --adapter caddyfile
+
 .PHONY: test
 test: backend-test frontend-test plugin-test ## Run all tests
 

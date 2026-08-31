@@ -1,0 +1,30 @@
+http://localhost {
+	handle /auth/* {
+		reverse_proxy http://127.0.0.1:8000
+	}
+	handle /health {
+		reverse_proxy http://127.0.0.1:8000
+	}
+	handle /clients/* {
+		reverse_proxy http://127.0.0.1:8000
+	}
+	handle /feed-sources/* {
+		reverse_proxy http://127.0.0.1:8000
+	}
+	handle /dashboard/* {
+		reverse_proxy http://127.0.0.1:8000
+	}
+	handle /plugins/* {
+		reverse_proxy http://127.0.0.1:8000
+	}
+	handle /registry/* {
+		reverse_proxy http://127.0.0.1:8000
+	}
+	handle /export/* {
+		reverse_proxy http://127.0.0.1:8000
+	}
+
+	handle {
+		reverse_proxy http://127.0.0.1:5173
+	}
+}
