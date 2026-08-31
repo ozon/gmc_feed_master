@@ -148,6 +148,21 @@ async def create_feed_source(
     return _feed_source_out(feed_source, settings)
 
 
+@router.get("/feed-sources/{feed_source_id}", response_model=FeedSourceOut)
+async def get_feed_source(
+    feed_source_id: int,
+    _user: str = Depends(require_user),
+    db_session: AsyncSession | None = Depends(get_db_session),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    session = _require_db(db_session)
+    async with session.begin():
+        feed_source = await session.get(FeedSource, feed_source_id)
+        if feed_source is None:
+            raise HTTPException(status_code=404, detail="feed source not found")
+    return _feed_source_out(feed_source, settings)
+
+
 @router.get("/clients/{client_id}/feed-sources", response_model=list[FeedSourceOut])
 async def list_feed_sources(
     client_id: int,

@@ -312,3 +312,50 @@ async def test_feed_source_update_volume_threshold_out_of_range(app_factory):
     ).json()
     resp = await client.put(f"/feed-sources/{feed['id']}", json={"volume_drop_threshold_pct": 101})
     assert resp.status_code == 422
+
+
+async def test_get_feed_source_returns_detail(app_factory):
+    app, _ = app_factory
+    client = await logged_in_client(app_factory)
+    client_id = (await client.post("/clients", json={"name": "Acme"})).json()["id"]
+    fs_id = (
+        await client.post(
+            f"/clients/{client_id}/feed-sources",
+            json={"name": "Main", "source_format": "xml"},
+        )
+    ).json()["id"]
+
+    resp = await client.get(f"/feed-sources/{fs_id}")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["id"] == fs_id
+    assert body["client_id"] == client_id
+    assert body["name"] == "Main"
+    assert body["export_url"].endswith(".xml")
+
+
+async def test_get_feed_source_unknown_returns_404(app_factory):
+    client = await logged_in_client(app_factory)
+    assert (await client.get("/feed-sources/999999")).status_code == 404
+
+
+async def test_trigger_run_requires_runner(app_factory):
+    app, _ = app_factory
+    client = await logged_in_client(app_factory)
+    client_id = (await client.post("/clients", json={"name": "Acme"})).json()["id"]
+    fs_id = (
+        await client.post(
+            f"/clients/{client_id}/feed-sources",
+            json={"name": "Main", "source_format": "xml"},
+        )
+    ).json()["id"]
+
+    runner = app.state.pipeline_runner
+    del app.state.pipeline_runner
+    try:
+        resp = await client.post(f"/feed-sources/{fs_id}/run")
+    finally:
+        app.state.pipeline_runner = runner
+
+    assert resp.status_code == 503
