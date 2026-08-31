@@ -28,6 +28,11 @@
     "empty": "Noch nichts vorhanden.",
     "error": "Etwas ist schiefgelaufen."
   },
+  "errors": {
+    "chunkLoadFailed": "Eine neue Version der App ist verfügbar. Zum Fortfahren neu laden.",
+    "routeError": "Etwas ist schiefgelaufen.",
+    "reload": "Neu laden"
+  },
   "language": {
     "label": "Sprache",
     "en": "Englisch",

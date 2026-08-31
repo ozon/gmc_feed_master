@@ -1,11 +1,14 @@
 import { lazy, useEffect, useRef } from 'react';
+import { Button, Center, Stack, Text } from '@mantine/core';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   createBrowserRouter,
   Navigate,
   Outlet,
   RouterProvider,
   useLocation,
+  useRouteError,
 } from 'react-router';
 import { setUnauthorizedHandler, ApiError } from '../api/client';
 import { queryClient } from '../api/queryClient';
@@ -69,6 +72,36 @@ export function RequireSession() {
   return <Outlet />;
 }
 
+function isChunkLoadFailure(error: unknown): boolean {
+  return (
+    error instanceof TypeError &&
+    /fetch.*import|import.*module|dynamically imported/i.test(error.message)
+  );
+}
+
+export function RouteErrorBoundary() {
+  const { t } = useTranslation();
+  const error = useRouteError();
+  const message = isChunkLoadFailure(error)
+    ? t('errors.chunkLoadFailed')
+    : t('errors.routeError');
+  return (
+    <Center px="md">
+      <Stack align="center" gap="sm" mih="50vh" justify="center">
+        <Text c="red" role="alert">
+          {message}
+        </Text>
+        <Button
+          variant="light"
+          onClick={() => window.location.assign(window.location.href)}
+        >
+          {t('errors.reload')}
+        </Button>
+      </Stack>
+    </Center>
+  );
+}
+
 const routes = [
   { path: '/login', element: <LoginPage /> },
   {
@@ -76,6 +109,7 @@ const routes = [
     children: [
       {
         element: <AppShell />,
+        errorElement: <RouteErrorBoundary />,
         children: [
           { index: true, element: <DashboardPage /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/setup', element: <SetupPage /> },

@@ -28,6 +28,11 @@
     "empty": "Nothing here yet.",
     "error": "Something went wrong."
   },
+  "errors": {
+    "chunkLoadFailed": "A new version of the app is available. Reload to continue.",
+    "routeError": "Something went wrong.",
+    "reload": "Reload"
+  },
   "language": {
     "label": "Language",
     "en": "English",

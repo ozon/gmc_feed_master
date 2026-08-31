@@ -2,10 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { notifications } from '@mantine/notifications';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import { render } from '../test/render';
 import { stubFetch } from '../test/fetch';
 import App from '../App';
-import { makeUnauthorizedHandler } from './router';
+import { makeUnauthorizedHandler, RouteErrorBoundary } from './router';
 import { queryClient } from '../api/queryClient';
 import { queryKeys } from '../api/queryKeys';
 
@@ -226,5 +227,62 @@ describe('RequireSession non-401 session errors', () => {
 
     expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});
+
+describe('route error boundary', () => {
+  const chunkError = new TypeError('Failed to fetch dynamically imported module');
+
+  function renderRouterWithFailingLazyRoute(errorToThrow: Error) {
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/',
+          element: <div>Home</div>,
+          errorElement: <RouteErrorBoundary />,
+        },
+        {
+          path: '/boom',
+          errorElement: <RouteErrorBoundary />,
+          lazy: async () => {
+            throw errorToThrow;
+          },
+        },
+      ],
+      { initialEntries: ['/boom'] },
+    );
+    render(<RouterProvider router={router} />);
+  }
+
+  it('renders a friendly reload state when a lazy chunk fails to load', async () => {
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, assign: assign },
+      writable: true,
+    });
+
+    renderRouterWithFailingLazyRoute(chunkError);
+
+    expect(
+      await screen.findByText('A new version of the app is available. Reload to continue.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Unexpected Application Error/i)).not.toBeInTheDocument();
+
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Reload' }));
+    expect(assign).toHaveBeenCalledWith(window.location.href);
+  });
+
+  it('renders the same friendly boundary with reload for a non-chunk render error', async () => {
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, assign: assign },
+      writable: true,
+    });
+
+    renderRouterWithFailingLazyRoute(new Error('random render failure'));
+
+    expect(await screen.findByText('Something went wrong.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument();
+    expect(screen.queryByText(/Unexpected Application Error/i)).not.toBeInTheDocument();
   });
 });
