@@ -5,6 +5,7 @@ import { render } from '../test/render';
 import { stubFetch } from '../test/fetch';
 import App from '../App';
 import { queryClient } from '../api/queryClient';
+import { queryKeys } from '../api/queryKeys';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -178,6 +179,34 @@ describe('AppShell', () => {
     await user.click(await screen.findByText('Log out'));
 
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument();
+  });
+
+  it('shows a logoutFailed toast when the server rejects the logout', async () => {
+    const user = userEvent.setup();
+    let logoutAttempted = false;
+    stubFetch((url) => {
+      if (url === '/auth/logout') {
+        logoutAttempted = true;
+        return jsonResponse({}, 500);
+      }
+      if (url === '/auth/me') {
+        return logoutAttempted
+          ? jsonResponse({ detail: 'Not authenticated' }, 401)
+          : jsonResponse({ username: 'operator' });
+      }
+      if (url === '/dashboard/summary') return jsonResponse(summary);
+      if (url === '/plugins') return jsonResponse(plugins);
+      return jsonResponse({});
+    });
+    render(<App />);
+
+    await screen.findByRole('heading', { name: 'Dashboard' });
+    queryClient.setQueryData(queryKeys.session, { username: 'operator' });
+    await user.click(screen.getByRole('button', { name: 'operator' }));
+    await user.click(await screen.findByText('Log out'));
+
+    expect(await screen.findByText(/failed on the server/i)).toBeInTheDocument();
+    expect(queryClient.getQueryData(queryKeys.session)).toBeUndefined();
   });
 
   it('links a global-scoped plugin to the global plugin route', async () => {

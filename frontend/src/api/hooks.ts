@@ -183,8 +183,8 @@ export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: logout,
-    onSuccess: () => {
-      void queryClient.resetQueries({ queryKey: queryKeys.session });
+    onSettled: () => {
+      void queryClient.removeQueries({ queryKey: queryKeys.session });
     },
   });
 }

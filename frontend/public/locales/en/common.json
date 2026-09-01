@@ -31,7 +31,8 @@
   "errors": {
     "chunkLoadFailed": "A new version of the app is available. Reload to continue.",
     "routeError": "Something went wrong.",
-    "reload": "Reload"
+    "reload": "Reload",
+    "logoutFailed": "Log out failed on the server. You were logged out locally."
   },
   "language": {
     "label": "Language",
