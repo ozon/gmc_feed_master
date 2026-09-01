@@ -132,6 +132,65 @@ async def test_toggle_enabled_unknown_plugin_returns_404(app_factory):
     assert resp.status_code == 404
 
 
+async def _seed_plugin_in_use(factory, plugin_name="used_plugin"):
+    async with factory() as session:
+        async with session.begin():
+            plugin = Plugin(
+                name=plugin_name,
+                version="1.0.0",
+                enabled=True,
+                manifest=make_manifest(id=plugin_name),
+            )
+            session.add(plugin)
+            await session.flush()
+            acme = Client(name="Acme")
+            session.add(acme)
+            await session.flush()
+            feed = FeedSource(client_id=acme.id, name="DE", source_format="wide_tsv")
+            session.add(feed)
+            await session.flush()
+            pipeline = ModulePipeline(
+                feed_source_id=feed.id, name="p", version="1", definition={}
+            )
+            session.add(pipeline)
+            await session.flush()
+            session.add(
+                ModuleInstance(
+                    pipeline_id=pipeline.id,
+                    plugin_id=plugin.id,
+                    position=0,
+                    name="a",
+                    configuration={},
+                )
+            )
+    return plugin.id
+
+
+async def test_disable_plugin_in_use_returns_409(app_factory):
+    _, factory = app_factory
+    await _seed_plugin_in_use(factory)
+    client = await logged_in_client(app_factory)
+    resp = await client.put("/plugins/used_plugin/enabled", json={"enabled": False})
+    assert resp.status_code == 409
+    assert "1 feed source" in resp.json()["detail"]
+
+
+async def test_enable_plugin_in_use_is_allowed(app_factory):
+    _, factory = app_factory
+    await _seed_plugin_in_use(factory)
+    client = await logged_in_client(app_factory)
+    resp = await client.put("/plugins/used_plugin/enabled", json={"enabled": True})
+    assert resp.status_code == 200
+
+
+async def test_disable_unused_plugin_is_allowed(app_factory):
+    _, factory = app_factory
+    await seed_plugin(factory)
+    client = await logged_in_client(app_factory)
+    resp = await client.put("/plugins/title_case/enabled", json={"enabled": False})
+    assert resp.status_code == 200
+
+
 async def test_config_global_get_defaults_to_empty_dict(app_factory):
     _, factory = app_factory
     await seed_plugin(factory)

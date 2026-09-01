@@ -43,6 +43,18 @@ async def _get_plugin_by_name(session: AsyncSession, plugin_id: str) -> Plugin:
     return plugin
 
 
+async def _usage_count(session: AsyncSession, plugin_row_id: int) -> int:
+    from ..models.pipeline import ModuleInstance, ModulePipeline
+
+    result = await session.execute(
+        select(func.count(func.distinct(ModulePipeline.feed_source_id)))
+        .select_from(ModuleInstance)
+        .join(ModulePipeline, ModuleInstance.pipeline_id == ModulePipeline.id)
+        .where(ModuleInstance.plugin_id == plugin_row_id)
+    )
+    return int(result.scalar() or 0)
+
+
 def _declared_scopes(manifest: dict[str, Any], scope_kind: str) -> tuple[str, ...]:
     value = (manifest or {}).get(scope_kind)
     if value is None:
@@ -121,7 +133,7 @@ async def list_plugins(
 
 
 @router.put("/plugins/{plugin_id}/enabled")
-async def set_plugin_enabled(
+async def update_plugin_enabled(
     plugin_id: str,
     payload: EnabledPut,
     _user: str = Depends(require_user),
@@ -130,6 +142,14 @@ async def set_plugin_enabled(
     session = _require_db(db_session)
     async with session.begin():
         plugin = await _get_plugin_by_name(session, plugin_id)
+        if not payload.enabled:
+            count = await _usage_count(session, plugin.id)
+            if count > 0:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"plugin in use by {count} feed source"
+                    f"{'s' if count != 1 else ''}",
+                )
         plugin.enabled = payload.enabled
     return {"status": "ok"}
 
