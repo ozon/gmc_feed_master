@@ -300,8 +300,9 @@ export function AppShell() {
               {pluginItems.map((plugin) => {
                 const PluginIcon = pluginIcon(plugin.manifest?.frontend?.icon);
                 const scope = plugin.manifest?.frontend;
-                if (isClientScoped(plugin.manifest) && !clientId) return null;
-                const to = isClientScoped(plugin.manifest)
+                const clientScoped = isClientScoped(plugin.manifest);
+                if (clientScoped && !clientId) return null;
+                const to = clientScoped
                   ? `/clients/${clientId}/plugins/${plugin.id}`
                   : `/plugins/${plugin.id}`;
                 return (

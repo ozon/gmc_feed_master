@@ -186,7 +186,7 @@ Semantics: setting a position beyond the current length auto-extends the array (
 - Header `attr(sub1:sub2:…)`: values are split left-to-right by header arity; surplus colons in a value → row-level ingestion error (logged, row skipped).
 - Same header column n times → repeated structured attribute (array of n structs, column order preserved).
 - Comma-separated cell values → repeated scalar; quoted values may contain commas.
-- Only the explicit `attr(sub:…)` notation is supported; bare structured columns relying on implicit sub-field order are rejected with a clear error.
+- Only the explicit `attr(sub:…)` notation is supported; bare structured columns (registry-known structured attribute without annotation) parse as generic (untyped) scalar columns rather than being rejected.
 - XML input maps natively onto the same canonical model.
 - Naming note: "wide-format TSV" refers to one TSV file per feed source using repeated/annotated columns to encode structured attributes — not multiple external feeds merged into one (feed structure remains strictly 1:1, §2).
 

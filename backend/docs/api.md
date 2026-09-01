@@ -27,7 +27,7 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 - `GET /feed-sources/{id}` — get feed source detail
 - `PUT /feed-sources/{id}` — update feed source
 - `DELETE /feed-sources/{id}` — delete feed source
-- `POST /feed-sources/{id}/run` — manual pipeline trigger → returns `{run_id, status}`
+- `POST /feed-sources/{id}/run` — manual pipeline trigger → returns `{run_id}` (202)
 
 ### Pipeline Configuration
 - `GET /feed-sources/{id}/pipeline` — get active pipeline definition
