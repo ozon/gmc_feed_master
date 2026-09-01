@@ -13,6 +13,8 @@
   "disableConfirmTitle": "{{name}} deaktivieren?",
   "disableConfirmBody": "{{name}} wird von Feed-Quellen verwendet. Geben Sie die Anzahl zur Bestätigung ein.",
   "disable": "Deaktivieren",
+  "disableBlocked": "Plugin wird von {{count}} Feed-Quellen verwendet. Deaktivieren nicht möglich.",
+  "disableFailed": "Plugin konnte nicht deaktiviert werden.",
   "saved": "Pipeline gespeichert.",
   "saveFailed": "Pipeline konnte nicht gespeichert werden.",
   "saveFailedWithErrors": "Pipeline konnte nicht gespeichert werden: {{errors}}"

@@ -2,6 +2,8 @@ import { Accordion, Badge, Group, Stack, Switch, Text } from '@mantine/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useUpdatePluginEnabled } from '../../api/hooks';
+import { ApiError } from '../../api/client';
+import { notifyError, notifyMutationError } from '../../app/notifications';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { getPluginIcon } from '../../components/PluginIconMap';
 import type { PluginInfo } from '../../api/types';
@@ -27,7 +29,19 @@ export function PluginRegistryPanel({ plugins }: Props) {
 
   function confirmToggle() {
     if (!pendingToggle) return;
-    toggleEnabled.mutate({ id: pendingToggle.id, enabled: false });
+    const plugin = pendingToggle;
+    toggleEnabled.mutate(
+      { id: plugin.id, enabled: false },
+      {
+        onError: (error) => {
+          if (error instanceof ApiError && error.status === 409) {
+            notifyError(t('disableBlocked', { count: plugin.used_by_feed_sources }));
+          } else {
+            notifyMutationError(error, t('disableFailed'));
+          }
+        },
+      },
+    );
     setPendingToggle(null);
   }
 

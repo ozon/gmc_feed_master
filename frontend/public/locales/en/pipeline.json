@@ -13,6 +13,8 @@
   "disableConfirmTitle": "Disable {{name}}?",
   "disableConfirmBody": "{{name}} is used by feed sources. Type the usage count to confirm.",
   "disable": "Disable",
+  "disableBlocked": "Plugin is in use by {{count}} feed sources. Cannot disable.",
+  "disableFailed": "Could not disable plugin.",
   "saved": "Pipeline saved.",
   "saveFailed": "Could not save pipeline.",
   "saveFailedWithErrors": "Could not save pipeline: {{errors}}"

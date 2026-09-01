@@ -105,4 +105,59 @@ describe('PluginRegistryPanel', () => {
       expect(putBody).toEqual({ enabled: false });
     });
   });
+
+  it('shows a disableBlocked toast and keeps the switch on when the server returns 409', async () => {
+    const user = userEvent.setup();
+    stubFetch((url, init) => {
+      if (url.startsWith(`/plugins/${pluginInUse.id}/enabled`) && init?.method === 'PUT') {
+        return new Response(JSON.stringify({ detail: 'plugin in use by 2 feed sources' }), {
+          status: 409,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({}), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+    renderAt([pluginInUse]);
+    await user.click(screen.getByTestId('registry-panel-control'));
+    await user.click(screen.getByTestId(`plugin-toggle-${pluginInUse.id}`));
+    await user.type(
+      screen.getByLabelText(/type 2 to confirm/i),
+      '2',
+    );
+    await user.click(await screen.findByRole('button', { name: /disable/i }));
+
+    expect(
+      await screen.findByText(/in use by 2 feed sources/i),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId(`plugin-toggle-${pluginInUse.id}`)).toBeChecked();
+  });
+
+  it('shows the generic failure toast on a non-409 toggle error', async () => {
+    const user = userEvent.setup();
+    stubFetch((url, init) => {
+      if (url.startsWith(`/plugins/${pluginInUse.id}/enabled`) && init?.method === 'PUT') {
+        return new Response(JSON.stringify({}), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({}), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+    renderAt([pluginInUse]);
+    await user.click(screen.getByTestId('registry-panel-control'));
+    await user.click(screen.getByTestId(`plugin-toggle-${pluginInUse.id}`));
+    await user.type(
+      screen.getByLabelText(/type 2 to confirm/i),
+      '2',
+    );
+    await user.click(await screen.findByRole('button', { name: /disable/i }));
+
+    expect(await screen.findByText(/could not disable plugin/i)).toBeInTheDocument();
+  });
 });
