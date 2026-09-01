@@ -12,7 +12,9 @@
 
 ## Cycle log
 
-- **2026-08-30 (branch `m11-followups`, fast-forward merged to main at `4bdc3a8`):** executed 1.1, 2.1, 2.3, 3.1, 3.2, 4.1 via subagent-driven development (per-task reviews clean; final whole-branch review: merge-ready, no Critical). 7.1 turned out to be already complete (`6215c8f`). **3.4 was inadvertently omitted from the cycle's approved scope — it is the only P1 still open.** New tasks 1.7 and 1.8 were added from the cycle's final review. Gates on merged main: backend 654/654 (`pytest -n auto`, real PostgreSQL); frontend 151/151 + typecheck + build clean, no chunk-size warning.
+- **2026-08-31 (branch `m11a-p1s`, fast-forward merged to main at `457fc2f`):** executed Task-1 WIP landing (owner's manual run trigger: backend `POST /feed-sources/{id}/run` + `GET /feed-sources/{id}` + frontend button/hook; add-feed `source_url` input; Caddyfile.dev + `make dev-caddy`; uvicorn dep; ingest fix: bare structured columns parse as `kind='generic'` — spec §5.8 amended to match, owner decision), TODO 3.4 (plugin nav routes by `manifest.config_scope`/`data_scope`; client-scoped hidden without client), and TODO 1.7 (`RouteErrorBoundary` on the AppShell route with Reload for chunk-load failures). Per-task reviews clean; final whole-branch review: merge-ready with 2 Important fixed pre-merge (spec §5.8 sync, api.md `{run_id}` accuracy) + hoisted nav scope check. Gates on merged main: backend 657/657 (`pytest -n auto`, real PostgreSQL); frontend 160/160 + typecheck + build clean, no chunk-size warning. Follow-ups filed: background-task shutdown drain (main.py lifespan should await `app.state.background_tasks` + exception-logging done-callback — P2); ruff/mypy not installed in the backend dev group (baseline 430/45 pre-existing errors; pin+configure or drop the gates — ops task).
+
+- **2026-08-30 (branch `m11-followups`, fast-forward merged to main at `4bdc3a8`):** executed 1.1, 2.1, 2.3, 3.1, 3.2, 4.1 via subagent-driven development (per-task reviews clean; final whole-branch review: merge-ready, no Critical). 7.1 turned out to be already complete (`6215c8f`). 3.4 was inadvertently omitted from the cycle's approved scope. New tasks 1.7 and 1.8 were added from the cycle's final review. Gates on merged main: backend 654/654 (`pytest -n auto`, real PostgreSQL); frontend 151/151 + typecheck + build clean, no chunk-size warning.
 
 ---
 
@@ -114,7 +116,9 @@
 
 ---
 
-### 1.7 [ ] Route error boundary for lazy chunk-load failures [P1] — added 2026-08-30 (final review)
+### 1.7 [x] Route error boundary for lazy chunk-load failures [P1] — added 2026-08-30 (final review)
+
+**Done (2026-08-31, `5131ee8`):** `RouteErrorBoundary` in `frontend/src/app/router.tsx` — `isChunkLoadFailure` detects the Chrome/Safari/Firefox dynamic-import TypeError messages; boundary mounted as `errorElement` on the AppShell route (covers all 9 lazy pages); friendly message + Reload button (`window.location.assign(href)`); generic variant for non-chunk errors; no stack traces. i18n `errors.chunkLoadFailed/routeError/reload` in en+de common.json. 2 new tests via `createMemoryRouter` (default "Unexpected Application Error" UI asserted absent). Reviewer noted (Minor, plan-mandated): `errors.routeError` duplicates `state.error` strings; no top-level `errorElement` outside the AppShell subtree (LoginPage is eager, so not exposed).
 
 **Why:** Task 4.1 moved all 9 feature pages into on-demand chunks. After any deploy, a stale open tab that navigates gets `Failed to fetch dynamically imported module` and react-router's built-in `DefaultErrorComponent` (raw "Unexpected Application Error!" + stack trace, no retry). This is now the most common user-visible error after every deploy; a reload always fixes it, so the UI should offer one.
 
@@ -210,9 +214,9 @@
 
 ---
 
-### 3.4 [ ] Plugin nav routing: route by `manifest.config_scope` / `data_scope` [P1]
+### 3.4 [x] Plugin nav routing: route by `manifest.config_scope` / `data_scope` [P1]
 
-> **Note (2026-08-30):** this is the only P1 NOT completed by the 2026-08-30 cycle — it was inadvertently omitted from the cycle's approved scope (1.1, 2.1, 2.3, 3.1, 3.2, 4.1). Pick this up first.
+**Done (2026-08-31, `c29ba27`):** `AppShell.tsx` gained module-local `manifestScopes(manifest, key)` (safe normalization: string | string[] | malformed → string[]) and `isClientScoped(manifest)` (true iff `'client'` ∈ config_scope OR data_scope). Client-scoped plugins link `/clients/${clientId}/plugins/${pluginId}`; hidden from nav when no `clientId` in URL; everything else links `/plugins/${pluginId}` (scopeless manifests default global, matching backend `_parse_scope`). 5 new AppShell tests (real `href` assertions); 3 of the 5 new tests had coincidentally passed under old behavior — the RED state was carried by the other 2. `feed_source` scope deliberately does not affect nav routing.
 
 **Why:** The current AppShell renders ALL plugin nav items as `/plugins/:pluginId` (global). The spec says plugins declaring `'client'` in `config_scope` should route to `/clients/:clientId/plugins/:pluginId` (scoped to the current client). The plan flagged this in M10-b as a carry-forward.
 
@@ -325,7 +329,7 @@
 
 ## Working notes for the next agent
 
-- **Start with the remaining P1s:** Task 3.4 (missed by the 2026-08-30 cycle) and the new Task 1.7. Each is independently valuable and sized for one subagent + reviewer cycle.
+- **All P1s are now closed.** The open pool is P2: 1.2-1.6, 1.8, 2.2 (deferred on backend question), 3.3, 3.5, 6.1, 6.2; 5.1 blocked on core plugins; 8.1 is the owner's planning meta-task. Two new ops follow-ups from the 2026-08-31 cycle: background-task shutdown drain (await `app.state.background_tasks` + exception-logging done-callback in main.py lifespan) and ruff/mypy install/pin-or-drop decision (baseline 430/45 pre-existing errors).
 - **P2 pool:** 1.2-1.6, 1.8, 2.2, 3.3, 3.5, 6.1, 6.2. Task 5.1 is blocked on core plugin implementation; Task 8.1 is the owner's planning meta-task.
 - **M10 gate per task:** `cd /home/ozon/gmc_feed_master/frontend && npm test -- --run && npm run typecheck && npm run build`. Backend tasks: `cd /home/ozon/gmc_feed_master && pytest -n auto` (requires `TEST_DATABASE_URL`).
 - **Conventions** (binding): no comments in code; all strings via `t()`; en+de identical i18n trees; 422 errors summary notification (now via `notifyApiError` in `frontend/src/app/notifyApiError.ts`); query-key invalidation; Loading/Empty/ErrorState on every data view.
@@ -336,4 +340,4 @@
 
 ---
 
-_Generated 2026-08-29 after M10-d merge (`aa86c10`). Updated 2026-08-30 after the `m11-followups` cycle (merged at `4bdc3a8`): 22 tasks across 8 sections, 7 complete (1.1, 2.1, 2.3, 3.1, 3.2, 4.1, 7.1), 2 new (1.7, 1.8). Task 3.4 is the remaining P1._
+_Generated 2026-08-29 after M10-d merge (`aa86c10`). Updated 2026-08-30 after the `m11-followups` cycle (merged at `4bdc3a8`): 22 tasks across 8 sections, 7 complete (1.1, 2.1, 2.3, 3.1, 3.2, 4.1, 7.1), 2 new (1.7, 1.8). Updated 2026-08-31 after the `m11a-p1s` cycle (merged at `457fc2f`): 9 complete — all P1s closed (3.4, 1.7 done; WIP landed as 5 commits)._
