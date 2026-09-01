@@ -12,6 +12,8 @@
 
 ## Cycle log
 
+- **2026-09-01 (branch `m11d-micro`, fast-forward merged to main):** closed the export-hooks P2 pair: TODO 1.5 (exportDiff key factory union-typed — shared `{ disabled: true }` key replaces the `-1` sentinels; enabled key byte-identical) and TODO 1.6 (rollback also invalidates the export-diff prefix). Per-task reviews clean; Task 2 had one APPROVED deviation — the plan's `getQueryData → undefined` test mechanism was impossible on query-core 5.102.8 (invalidation never evicts observer-less data; verified against installed source), so the assertion uses the established `invalidateQueries` spy convention instead — briefs must stop proposing that mechanism. Final whole-branch review: merge-ready, no Critical/Important — 2 Minors filed as leftovers inside the 1.5/1.6 Done entries (prefix-matcher seed assertion; JSON.stringify key comparisons). Gates: frontend 169/169 + typecheck + build clean (reviewer re-verified first-hand); backend untouched.
+
 - **2026-09-01 (branch `m11c-micro`, fast-forward merged to main):** closed the two m11b final-review carry-overs: TODO 1.9 (unified `mutateToggle` with one error handler across both toggle paths; stale-cache fast-path 409 now toasts) and TODO 1.10 (severity aria-labels on the findings badges, zero new strings). Per-task reviews clean; final whole-branch review: merge-ready, no Critical/Important — 2 Minors filed as leftovers inside the 1.9/1.10 Done entries (enable-error toast wording needs a future `enableFailed` key; span-aria-label SR robustness). Gates: frontend 168/168 + typecheck + build clean (reviewer re-verified); backend untouched.
 
 - **2026-09-01 (branch `m11b-correctness`, fast-forward merged to main at `d9d5eab`):** executed TODO 1.2 (rescoped per owner: backend 409 on disabling a plugin in use by ≥1 feed source + frontend `disableBlocked`/`disableFailed` toast branch; 1.2's original premise — "verify whether the backend returns 409" — was false, the endpoint accepted any state), TODO 3.3 (`useLogout` `onSettled` clears session cache on success AND error; AppShell `onError` toast `errors.logoutFailed`), TODO 1.8 (ExportVersionList "Findings" column: three per-severity badges, gray-on-zero = clean, nothing for rollbacks), and the m11a ops follow-up (lifespan shutdown drain of manual-trigger background tasks, 10s monkeypatchable timeout, pending-warning, exception-logging done-callback; documented in architecture.md). Per-task reviews clean (3 forced brief-snippet fixes, all reviewer-verified: `.select_from` join, stub-detail removal ×2, `logoutAttempted` flag); final whole-branch review: merge-ready with 1 Important fixed pre-merge (architecture.md drain note — binding doc-sync policy). Gates on merged main: backend 662/662; frontend 166/166 + typecheck + build clean. New tasks 1.9, 1.10 filed from carried minors.
@@ -112,7 +114,9 @@
 
 ---
 
-### 1.5 [ ] `useExportVersionDiff` queryKey sentinels: drop the `-1` placeholders [P2]
+### 1.5 [x] `useExportVersionDiff` queryKey sentinels: drop the `-1` placeholders [P2]
+
+**Done (2026-09-01, `bfc0159`, m11d cycle):** `exportDiff` key factory is union-typed — concrete `{ version, against }` when both defined (byte-identical to the old enabled key), else one shared `['feed-source', id, 'export-diff', { disabled: true }]` key; no `-1` anywhere. 1 new test proves the shared disabled key (two mixed-undefined renders → one cache entry). architecture.md key-structure line updated. Follow-up candidate (m11d final review, Minor): the disabled-key test's second render stays mounted — name carries the intent; JSON.stringify key comparisons in tests are cosmetic.
 
 **Why:** `frontend/src/api/hooks.ts:392-394` uses `version: version ?? -1, against: against ?? -1` as the query key when `enabled: false`. Benign in practice (the query never runs), but the sentinel values are arbitrary and could collide with a real version `-1` if the backend ever allowed it. Use a discriminated key shape that omits undefined fields.
 
@@ -130,7 +134,9 @@
 
 ---
 
-### 1.6 [ ] `useRollbackToVersion`: also invalidate the diff query [P2]
+### 1.6 [x] `useRollbackToVersion`: also invalidate the diff query [P2]
+
+**Done (2026-09-01, `45637ae`, m11d cycle):** rollback `onSuccess` additionally invalidates the literal prefix `['feed-source', id, 'export-diff']` (all diff keys for the feed source); existing history invalidation unchanged. Rollback test extended to assert both invalidations via the codebase's `invalidateQueries` spy convention — the plan's original `getQueryData → undefined` mechanism was factually impossible on query-core 5.102.8 (invalidation marks stale; it never evicts observer-less data). architecture.md invalidation row updated. Leftover (m11d final review, Minor): the spy proves the hook passes the prefix but not that query-core's prefix-matcher actually matches a concrete 4-element diff key — a seed + `find(diffKey)?.state.isInvalidated` assertion would close that gap.
 
 **Why:** After a rollback, a new version is prepended. If the user has a diff displayed (A=old_latest, B=previous), the visible diff is technically still accurate (against the two version numbers they selected), but the default-selection `useEffect` will run with the new versions array and pick new A/B; the cached diff for the user's current selection may be stale until React Query re-fetches.
 
@@ -363,7 +369,7 @@
 
 ## Working notes for the next agent
 
-- **Remaining P2 pool:** 1.3-1.6, 2.2 (deferred on backend question), 3.5, 6.1, 6.2, plus the two m11c leftovers (enable-error toast wording key; span-aria-label robustness — both noted inside the 1.9/1.10 Done entries). Task 5.1 blocked on core plugins; 8.1 is the owner's planning meta-task. Open ops items: ruff/mypy install/pin-or-drop decision (baseline 430/45 pre-existing errors); 65 backend warnings classification; vite allowedHosts machine-specific host + Caddyfile.dev site-label mismatch. German findings tooltips lack pluralization (`{{count}} Warnungen` renders "1 Warnungen") — use `_one`/`_other` suffixes if the keys are ever touched.
+- **Remaining P2 pool:** 1.3, 1.4 (pipeline-dnd pair — riskier: jsdom interaction-test flake risk + dnd-kit key churn), 2.2 (deferred on backend question), 3.5, 6.1, 6.2, plus the m11c leftovers (enable-error toast wording key; span-aria-label robustness — noted inside the 1.9/1.10 Done entries) and the m11d leftovers (prefix-matcher seed assertion; noted inside the 1.6 Done entry). Task 5.1 blocked on core plugins; 8.1 is the owner's planning meta-task. Open ops items: ruff/mypy install/pin-or-drop decision (baseline 430/45 pre-existing errors); 65 backend warnings classification; vite allowedHosts machine-specific host + Caddyfile.dev site-label mismatch. German findings tooltips lack pluralization (`{{count}} Warnungen` renders "1 Warnungen") — use `_one`/`_other` suffixes if the keys are ever touched.
 - **All P1s closed** (m11a cycle). The 2026-08-31/09-01 cycles closed 1.2, 1.7, 1.8, 1.9, 1.10, 3.3, 3.4 + the shutdown-drain ops follow-up.
 - **M10 gate per task:** `cd /home/ozon/gmc_feed_master/frontend && npm test -- --run && npm run typecheck && npm run build`. Backend tasks: `cd /home/ozon/gmc_feed_master && pytest -n auto` (requires `TEST_DATABASE_URL`).
 - **Conventions** (binding): no comments in code; all strings via `t()`; en+de identical i18n trees; 422 errors summary notification (now via `notifyApiError` in `frontend/src/app/notifyApiError.ts`); query-key invalidation; Loading/Empty/ErrorState on every data view.
@@ -374,4 +380,4 @@
 
 ---
 
-_Generated 2026-08-29 after M10-d merge (`aa86c10`). Updated 2026-08-30 after the `m11-followups` cycle (merged at `4bdc3a8`): 22 tasks across 8 sections, 7 complete (1.1, 2.1, 2.3, 3.1, 3.2, 4.1, 7.1), 2 new (1.7, 1.8). Updated 2026-08-31 after the `m11a-p1s` cycle (merged at `457fc2f`): 9 complete — all P1s closed (3.4, 1.7 done; WIP landed as 5 commits). Updated 2026-09-01 after the `m11b-correctness` cycle (merged at `d9d5eab`): 12 complete (1.2, 3.3, 1.8, shutdown drain), 2 new (1.9, 1.10). Updated 2026-09-01 after the `m11c-micro` cycle: 14 complete (1.9, 1.10)._
+_Generated 2026-08-29 after M10-d merge (`aa86c10`). Updated 2026-08-30 after the `m11-followups` cycle (merged at `4bdc3a8`): 22 tasks across 8 sections, 7 complete (1.1, 2.1, 2.3, 3.1, 3.2, 4.1, 7.1), 2 new (1.7, 1.8). Updated 2026-08-31 after the `m11a-p1s` cycle (merged at `457fc2f`): 9 complete — all P1s closed (3.4, 1.7 done; WIP landed as 5 commits). Updated 2026-09-01 after the `m11b-correctness` cycle (merged at `d9d5eab`): 12 complete (1.2, 3.3, 1.8, shutdown drain), 2 new (1.9, 1.10). Updated 2026-09-01 after the `m11c-micro` cycle: 14 complete (1.9, 1.10). Updated 2026-09-01 after the `m11d-micro` cycle: 16 complete (1.5, 1.6)._
