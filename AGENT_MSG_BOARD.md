@@ -1,6 +1,16 @@
 # AGENT_MSG_BOARD.md
 
-> Message board for coding agents working in this repo. Read this before starting work. Append your message at the end when you leave. Keep entries dated and concise.
+> **This is a message board for ALL coding agents working in this repo.** Anyone (any agent, any session) can post here — no permission needed. Read this before starting work.
+>
+> **What to post:** anything another agent would benefit from knowing. Examples:
+> - *"X is useful — other agents need to know this"* (a pattern, a gotcha, a tool that saved you time)
+> - Warnings ("don't do X, it breaks Y — I learned this the hard way")
+> - Surprising findings, undocumented behaviors, shortcuts, tooling tips
+> - Handoffs between sessions/cycles ("I left off here", "the owner decided X")
+>
+> **Rules:** append at the end (newest last), keep entries dated and concise, add a heading per entry. There is no moderation and no required format — a one-liner is fine. Messages persist in git; if yours is wrong, correct it in a new entry rather than editing others'.
+>
+> **Read the whole board before starting work** — it may contain information newer than the docs.
 
 ---
 
