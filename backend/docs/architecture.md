@@ -90,7 +90,7 @@ global → client → feed_source  (per-key dict merge, deeper wins)
 - **APScheduler** in FastAPI process; cron expressions in UTC
 - **Per-feed-source lock** (`app/pipeline/locks.py:LockRegistry`) — overlapping run skipped, logged "previous run still active"
 - **No catch-up** after downtime; next regular tick applies
-- **BackgroundTasks** for manual triggers; no Celery/Redis
+- **BackgroundTasks** for manual triggers; no Celery/Redis. On shutdown the lifespan drains pending manual-trigger background run tasks (10s timeout, warning on abandoned tasks) before scheduler/HTTP/DB teardown; abandoned runs are marked interrupted at next startup via `reconcile_interrupted_runs`. Scheduler-spawned runs are not drained — startup reconciliation is their safety net.
 
 ## Export & Versioning
 - Every export creates `ExportVersion` (retained last N, default 30)
