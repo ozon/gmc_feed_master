@@ -419,6 +419,7 @@ export function useRollbackToVersion(feedSourceId: number | string) {
       apiPost<unknown>(`/feed-sources/${feedSourceId}/export-history/${version}/rollback`, {}),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).exportHistory });
+      void queryClient.invalidateQueries({ queryKey: ['feed-source', feedSourceId, 'export-diff'] });
     },
   });
 }

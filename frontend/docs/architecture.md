@@ -68,7 +68,7 @@ queryKeys = {
 | `useRunDryRun` | — | Invalidates `runs` + `findings` |
 | `useRotateExportToken` | — | Invalidates `feedSource.detail` |
 | `useSavePipeline` | — | Invalidates `feedSource.pipeline` |
-| `useRollbackToVersion` | — | Invalidates `feedSource.exportHistory` |
+| `useRollbackToVersion` | — | Invalidates `feedSource.exportHistory` + `export-diff` (prefix) |
 
 **Rule**: All server state in TanStack Query. **No duplicate stores** (Zustand, Redux, Context for server data).
 

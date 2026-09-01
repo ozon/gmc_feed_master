@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useExportVersionDiff, useRollbackToVersion } from './hooks';
 import { queryClient as defaultClient } from './queryClient';
+import { queryKeys } from './queryKeys';
 import { stubFetch } from '../test/fetch';
 
 function jsonResponse(body: unknown, status = 200) {
@@ -67,7 +68,7 @@ describe('useExportVersionDiff', () => {
 });
 
 describe('useRollbackToVersion', () => {
-  it('POSTs /export-history/{version}/rollback', async () => {
+  it('POSTs rollback and invalidates export history and diff queries', async () => {
     let captured: string | null = null;
     stubFetch((url, init) => {
       if (url === '/feed-sources/1/export-history/5/rollback' && init?.method === 'POST') {
@@ -76,10 +77,23 @@ describe('useRollbackToVersion', () => {
       }
       return jsonResponse({});
     });
-
-    const { result } = renderHook(() => useRollbackToVersion(1), { wrapper: withClient() });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useRollbackToVersion(1), { wrapper });
     result.current.mutate(5);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(captured).toBe('/feed-sources/1/export-history/5/rollback');
+    const invalidated = invalidateSpy.mock.calls.map((c) => c[0]);
+    const hasHistory = invalidated.some(
+      (q) => JSON.stringify(q?.queryKey) === JSON.stringify(queryKeys.feedSource(1).exportHistory),
+    );
+    const hasDiff = invalidated.some(
+      (q) => JSON.stringify(q?.queryKey) === JSON.stringify(['feed-source', 1, 'export-diff']),
+    );
+    expect(hasHistory).toBe(true);
+    expect(hasDiff).toBe(true);
   });
 });
