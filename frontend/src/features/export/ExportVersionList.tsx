@@ -77,6 +77,7 @@ export function ExportVersionList({
                     variant="light"
                     color={version.findings.critical ? 'red' : 'gray'}
                     title={t('findings.critical', { count: version.findings.critical })}
+                    aria-label={t('findings.critical', { count: version.findings.critical })}
                     data-testid={`findings-critical-${version.version_number}`}
                   >
                     {version.findings.critical}
@@ -86,6 +87,7 @@ export function ExportVersionList({
                     variant="light"
                     color={version.findings.warning ? 'yellow' : 'gray'}
                     title={t('findings.warning', { count: version.findings.warning })}
+                    aria-label={t('findings.warning', { count: version.findings.warning })}
                     data-testid={`findings-warning-${version.version_number}`}
                   >
                     {version.findings.warning}
@@ -95,6 +97,7 @@ export function ExportVersionList({
                     variant="light"
                     color={version.findings.info ? 'blue' : 'gray'}
                     title={t('findings.info', { count: version.findings.info })}
+                    aria-label={t('findings.info', { count: version.findings.info })}
                     data-testid={`findings-info-${version.version_number}`}
                   >
                     {version.findings.info}

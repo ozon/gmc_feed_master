@@ -115,6 +115,20 @@ describe('ExportPage', () => {
     expect(screen.getByTestId('findings-info-3')).toHaveTextContent('5');
   });
 
+  it('announces badge severity and count via aria-label', async () => {
+    stubFetch((url) => {
+      if (url === '/feed-sources/1') return jsonResponse(feed);
+      if (url === '/feed-sources/1/export-history') return jsonResponse(versions);
+      if (url.startsWith('/feed-sources/1/export-history/')) return jsonResponse({ version: 3, against: 2, added: [], removed: [], changed: [] });
+      return jsonResponse({});
+    });
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('version-row-3')).toBeInTheDocument());
+    expect(screen.getByTestId('findings-critical-3')).toHaveAttribute('aria-label', '2 critical');
+    expect(screen.getByTestId('findings-warning-3')).toHaveAttribute('aria-label', '0 warning');
+    expect(screen.getByTestId('findings-info-3')).toHaveAttribute('aria-label', '5 info');
+  });
+
   it('renders no findings badges for rollback versions but keeps the not-QC badge', async () => {
     stubFetch((url) => {
       if (url === '/feed-sources/1') return jsonResponse(feed);
