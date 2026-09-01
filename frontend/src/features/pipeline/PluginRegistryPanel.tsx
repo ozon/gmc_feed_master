@@ -19,19 +19,9 @@ export function PluginRegistryPanel({ plugins }: Props) {
   const [pendingToggle, setPendingToggle] = useState<PluginInfo | null>(null);
   const toggleEnabled = useUpdatePluginEnabled();
 
-  function onChange(plugin: PluginInfo, next: boolean) {
-    if (!next && plugin.used_by_feed_sources > 0) {
-      setPendingToggle(plugin);
-      return;
-    }
-    toggleEnabled.mutate({ id: plugin.id, enabled: next });
-  }
-
-  function confirmToggle() {
-    if (!pendingToggle) return;
-    const plugin = pendingToggle;
+  function mutateToggle(plugin: PluginInfo, enabled: boolean) {
     toggleEnabled.mutate(
-      { id: plugin.id, enabled: false },
+      { id: plugin.id, enabled },
       {
         onError: (error) => {
           if (error instanceof ApiError && error.status === 409) {
@@ -42,7 +32,21 @@ export function PluginRegistryPanel({ plugins }: Props) {
         },
       },
     );
+  }
+
+  function onChange(plugin: PluginInfo, next: boolean) {
+    if (!next && plugin.used_by_feed_sources > 0) {
+      setPendingToggle(plugin);
+      return;
+    }
+    mutateToggle(plugin, next);
+  }
+
+  function confirmToggle() {
+    if (!pendingToggle) return;
+    const plugin = pendingToggle;
     setPendingToggle(null);
+    mutateToggle(plugin, false);
   }
 
   return (

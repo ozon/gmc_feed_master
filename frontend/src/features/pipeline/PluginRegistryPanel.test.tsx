@@ -160,4 +160,27 @@ describe('PluginRegistryPanel', () => {
 
     expect(await screen.findByText(/could not disable plugin/i)).toBeInTheDocument();
   });
+
+  it('shows the disableBlocked toast when a stale-cache fast-path disable hits 409', async () => {
+    const user = userEvent.setup();
+    stubFetch((url, init) => {
+      if (url.startsWith(`/plugins/${pluginUnused.id}/enabled`) && init?.method === 'PUT') {
+        return new Response(JSON.stringify({ detail: 'plugin in use by 2 feed sources' }), {
+          status: 409,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({}), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+    renderAt([pluginUnused]);
+    await user.click(screen.getByTestId('registry-panel-control'));
+    await user.click(screen.getByTestId(`plugin-toggle-${pluginUnused.id}`));
+
+    expect(
+      await screen.findByText(/in use by 0 feed sources/i),
+    ).toBeInTheDocument();
+  });
 });
