@@ -50,6 +50,20 @@ describe('useExportVersionDiff', () => {
     renderHook(() => useExportVersionDiff(1, undefined, 2), { wrapper: withClient() });
     expect(called).toBe(false);
   });
+
+  it('shares one disabled key across undefined-argument states', async () => {
+    stubFetch(() => jsonResponse({}));
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    const first = renderHook(() => useExportVersionDiff(1, undefined, 2), { wrapper });
+    first.unmount();
+    renderHook(() => useExportVersionDiff(1, 3, undefined), { wrapper });
+
+    const keys = client.getQueryCache().getAll().map((q) => q.queryKey);
+    expect(keys).toEqual([['feed-source', 1, 'export-diff', { disabled: true }]]);
+  });
 });
 
 describe('useRollbackToVersion', () => {

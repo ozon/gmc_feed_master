@@ -401,10 +401,9 @@ export function useExportVersionDiff(
   against: number | undefined,
 ) {
   return useQuery({
-    queryKey: queryKeys.feedSource(feedSourceId).exportDiff({
-      version: version ?? -1,
-      against: against ?? -1,
-    }),
+    queryKey: queryKeys.feedSource(feedSourceId).exportDiff(
+      version !== undefined && against !== undefined ? { version, against } : undefined,
+    ),
     queryFn: () => {
       const qs = against !== undefined ? `?against=${against}` : '';
       return apiGet<DiffOut>(`/feed-sources/${feedSourceId}/export-history/${version}/diff${qs}`);

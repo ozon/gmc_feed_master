@@ -51,7 +51,7 @@ queryKeys = {
     runs: ['feed-source', id, 'runs'],
     findings: ['feed-source', id, 'findings'],
     exportHistory: ['feed-source', id, 'export-history'],
-    exportDiff: (params) => ['feed-source', id, 'export-diff', params],
+    exportDiff: (params | undefined) => ['feed-source', id, 'export-diff', params ?? { disabled: true }],
     fieldMapping: ['feed-source', id, 'field-mapping'],
   }),
   pluginConfig: (pluginId, scope) => ['plugin-config', pluginId, scope],
