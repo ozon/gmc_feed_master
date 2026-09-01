@@ -12,7 +12,9 @@
 
 ## Cycle log
 
-- **2026-08-31 (branch `m11a-p1s`, fast-forward merged to main at `457fc2f`):** executed Task-1 WIP landing (owner's manual run trigger: backend `POST /feed-sources/{id}/run` + `GET /feed-sources/{id}` + frontend button/hook; add-feed `source_url` input; Caddyfile.dev + `make dev-caddy`; uvicorn dep; ingest fix: bare structured columns parse as `kind='generic'` — spec §5.8 amended to match, owner decision), TODO 3.4 (plugin nav routes by `manifest.config_scope`/`data_scope`; client-scoped hidden without client), and TODO 1.7 (`RouteErrorBoundary` on the AppShell route with Reload for chunk-load failures). Per-task reviews clean; final whole-branch review: merge-ready with 2 Important fixed pre-merge (spec §5.8 sync, api.md `{run_id}` accuracy) + hoisted nav scope check. Gates on merged main: backend 657/657 (`pytest -n auto`, real PostgreSQL); frontend 160/160 + typecheck + build clean, no chunk-size warning. Follow-ups filed: background-task shutdown drain (main.py lifespan should await `app.state.background_tasks` + exception-logging done-callback — P2); ruff/mypy not installed in the backend dev group (baseline 430/45 pre-existing errors; pin+configure or drop the gates — ops task).
+- **2026-09-01 (branch `m11b-correctness`, fast-forward merged to main at `d9d5eab`):** executed TODO 1.2 (rescoped per owner: backend 409 on disabling a plugin in use by ≥1 feed source + frontend `disableBlocked`/`disableFailed` toast branch; 1.2's original premise — "verify whether the backend returns 409" — was false, the endpoint accepted any state), TODO 3.3 (`useLogout` `onSettled` clears session cache on success AND error; AppShell `onError` toast `errors.logoutFailed`), TODO 1.8 (ExportVersionList "Findings" column: three per-severity badges, gray-on-zero = clean, nothing for rollbacks), and the m11a ops follow-up (lifespan shutdown drain of manual-trigger background tasks, 10s monkeypatchable timeout, pending-warning, exception-logging done-callback; documented in architecture.md). Per-task reviews clean (3 forced brief-snippet fixes, all reviewer-verified: `.select_from` join, stub-detail removal ×2, `logoutAttempted` flag); final whole-branch review: merge-ready with 1 Important fixed pre-merge (architecture.md drain note — binding doc-sync policy). Gates on merged main: backend 662/662; frontend 166/166 + typecheck + build clean. New tasks 1.9, 1.10 filed from carried minors.
+
+- **2026-08-31 (branch `m11a-p1s`, fast-forward merged to main at `457fc2f`):** executed Task-1 WIP landing (owner's manual run trigger: backend `POST /feed-sources/{id}/run` + `GET /feed-sources/{id}` + frontend button/hook; add-feed `source_url` input; Caddyfile.dev + `make dev-caddy`; uvicorn dep; ingest fix: bare structured columns parse as `kind='generic'` — spec §5.8 amended to match, owner decision), TODO 3.4 (plugin nav routes by `manifest.config_scope`/`data_scope`; client-scoped hidden without client), and TODO 1.7 (`RouteErrorBoundary` on the AppShell route with Reload for chunk-load failures). Per-task reviews clean; final whole-branch review: merge-ready with 2 Important fixed pre-merge (spec §5.8 sync, api.md `{run_id}` accuracy) + hoisted nav scope check. Gates on merged main: backend 657/657 (`pytest -n auto`, real PostgreSQL); frontend 160/160 + typecheck + build clean, no chunk-size warning. Follow-ups filed: background-task shutdown drain (DONE this cycle); ruff/mypy not installed in the backend dev group (baseline 430/45 pre-existing errors; pin+configure or drop the gates — ops task).
 
 - **2026-08-30 (branch `m11-followups`, fast-forward merged to main at `4bdc3a8`):** executed 1.1, 2.1, 2.3, 3.1, 3.2, 4.1 via subagent-driven development (per-task reviews clean; final whole-branch review: merge-ready, no Critical). 7.1 turned out to be already complete (`6215c8f`). 3.4 was inadvertently omitted from the cycle's approved scope. New tasks 1.7 and 1.8 were added from the cycle's final review. Gates on merged main: backend 654/654 (`pytest -n auto`, real PostgreSQL); frontend 151/151 + typecheck + build clean, no chunk-size warning.
 
@@ -28,7 +30,9 @@
 
 ---
 
-### 1.2 [ ] Plugin enable toggle: handle backend 409 response explicitly [P2]
+### 1.2 [x] Plugin enable toggle: handle backend 409 response explicitly [P2]
+
+**Done (2026-09-01, `cdfb32d`+`d69fcf9`, m11b cycle):** premise rescoped per owner decision — the backend never returned 409 (the typeToConfirm modal was the only guard), so the cycle ADDED the 409: `_usage_count` helper (distinct feed-source join, same transaction as the flip) guards disable-only; detail is `"plugin in use by N feed source(s)"` with singular/plural. Frontend: `confirmToggle` per-call `onError` — 409 → `notifyError(t('disableBlocked', {count}))` using the panel's own `plugin.used_by_feed_sources` (no detail parsing); non-409 → `notifyMutationError(error, t('disableFailed'))`. No switch revert needed (server-state-driven, no optimistic update). api.md documents the 409. 5 new tests (3 backend, 2 frontend). TOCTOU accepted (defense-in-depth behind the modal). Fast-path `onChange` mutate still has no onError — Task 1.9.
 
 **Why:** `PluginRegistryPanel.tsx` shows a `ConfirmModal` (typeToConfirm) before calling `useUpdatePluginEnabled({id, enabled: false})`. The plan §3.8 notes the backend may return 409 on disable-in-use; the current implementation has no error path for that 409 (it would fall through to the generic mutation error).
 
@@ -42,6 +46,26 @@
 - Add the new translation key to en/de `pipeline.json`.
 
 **Reference:** `frontend/src/api/hooks.ts` (`useUpdatePluginEnabled`), `backend/app/routes/plugins.py` for the 409 contract (verify whether the backend actually returns 409; if not, this is moot — record the finding and skip).
+
+---
+
+### 1.9 [ ] PluginRegistryPanel fast-path toggle: add `onError` toast [P2] — added 2026-09-01 (m11b final review)
+
+**Why:** `onChange`'s direct `toggleEnabled.mutate` (enable, or disable when the cache says unused) has no `onError`. If the plugins query is stale (plugin became used since fetch), the server's new 409 is silently swallowed — the switch stays correct (server-state-driven) but the user gets no feedback. Pre-existing for enable; asymmetric with the now-handled confirm path.
+
+**Files:** `frontend/src/features/pipeline/PluginRegistryPanel.tsx` (extract the `confirmToggle` onError into a shared handler passed to both mutate calls); test: existing file.
+
+**Acceptance:** both mutate call sites share one `onError` handler (409 → disableBlocked with the plugin's count, else disableFailed); a test covers the fast-path 409 (stale `used_by_feed_sources: 0`, server 409 → toast fires).
+
+---
+
+### 1.10 [ ] Findings badges: add `aria-label` severity cues [P2] — added 2026-09-01 (m11b final review)
+
+**Why:** The m11b findings badges carry severity via color + `title` only. Per the accname computation, `title` on a non-interactive element is not reliably announced; screen readers get "2", "0", "5" with no severity. The m10 design sketch (§3) called for `aria-label`; the m11b spec's binding decision dropped it to title-only.
+
+**Files:** `frontend/src/features/export/ExportVersionList.tsx` (add `aria-label={t('findings.<severity>', { count })}` — same i18n keys, zero new strings); test: existing file (assert `aria-label` present).
+
+**Acceptance:** each badge has an `aria-label` naming severity + count; en+de reuse the existing `findings.*` keys; no i18n changes.
 
 ---
 
@@ -136,7 +160,9 @@
 
 ---
 
-### 1.8 [ ] ExportVersionList: render per-version QC findings badges [P2] — added 2026-08-30 (split from 2.1)
+### 1.8 [x] ExportVersionList: render per-version QC findings badges [P2] — added 2026-08-30 (split from 2.1)
+
+**Done (2026-09-01, `e67baf3`, m11b cycle):** "Findings" column after Products — three `size="xs" variant="light"` badges per non-rollback version with `findings != null` (condition `version.source !== 'rollback' && version.findings != null`); colors red/yellow/blue when count > 0, gray on zero (0/0/0 reads "clean"); `title` tooltips via i18n (`findings.critical/warning/info` en+de); rollbacks render nothing (existing notQcd badge distinguishes them); `url` still unused. 3 new tests. Severity is color/title-only (a11y gap) — Task 1.10.
 
 **Why:** 2.1's original acceptance claimed the frontend would show per-version findings "without further frontend change" — that was wrong. The backend now returns `findings: {critical, warning, info} | null` and `url` on every `ExportVersionOut` (spec §4.7), but `ExportVersionList` has no findings column; the data currently dead-ends in an unused optional type field.
 
@@ -197,7 +223,9 @@
 
 ---
 
-### 3.3 [ ] Logout mutation: add `onError` notification [P2]
+### 3.3 [x] Logout mutation: add `onError` notification [P2]
+
+**Done (2026-09-01, `8819787`, m11b cycle):** `useLogout` `onSettled` → `removeQueries(session)` (clears local cache on BOTH success and error, matching `makeUnauthorizedHandler`'s remove-pattern; hooks.ts stays i18n-free). AppShell UserMenu mutate call keeps `onSuccess: navigate('/login')` + gains `onError: (error) => notifyMutationError(error, t('errors.logoutFailed'))` ("Log out failed on the server. You were logged out locally." / de equivalent). Stay-vs-redirect after a failed logout is server-state-driven (refetch → 401 handler navigates if the session is truly gone). 1 new test (seeded cache, failing logout, toast + cache-undefined assertions).
 
 **Why:** `useLogout` in `frontend/src/api/hooks.ts` only invalidates the session on success. A network failure on logout leaves the user in a weird state (UI says logged out, server still has the cookie). The plan flagged this in M10-b.
 
@@ -329,8 +357,8 @@
 
 ## Working notes for the next agent
 
-- **All P1s are now closed.** The open pool is P2: 1.2-1.6, 1.8, 2.2 (deferred on backend question), 3.3, 3.5, 6.1, 6.2; 5.1 blocked on core plugins; 8.1 is the owner's planning meta-task. Two new ops follow-ups from the 2026-08-31 cycle: background-task shutdown drain (await `app.state.background_tasks` + exception-logging done-callback in main.py lifespan) and ruff/mypy install/pin-or-drop decision (baseline 430/45 pre-existing errors).
-- **P2 pool:** 1.2-1.6, 1.8, 2.2, 3.3, 3.5, 6.1, 6.2. Task 5.1 is blocked on core plugin implementation; Task 8.1 is the owner's planning meta-task.
+- **Remaining P2 pool:** 1.3-1.6, 1.9, 1.10, 2.2 (deferred on backend question), 3.5, 6.1, 6.2. Task 5.1 blocked on core plugins; 8.1 is the owner's planning meta-task. Open ops items: ruff/mypy install/pin-or-drop decision (baseline 430/45 pre-existing errors); 65 backend warnings classification; vite allowedHosts machine-specific host + Caddyfile.dev site-label mismatch. German findings tooltips lack pluralization (`{{count}} Warnungen` renders "1 Warnungen") — use `_one`/`_other` suffixes if the keys are ever touched.
+- **All P1s closed** (m11a cycle). The 2026-08-31 and 2026-09-01 cycles closed 1.2, 1.7, 1.8, 3.3, 3.4 + the shutdown-drain ops follow-up.
 - **M10 gate per task:** `cd /home/ozon/gmc_feed_master/frontend && npm test -- --run && npm run typecheck && npm run build`. Backend tasks: `cd /home/ozon/gmc_feed_master && pytest -n auto` (requires `TEST_DATABASE_URL`).
 - **Conventions** (binding): no comments in code; all strings via `t()`; en+de identical i18n trees; 422 errors summary notification (now via `notifyApiError` in `frontend/src/app/notifyApiError.ts`); query-key invalidation; Loading/Empty/ErrorState on every data view.
 - **M10-d lessons** (binding): TanStack Form dirty uses `form.Subscribe`; `notifications.clean()` in `beforeEach`; `beforeAll(loadNamespaces)` for non-default namespaces; `useBlocker` requires data router (`createMemoryRouter`+`RouterProvider` in tests); nullable fields in `plugin.manifest` need optional chaining.
@@ -340,4 +368,4 @@
 
 ---
 
-_Generated 2026-08-29 after M10-d merge (`aa86c10`). Updated 2026-08-30 after the `m11-followups` cycle (merged at `4bdc3a8`): 22 tasks across 8 sections, 7 complete (1.1, 2.1, 2.3, 3.1, 3.2, 4.1, 7.1), 2 new (1.7, 1.8). Updated 2026-08-31 after the `m11a-p1s` cycle (merged at `457fc2f`): 9 complete — all P1s closed (3.4, 1.7 done; WIP landed as 5 commits)._
+_Generated 2026-08-29 after M10-d merge (`aa86c10`). Updated 2026-08-30 after the `m11-followups` cycle (merged at `4bdc3a8`): 22 tasks across 8 sections, 7 complete (1.1, 2.1, 2.3, 3.1, 3.2, 4.1, 7.1), 2 new (1.7, 1.8). Updated 2026-08-31 after the `m11a-p1s` cycle (merged at `457fc2f`): 9 complete — all P1s closed (3.4, 1.7 done; WIP landed as 5 commits). Updated 2026-09-01 after the `m11b-correctness` cycle (merged at `d9d5eab`): 12 complete (1.2, 3.3, 1.8, shutdown drain), 2 new (1.9, 1.10)._
