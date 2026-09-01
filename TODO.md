@@ -12,6 +12,8 @@
 
 ## Cycle log
 
+- **2026-09-01 (branch `m11c-micro`, fast-forward merged to main):** closed the two m11b final-review carry-overs: TODO 1.9 (unified `mutateToggle` with one error handler across both toggle paths; stale-cache fast-path 409 now toasts) and TODO 1.10 (severity aria-labels on the findings badges, zero new strings). Per-task reviews clean; final whole-branch review: merge-ready, no Critical/Important — 2 Minors filed as leftovers inside the 1.9/1.10 Done entries (enable-error toast wording needs a future `enableFailed` key; span-aria-label SR robustness). Gates: frontend 168/168 + typecheck + build clean (reviewer re-verified); backend untouched.
+
 - **2026-09-01 (branch `m11b-correctness`, fast-forward merged to main at `d9d5eab`):** executed TODO 1.2 (rescoped per owner: backend 409 on disabling a plugin in use by ≥1 feed source + frontend `disableBlocked`/`disableFailed` toast branch; 1.2's original premise — "verify whether the backend returns 409" — was false, the endpoint accepted any state), TODO 3.3 (`useLogout` `onSettled` clears session cache on success AND error; AppShell `onError` toast `errors.logoutFailed`), TODO 1.8 (ExportVersionList "Findings" column: three per-severity badges, gray-on-zero = clean, nothing for rollbacks), and the m11a ops follow-up (lifespan shutdown drain of manual-trigger background tasks, 10s monkeypatchable timeout, pending-warning, exception-logging done-callback; documented in architecture.md). Per-task reviews clean (3 forced brief-snippet fixes, all reviewer-verified: `.select_from` join, stub-detail removal ×2, `logoutAttempted` flag); final whole-branch review: merge-ready with 1 Important fixed pre-merge (architecture.md drain note — binding doc-sync policy). Gates on merged main: backend 662/662; frontend 166/166 + typecheck + build clean. New tasks 1.9, 1.10 filed from carried minors.
 
 - **2026-08-31 (branch `m11a-p1s`, fast-forward merged to main at `457fc2f`):** executed Task-1 WIP landing (owner's manual run trigger: backend `POST /feed-sources/{id}/run` + `GET /feed-sources/{id}` + frontend button/hook; add-feed `source_url` input; Caddyfile.dev + `make dev-caddy`; uvicorn dep; ingest fix: bare structured columns parse as `kind='generic'` — spec §5.8 amended to match, owner decision), TODO 3.4 (plugin nav routes by `manifest.config_scope`/`data_scope`; client-scoped hidden without client), and TODO 1.7 (`RouteErrorBoundary` on the AppShell route with Reload for chunk-load failures). Per-task reviews clean; final whole-branch review: merge-ready with 2 Important fixed pre-merge (spec §5.8 sync, api.md `{run_id}` accuracy) + hoisted nav scope check. Gates on merged main: backend 657/657 (`pytest -n auto`, real PostgreSQL); frontend 160/160 + typecheck + build clean, no chunk-size warning. Follow-ups filed: background-task shutdown drain (DONE this cycle); ruff/mypy not installed in the backend dev group (baseline 430/45 pre-existing errors; pin+configure or drop the gates — ops task).
@@ -49,7 +51,9 @@
 
 ---
 
-### 1.9 [ ] PluginRegistryPanel fast-path toggle: add `onError` toast [P2] — added 2026-09-01 (m11b final review)
+### 1.9 [x] PluginRegistryPanel fast-path toggle: add `onError` toast [P2] — added 2026-09-01 (m11b final review)
+
+**Done (2026-09-01, `619c145`, m11c cycle):** `mutateToggle(plugin, enabled)` unifies both mutate call sites (fast path + confirm path) behind the single m11b error handler (409 → `disableBlocked` with cached count; else `disableFailed`); `confirmToggle` clears `pendingToggle` before mutating. 1 new test (stale-cache fast-path 409 → toast shows the cached count 0, proving no detail parsing). Leftover (m11c final review, Minor): enable-path non-409 errors toast "Could not disable plugin." — file a `toggleFailed`/`enableFailed` key in a future cycle (blocked by the no-new-keys decision this cycle).
 
 **Why:** `onChange`'s direct `toggleEnabled.mutate` (enable, or disable when the cache says unused) has no `onError`. If the plugins query is stale (plugin became used since fetch), the server's new 409 is silently swallowed — the switch stays correct (server-state-driven) but the user gets no feedback. Pre-existing for enable; asymmetric with the now-handled confirm path.
 
@@ -59,7 +63,9 @@
 
 ---
 
-### 1.10 [ ] Findings badges: add `aria-label` severity cues [P2] — added 2026-09-01 (m11b final review)
+### 1.10 [x] Findings badges: add `aria-label` severity cues [P2] — added 2026-09-01 (m11b final review)
+
+**Done (2026-09-01, `991393d`, m11c cycle):** all three badges carry `aria-label` using the same i18n expression as `title` (`findings.<severity>`, zero new strings); 1 new test asserts en-locale labels ("2 critical" / "0 warning" / "5 info"). Leftover (m11c final review, Minor): `aria-label` on Mantine Badge's generic `<span>` may be suppressed by some SR/browser combos (NVDA browse mode) — `role="img"` or visually-hidden text would be more robust; candidate follow-up.
 
 **Why:** The m11b findings badges carry severity via color + `title` only. Per the accname computation, `title` on a non-interactive element is not reliably announced; screen readers get "2", "0", "5" with no severity. The m10 design sketch (§3) called for `aria-label`; the m11b spec's binding decision dropped it to title-only.
 
@@ -357,8 +363,8 @@
 
 ## Working notes for the next agent
 
-- **Remaining P2 pool:** 1.3-1.6, 1.9, 1.10, 2.2 (deferred on backend question), 3.5, 6.1, 6.2. Task 5.1 blocked on core plugins; 8.1 is the owner's planning meta-task. Open ops items: ruff/mypy install/pin-or-drop decision (baseline 430/45 pre-existing errors); 65 backend warnings classification; vite allowedHosts machine-specific host + Caddyfile.dev site-label mismatch. German findings tooltips lack pluralization (`{{count}} Warnungen` renders "1 Warnungen") — use `_one`/`_other` suffixes if the keys are ever touched.
-- **All P1s closed** (m11a cycle). The 2026-08-31 and 2026-09-01 cycles closed 1.2, 1.7, 1.8, 3.3, 3.4 + the shutdown-drain ops follow-up.
+- **Remaining P2 pool:** 1.3-1.6, 2.2 (deferred on backend question), 3.5, 6.1, 6.2, plus the two m11c leftovers (enable-error toast wording key; span-aria-label robustness — both noted inside the 1.9/1.10 Done entries). Task 5.1 blocked on core plugins; 8.1 is the owner's planning meta-task. Open ops items: ruff/mypy install/pin-or-drop decision (baseline 430/45 pre-existing errors); 65 backend warnings classification; vite allowedHosts machine-specific host + Caddyfile.dev site-label mismatch. German findings tooltips lack pluralization (`{{count}} Warnungen` renders "1 Warnungen") — use `_one`/`_other` suffixes if the keys are ever touched.
+- **All P1s closed** (m11a cycle). The 2026-08-31/09-01 cycles closed 1.2, 1.7, 1.8, 1.9, 1.10, 3.3, 3.4 + the shutdown-drain ops follow-up.
 - **M10 gate per task:** `cd /home/ozon/gmc_feed_master/frontend && npm test -- --run && npm run typecheck && npm run build`. Backend tasks: `cd /home/ozon/gmc_feed_master && pytest -n auto` (requires `TEST_DATABASE_URL`).
 - **Conventions** (binding): no comments in code; all strings via `t()`; en+de identical i18n trees; 422 errors summary notification (now via `notifyApiError` in `frontend/src/app/notifyApiError.ts`); query-key invalidation; Loading/Empty/ErrorState on every data view.
 - **M10-d lessons** (binding): TanStack Form dirty uses `form.Subscribe`; `notifications.clean()` in `beforeEach`; `beforeAll(loadNamespaces)` for non-default namespaces; `useBlocker` requires data router (`createMemoryRouter`+`RouterProvider` in tests); nullable fields in `plugin.manifest` need optional chaining.
@@ -368,4 +374,4 @@
 
 ---
 
-_Generated 2026-08-29 after M10-d merge (`aa86c10`). Updated 2026-08-30 after the `m11-followups` cycle (merged at `4bdc3a8`): 22 tasks across 8 sections, 7 complete (1.1, 2.1, 2.3, 3.1, 3.2, 4.1, 7.1), 2 new (1.7, 1.8). Updated 2026-08-31 after the `m11a-p1s` cycle (merged at `457fc2f`): 9 complete — all P1s closed (3.4, 1.7 done; WIP landed as 5 commits). Updated 2026-09-01 after the `m11b-correctness` cycle (merged at `d9d5eab`): 12 complete (1.2, 3.3, 1.8, shutdown drain), 2 new (1.9, 1.10)._
+_Generated 2026-08-29 after M10-d merge (`aa86c10`). Updated 2026-08-30 after the `m11-followups` cycle (merged at `4bdc3a8`): 22 tasks across 8 sections, 7 complete (1.1, 2.1, 2.3, 3.1, 3.2, 4.1, 7.1), 2 new (1.7, 1.8). Updated 2026-08-31 after the `m11a-p1s` cycle (merged at `457fc2f`): 9 complete — all P1s closed (3.4, 1.7 done; WIP landed as 5 commits). Updated 2026-09-01 after the `m11b-correctness` cycle (merged at `d9d5eab`): 12 complete (1.2, 3.3, 1.8, shutdown drain), 2 new (1.9, 1.10). Updated 2026-09-01 after the `m11c-micro` cycle: 14 complete (1.9, 1.10)._
