@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -30,6 +31,8 @@ from ..schemas.clients import (
 )
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 
 def _require_db(db_session: AsyncSession | None) -> AsyncSession:
@@ -317,8 +320,14 @@ async def trigger_run(
     task = asyncio.create_task(runner.execute(feed_source_id, run_id=run_id))
     background_tasks = getattr(request.app.state, "background_tasks", None)
     if background_tasks is not None:
+
+        def _on_done(task: asyncio.Task) -> None:
+            if not task.cancelled() and task.exception() is not None:
+                logger.error("background pipeline run failed: %s", task.exception())
+            background_tasks.discard(task)
+
         background_tasks.add(task)
-        task.add_done_callback(background_tasks.discard)
+        task.add_done_callback(_on_done)
     return {"run_id": run_id}
 
 

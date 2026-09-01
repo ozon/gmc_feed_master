@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -57,6 +58,8 @@ def _configured_settings() -> Settings | None:
 
 _EXPORT_PATH_PREFIX = "/export/"
 _EXPORT_PATH_REDACTED = "/export/[REDACTED]"
+
+_SHUTDOWN_DRAIN_TIMEOUT = 10.0
 
 
 class _ExportTokenRedactor(logging.Filter):
@@ -163,6 +166,17 @@ def create_app(
                 async with application.state.db_session_factory() as session:
                     await scheduler_service.register_all(session)
         yield
+        background_tasks = getattr(application.state, "background_tasks", None)
+        if background_tasks:
+            done, pending = await asyncio.wait(
+                set(background_tasks), timeout=_SHUTDOWN_DRAIN_TIMEOUT
+            )
+            if pending:
+                logging.getLogger(__name__).warning(
+                    "shutdown drain: %d background task(s) still pending; "
+                    "they will be reconciled on next startup",
+                    len(pending),
+                )
         scheduler_service = getattr(application.state, "scheduler_service", None)
         if scheduler_service is not None:
             await scheduler_service.shutdown()

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 import pytest
 import pytest_asyncio
@@ -106,3 +107,63 @@ async def test_manual_run_task_is_tracked_until_done(app_factory):
     async with factory() as session:
         run = await session.get(IngestionRun, run_id)
     assert run.status == "success"
+
+
+async def test_shutdown_drain_lets_background_task_finish(app_factory):
+    app, factory = app_factory
+    client = await _logged_in_client(app)
+    fs_id = await _seed_feed_source(client)
+
+    release = asyncio.Event()
+    real_execute = app.state.pipeline_runner.execute
+
+    async def gated_execute(feed_source_id, run_id=None):
+        await release.wait()
+        return await real_execute(feed_source_id, run_id=run_id)
+
+    app.state.pipeline_runner.execute = gated_execute
+
+    async with app.router.lifespan_context(app):
+        resp = await client.post(f"/feed-sources/{fs_id}/run")
+        assert resp.status_code == 202
+        run_id = resp.json()["run_id"]
+        await asyncio.sleep(0.1)
+        assert len(app.state.background_tasks) == 1
+
+        release.set()
+
+    assert app.state.background_tasks == set()
+    async with factory() as session:
+        run = await session.get(IngestionRun, run_id)
+    assert run.status == "success"
+
+
+async def test_shutdown_drain_times_out_and_warns(app_factory, monkeypatch, caplog):
+    import app.main as main_module
+
+    monkeypatch.setattr(main_module, "_SHUTDOWN_DRAIN_TIMEOUT", 0.1)
+    app, factory = app_factory
+    client = await _logged_in_client(app)
+    fs_id = await _seed_feed_source(client)
+
+    gate = asyncio.Event()
+
+    async def stuck_execute(feed_source_id, run_id=None):
+        await gate.wait()
+        return None
+
+    app.state.pipeline_runner.execute = stuck_execute
+
+    with caplog.at_level(logging.WARNING, logger="app.main"):
+        async with app.router.lifespan_context(app):
+            resp = await client.post(f"/feed-sources/{fs_id}/run")
+            assert resp.status_code == 202
+            await asyncio.sleep(0.05)
+            assert len(app.state.background_tasks) == 1
+
+        assert any(
+            "background task" in record.message and "pending" in record.message
+            for record in caplog.records
+        )
+
+    gate.set()
