@@ -10,12 +10,18 @@
     "createdAt": "Erstellt",
     "source": "Quelle",
     "products": "Produkte",
+    "findings": "Qualität",
     "diffA": "A",
     "diffB": "B",
     "rollback": "Zurücksetzen",
     "field": "Feld",
     "old": "Alt",
     "new": "Neu"
+  },
+  "findings": {
+    "critical": "{{count}} kritisch",
+    "warning": "{{count}} Warnungen",
+    "info": "{{count}} Hinweise"
   },
   "source": {
     "run": "Lauf",

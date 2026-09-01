@@ -10,12 +10,18 @@
     "createdAt": "Created",
     "source": "Source",
     "products": "Products",
+    "findings": "Findings",
     "diffA": "A",
     "diffB": "B",
     "rollback": "Rollback",
     "field": "Field",
     "old": "Old",
     "new": "New"
+  },
+  "findings": {
+    "critical": "{{count}} critical",
+    "warning": "{{count}} warning",
+    "info": "{{count}} info"
   },
   "source": {
     "run": "Run",

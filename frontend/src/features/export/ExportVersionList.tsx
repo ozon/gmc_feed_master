@@ -35,6 +35,7 @@ export function ExportVersionList({
           <Table.Th>{t('columns.createdAt')}</Table.Th>
           <Table.Th>{t('columns.source')}</Table.Th>
           <Table.Th>{t('columns.products')}</Table.Th>
+          <Table.Th>{t('columns.findings')}</Table.Th>
           <Table.Th>{t('columns.diffA')}</Table.Th>
           <Table.Th>{t('columns.diffB')}</Table.Th>
           <Table.Th>{t('columns.rollback')}</Table.Th>
@@ -67,6 +68,39 @@ export function ExportVersionList({
               <Badge variant="light" color="gray">
                 {new Intl.NumberFormat(i18n.language).format(version.product_count)} {t('productsLabel')}
               </Badge>
+            </Table.Td>
+            <Table.Td>
+              {version.source !== 'rollback' && version.findings != null ? (
+                <Group gap={4} wrap="nowrap">
+                  <Badge
+                    size="xs"
+                    variant="light"
+                    color={version.findings.critical ? 'red' : 'gray'}
+                    title={t('findings.critical', { count: version.findings.critical })}
+                    data-testid={`findings-critical-${version.version_number}`}
+                  >
+                    {version.findings.critical}
+                  </Badge>
+                  <Badge
+                    size="xs"
+                    variant="light"
+                    color={version.findings.warning ? 'yellow' : 'gray'}
+                    title={t('findings.warning', { count: version.findings.warning })}
+                    data-testid={`findings-warning-${version.version_number}`}
+                  >
+                    {version.findings.warning}
+                  </Badge>
+                  <Badge
+                    size="xs"
+                    variant="light"
+                    color={version.findings.info ? 'blue' : 'gray'}
+                    title={t('findings.info', { count: version.findings.info })}
+                    data-testid={`findings-info-${version.version_number}`}
+                  >
+                    {version.findings.info}
+                  </Badge>
+                </Group>
+              ) : null}
             </Table.Td>
             <Table.Td>
               <Radio
