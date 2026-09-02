@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { addInstance, isInstancesEqual, removeInstance, reorderInstances, type LocalInstance } from './dndUtils';
+import {
+  addInstance,
+  applyDragEnd,
+  isInstancesEqual,
+  removeInstance,
+  reorderInstances,
+  type LocalInstance,
+} from './dndUtils';
 
 const a: LocalInstance = { clientId: 'a', position: 0, plugin_id: 'p1', name: 'A', configuration: { x: 1 } };
 const b: LocalInstance = { clientId: 'b', position: 1, plugin_id: 'p2', name: 'B', configuration: {} };
@@ -53,5 +60,26 @@ describe('dndUtils', () => {
     expect(removed.map((i) => i.clientId)).toEqual(['a', 'c']);
     const appended = addInstance([a], { id: 'p1', name: 'A' });
     expect(appended[1].clientId).toBe('p1-1');
+  });
+
+  it('applyDragEnd appends on palette drop onto the workspace droppable', () => {
+    const plugin = { id: 'upper', name: 'Upper', manifest: undefined };
+    const event = {
+      active: { id: 'palette-upper', data: { current: { source: 'palette', plugin } } },
+      over: { id: 'workspace-droppable' },
+    };
+    expect(applyDragEnd([], event)).toEqual([
+      { clientId: 'upper-0', position: 0, plugin_id: 'upper', name: 'Upper', configuration: {} },
+    ]);
+  });
+
+  it('applyDragEnd returns null for drops it does not handle', () => {
+    expect(applyDragEnd([], { active: { id: 'x' }, over: null })).toBeNull();
+    expect(
+      applyDragEnd([], {
+        active: { id: 'palette-upper', data: { current: { source: 'palette', plugin: { id: 'upper', name: 'Upper' } } } },
+        over: { id: 'some-other-target' },
+      }),
+    ).toBeNull();
   });
 });

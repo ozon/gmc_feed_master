@@ -38,6 +38,27 @@ export function removeInstance(instances: LocalInstance[], clientId: string): Lo
   return instances.filter((i) => i.clientId !== clientId);
 }
 
+export function applyDragEnd(
+  instances: LocalInstance[],
+  event: {
+    active: { id: string | number; data?: { current?: unknown } };
+    over: { id: string | number } | null;
+  },
+): LocalInstance[] | null {
+  const activeData = event.active.data?.current as
+    | { source?: string; plugin?: { id: string; name: string } }
+    | undefined;
+  if (activeData?.source === 'palette' && activeData.plugin && event.over?.id === 'workspace-droppable') {
+    return addInstance(instances, activeData.plugin);
+  }
+  if (activeData?.source === 'workspace' && event.over && event.over.id !== 'workspace-droppable') {
+    const fromIdx = instances.findIndex((i) => i.clientId === event.active.id);
+    const toIdx = instances.findIndex((i) => i.clientId === event.over!.id);
+    if (fromIdx >= 0 && toIdx >= 0) return reorderInstances(instances, fromIdx, toIdx);
+  }
+  return null;
+}
+
 export function isInstancesEqual(
   a: LocalInstance[] | PipelineInstance[],
   b: LocalInstance[] | PipelineInstance[],

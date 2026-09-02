@@ -8,7 +8,7 @@ import {
   usePlugins,
   useSavePipeline,
 } from '../../api/hooks';
-import type { PipelineInstance, PluginInfo } from '../../api/types';
+import type { PipelineInstance } from '../../api/types';
 import { ErrorState, LoadingState } from '../../components/StateViews';
 import { notifySuccess, notifyApiError } from '../../app/notifications';
 import { ApiError } from '../../api/client';
@@ -16,7 +16,7 @@ import { useBlocker } from 'react-router';
 import { PluginPalette } from './PluginPalette';
 import { PipelineWorkspace } from './PipelineWorkspace';
 import { PluginRegistryPanel } from './PluginRegistryPanel';
-import { addInstance, isInstancesEqual, removeInstance, reorderInstances, type LocalInstance } from './dndUtils';
+import { applyDragEnd, isInstancesEqual, removeInstance, type LocalInstance } from './dndUtils';
 
 function toLocal(instances: PipelineInstance[]): LocalInstance[] {
   return instances.map((instance) => ({
@@ -68,20 +68,8 @@ export function PipelinePage() {
   );
 
   function onDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over) return;
-    const activeData = active.data.current as { source?: string; plugin?: PluginInfo } | undefined;
-    if (activeData?.source === 'palette' && activeData.plugin && over.id === 'workspace-droppable') {
-      setLocal((prev) => addInstance(prev, { id: activeData.plugin!.id, name: activeData.plugin!.name }));
-      return;
-    }
-    if (activeData?.source === 'workspace' && over.id !== 'workspace-droppable') {
-      const fromIdx = local.findIndex((i) => i.clientId === active.id);
-      const toIdx = local.findIndex((i) => i.clientId === over.id);
-      if (fromIdx >= 0 && toIdx >= 0) {
-        setLocal((prev) => reorderInstances(prev, fromIdx, toIdx));
-      }
-    }
+    const next = applyDragEnd(local, event);
+    if (next) setLocal(next);
   }
 
   async function onSave() {
