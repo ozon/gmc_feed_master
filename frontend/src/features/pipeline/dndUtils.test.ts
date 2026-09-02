@@ -82,4 +82,20 @@ describe('dndUtils', () => {
       }),
     ).toBeNull();
   });
+
+  it('applyDragEnd reorders on a workspace card dropped onto another card', () => {
+    const x: LocalInstance = { clientId: 'p1-0', position: 0, plugin_id: 'p1', name: 'A', configuration: {} };
+    const y: LocalInstance = { clientId: 'p2-1', position: 1, plugin_id: 'p2', name: 'B', configuration: {} };
+    const event = {
+      active: { id: 'p1-0', data: { current: { source: 'workspace' } } },
+      over: { id: 'p2-1' },
+    };
+    expect(applyDragEnd([x, y], event)?.map((i) => i.clientId)).toEqual(['p2-1', 'p1-0']);
+    expect(
+      applyDragEnd([x, y], {
+        active: { id: 'p1-0', data: { current: { source: 'workspace' } } },
+        over: { id: 'workspace-droppable' },
+      }),
+    ).toBeNull();
+  });
 });
