@@ -73,6 +73,7 @@ git commit -m "test: add real-world example feeds as fixtures"
 
 **Files:**
 - Modify: `backend/app/ingest/delimited.py` (whole `parse_delimited` body)
+- Modify: `backend/app/ingest/flat_notation.py` (`_split_csv_cell` only)
 - Test: `backend/tests/test_delimited_reader.py` (add `TestRFC4180`)
 
 **Interfaces:**
@@ -106,12 +107,13 @@ class TestRFC4180:
             "shipping": _repeated_structured("shipping", _SHIPPING_FIELDS),
         })
         data = (
-            b"id\tshipping\n"
-            b'1\t"US:6.49 USD\nextra lines"\n'
+            b"id\tshipping(country:price)\n"
+            b'1\t"US:6.49\nUSD"\n'
             b"2\tUS:6.49:extra:more\n"
         )
         report = parse_delimited(data, "tsv", reg)
 
+        assert len(report.products) == 1
         assert len(report.row_errors) == 1
         assert report.row_errors[0].line == 4
 
@@ -127,9 +129,13 @@ class TestRFC4180:
         first = report.products[0]
         assert first["id"].startswith("shopify_US_")
         assert "\n" not in first["title"]
-        assert "shipping" in first and isinstance(first["shipping"], list)
+        assert "shipping" in first and isinstance(first["shipping"], dict)
         assert isinstance(first["additional_image_link"], list)
 ```
+
+Notes on these tests:
+- The second test uses the ANNOTATED header `shipping(country:price)` — a bare structured header plans as `generic` (deliberate behavior from commit `60e6eb0`, spec §5.8: "bare structured columns parse as generic") and would never colon-validate. Row 1 (`1\t"US:6.49\nUSD"`) spans physical lines 2–3 (valid quoted cell); the bad row `2\tUS:6.49:extra:more` ends on physical line 4 → `RowError.line == 4`. Also assert `len(report.products) == 1` (the valid multi-line row survives).
+- The third test asserts `isinstance(first["shipping"], dict)` — a single annotated `shipping(...)` column plans as `structured` (dict). The dict is wrapped to `[dict]` later by `apply_mapping` (REPEATED_STRUCTURED target), so the full chain still yields a list where it matters. `title` is single-line in the data (only `description` cells contain newlines).
 
 Note on the second test: the data row `1\t"US:6.49\nUSD"` is a valid quoted cell (one logical row spanning physical lines 2–3, no parse error); the bad row `2\tUS:6.49:extra:more` (surplus colons for a 2-sub-field plan) ends on physical line 4 → `RowError.line == 4`. This proves line numbers count PHYSICAL lines even after a multi-line row.
 
@@ -219,20 +225,61 @@ Notes:
 - Keep the `HeaderError` import even though `parse_delimited` no longer catches it — `from app.ingest.delimited import HeaderError` must keep working for any external importer.
 - `line_num` is captured after the row is consumed → for multi-line rows it points at the physical line where the row ENDS. Single-line rows keep the exact same numbers as the old implementation (existing test `TestMalformedRows` asserts `line == 2` and must keep passing).
 
+**Also fix `_split_csv_cell` in `backend/app/ingest/flat_notation.py` (same commit).** Its current `csv.reader(io.StringIO(cell))` treats embedded newlines as record boundaries, so a scalar cell value that legitimately contains `\n` (delivered intact by the new stream parser, quotes stripped by the outer TSV pass) gets truncated to its first physical line — the description from `US-MULTIFEED-2026.tsv` would lose content. `csv.reader` is the wrong tool here (record semantics); replace it with a quote-aware comma scanner that preserves ALL existing behavior:
+
+Replace `_split_csv_cell` (and remove the now-unused `csv`/`io` imports ONLY if nothing else in the file uses them — `parse_header` does not, but check `split_row` and the module header first) with:
+
+```python
+def _split_csv_cell(cell: str) -> list[str] | str:
+    """Split a cell by comma, respecting RFC-4180 quoting.
+
+    Returns a list if the cell contains commas (split or quoted).
+    Returns a bare string if it's a single unquoted value.
+    """
+    parts: list[str] = []
+    buf: list[str] = []
+    in_quotes = False
+    for ch in cell:
+        if ch == '"':
+            in_quotes = not in_quotes
+            continue
+        if ch == "," and not in_quotes:
+            parts.append("".join(buf))
+            buf = []
+            continue
+        buf.append(ch)
+    parts.append("".join(buf))
+    if len(parts) == 1 and not (cell.startswith('"') and cell.endswith('"')):
+        return parts[0]
+    return parts
+```
+
+Behavior parity (verified against the current implementation — the existing tests `test_comma_separated`, `test_quoted_comma_preserved`, `test_single_value_no_split` in `tests/test_flat_notation.py` must keep passing):
+
+| input | old | new |
+|---|---|---|
+| `'a,b'` | `['a', 'b']` | `['a', 'b']` |
+| `'"quoted,comma"'` | `['quoted,comma']` | `['quoted,comma']` |
+| `'img1.jpg'` | `'img1.jpg'` | `'img1.jpg'` |
+| `'"img1.jpg,img2.jpg"'` | `['img1.jpg,img2.jpg']` | `['img1.jpg,img2.jpg']` |
+| `'"single"'` | `['single']` | `['single']` |
+| `''` | `''` | `''` |
+| `'Line one\nLine two'` | `'Line one'` (BUG) | `'Line one\nLine two'` |
+
 - [ ] **Step 4: Run the full delimited/flat test suites**
 
 ```bash
-cd backend && uv run pytest tests/test_delimited_reader.py -v
+cd backend && uv run pytest tests/test_delimited_reader.py tests/test_flat_notation.py -v
 ```
 
-Expected: `TestRFC4180` tests 1 and 2 PASS; `test_multiline_fixture_parses` still FAILS with `HeaderError` (unknown sub-field `location_group_name`) — that is Task 3. ALL pre-existing tests (TestTSVSimple, TestCSV, TestWideTSV, TestRepeatedScalar, TestMalformedRows, TestBOM, TestEmptyCells) must PASS — especially `TestMalformedRows::test_bad_row_skipped_populates_errors` asserting `err.line == 2` (single-line rows keep exact old line numbers).
+Expected: `TestRFC4180` tests 1 and 2 PASS; `test_multiline_fixture_parses` still FAILS with `HeaderError` (unknown sub-field `location_group_name`) — that is Task 3. ALL pre-existing tests (TestTSVSimple, TestCSV, TestWideTSV, TestRepeatedScalar, TestMalformedRows, TestBOM, TestEmptyCells, and every `test_flat_notation.py` test incl. the repeated-scalar split tests) must PASS — especially `TestMalformedRows::test_bad_row_skipped_populates_errors` asserting `err.line == 2` (single-line rows keep exact old line numbers).
 
 If any pre-existing test fails, the implementation drifted — fix before committing.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add backend/app/ingest/delimited.py backend/tests/test_delimited_reader.py
+git add backend/app/ingest/delimited.py backend/app/ingest/flat_notation.py backend/tests/test_delimited_reader.py
 git commit -m "fix: RFC-4180 stream parsing for quoted multi-line cells in delimited reader"
 ```
 
@@ -355,7 +402,7 @@ In `backend/app/ingest/flat_notation.py`, inside `parse_header`'s annotated bran
 cd backend && uv run pytest tests/test_flat_notation.py tests/test_delimited_reader.py -v
 ```
 
-Expected: ALL PASS, including `TestRFC4180::test_multiline_fixture_parses` from Task 2 (the real multifeed.tsv now parses: 14 products, 0 row errors, `shipping` list present, `additional_image_link` list).
+Expected: ALL PASS, including `TestRFC4180::test_multiline_fixture_parses` from Task 2 (the real multifeed.tsv now parses: 14 products, 0 row errors, `shipping` dict present, `additional_image_link` list).
 
 Also run the ingest-step integration tests to catch anything that relied on the old strictness:
 
@@ -549,7 +596,7 @@ git commit -m "feat: expose baseline_required flag on registry attributes"
 - Produces: proof that both real example feeds survive parse → auto-map → apply → QC → render.
 
 Verified facts the assertions rely on:
-- TSV: 70-col header, 14 logical rows, 0 row errors after Tasks 2+3; `custom_label_1` column exists in header but is EMPTY in all 14 rows → parsed product dicts never contain a `custom_label_1` key (empty cells omitted), but `auto_match` still claims `custom_label_1 → custom_label_1` (registry name match); `tax` column exists but empty in all rows → no `tax` key in products; `shipping` populated in 13/14 rows as list of dicts; `gtin` populated in all 14 rows.
+- TSV: 70-col header, 14 logical rows, 0 row errors after Tasks 2+3; `custom_label_1` column exists in header but is EMPTY in all 14 rows → parsed product dicts never contain a `custom_label_1` key (empty cells omitted), but `auto_match` still claims `custom_label_1 → custom_label_1` (registry name match); `tax` column exists but empty in all rows → no `tax` key in products; `shipping` populated in 13/14 rows as a dict at INGEST level (single annotated column → `kind="structured"`) — `apply_mapping` wraps it to `[dict]` because the registry target `shipping` is REPEATED_STRUCTURED, so the assertion `isinstance(first["shipping"], list)` applies to the MAPPED product; `gtin` populated in all 14 rows.
 - XML: 308 products, `custom_label_1` populated on 57 products.
 - `apply_mapping` on a `tax` struct with header-declared `location_group_name` keeps only registry sub-fields (`country`, `region`, `postal_code`, `location_id`, `rate`, `tax_ship`) — `location_group_name` dropped.
 
@@ -654,7 +701,6 @@ class TestMultifeedTsvChain:
         for product in mapped_products:
             assert "custom_label_1" not in product
             assert "tax" not in product
-
         assert await _baseline_findings(mapped_products) == []
 
         xml = render_feed(
