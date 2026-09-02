@@ -12,6 +12,8 @@
 
 ## Cycle log
 
+- **2026-09-02 (branch `m11e-dnd`, fast-forward merged to main):** closed the pipeline-dnd pair, completing TODO section 1: TODO 1.3 (stable ids — spec v1's uniqueness argument was flawed; Task 1 review caught a real duplicate-id window after remove+append, fixed via spec v2 bump-past-held suffix + regression test `99ee4fc`) and TODO 1.4 (applyDragEnd extraction + pointer interaction test — two disclosed deviations approved: dead-guard omission per controller; pointer-sequence rewrite after user-event's `offset` proved to be caret semantics, replaced with `coords` + geometry spies). Final whole-branch review: one Important fixed pre-merge (`beb5459` — the plan dropped spec §2.3's reorder-branch unit test). Gates: frontend 176/176 + typecheck + build clean; backend untouched. Reviewer probed the backend PUT contract: positions were always re-enumerated server-side — no latent bug.
+
 - **2026-09-01 (branch `m11d-micro`, fast-forward merged to main):** closed the export-hooks P2 pair: TODO 1.5 (exportDiff key factory union-typed — shared `{ disabled: true }` key replaces the `-1` sentinels; enabled key byte-identical) and TODO 1.6 (rollback also invalidates the export-diff prefix). Per-task reviews clean; Task 2 had one APPROVED deviation — the plan's `getQueryData → undefined` test mechanism was impossible on query-core 5.102.8 (invalidation never evicts observer-less data; verified against installed source), so the assertion uses the established `invalidateQueries` spy convention instead — briefs must stop proposing that mechanism. Final whole-branch review: merge-ready, no Critical/Important — 2 Minors filed as leftovers inside the 1.5/1.6 Done entries (prefix-matcher seed assertion; JSON.stringify key comparisons). Gates: frontend 169/169 + typecheck + build clean (reviewer re-verified first-hand); backend untouched.
 
 - **2026-09-01 (branch `m11c-micro`, fast-forward merged to main):** closed the two m11b final-review carry-overs: TODO 1.9 (unified `mutateToggle` with one error handler across both toggle paths; stale-cache fast-path 409 now toasts) and TODO 1.10 (severity aria-labels on the findings badges, zero new strings). Per-task reviews clean; final whole-branch review: merge-ready, no Critical/Important — 2 Minors filed as leftovers inside the 1.9/1.10 Done entries (enable-error toast wording needs a future `enableFailed` key; span-aria-label SR robustness). Gates: frontend 168/168 + typecheck + build clean (reviewer re-verified); backend untouched.
@@ -77,7 +79,9 @@
 
 ---
 
-### 1.3 [ ] PipelinePage: use stable dnd-kit instance ids derived from `plugin_id + position` [P2]
+### 1.3 [x] PipelinePage: use stable dnd-kit instance ids derived from `plugin_id + position` [P2]
+
+**Done (2026-09-02, `b54b538` + `99ee4fc` amendment, m11e cycle):** `toLocal` derives `${plugin_id}-${position}` from server data; `addInstance` mints `${plugin.id}-${instances.length}` with a bump-past-held suffix loop (amendment — v1's mint could duplicate a held id after remove+append; regression-tested); `toServer` index-normalizes positions so saved pipelines round-trip the same ids; both random id helpers deleted. Reviewer's PUT-contract probe: the backend was never trusting client positions (route re-enumerates), so normalization is payload self-consistency, not a bug fix — refetch stability comes from deterministic ids + backend contiguity. Note (final review, Minor): spec §1.2's toServer rationale overstates — harmless; positions on local cards can diverge from id suffixes after a bump (cosmetic, normalized on save).
 
 **Why:** `PipelinePage.tsx`'s `toLocal` and `toServer` regenerate fresh `clientId`s on every reset and on every save→refetch. dnd-kit keys churn, which means Mantine's internal layout animations re-fire each time. A stable id derived from `plugin_id + position` would be stable across normal lifecycle (add/remove mint new ids; reorder and reset keep ids).
 
@@ -97,7 +101,9 @@
 
 ---
 
-### 1.4 [ ] dnd-kit interaction test for palette → workspace add [P2]
+### 1.4 [x] dnd-kit interaction test for palette → workspace add [P2]
+
+**Done (2026-09-02, `a7f739a` + `beb5459`, m11e cycle):** `onDragEnd` logic extracted to pure `applyDragEnd(instances, event)` in dndUtils (palette-append + workspace-reorder branches; `null` = no state change); PipelinePage keeps a thin wrapper. Coverage: 3 unit tests (append, null cases, reorder branch — the last added in final review after the plan silently dropped spec §2.3's mandate) + 1 real pointer-path drag test (`palette-card-upper` → workspace asserts `pipeline-instance-upper-0` renders). Plan's pointer sequence was invalid (user-event `offset` is a caret offset, not pointer pixels; jsdom has zero rects) — implementer source-verified and used `coords` + getBoundingClientRect spies; approved deviation. Follow-up note: pointer test is coupled to dnd-kit geometry internals — revisit on any dnd-kit major bump (spec §2.4 fallback documented).
 
 **Why:** Plan §3.11 calls for a "drag from palette to workspace" interaction test. The current dndUtils unit tests cover state mutations, but no test exercises the full `DndContext` → `onDragEnd` → `addInstance` path. A single smoke test would catch regressions in the wiring.
 
@@ -369,7 +375,7 @@
 
 ## Working notes for the next agent
 
-- **Remaining P2 pool:** 1.3, 1.4 (pipeline-dnd pair — riskier: jsdom interaction-test flake risk + dnd-kit key churn), 2.2 (deferred on backend question), 3.5, 6.1, 6.2, plus the m11c leftovers (enable-error toast wording key; span-aria-label robustness — noted inside the 1.9/1.10 Done entries) and the m11d leftovers (prefix-matcher seed assertion; noted inside the 1.6 Done entry). Task 5.1 blocked on core plugins; 8.1 is the owner's planning meta-task. Open ops items: ruff/mypy install/pin-or-drop decision (baseline 430/45 pre-existing errors); 65 backend warnings classification; vite allowedHosts machine-specific host + Caddyfile.dev site-label mismatch. German findings tooltips lack pluralization (`{{count}} Warnungen` renders "1 Warnungen") — use `_one`/`_other` suffixes if the keys are ever touched.
+- **Remaining P2 pool:** 2.2 (deferred on backend question), 3.5, 6.1, 6.2, plus the m11c leftovers (enable-error toast wording key; span-aria-label robustness — noted inside the 1.9/1.10 Done entries) and the m11d leftovers (prefix-matcher seed assertion; noted inside the 1.6 Done entry). TODO section 1 is now COMPLETE. dnd-kit follow-up: the pointer interaction test is coupled to geometry internals — revisit on any dnd-kit major bump (noted inside the 1.4 Done entry). Task 5.1 blocked on core plugins; 8.1 is the owner's planning meta-task. Open ops items: ruff/mypy install/pin-or-drop decision (baseline 430/45 pre-existing errors); 65 backend warnings classification; vite allowedHosts machine-specific host + Caddyfile.dev site-label mismatch. German findings tooltips lack pluralization (`{{count}} Warnungen` renders "1 Warnungen") — use `_one`/`_other` suffixes if the keys are ever touched.
 - **All P1s closed** (m11a cycle). The 2026-08-31/09-01 cycles closed 1.2, 1.7, 1.8, 1.9, 1.10, 3.3, 3.4 + the shutdown-drain ops follow-up.
 - **M10 gate per task:** `cd /home/ozon/gmc_feed_master/frontend && npm test -- --run && npm run typecheck && npm run build`. Backend tasks: `cd /home/ozon/gmc_feed_master && pytest -n auto` (requires `TEST_DATABASE_URL`).
 - **Conventions** (binding): no comments in code; all strings via `t()`; en+de identical i18n trees; 422 errors summary notification (now via `notifyApiError` in `frontend/src/app/notifyApiError.ts`); query-key invalidation; Loading/Empty/ErrorState on every data view.
@@ -380,4 +386,4 @@
 
 ---
 
-_Generated 2026-08-29 after M10-d merge (`aa86c10`). Updated 2026-08-30 after the `m11-followups` cycle (merged at `4bdc3a8`): 22 tasks across 8 sections, 7 complete (1.1, 2.1, 2.3, 3.1, 3.2, 4.1, 7.1), 2 new (1.7, 1.8). Updated 2026-08-31 after the `m11a-p1s` cycle (merged at `457fc2f`): 9 complete — all P1s closed (3.4, 1.7 done; WIP landed as 5 commits). Updated 2026-09-01 after the `m11b-correctness` cycle (merged at `d9d5eab`): 12 complete (1.2, 3.3, 1.8, shutdown drain), 2 new (1.9, 1.10). Updated 2026-09-01 after the `m11c-micro` cycle: 14 complete (1.9, 1.10). Updated 2026-09-01 after the `m11d-micro` cycle: 16 complete (1.5, 1.6)._
+_Generated 2026-08-29 after M10-d merge (`aa86c10`). Updated 2026-08-30 after the `m11-followups` cycle (merged at `4bdc3a8`): 22 tasks across 8 sections, 7 complete (1.1, 2.1, 2.3, 3.1, 3.2, 4.1, 7.1), 2 new (1.7, 1.8). Updated 2026-08-31 after the `m11a-p1s` cycle (merged at `457fc2f`): 9 complete — all P1s closed (3.4, 1.7 done; WIP landed as 5 commits). Updated 2026-09-01 after the `m11b-correctness` cycle (merged at `d9d5eab`): 12 complete (1.2, 3.3, 1.8, shutdown drain), 2 new (1.9, 1.10). Updated 2026-09-01 after the `m11c-micro` cycle: 14 complete (1.9, 1.10). Updated 2026-09-01 after the `m11d-micro` cycle: 16 complete (1.5, 1.6). Updated 2026-09-02 after the `m11e-dnd` cycle: 18 complete (1.3, 1.4) — section 1 fully closed._
