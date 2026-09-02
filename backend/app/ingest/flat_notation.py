@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import csv
-import io
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -128,15 +126,22 @@ def _split_csv_cell(cell: str) -> list[str] | str:
     Returns a list if the cell contains commas (split or quoted).
     Returns a bare string if it's a single unquoted value.
     """
-    reader = csv.reader(io.StringIO(cell), delimiter=",")
-    for row in reader:
-        if len(row) > 1:
-            return row
-        # Single element: check if it was a quoted cell (RFC-4180)
-        if cell.startswith('"') and cell.endswith('"'):
-            return row  # single-element list
-        return row[0]  # bare string
-    return cell
+    parts: list[str] = []
+    buf: list[str] = []
+    in_quotes = False
+    for ch in cell:
+        if ch == '"':
+            in_quotes = not in_quotes
+            continue
+        if ch == "," and not in_quotes:
+            parts.append("".join(buf))
+            buf = []
+            continue
+        buf.append(ch)
+    parts.append("".join(buf))
+    if len(parts) == 1 and not (cell.startswith('"') and cell.endswith('"')):
+        return parts[0]
+    return parts
 
 
 def split_row(

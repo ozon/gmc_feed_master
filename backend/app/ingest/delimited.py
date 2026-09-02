@@ -28,17 +28,19 @@ def parse_delimited(
         data = data[3:]
 
     text = data.decode("utf-8")
-    lines = text.splitlines()
-    non_blank = [line for line in lines if line.strip()]
-    if not non_blank:
+    first_line = text.split("\n", 1)[0]
+    delimiter = _detect_delimiter(source_format, first_line)
+
+    reader = csv.reader(io.StringIO(text, newline=""), delimiter=delimiter)
+    parsed: list[tuple[int, list[str]]] = []
+    for cells in reader:
+        if any(cell.strip() for cell in cells):
+            parsed.append((reader.line_num, cells))
+
+    if not parsed:
         return IngestReport()
 
-    header_line = non_blank[0]
-    delimiter = _detect_delimiter(source_format, header_line)
-
-    header_reader = csv.reader(io.StringIO(header_line), delimiter=delimiter)
-    headers = next(header_reader)
-    plan = parse_header(headers, registry)
+    plan = parse_header(parsed[0][1], registry)
 
     source_fields = [
         SourceField(
@@ -52,12 +54,10 @@ def parse_delimited(
     products: list[dict] = []
     row_errors: list[RowError] = []
 
-    for line_idx, line in enumerate(non_blank[1:], start=2):
-        row_reader = csv.reader(io.StringIO(line), delimiter=delimiter)
-        cells = next(row_reader)
+    for line, cells in parsed[1:]:
         product, error = split_row(cells, plan)
         if error is not None:
-            row_errors.append(RowError(line=line_idx, message=error.message))
+            row_errors.append(RowError(line=line, message=error.message))
         else:
             products.append(product)
 

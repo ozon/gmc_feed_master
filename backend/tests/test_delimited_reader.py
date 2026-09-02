@@ -183,6 +183,53 @@ class TestBOM:
         assert report.products[0]["title"] == "Red Shirt"
 
 
+class TestRFC4180:
+    def test_quoted_multiline_cell_is_one_row(self) -> None:
+        reg = _registry({
+            "id": _scalar("id"),
+            "title": _scalar("title"),
+            "description": _scalar("description"),
+        })
+        data = b'id\tdescription\ttitle\n1\t"Line one\nLine two"\tShirt\n'
+        report = parse_delimited(data, "tsv", reg)
+
+        assert report.row_errors == []
+        assert len(report.products) == 1
+        assert report.products[0]["description"] == "Line one\nLine two"
+        assert report.products[0]["title"] == "Shirt"
+
+    def test_embedded_newline_row_error_line_points_at_row_end(self) -> None:
+        reg = _registry({
+            "id": _scalar("id"),
+            "shipping": _repeated_structured("shipping", _SHIPPING_FIELDS),
+        })
+        data = (
+            b"id\tshipping(country:price)\n"
+            b'1\t"US:6.49\nUSD"\n'
+            b"2\tUS:6.49:extra:more\n"
+        )
+        report = parse_delimited(data, "tsv", reg)
+
+        assert len(report.products) == 1
+        assert len(report.row_errors) == 1
+        assert report.row_errors[0].line == 4
+
+    def test_multiline_fixture_parses(self) -> None:
+        from registry.loader import load_registry
+
+        reg = load_registry()
+        data = (_FIXTURES / "multifeed.tsv").read_bytes()
+        report = parse_delimited(data, "tsv", reg)
+
+        assert len(report.products) == 14
+        assert report.row_errors == []
+        first = report.products[0]
+        assert first["id"].startswith("shopify_US_")
+        assert "\n" not in first["title"]
+        assert "shipping" in first and isinstance(first["shipping"], dict)
+        assert isinstance(first["additional_image_link"], list)
+
+
 class TestEmptyCells:
     def test_empty_cells_omitted(self) -> None:
         data = b"id\ttitle\tprice\n1\tShirt\n"
