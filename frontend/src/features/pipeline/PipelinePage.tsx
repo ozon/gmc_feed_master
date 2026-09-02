@@ -19,18 +19,14 @@ import { PluginRegistryPanel } from './PluginRegistryPanel';
 import { addInstance, isInstancesEqual, removeInstance, reorderInstances, type LocalInstance } from './dndUtils';
 
 function toLocal(instances: PipelineInstance[]): LocalInstance[] {
-  return instances.map((instance) => ({ ...instance, clientId: generateLocalId() }));
+  return instances.map((instance) => ({
+    ...instance,
+    clientId: `${instance.plugin_id}-${instance.position}`,
+  }));
 }
 
 function toServer(instances: LocalInstance[]): PipelineInstance[] {
-  return instances.map(({ clientId: _clientId, ...rest }) => rest);
-}
-
-function generateLocalId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
-  }
-  return `local-${Math.random().toString(36).slice(2)}-${Date.now()}`;
+  return instances.map(({ clientId: _clientId, ...rest }, index) => ({ ...rest, position: index }));
 }
 
 export function PipelinePage() {

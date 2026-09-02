@@ -6,7 +6,7 @@ export function addInstance(
   instances: LocalInstance[],
   plugin: { id: string; name: string },
 ): LocalInstance[] {
-  const clientId = generateId();
+  const clientId = `${plugin.id}-${instances.length}`;
   return [
     ...instances,
     {
@@ -44,11 +44,4 @@ export function isInstancesEqual(
 
 function stripClientIds(items: Array<PipelineInstance & { clientId?: string }>): PipelineInstance[] {
   return items.map(({ clientId: _clientId, ...rest }) => rest);
-}
-
-function generateId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
-  }
-  return `id-${Math.random().toString(36).slice(2)}-${Date.now()}`;
 }
