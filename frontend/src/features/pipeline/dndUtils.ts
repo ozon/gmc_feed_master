@@ -6,7 +6,10 @@ export function addInstance(
   instances: LocalInstance[],
   plugin: { id: string; name: string },
 ): LocalInstance[] {
-  const clientId = `${plugin.id}-${instances.length}`;
+  const taken = new Set(instances.map((i) => i.clientId));
+  let index = instances.length;
+  while (taken.has(`${plugin.id}-${index}`)) index += 1;
+  const clientId = `${plugin.id}-${index}`;
   return [
     ...instances,
     {

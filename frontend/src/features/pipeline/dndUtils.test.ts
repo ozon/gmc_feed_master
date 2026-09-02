@@ -38,6 +38,14 @@ describe('dndUtils', () => {
     expect(twice.map((i) => i.clientId)).toEqual(['p1-0', 'p1-1']);
   });
 
+  it('addInstance never duplicates a held clientId after a removal', () => {
+    const p1At0 = { clientId: 'p1-0', position: 0, plugin_id: 'p1', name: 'A', configuration: {} } as LocalInstance;
+    const p2At1 = { clientId: 'p2-1', position: 1, plugin_id: 'p2', name: 'B', configuration: {} } as LocalInstance;
+    const afterRemove = removeInstance([p1At0, p2At1], 'p1-0');
+    const appended = addInstance(afterRemove, { id: 'p2', name: 'B' });
+    expect(appended.map((i) => i.clientId)).toEqual(['p2-1', 'p2-2']);
+  });
+
   it('reorder and remove preserve existing clientIds', () => {
     const reordered = reorderInstances([a, b, c], 0, 2);
     expect(reordered.map((i) => i.clientId)).toEqual(['b', 'c', 'a']);
