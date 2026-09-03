@@ -79,6 +79,7 @@ export type RegistryAttribute = {
   name: string;
   kind: string;
   required: string;
+  baseline_required?: boolean;
   sub_fields: RegistrySubField[];
   enum_values: string[];
 };

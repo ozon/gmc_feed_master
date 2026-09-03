@@ -28,14 +28,20 @@ const mappingDoc: FieldMappingDoc = {
 };
 
 const registryAttrs: RegistryAttribute[] = [
-  { name: 'title', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [] },
-  { name: 'description', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [] },
-  { name: 'id', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [] },
-  { name: 'brand', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [] },
-  { name: 'installment', kind: 'structured', required: 'optional', sub_fields: [
+  { name: 'title', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [] },
+  { name: 'description', kind: 'scalar', required: 'optional', baseline_required: true, sub_fields: [], enum_values: [] },
+  { name: 'id', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [] },
+  { name: 'brand', kind: 'scalar', required: 'required', baseline_required: false, sub_fields: [], enum_values: [] },
+  { name: 'installment', kind: 'structured', required: 'optional', baseline_required: false, sub_fields: [
     { name: 'months', type: 'string', required: 'optional' },
     { name: 'amount', type: 'string', required: 'optional' },
   ], enum_values: [] },
+  { name: 'link', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [] },
+  { name: 'image_link', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [] },
+  { name: 'availability', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [] },
+  { name: 'price', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [] },
+  { name: 'condition', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [] },
+  { name: 'structured_title', kind: 'structured', required: 'optional', baseline_required: true, sub_fields: [], enum_values: [] },
 ];
 
 function jsonResponse(body: unknown, status = 200) {
@@ -113,7 +119,7 @@ describe('MappingTab', () => {
     expect(await screen.findByText('Auto-mapped')).toBeInTheDocument();
   });
 
-  it('shows required-uncovered alert for uncovered required attrs', async () => {
+  it('shows required-uncovered alert for uncovered baseline attrs only', async () => {
     fetchMock = stubFetch((url) => {
       if (url === '/feed-sources/1/field-mapping') return jsonResponse(mappingDoc);
       if (url === '/registry/attributes') return jsonResponse(registryAttrs);
@@ -123,7 +129,30 @@ describe('MappingTab', () => {
     renderTab();
 
     expect(await screen.findByText(/required registry attributes not covered/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/brand/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/id/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/the following required attributes are not mapped/i)).not.toHaveTextContent(/brand/i);
+    expect(screen.getAllByText(/price/i).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('structured_title alone covers the title pair', async () => {
+    const altDoc: FieldMappingDoc = {
+      ...mappingDoc,
+      mappings: {
+        title: { target: 'structured_title', origin: 'auto' },
+        description: { target: 'description', origin: 'auto' },
+        product_id: { target: 'id', origin: 'auto' },
+      },
+    };
+    fetchMock = stubFetch((url) => {
+      if (url === '/feed-sources/1/field-mapping') return jsonResponse(altDoc);
+      if (url === '/registry/attributes') return jsonResponse(registryAttrs);
+      return jsonResponse({});
+    });
+
+    renderTab();
+
+    const alertBody = await screen.findByText(/the following required attributes are not mapped/i);
+    expect(alertBody).not.toHaveTextContent(/title/i);
   });
 
   it('marking dirty enables save button', async () => {
@@ -270,11 +299,24 @@ describe('MappingTab', () => {
   it('required-uncovered alert disappears when all required attrs are covered', async () => {
     const fullyCoveredDoc: FieldMappingDoc = {
       ...mappingDoc,
+      source_fields: [
+        ...mappingDoc.source_fields,
+        { name: 'link', kind: 'scalar', sub_fields: [] },
+        { name: 'image_link', kind: 'scalar', sub_fields: [] },
+        { name: 'availability', kind: 'scalar', sub_fields: [] },
+        { name: 'price', kind: 'scalar', sub_fields: [] },
+        { name: 'condition', kind: 'scalar', sub_fields: [] },
+      ],
       mappings: {
         title: { target: 'title', origin: 'auto' },
         description: { target: 'description', origin: 'auto' },
         product_id: { target: 'id', origin: 'auto' },
         synonym_field: { target: 'brand', origin: 'manual' },
+        link: { target: 'link', origin: 'auto' },
+        image_link: { target: 'image_link', origin: 'auto' },
+        availability: { target: 'availability', origin: 'auto' },
+        price: { target: 'price', origin: 'auto' },
+        condition: { target: 'condition', origin: 'auto' },
       },
     };
 

@@ -79,12 +79,21 @@ export function MappingTab() {
 
   const requiredUncovered = useMemo(() => {
     if (!Array.isArray(registryQuery.data)) return [];
+    const baselineAttrs = registryQuery.data.filter((attr) => attr.baseline_required === true);
+    const alternativePairs: Array<[string, string]> = [
+      ['title', 'structured_title'],
+      ['description', 'structured_description'],
+    ];
     const uncovered: string[] = [];
-    for (const attr of registryQuery.data) {
-      if (attr.required !== 'required') continue;
-      if (!coveredTargets.has(attr.name)) {
-        uncovered.push(attr.name);
+    for (const attr of baselineAttrs) {
+      const pair = alternativePairs.find(([a, b]) => a === attr.name || b === attr.name);
+      if (pair) {
+        if (coveredTargets.has(pair[0]) || coveredTargets.has(pair[1])) continue;
+        if (uncovered.includes(pair[0])) continue;
+        uncovered.push(pair[0], pair[1]);
+        continue;
       }
+      if (!coveredTargets.has(attr.name)) uncovered.push(attr.name);
     }
     return uncovered;
   }, [registryQuery.data, coveredTargets]);
