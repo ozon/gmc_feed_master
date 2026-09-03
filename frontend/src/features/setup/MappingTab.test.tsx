@@ -480,4 +480,118 @@ describe('MappingTab', () => {
       expect((body?.mappings as Record<string, unknown>)['ship']).toBeUndefined();
     });
   });
+
+  it('sub-field edit removes the server-side parent mapping from the PUT payload', async () => {
+    const user = userEvent.setup();
+    const doc: FieldMappingDoc = {
+      ...mappingDoc,
+      source_fields: [
+        ...mappingDoc.source_fields,
+        { name: 'ship', kind: 'structured', sub_fields: ['country'] },
+      ],
+      mappings: {
+        ...mappingDoc.mappings,
+        ship: { target: 'installment', origin: 'manual' },
+      },
+    };
+    fetchMock = stubFetch((url) => {
+      if (url === '/feed-sources/1/field-mapping') {
+        if (fetchMock.mock.calls.some(
+          ([input, init]) => String(input) === url && init?.method === 'PUT',
+        )) {
+          return jsonResponse({ ...doc, auto_mapped: false });
+        }
+        return jsonResponse(doc);
+      }
+      if (url === '/registry/attributes') return jsonResponse(registryAttrs);
+      return jsonResponse({});
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('ship')).toBeInTheDocument();
+    });
+
+    const toggle = document.querySelector('[data-sub-toggle="ship"]') as HTMLElement;
+    await user.click(toggle);
+    const subRow = (await screen.findByText('country', { selector: 'td p' })).closest('tr')!;
+    const select = subRow.querySelector('[role="combobox"]') as HTMLElement;
+    await user.click(select);
+    const option = await screen.findByRole('option', { name: 'installment.months' });
+    await user.click(option);
+
+    const saveBtn = screen.getByRole('button', { name: /save/i });
+    await waitFor(() => expect(saveBtn).toBeEnabled());
+    await user.click(saveBtn);
+
+    await waitFor(() => {
+      const body = putBody('/feed-sources/1/field-mapping');
+      expect(body).toBeDefined();
+      expect(body?.mappings).toEqual(
+        expect.objectContaining({
+          'ship.country': { target: 'installment.months' },
+        }),
+      );
+      expect((body?.mappings as Record<string, unknown>)['ship']).toBeUndefined();
+    });
+  });
+
+  it('parent edit clears pending sub-field edits from the PUT payload', async () => {
+    const user = userEvent.setup();
+    const doc: FieldMappingDoc = {
+      ...mappingDoc,
+      source_fields: [
+        ...mappingDoc.source_fields,
+        { name: 'ship', kind: 'structured', sub_fields: ['country'] },
+      ],
+    };
+    fetchMock = stubFetch((url) => {
+      if (url === '/feed-sources/1/field-mapping') {
+        if (fetchMock.mock.calls.some(
+          ([input, init]) => String(input) === url && init?.method === 'PUT',
+        )) {
+          return jsonResponse({ ...doc, auto_mapped: false });
+        }
+        return jsonResponse(doc);
+      }
+      if (url === '/registry/attributes') return jsonResponse(registryAttrs);
+      return jsonResponse({});
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('ship')).toBeInTheDocument();
+    });
+
+    const toggle = document.querySelector('[data-sub-toggle="ship"]') as HTMLElement;
+    await user.click(toggle);
+    const subRow = (await screen.findByText('country', { selector: 'td p' })).closest('tr')!;
+    const subSelect = subRow.querySelector('[role="combobox"]') as HTMLElement;
+    await user.click(subSelect);
+    const subOption = await screen.findByRole('option', { name: 'installment.months' });
+    await user.click(subOption);
+
+    const parentRow = document.querySelector('[data-sub-toggle="ship"]')!.closest('tr')!;
+    const parentSelect = parentRow.querySelector('[role="combobox"]') as HTMLElement;
+    await user.click(parentSelect);
+    const parentOption = await screen.findByRole('option', { name: /^brand$/ });
+    await user.click(parentOption);
+
+    const saveBtn = screen.getByRole('button', { name: /save/i });
+    await waitFor(() => expect(saveBtn).toBeEnabled());
+    await user.click(saveBtn);
+
+    await waitFor(() => {
+      const body = putBody('/feed-sources/1/field-mapping');
+      expect(body).toBeDefined();
+      expect(body?.mappings).toEqual(
+        expect.objectContaining({
+          ship: { target: 'brand' },
+        }),
+      );
+      expect((body?.mappings as Record<string, unknown>)['ship.country']).toBeUndefined();
+    });
+  });
 });
