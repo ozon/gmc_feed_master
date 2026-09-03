@@ -88,6 +88,7 @@ Plugin routes must not use these prefixes. Example: Category plugin uses `/plugi
 
 ## Registry
 - `GET /registry/attributes` — full GMC Attribute Registry (from `backend/registry/attributes.json`)
+  Each attribute includes `baseline_required: boolean` — true for the baseline-required set (spec §7: `id`, `link`, `image_link`, `availability`, `price`, `condition`, and the `title`/`structured_title`, `description`/`structured_description` alternative-pair members); false otherwise.
 - `POST /registry/generate` — regenerate from `gmc_def.md` (admin only)
 
 ## Public Export Endpoint

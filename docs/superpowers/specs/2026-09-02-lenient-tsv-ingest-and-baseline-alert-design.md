@@ -17,6 +17,8 @@ Two independent defects block importing real-world feeds (including `examples/US
 
 Non-goal (already works, locked in with tests): feeds whose products carry different optional fields (`custom_label_1` present in one feed, absent in another) — mappings are per feed source, product fields are optional per product.
 
+Recorded follow-up (registry gap, not addressed this cycle): the registry parser does not expand backtick name ranges (`custom_label_0` … `custom_label_4` at `gmc_def.md:127`), so only `custom_label_0` and `custom_label_4` exist in `registry/attributes.json`. `custom_label_1/2/3` are unmapped by auto-match today; feeds carrying those columns work (values dropped as unmapped fields). A future cycle should teach the parser to expand same-prefix numbered ranges and regenerate `registry/attributes.json` — required before the Labelizer plugin (spec §5.9, `target_label` slots 0–4) ships. Do NOT change the parser in this cycle.
+
 ## Decisions (user-confirmed)
 
 | Question | Decision |

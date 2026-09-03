@@ -24,6 +24,13 @@ flowchart LR
 | 5. Quality Check | `QualityCheckStep` | Run per-product + cross-product rules; persist `QualityFinding`; never blocks export |
 | 6. Export | `ExportStep` | Serialize to GMC XML; version in `ExportVersion`; atomic publish to `export_dir/published/{id}.xml` |
 
+### Ingest Details (`app/ingest/`)
+- Delimited inputs (TSV/CSV) parse via a single RFC-4180 `csv.reader` stream pass — quoted cells may contain embedded newlines; row-error line numbers are physical end-of-row lines.
+- Annotated headers `attr(sub1:sub2:…)` trust the header's declared sub-field list as the positional truth; sub-fields unknown to the registry are tolerated and dropped at mapping/export (both filter structured values to registry-known sub-fields).
+- Comma-splitting of cell values applies **only** to repeated-scalar columns (registry REPEATED_SCALAR attributes); scalar and generic columns keep commas as content.
+- Structural header errors still fail the import: duplicate scalar columns, non-adjacent repeated structured columns, annotating a non-structured attribute.
+- `qc/constants.py` `BASELINE_REQUIRED` + `BASELINE_ALTERNATIVE_PAIRS` are the single source of the baseline-required definition (shared by the QC `baseline_required` rule and `/registry/attributes`).
+
 ## Delta Mechanics
 
 ```mermaid
