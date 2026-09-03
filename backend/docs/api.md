@@ -38,8 +38,8 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 
 ### Field Mapping
 - `GET /feed-sources/{id}/field-mapping` — get mapping document
-- `PUT /feed-sources/{id}/field-mapping` — save manual mappings `{mappings: {source_field: {target: registry_path}}}`
-- `POST /feed-sources/{id}/field-mapping/auto` — run auto-mapper on demand
+- `PUT /feed-sources/{id}/field-mapping` — save manual mappings `{mappings: {source_path: {target: registry_path}}}`. `source_path` is a source field name or a dotted sub-field path `parent.sub` (parent must be a structured/repeated-structured source field, `sub` one of its sub-fields; a whole-field mapping of `parent` and its sub-field mappings are mutually exclusive). `target` is `attr` or `attr.subfield` only. Errors: 422 `{"errors": ["key: message", ...]}`
+- `POST /feed-sources/{id}/field-mapping/auto` — run auto-mapper on demand (whole-field passes first — auto, then synonym — then a sub-field pass; whole-field mappings suppress sub matching for their parent, and existing sub-mappings block whole-field claims)
 
 ### Ingestion Runs
 - `GET /feed-sources/{id}/ingestion-runs` — history (limit=50 default), includes error details

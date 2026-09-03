@@ -18,7 +18,7 @@ flowchart LR
 | Stage | Class | Responsibility |
 |-------|-------|----------------|
 | 1. Ingest | `IngestStep` | Fetch source feed (HTTP/HTTPS, Basic Auth, 60s timeout, 500MB limit); parse headers via flat notation (`app/ingest/flat_notation.py`); bare structured columns (registry-known structured attribute without annotation) parse as generic (untyped) scalar columns rather than being rejected; only explicit `attr(sub:…)` annotation produces structured kinds |
-| 2. Mapping | `MappingStep` | Apply `FeedSource.field_mapping` (auto-mapped on first run); transform source fields → registry attributes |
+| 2. Mapping | `MappingStep` | Apply `FeedSource.field_mapping` (auto-mapped on first run); transform source fields → registry attributes. Mapping keys may be dotted source paths (`parent.sub` for structured/repeated-structured sources; an exact source-field-name match wins over path resolution). A whole-field mapping and sub-field mappings of the same parent are mutually exclusive (PUT → 422). Sub-field values broadcast over all elements of repeated sources; `attr.subfield` targets of repeated structured attributes merge element-wise by index. |
 | 3. Staging | `StagingStep` | Delta detection via `content_hash` + `config_hash`; upsert `StagingProduct`; write `StagingHistory` on change |
 | 4. Plugins | `PluginStep` | Execute pipeline modules in order; each plugin receives `original_product` (read-only), resolved config & data |
 | 5. Quality Check | `QualityCheckStep` | Run per-product + cross-product rules; persist `QualityFinding`; never blocks export |

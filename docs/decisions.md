@@ -1055,3 +1055,11 @@ binding product specification. Dates use ISO 8601 calendar dates.
   `build.rollupOptions.output.manualChunks` in favor of
   `build.rolldownOptions.output.codeSplitting`.
 
+## 2026-09-03
+
+### Nested source field mapping representation
+
+- **Topic:** How sub-field mappings of structured source fields are stored and governed
+- **Decision:** Mapping keys in `FeedSource.field_mapping` (`MappingDocument.mappings`) are dotted source paths (`ship.price → shipping.price`). No document format change (keys are opaque strings; version stays 1). An exact source-field-name match wins over path resolution everywhere (validation, apply, auto-match). A whole-field mapping and sub-field mappings of the same parent are mutually exclusive (PUT returns 422 on conflict). Sub of `structured` behaves as `scalar`, sub of `repeated_structured` as `repeated_scalar` for kind compatibility; repeated sources broadcast per element and merge element-wise into `attr.subfield` targets by index. The auto-matcher gains a sub-field pass (sub name matched first against whole attribute names, then `attr.subfield` paths in registry order; no sub-level synonyms), suppressed by whole-field mappings of the same parent; existing sub-mappings block whole-field auto claims.
+- **Rationale:** Avoids a document version bump and migration; keeps the PUT payload shape unchanged; the one ambiguity (a source column literally named `parent.sub`) is resolved by a single exact-name-first rule applied uniformly. Rejected: nested `MappingEntry.sub_mappings` (v2 migration, 33 call sites) and a parallel `sub_mappings` section (cross-dict exclusivity checks in every consumer).
+
