@@ -134,10 +134,8 @@ class TestRFC4180:
 ```
 
 Notes on these tests:
-- The second test uses the ANNOTATED header `shipping(country:price)` — a bare structured header plans as `generic` (deliberate behavior from commit `60e6eb0`, spec §5.8: "bare structured columns parse as generic") and would never colon-validate. Row 1 (`1\t"US:6.49\nUSD"`) spans physical lines 2–3 (valid quoted cell); the bad row `2\tUS:6.49:extra:more` ends on physical line 4 → `RowError.line == 4`. Also assert `len(report.products) == 1` (the valid multi-line row survives).
+- The second test uses the ANNOTATED header `shipping(country:price)` — a bare structured header plans as `generic` (deliberate behavior from commit `60e6eb0`, spec §5.8: "bare structured columns parse as generic") and would never colon-validate. Row 1 (`1\t"US:6.49\nUSD"`) is a valid quoted cell spanning physical lines 2–3 (no parse error); the bad row `2\tUS:6.49:extra:more` (surplus colons for a 2-sub-field plan) ends on physical line 4 → `RowError.line == 4`. Also assert `len(report.products) == 1` (the valid multi-line row survives). This proves line numbers count PHYSICAL lines even after a multi-line row.
 - The third test asserts `isinstance(first["shipping"], dict)` — a single annotated `shipping(...)` column plans as `structured` (dict). The dict is wrapped to `[dict]` later by `apply_mapping` (REPEATED_STRUCTURED target), so the full chain still yields a list where it matters. `title` is single-line in the data (only `description` cells contain newlines).
-
-Note on the second test: the data row `1\t"US:6.49\nUSD"` is a valid quoted cell (one logical row spanning physical lines 2–3, no parse error); the bad row `2\tUS:6.49:extra:more` (surplus colons for a 2-sub-field plan) ends on physical line 4 → `RowError.line == 4`. This proves line numbers count PHYSICAL lines even after a multi-line row.
 
 - [ ] **Step 2: Run tests to verify they fail**
 
