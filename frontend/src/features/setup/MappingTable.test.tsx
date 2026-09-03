@@ -27,10 +27,14 @@ const registryAttributes: RegistryAttribute[] = [
   ], enum_values: [] },
 ];
 
-const mappings: Record<string, { target: string | null; origin: string | null }> = {
-  title: { target: 'title', origin: 'auto' },
-  synonym_field: { target: 'description', origin: 'synonym' },
-};
+function mappingsFixture() {
+  return {
+    title: { target: 'title', origin: 'auto' },
+    synonym_field: { target: 'description', origin: 'synonym' },
+  };
+}
+
+const mappings = mappingsFixture();
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -145,5 +149,106 @@ describe('MappingTable', () => {
     await waitFor(() => {
       expect(screen.getByText('invalid target')).toBeInTheDocument();
     });
+  });
+
+  it('shows no expand toggle for scalar rows', async () => {
+    render(<MappingTable {...defaultProps()} />);
+    await waitFor(() => {
+      expect(screen.getByText('product_id')).toBeInTheDocument();
+    });
+    const scalarRow = screen.getByText('product_id').closest('tr')!;
+    expect(scalarRow.querySelector('[data-sub-toggle]')).toBeNull();
+  });
+
+  it('expands a structured row to show sub-field rows', async () => {
+    const user = userEvent.setup();
+    render(<MappingTable {...defaultProps()} />);
+    await waitFor(() => {
+      expect(screen.getByText('installment_data')).toBeInTheDocument();
+    });
+    const toggle = document.querySelector('[data-sub-toggle="installment_data"]') as HTMLElement;
+    expect(toggle).not.toBeNull();
+    await user.click(toggle);
+    const monthsRow = (await screen.findByText('months', { selector: 'td p' })).closest('tr')!;
+    expect(monthsRow).not.toBeNull();
+    expect(screen.getByText('amount', { selector: 'td p' })).toBeInTheDocument();
+    expect(monthsRow.querySelectorAll('td').length).toBe(2);
+  });
+
+  it('sub-row select calls onChange with dotted key', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<MappingTable {...defaultProps({ onChange })} />);
+    await waitFor(() => {
+      expect(screen.getByText('installment_data')).toBeInTheDocument();
+    });
+    const toggle = document.querySelector('[data-sub-toggle="installment_data"]') as HTMLElement;
+    await user.click(toggle);
+    const subRow = (await screen.findByText('months', { selector: 'td p' })).closest('tr')!;
+    const select = subRow.querySelector('[role="combobox"]') as HTMLElement;
+    await user.click(select);
+    const option = await screen.findByRole('option', { name: 'installment.months' });
+    await user.click(option);
+    expect(onChange).toHaveBeenCalledWith('installment_data.months', 'installment.months');
+  });
+
+  it('sub-row shows error text for its dotted key', async () => {
+    const user = userEvent.setup();
+    render(
+      <MappingTable {...defaultProps({ errors: { 'installment_data.months': 'unknown sub-field' } })} />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('installment_data')).toBeInTheDocument();
+    });
+    const toggle = document.querySelector('[data-sub-toggle="installment_data"]') as HTMLElement;
+    await user.click(toggle);
+    expect(await screen.findByText('unknown sub-field')).toBeInTheDocument();
+  });
+
+  it('sub-row shows origin badge from dotted-key mapping', async () => {
+    const user = userEvent.setup();
+    render(
+      <MappingTable
+        {...defaultProps({
+          mappings: {
+            ...mappingsFixture(),
+            'installment_data.months': { target: 'installment.months', origin: 'auto' },
+          },
+        })}
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('installment_data')).toBeInTheDocument();
+    });
+    const toggle = document.querySelector('[data-sub-toggle="installment_data"]') as HTMLElement;
+    await user.click(toggle);
+    const subRow = (await screen.findByText('months', { selector: 'td p' })).closest('tr')!;
+    expect(subRow.textContent).toContain('auto');
+  });
+
+  it('clearing a sub-row select calls onChange with null', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MappingTable
+        {...defaultProps({
+          mappings: {
+            ...mappingsFixture(),
+            'installment_data.months': { target: 'installment.months', origin: 'manual' },
+          },
+          onChange,
+        })}
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getByText('installment_data')).toBeInTheDocument();
+    });
+    const toggle = document.querySelector('[data-sub-toggle="installment_data"]') as HTMLElement;
+    await user.click(toggle);
+    const subRow = (await screen.findByText('months', { selector: 'td p' })).closest('tr')!;
+    const clearButton = subRow.querySelector('.mantine-InputClearButton-root');
+    expect(clearButton).not.toBeNull();
+    await user.click(clearButton!);
+    expect(onChange).toHaveBeenCalledWith('installment_data.months', null);
   });
 });

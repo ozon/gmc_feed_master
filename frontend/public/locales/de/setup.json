@@ -18,7 +18,9 @@
     "table": {
       "source": "Quellfeld",
       "target": "Zielattribut",
-      "selectTarget": "Ziel auswählen"
+      "selectTarget": "Ziel auswählen",
+      "expandSubFields": "Unterfelder von {{field}} anzeigen",
+      "collapseSubFields": "Unterfelder von {{field}} ausblenden"
     },
     "origins": {
       "auto": "auto",

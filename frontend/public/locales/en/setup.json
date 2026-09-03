@@ -18,7 +18,9 @@
     "table": {
       "source": "Source field",
       "target": "Target attribute",
-      "selectTarget": "Select target"
+      "selectTarget": "Select target",
+      "expandSubFields": "Show sub-fields of {{field}}",
+      "collapseSubFields": "Hide sub-fields of {{field}}"
     },
     "origins": {
       "auto": "auto",
