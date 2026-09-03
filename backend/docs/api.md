@@ -39,7 +39,7 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 ### Field Mapping
 - `GET /feed-sources/{id}/field-mapping` — get mapping document
 - `PUT /feed-sources/{id}/field-mapping` — save manual mappings `{mappings: {source_path: {target: registry_path}}}`. `source_path` is a source field name or a dotted sub-field path `parent.sub` (parent must be a structured/repeated-structured source field, `sub` one of its sub-fields; a whole-field mapping of `parent` and its sub-field mappings are mutually exclusive). `target` is `attr` or `attr.subfield` only. A whole-attribute target `X` and any `X.subfield` target are mutually exclusive claims across all sources (422 on overlap, regardless of payload key order). Empty strings are stripped from repeated-scalar target values at apply time. Errors: 422 `{"errors": ["key: message", ...]}`
-- `POST /feed-sources/{id}/field-mapping/auto` — run auto-mapper on demand (whole-field passes first — auto, then synonym — then a sub-field pass; whole-field mappings suppress sub matching for their parent, and existing sub-mappings block whole-field claims)
+- `POST /feed-sources/{id}/field-mapping/auto` — run auto-mapper on demand (whole-field passes first — auto, then synonym — then a sub-field pass; whole-field mappings suppress sub matching for their parent, and existing sub-mappings block whole-field claims; a whole-attribute target `X` and any `X.subfield` target are mutually exclusive claims in the matcher as well — a claimed whole `X` blocks sub claims on `X.*` and vice versa, mirroring the PUT 422 rule)
 
 ### Ingestion Runs
 - `GET /feed-sources/{id}/ingestion-runs` — history (limit=50 default), includes error details

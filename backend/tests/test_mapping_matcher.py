@@ -134,3 +134,35 @@ def test_existing_sub_mapping_blocks_whole_field_auto(registry):
     existing = {"shipping.country": MappingEntry("shipping.country", "manual")}
     result = auto_match(fields, registry, existing)
     assert result == {"shipping.country": MappingEntry("shipping.country", "manual")}
+
+
+def test_auto_match_rejects_sub_claim_when_whole_attr_claimed(registry):
+    # `<shipping>` whole-matches `shipping`; a second structured element whose
+    # name is not a registry attribute (`taxes`) must not claim a
+    # `shipping.*` sub-target in the sub pass once whole `shipping` is claimed.
+    fields = [
+        SourceField("shipping", "structured", ("country",)),
+        SourceField("taxes", "structured", ("min_transit_time",)),
+    ]
+    result = auto_match(fields, registry)
+    assert "shipping" in result
+    assert result["shipping"] == MappingEntry("shipping", "auto")
+    assert "taxes.min_transit_time" not in result
+
+
+def test_existing_whole_claim_blocks_sub_claim(registry):
+    fields = [SourceField("taxes", "structured", ("min_transit_time",))]
+    existing = {"shipping": MappingEntry("shipping", "manual")}
+    result = auto_match(fields, registry, existing)
+    assert result == {"shipping": MappingEntry("shipping", "manual")}
+
+
+def test_existing_sub_claim_blocks_whole_claim(registry):
+    # Symmetric direction (try_claim guard): a manual `shipping.<sub>` claim
+    # seeded via existing= blocks a whole-attr claim on `shipping`. The
+    # case-variant field name is how this is reached in practice —
+    # has_sub_mapping only suppresses exact `parent.` prefixes.
+    fields = [SourceField("Shipping", "repeated_structured")]
+    existing = {"shipping.country": MappingEntry("shipping.country", "manual")}
+    result = auto_match(fields, registry, existing)
+    assert result == {"shipping.country": MappingEntry("shipping.country", "manual")}

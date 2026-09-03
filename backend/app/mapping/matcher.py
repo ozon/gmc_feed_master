@@ -56,6 +56,8 @@ def auto_match(
     def try_claim(field: SourceField, target: str, origin: str) -> None:
         if field.name in result or target in claimed:
             return
+        if any(claimed_target.startswith(f"{target}.") for claimed_target in claimed):
+            return
         attribute = registry.attributes[target]
         if attribute.kind.value not in _COMPATIBLE_KINDS.get(field.kind, frozenset()):
             return
@@ -64,9 +66,9 @@ def auto_match(
 
     def try_claim_sub(field: SourceField, sub: str, target: str) -> bool:
         key = f"{field.name}.{sub}"
-        if key in result or target in claimed:
-            return False
         attr_name, _, attr_sub = target.partition(".")
+        if key in result or target in claimed or attr_name in claimed:
+            return False
         attribute = registry.attributes.get(attr_name)
         if attribute is None:
             return False
