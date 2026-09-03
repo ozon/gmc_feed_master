@@ -4,13 +4,18 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
-from .constants import EXEMPT_TAXONOMY_IDS, IMAGE_FORMATS, IMAGE_SIZE_ENFORCEMENT_DATE
+from .constants import (
+    BASELINE_REQUIRED,
+    EXEMPT_TAXONOMY_IDS,
+    IMAGE_FORMATS,
+    IMAGE_SIZE_ENFORCEMENT_DATE,
+)
 from .engine import QcContext, Finding
 
 
 class BaselineRequired:
     rule_id = "baseline_required"
-    _REQUIRED = ("id", "link", "image_link", "availability", "price", "condition")
+    _REQUIRED = BASELINE_REQUIRED
 
     async def check(self, product: dict, ctx: QcContext) -> list[Finding]:
         findings = []

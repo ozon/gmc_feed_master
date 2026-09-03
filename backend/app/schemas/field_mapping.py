@@ -43,5 +43,6 @@ class RegistryAttributeOut(BaseModel):
     name: str
     kind: str
     required: str
+    baseline_required: bool
     sub_fields: list[RegistrySubFieldOut]
     enum_values: list[str]

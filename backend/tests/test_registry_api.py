@@ -65,7 +65,7 @@ async def test_registry_attributes_returns_list_with_expected_shape(app_factory)
     assert isinstance(body, list)
     assert len(body) > 0
     for item in body:
-        assert set(item.keys()) == {"name", "kind", "required", "sub_fields", "enum_values"}
+        assert set(item.keys()) == {"name", "kind", "required", "sub_fields", "enum_values", "baseline_required"}
         assert isinstance(item["sub_fields"], list)
         assert isinstance(item["enum_values"], list)
         for sub in item["sub_fields"]:
@@ -94,3 +94,27 @@ async def test_registry_attributes_installment_has_sub_fields(app_factory):
         assert "name" in sub
         assert "type" in sub
         assert "required" in sub
+
+
+async def test_registry_attributes_baseline_required_flag(app_factory):
+    client = await logged_in_client(app_factory)
+    resp = await client.get("/registry/attributes")
+    assert resp.status_code == 200
+    body = resp.json()
+    by_name = {a["name"]: a for a in body}
+
+    assert by_name["id"]["baseline_required"] is True
+    assert by_name["link"]["baseline_required"] is True
+    assert by_name["image_link"]["baseline_required"] is True
+    assert by_name["availability"]["baseline_required"] is True
+    assert by_name["price"]["baseline_required"] is True
+    assert by_name["condition"]["baseline_required"] is True
+    assert by_name["title"]["baseline_required"] is True
+    assert by_name["structured_title"]["baseline_required"] is True
+    assert by_name["description"]["baseline_required"] is True
+    assert by_name["structured_description"]["baseline_required"] is True
+
+    assert by_name["brand"]["baseline_required"] is False
+    assert by_name["vin"]["baseline_required"] is False
+    assert by_name["store_code"]["baseline_required"] is False
+    assert by_name["gtin"]["baseline_required"] is False

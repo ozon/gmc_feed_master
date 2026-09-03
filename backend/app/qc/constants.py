@@ -18,3 +18,17 @@ IMAGE_SIZE_ENFORCEMENT_DATE: date = date(2027, 1, 31)
 IMAGE_FETCH_CAP_BYTES: int = 10 * 1024 * 1024  # 10 MB
 
 IMAGE_CONCURRENCY: int = 8
+
+BASELINE_REQUIRED: tuple[str, ...] = (
+    "id",
+    "link",
+    "image_link",
+    "availability",
+    "price",
+    "condition",
+)
+
+BASELINE_ALTERNATIVE_PAIRS: tuple[tuple[str, str], ...] = (
+    ("title", "structured_title"),
+    ("description", "structured_description"),
+)
