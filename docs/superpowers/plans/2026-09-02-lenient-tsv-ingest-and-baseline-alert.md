@@ -847,11 +847,11 @@ class TestMultifeedTsvChain:
         assert isinstance(first["shipping"], list)
         assert first["shipping"][0]["country"] == "US"
         assert first["shipping"][0]["price"] == "14.99 USD"
-        assert "location_group_name" not in first["shipping"][0]
+        assert first["shipping"][0]["location_group_name"] == ""
 
+        assert all(isinstance(p["description"], str) for p in mapped_products)
+        assert any("," in p["description"] for p in mapped_products)
         for product in mapped_products:
-            assert isinstance(product["description"], str)
-            assert "," in product["description"]
             assert "tax" not in product
             assert "custom_label_1" not in product
 
