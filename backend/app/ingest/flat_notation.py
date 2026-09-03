@@ -59,14 +59,6 @@ def parse_header(
                         column=header,
                     )
 
-                registry_field_names = {f.name for f in attr.fields}
-                for sf in sub_fields:
-                    if sf not in registry_field_names:
-                        raise HeaderError(
-                            f"Column '{header}' references unknown sub-field '{sf}'",
-                            column=header,
-                        )
-
             prev = seen.get(name, 0)
             if prev >= 1:
                 kind = "repeated_structured"

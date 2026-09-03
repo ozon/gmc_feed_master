@@ -135,19 +135,74 @@ class TestParseHeaderBareStructured:
         ]
 
 
-class TestParseHeaderUnknownSubFieldError:
-    def test_unknown_sub_field_raises(self) -> None:
+class TestParseHeaderLenientSubFields:
+    def test_unknown_sub_field_is_kept_positionally(self) -> None:
         reg = _registry({
             "shipping": _structured("shipping", (
                 SubField("country", "String", RequirementStatus.REQUIRED),
                 SubField("price", "Price", RequirementStatus.OPTIONAL),
             )),
         })
-        with pytest.raises(HeaderError, match="contry"):
-            parse_header(["shipping(contry:price)"], reg)
+        plan = parse_header(["shipping(country:unknown_thing:price)"], reg)
+        assert plan.columns == [
+            ColumnSpec(
+                name="shipping",
+                kind="structured",
+                sub_fields=["country", "unknown_thing", "price"],
+            ),
+        ]
+
+    def test_unknown_sub_field_value_alignment_preserved(self) -> None:
+        reg = _registry({
+            "shipping": _structured("shipping", (
+                SubField("country", "String", RequirementStatus.REQUIRED),
+                SubField("price", "Price", RequirementStatus.OPTIONAL),
+            )),
+        })
+        plan = parse_header(["shipping(country:unknown_thing:price)"], reg)
+        result, err = split_row(["US:middle:6.49 USD"], plan)
+        assert err is None
+        assert result == {"shipping": {"country": "US", "unknown_thing": "middle", "price": "6.49 USD"}}
+
+    def test_registry_known_attribute_with_unknown_subfields_repeats_ok(self) -> None:
+        reg = _registry({
+            "tax": _structured("tax", (
+                SubField("country", "String", RequirementStatus.REQUIRED),
+                SubField("rate", "String", RequirementStatus.OPTIONAL),
+                SubField("tax_ship", "Boolean", RequirementStatus.OPTIONAL),
+            )),
+        })
+        plan = parse_header(
+            ["tax(country:location_group_name:rate:tax_ship)", "tax(country:location_group_name:rate:tax_ship)"],
+            reg,
+        )
+        assert plan.columns == [
+            ColumnSpec(
+                name="tax",
+                kind="repeated_structured",
+                sub_fields=["country", "location_group_name", "rate", "tax_ship"],
+                arity=2,
+            ),
+        ]
 
 
 class TestParseHeaderDuplicateScalarError:
+    def test_duplicate_scalar_raises(self) -> None:
+        reg = _registry({
+            "title": _scalar("title"),
+        })
+        with pytest.raises(HeaderError, match="title"):
+            parse_header(["title", "title"], reg)
+
+
+class TestParseHeaderStillStrict:
+    def test_annotating_non_structured_attribute_raises(self) -> None:
+        reg = _registry({
+            "title": _scalar("title"),
+        })
+        with pytest.raises(HeaderError, match="non-structured"):
+            parse_header(["title(a:b)"], reg)
+
     def test_duplicate_scalar_raises(self) -> None:
         reg = _registry({
             "title": _scalar("title"),
