@@ -71,6 +71,19 @@ def _validate_mappings(
                 f"{attribute.kind.value!r} target {target!r}"
             )
             return
+        if len(parts) == 2 and parts[0] in claimed:
+            errors.append(
+                f"{source}: target {target!r} overlaps claim on {parts[0]!r} by {claimed[parts[0]]!r}"
+            )
+            return
+        if len(parts) == 1:
+            for claimed_target, claimed_by in claimed.items():
+                if claimed_target.startswith(f"{parts[0]}."):
+                    errors.append(
+                        f"{source}: target {target!r} overlaps claim on "
+                        f"{claimed_target!r} by {claimed_by!r}"
+                    )
+                    return
         if target in claimed:
             errors.append(f"{source}: target {target!r} already claimed by {claimed[target]!r}")
             return

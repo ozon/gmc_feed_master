@@ -292,3 +292,14 @@ def test_dotted_key_three_segments_unresolvable_skipped(registry):
     )
     assert result == {}
     assert stats == ApplyStats(dropped_unmapped=0, shape_mismatches=0)
+
+
+def test_dotted_key_broadcast_drops_empty_sentinels_for_repeated_scalar(registry):
+    product = {"ship": [{"country": "US"}, {"price": "7"}]}
+    result, stats = apply_mapping(
+        product,
+        {"ship.country": MappingEntry("additional_image_link", "manual")},
+        registry,
+    )
+    assert result == {"additional_image_link": ["US"]}
+    assert stats == ApplyStats(dropped_unmapped=0, shape_mismatches=0)

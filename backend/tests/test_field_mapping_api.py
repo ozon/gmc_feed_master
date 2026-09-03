@@ -481,6 +481,77 @@ async def test_put_nested_key_sub_target_conflicts_across_parents_returns_422(ap
     assert isinstance(resp.json()["errors"], list)
 
 
+async def test_put_whole_and_subfield_target_overlap_returns_422(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory,
+        fs_id,
+        nested_doc(
+            source_field("ship", "structured", ["country"]),
+            source_field("tax", "structured", ["country"]),
+        ),
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={
+            "mappings": {
+                "ship": {"target": "shipping"},
+                "tax.country": {"target": "shipping.country"},
+            }
+        },
+    )
+    assert resp.status_code == 422
+    assert isinstance(resp.json()["errors"], list)
+
+
+async def test_put_subfield_then_whole_target_overlap_returns_422(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory,
+        fs_id,
+        nested_doc(
+            source_field("ship", "structured", ["country"]),
+            source_field("tax", "structured", ["country"]),
+        ),
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={
+            "mappings": {
+                "tax.country": {"target": "shipping.country"},
+                "ship": {"target": "shipping"},
+            }
+        },
+    )
+    assert resp.status_code == 422
+    assert isinstance(resp.json()["errors"], list)
+
+
+async def test_put_two_subfield_targets_same_attr_still_ok(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory,
+        fs_id,
+        nested_doc(source_field("a", "structured", ["months", "amount"])),
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={
+            "mappings": {
+                "a.months": {"target": "installment.months"},
+                "a.amount": {"target": "installment.amount"},
+            }
+        },
+    )
+    assert resp.status_code == 200
+
+
 async def test_put_exact_source_name_wins_over_path_resolution(app_factory):
     _, factory = app_factory
     client = await logged_in_client(app_factory)

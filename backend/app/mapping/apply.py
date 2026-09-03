@@ -148,7 +148,7 @@ def _apply_entry(
         if isinstance(value, str):
             result[attr_name] = [value]
         elif isinstance(value, list) and all(isinstance(item, str) for item in value):
-            result[attr_name] = list(value)
+            result[attr_name] = [item for item in value if item != ""]
         else:
             stats.shape_mismatches += 1
     elif kind is AttributeKind.STRUCTURED:
