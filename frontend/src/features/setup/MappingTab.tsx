@@ -100,7 +100,18 @@ export function MappingTab() {
 
   const handleTargetChange = useCallback(
     (source: string, target: string | null) => {
-      setLocalEdits((prev) => ({ ...prev, [source]: target }));
+      setLocalEdits((prev) => {
+        const next = { ...prev, [source]: target };
+        const dotIndex = source.indexOf('.');
+        if (dotIndex > 0) {
+          next[source.slice(0, dotIndex)] = null;
+        } else {
+          for (const key of Object.keys(next)) {
+            if (key.startsWith(`${source}.`)) next[key] = null;
+          }
+        }
+        return next;
+      });
     },
     [],
   );

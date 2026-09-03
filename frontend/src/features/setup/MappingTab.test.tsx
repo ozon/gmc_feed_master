@@ -428,4 +428,56 @@ describe('MappingTab', () => {
       expect(screen.queryByText(/required registry attributes not covered/i)).not.toBeInTheDocument();
     });
   });
+
+  it('save PUTs dotted sub-field keys and clears the conflicting parent edit', async () => {
+    const user = userEvent.setup();
+    const doc: FieldMappingDoc = {
+      ...mappingDoc,
+      source_fields: [
+        ...mappingDoc.source_fields,
+        { name: 'ship', kind: 'structured', sub_fields: ['country'] },
+      ],
+    };
+    fetchMock = stubFetch((url) => {
+      if (url === '/feed-sources/1/field-mapping') {
+        if (fetchMock.mock.calls.some(
+          ([input, init]) => String(input) === url && init?.method === 'PUT',
+        )) {
+          return jsonResponse({ ...doc, auto_mapped: false });
+        }
+        return jsonResponse(doc);
+      }
+      if (url === '/registry/attributes') return jsonResponse(registryAttrs);
+      return jsonResponse({});
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('ship')).toBeInTheDocument();
+    });
+
+    const toggle = document.querySelector('[data-sub-toggle="ship"]') as HTMLElement;
+    await user.click(toggle);
+    const subRow = (await screen.findByText('country', { selector: 'td p' })).closest('tr')!;
+    const select = subRow.querySelector('[role="combobox"]') as HTMLElement;
+    await user.click(select);
+    const option = await screen.findByRole('option', { name: 'installment.months' });
+    await user.click(option);
+
+    const saveBtn = screen.getByRole('button', { name: /save/i });
+    await waitFor(() => expect(saveBtn).toBeEnabled());
+    await user.click(saveBtn);
+
+    await waitFor(() => {
+      const body = putBody('/feed-sources/1/field-mapping');
+      expect(body).toBeDefined();
+      expect(body?.mappings).toEqual(
+        expect.objectContaining({
+          'ship.country': { target: 'installment.months' },
+        }),
+      );
+      expect((body?.mappings as Record<string, unknown>)['ship']).toBeUndefined();
+    });
+  });
 });
