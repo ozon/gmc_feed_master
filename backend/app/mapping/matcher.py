@@ -49,6 +49,10 @@ def auto_match(
     claimed = {entry.target for entry in result.values()}
     by_normalized = {_normalize(name): name for name in registry.attributes}
 
+    def has_sub_mapping(field: SourceField) -> bool:
+        prefix = f"{field.name}."
+        return any(key.startswith(prefix) for key in result)
+
     def try_claim(field: SourceField, target: str, origin: str) -> None:
         if field.name in result or target in claimed:
             return
@@ -58,16 +62,65 @@ def auto_match(
         result[field.name] = MappingEntry(target=target, origin=origin)
         claimed.add(target)
 
+    def try_claim_sub(field: SourceField, sub: str, target: str) -> bool:
+        key = f"{field.name}.{sub}"
+        if key in result or target in claimed:
+            return False
+        attr_name, _, attr_sub = target.partition(".")
+        attribute = registry.attributes.get(attr_name)
+        if attribute is None:
+            return False
+        effective = _SUB_EFFECTIVE_KINDS.get(field.kind, "")
+        if attr_sub:
+            if attribute.kind.value not in ("structured", "repeated_structured"):
+                return False
+            if attr_sub not in {f.name for f in attribute.fields}:
+                return False
+        elif attribute.kind.value not in _COMPATIBLE_KINDS.get(effective, frozenset()):
+            return False
+        result[key] = MappingEntry(target=target, origin="auto")
+        claimed.add(target)
+        return True
+
     # Two passes enforce priority: auto (exact/normalized) beats synonym,
     # and within a pass the first source field in order wins the target.
+    # A parent with any existing sub-mapping is protected from whole-field
+    # auto/synonym claims (exclusivity).
     for field in source_fields:
+        if has_sub_mapping(field):
+            continue
         target = by_normalized.get(_normalize(field.name))
         if target is not None:
             try_claim(field, target, "auto")
 
     for field in source_fields:
+        if has_sub_mapping(field):
+            continue
         target = SYNONYMS.get(_normalize(field.name))
         if target is not None and target in registry.attributes:
             try_claim(field, target, "synonym")
+
+    # Sub-field pass: for every structured source field without a whole
+    # mapping, each sub name is matched first against whole attribute names,
+    # then against attr.subfield paths (registry declared order, first
+    # unclaimed compatible match wins). No sub-level synonyms.
+    for field in source_fields:
+        if field.kind not in _STRUCTURED_SOURCE_KINDS or field.name in result:
+            continue
+        for sub in field.sub_fields:
+            whole_target = by_normalized.get(_normalize(sub))
+            if whole_target is not None and try_claim_sub(field, sub, whole_target):
+                continue
+            for attr_name, attribute in registry.attributes.items():
+                if attribute.kind.value not in ("structured", "repeated_structured"):
+                    continue
+                for attr_sub in attribute.fields:
+                    if _normalize(attr_sub.name) == _normalize(sub) and try_claim_sub(
+                        field, sub, f"{attr_name}.{attr_sub.name}"
+                    ):
+                        break
+                else:
+                    continue
+                break
 
     return result

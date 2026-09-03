@@ -82,3 +82,55 @@ def test_manual_beats_auto_on_target_conflict(registry):
 def test_unknown_field_unmapped(registry):
     result = auto_match([SourceField("margin", "scalar")], registry)
     assert result == {}
+
+
+def test_sub_field_prefers_whole_attribute_match(registry):
+    fields = [SourceField("ship", "structured", ("price",))]
+    result = auto_match(fields, registry)
+    assert result == {"ship.price": MappingEntry("price", "auto")}
+
+
+def test_sub_field_matches_unique_subfield_path(registry):
+    fields = [SourceField("fin", "structured", ("months",))]
+    result = auto_match(fields, registry)
+    assert result == {"fin.months": MappingEntry("installment.months", "auto")}
+
+
+def test_sub_field_normalized_match(registry):
+    fields = [SourceField("ship", "structured", ("Sale_Price",))]
+    result = auto_match(fields, registry)
+    assert result == {"ship.Sale_Price": MappingEntry("sale_price", "auto")}
+
+
+def test_sub_field_of_repeated_structured_uses_repeated_scalar_kind(registry):
+    fields = [SourceField("imgs", "repeated_structured", ("additional_image_link",))]
+    result = auto_match(fields, registry)
+    assert result == {
+        "imgs.additional_image_link": MappingEntry("additional_image_link", "auto")
+    }
+
+
+def test_sub_field_kind_incompatible_no_match(registry):
+    fields = [SourceField("box", "structured", ("shipping",))]
+    result = auto_match(fields, registry)
+    assert result == {}
+
+
+def test_sub_field_no_synonyms(registry):
+    fields = [SourceField("box", "structured", ("ean",))]
+    result = auto_match(fields, registry)
+    assert result == {}
+
+
+def test_whole_field_mapping_suppresses_sub_pass(registry):
+    fields = [SourceField("ship", "structured", ("country",))]
+    existing = {"ship": MappingEntry("shipping", "manual")}
+    result = auto_match(fields, registry, existing)
+    assert result == {"ship": MappingEntry("shipping", "manual")}
+
+
+def test_existing_sub_mapping_blocks_whole_field_auto(registry):
+    fields = [SourceField("ship", "structured", ("country",))]
+    existing = {"ship.country": MappingEntry("shipping.country", "manual")}
+    result = auto_match(fields, registry, existing)
+    assert result == {"ship.country": MappingEntry("shipping.country", "manual")}
