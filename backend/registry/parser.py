@@ -303,6 +303,24 @@ def _type_info(syntax: str, description: str, line: int):
             base, (), enums, cardinality)
 
 
+_NUMERIC_RANGE_RE = re.compile(r"^`([^`]+?)_(\d+)`\s*…\s*`([^`]+?)_(\d+)`$")
+
+
+def _expand_names(raw_names: str) -> list[str]:
+    """Extract attribute names from a Field cell, expanding documented ranges.
+
+    `` `custom_label_0` … `custom_label_4` `` documents five attributes whose
+    definitions are identical; the endpoints alone would leave the middle
+    slots (custom_label_1..3) missing from the registry.
+    """
+    m = _NUMERIC_RANGE_RE.match(raw_names.strip())
+    if m:
+        prefix, start, end_prefix, end = m.group(1), int(m.group(2)), m.group(3), int(m.group(4))
+        if prefix == end_prefix and start <= end and end - start < 100:
+            return [f"{prefix}_{i}" for i in range(start, end + 1)]
+    return list(re.findall(r"`([^`]+)`", raw_names) or [raw_names.strip()])
+
+
 def _requirement_qualifiers(requirement_text: str, description: str) -> tuple[str, ...]:
     text = f"{requirement_text} {description}"
     qualifiers: list[str] = []
@@ -356,7 +374,8 @@ def parse_gmc_markdown(path: Path) -> RegistryDocument:
                 deprecated_vehicle = section == "deprecated" and re.search(r"vehicle|vehicle feeds", description, re.I)
                 kind, type_name, fields, enums, cardinality = _type_info(syntax, description, row_line)
                 qualifiers = _requirement_qualifiers(requirement_text, description)
-                for name in (n.strip() for n in (re.findall(r"`([^`]+)`", raw_names) or [raw_names.strip()])):
+                for name in _expand_names(raw_names):
+                    name = name.strip()
                     if name in attributes:
                         old = attributes[name]
                         cross_section_repeat = domain in old.applicability or (not old.applicability and domain is old.domain)

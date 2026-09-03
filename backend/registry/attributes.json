@@ -583,6 +583,84 @@
       },
       "fields": []
     },
+    "custom_label_1": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "source_line": 127,
+      "source_lines": [
+        127
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Free labels for campaign segmentation; max. 100 chars, up to 1000 unique values per label"
+      },
+      "enum_values": [],
+      "cardinality": {
+        "max_items": 1000
+      },
+      "constraints": {
+        "max_length": 100,
+        "min_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "custom_label_2": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "source_line": 127,
+      "source_lines": [
+        127
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Free labels for campaign segmentation; max. 100 chars, up to 1000 unique values per label"
+      },
+      "enum_values": [],
+      "cardinality": {
+        "max_items": 1000
+      },
+      "constraints": {
+        "max_length": 100,
+        "min_length": null,
+        "format": null
+      },
+      "fields": []
+    },
+    "custom_label_3": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "source_line": 127,
+      "source_lines": [
+        127
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Free labels for campaign segmentation; max. 100 chars, up to 1000 unique values per label"
+      },
+      "enum_values": [],
+      "cardinality": {
+        "max_items": 1000
+      },
+      "constraints": {
+        "max_length": 100,
+        "min_length": null,
+        "format": null
+      },
+      "fields": []
+    },
     "custom_label_4": {
       "kind": "scalar",
       "type": "String",

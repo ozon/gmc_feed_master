@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pytest
 
+import re
+
 from registry.model import AttributeKind, ExportStatus, FeedDomain
 from registry.parser import RegistryParseError, parse_gmc_markdown
 
@@ -128,6 +130,25 @@ def test_full_source_preserves_ranges_structured_plus_order_and_requirement_note
         assert "required_from:2026-09-30" in attribute.qualifiers
     window_days = next(field for field in document.attributes["returns"].fields if field.name == "window_days")
     assert window_days.required == "conditional"
+
+
+def test_expands_numeric_attribute_ranges_from_backticked_endpoints():
+    document = parse_gmc_markdown(Path(__file__).parents[2] / "gmc_def.md")
+
+    for index in range(5):
+        name = f"custom_label_{index}"
+        assert name in document.attributes, name
+        attribute = document.attributes[name]
+        assert attribute.constraints.max_length == 100
+        assert attribute.cardinality.max_items == 1000
+        assert attribute.required == "optional"
+
+    names = [
+        n
+        for n in document.attributes
+        if re.match(r"custom_label_\d+$", n)
+    ]
+    assert sorted(names) == [f"custom_label_{i}" for i in range(5)]
 
 
 def test_cardinality_min_items_item_max_length_and_parser_regex_fixes():
