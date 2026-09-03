@@ -130,7 +130,7 @@ def test_whole_field_mapping_suppresses_sub_pass(registry):
 
 
 def test_existing_sub_mapping_blocks_whole_field_auto(registry):
-    fields = [SourceField("ship", "structured", ("country",))]
-    existing = {"ship.country": MappingEntry("shipping.country", "manual")}
+    fields = [SourceField("shipping", "structured", ("country",))]
+    existing = {"shipping.country": MappingEntry("shipping.country", "manual")}
     result = auto_match(fields, registry, existing)
-    assert result == {"ship.country": MappingEntry("shipping.country", "manual")}
+    assert result == {"shipping.country": MappingEntry("shipping.country", "manual")}

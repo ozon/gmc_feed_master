@@ -72,7 +72,7 @@ def auto_match(
             return False
         effective = _SUB_EFFECTIVE_KINDS.get(field.kind, "")
         if attr_sub:
-            if attribute.kind.value not in ("structured", "repeated_structured"):
+            if attribute.kind.value not in _STRUCTURED_SOURCE_KINDS:
                 return False
             if attr_sub not in {f.name for f in attribute.fields}:
                 return False
@@ -84,8 +84,6 @@ def auto_match(
 
     # Two passes enforce priority: auto (exact/normalized) beats synonym,
     # and within a pass the first source field in order wins the target.
-    # A parent with any existing sub-mapping is protected from whole-field
-    # auto/synonym claims (exclusivity).
     for field in source_fields:
         if has_sub_mapping(field):
             continue
@@ -100,10 +98,6 @@ def auto_match(
         if target is not None and target in registry.attributes:
             try_claim(field, target, "synonym")
 
-    # Sub-field pass: for every structured source field without a whole
-    # mapping, each sub name is matched first against whole attribute names,
-    # then against attr.subfield paths (registry declared order, first
-    # unclaimed compatible match wins). No sub-level synonyms.
     for field in source_fields:
         if field.kind not in _STRUCTURED_SOURCE_KINDS or field.name in result:
             continue
@@ -112,7 +106,7 @@ def auto_match(
             if whole_target is not None and try_claim_sub(field, sub, whole_target):
                 continue
             for attr_name, attribute in registry.attributes.items():
-                if attribute.kind.value not in ("structured", "repeated_structured"):
+                if attribute.kind.value not in _STRUCTURED_SOURCE_KINDS:
                     continue
                 for attr_sub in attribute.fields:
                     if _normalize(attr_sub.name) == _normalize(sub) and try_claim_sub(
