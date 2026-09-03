@@ -114,10 +114,12 @@ export type ProductListItem = {
   availability: string | null;
   price: string | null;
   condition: string | null;
+  raw_data: Record<string, unknown>;
 };
 
 export type ProductsPageResponse = {
   items: ProductListItem[];
+  fields: string[];
   total: number;
   page: number;
   page_size: number;

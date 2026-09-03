@@ -3,23 +3,18 @@ import type { TFunction } from 'i18next';
 import dayjs from 'dayjs';
 import type { ProductListItem } from '../../api/types';
 
-export type ProductColumnId =
-  | 'product_id'
-  | 'id'
-  | 'title'
-  | 'description'
-  | 'link'
-  | 'image_link'
-  | 'availability'
-  | 'price'
-  | 'condition'
-  | 'status'
-  | 'last_seen_at';
+export type ProductColumnId = string;
 
 export type ProductColumn = {
   id: ProductColumnId;
   label: string;
 };
+
+export const SYSTEM_COLUMNS: ProductColumnId[] = [
+  'product_id',
+  'status',
+  'last_seen_at',
+];
 
 export const DEFAULT_COLUMNS: ProductColumnId[] = [
   'id',
@@ -33,22 +28,35 @@ export const DEFAULT_COLUMNS: ProductColumnId[] = [
   'status',
 ];
 
-export function useProductColumns(t: TFunction<'products'>): ProductColumn[] {
+const BASELINE_LABEL_KEYS: Record<string, string> = {
+  product_id: 'colProductId',
+  id: 'colId',
+  title: 'colTitle',
+  description: 'colDescription',
+  link: 'colLink',
+  image_link: 'colImageLink',
+  availability: 'colAvailability',
+  price: 'colPrice',
+  condition: 'colCondition',
+  status: 'colStatus',
+  last_seen_at: 'colLastSeenAt',
+};
+
+export function columnLabel(id: ProductColumnId, t: TFunction<'products'>): string {
+  const key = BASELINE_LABEL_KEYS[id];
+  return key ? t(key as 'colId') : id;
+}
+
+export function useProductColumns(
+  t: TFunction<'products'>,
+  fields: string[],
+): ProductColumn[] {
   return useMemo<ProductColumn[]>(
-    () => [
-      { id: 'product_id', label: t('colProductId') },
-      { id: 'id', label: t('colId') },
-      { id: 'title', label: t('colTitle') },
-      { id: 'description', label: t('colDescription') },
-      { id: 'link', label: t('colLink') },
-      { id: 'image_link', label: t('colImageLink') },
-      { id: 'availability', label: t('colAvailability') },
-      { id: 'price', label: t('colPrice') },
-      { id: 'condition', label: t('colCondition') },
-      { id: 'status', label: t('colStatus') },
-      { id: 'last_seen_at', label: t('colLastSeenAt') },
-    ],
-    [t],
+    () => {
+      const ids = [...SYSTEM_COLUMNS, ...fields];
+      return ids.map((id) => ({ id, label: columnLabel(id, t) }));
+    },
+    [t, fields],
   );
 }
 
@@ -73,10 +81,16 @@ export function formatCellValue(
   id: ProductColumnId,
   row: ProductListItem,
 ): string {
-  const value = row[id as keyof ProductListItem];
-  if (value == null) return '';
   if (id === 'last_seen_at') {
-    return dayjs(value as string).format('L LTS');
+    return dayjs(row.last_seen_at).format('L LTS');
   }
-  return String(value);
+  if (id in row && id !== 'raw_data') {
+    const value = row[id as keyof ProductListItem];
+    if (value == null) return '';
+    return String(value);
+  }
+  const raw = row.raw_data?.[id];
+  if (raw == null) return '';
+  if (typeof raw === 'string') return raw;
+  return JSON.stringify(raw);
 }

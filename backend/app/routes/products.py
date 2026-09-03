@@ -34,10 +34,18 @@ def _list_item(row: StagingProduct) -> dict:
         "id": raw.get("id", row.product_id),
         "status": row.status,
         "last_seen_at": row.last_seen_at.isoformat(),
+        "raw_data": raw,
     }
     for field in _BASELINE_FIELDS:
         item[field] = raw.get(field)
     return item
+
+
+def _fields_union(rows: list[StagingProduct]) -> list[str]:
+    fields: set[str] = set()
+    for row in rows:
+        fields.update((row.raw_data or {}).keys())
+    return sorted(fields)
 
 
 async def _require_feed_source(session: AsyncSession, feed_source_id: int) -> None:
@@ -90,6 +98,7 @@ async def list_products(
         )).scalars())
     return {
         "items": [_list_item(row) for row in rows],
+        "fields": _fields_union(rows),
         "total": total,
         "page": page,
         "page_size": page_size,

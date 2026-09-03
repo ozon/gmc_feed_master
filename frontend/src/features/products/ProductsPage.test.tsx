@@ -26,6 +26,7 @@ const page1Items = Array.from({ length: 5 }, (_, i) => ({
   availability: 'in_stock',
   price: `${(i + 1) * 10}.99`,
   condition: 'new',
+  raw_data: { brand: `Brand ${i + 1}` },
 }));
 
 const page2Items = Array.from({ length: 2 }, (_, i) => ({
@@ -40,10 +41,15 @@ const page2Items = Array.from({ length: 2 }, (_, i) => ({
   availability: 'in_stock',
   price: `${(i + 6) * 10}.99`,
   condition: 'new',
+  raw_data: { brand: `Brand ${i + 6}` },
 }));
 
 const productsPage1: ProductsPageResponse = {
   items: page1Items,
+  fields: [
+    'availability', 'brand', 'condition', 'description', 'id',
+    'image_link', 'link', 'price', 'title',
+  ],
   total: 7,
   page: 1,
   page_size: 5,
@@ -51,6 +57,10 @@ const productsPage1: ProductsPageResponse = {
 
 const productsPage2: ProductsPageResponse = {
   items: page2Items,
+  fields: [
+    'availability', 'brand', 'condition', 'description', 'id',
+    'image_link', 'link', 'price', 'title',
+  ],
   total: 7,
   page: 2,
   page_size: 5,
@@ -204,6 +214,45 @@ describe('ProductsPage', () => {
       localStorage.getItem('products.columns.2') ?? '[]',
     ) as string[];
     expect(stored).not.toContain('condition');
+  });
+
+  it('shows data fields present in the feed in the column picker', async () => {
+    const user = userEvent.setup();
+    setupFetch((url) => {
+      if (url.includes('/feed-sources/2/products')) return jsonResponse(productsPage1);
+      return jsonResponse({});
+    });
+
+    render(<App />);
+    await screen.findByText('Product 1');
+
+    await user.click(screen.getByRole('button', { name: /columns/i }));
+    expect(await screen.findByRole('checkbox', { name: /brand/i })).toBeInTheDocument();
+  });
+
+  it('toggling a data field adds the column with values', async () => {
+    const user = userEvent.setup();
+    setupFetch((url) => {
+      if (url.includes('/feed-sources/2/products')) return jsonResponse(productsPage1);
+      return jsonResponse({});
+    });
+
+    render(<App />);
+    await screen.findByText('Product 1');
+
+    await user.click(screen.getByRole('button', { name: /columns/i }));
+    const brandCheckbox = await screen.findByRole('checkbox', { name: /brand/i });
+    await user.click(brandCheckbox);
+
+    // Column header appears and rows show the brand value from raw_data.
+    expect(await screen.findByRole('columnheader', { name: /brand/i })).toBeInTheDocument();
+    expect(screen.getByText('Brand 1')).toBeInTheDocument();
+    expect(screen.getByText('Brand 5')).toBeInTheDocument();
+
+    const stored = JSON.parse(
+      localStorage.getItem('products.columns.2') ?? '[]',
+    ) as string[];
+    expect(stored).toContain('brand');
   });
 
   it('opens drawer on row click with raw_data', async () => {

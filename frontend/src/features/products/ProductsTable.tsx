@@ -12,6 +12,7 @@ import { useTable } from '@tanstack/react-table';
 import { rowPaginationFeature, rowSortingFeature, columnVisibilityFeature } from '@tanstack/table-core';
 import type { ProductListItem, ProductsPageResponse } from '../../api/types';
 import type { ProductColumnId } from './columns';
+import { columnLabel, formatCellValue } from './columns';
 import { EmptyState } from '../../components/StateViews';
 
 type SortState = { id: string; desc: boolean } | null;
@@ -27,19 +28,9 @@ type ProductsTableProps = {
   onRowClick: (productId: string) => void;
 };
 
-const COLUMN_ACCESSORS: Record<ProductColumnId, (row: ProductListItem) => string> = {
-  product_id: (row) => row.product_id,
-  id: (row) => row.id,
-  title: (row) => row.title ?? '',
-  description: (row) => row.description ?? '',
-  link: (row) => row.link ?? '',
-  image_link: (row) => row.image_link ?? '',
-  availability: (row) => row.availability ?? '',
-  price: (row) => row.price ?? '',
-  condition: (row) => row.condition ?? '',
-  status: (row) => row.status,
-  last_seen_at: (row) => row.last_seen_at,
-};
+// Mirrors backend _SORTS (app/routes/products.py) — the only ids the
+// backend accepts for the `sort` query param.
+const SORTABLE_COLUMN_IDS = new Set(['product_id', 'title', 'status', 'last_seen_at']);
 
 export function ProductsTable({
   response,
@@ -54,24 +45,13 @@ export function ProductsTable({
   const { t } = useTranslation('products');
   const { items, total } = response;
 
-  const columnLabels: Record<ProductColumnId, string> = {
-    product_id: t('colProductId'),
-    id: t('colId'),
-    title: t('colTitle'),
-    description: t('colDescription'),
-    link: t('colLink'),
-    image_link: t('colImageLink'),
-    availability: t('colAvailability'),
-    price: t('colPrice'),
-    condition: t('colCondition'),
-    status: t('colStatus'),
-    last_seen_at: t('colLastSeenAt'),
-  };
-
   const columns = visibleColumns.map((colId) => ({
     id: colId,
-    header: columnLabels[colId],
-    accessorFn: (row: ProductListItem) => COLUMN_ACCESSORS[colId](row),
+    header: columnLabel(colId, t),
+    accessorFn: (row: ProductListItem) => formatCellValue(colId, row),
+    // Only ids with backend SQL sort support are sortable; dynamic raw_data
+    // fields would produce a 422 from the list endpoint.
+    enableSorting: SORTABLE_COLUMN_IDS.has(colId),
   }));
 
   const columnVisibility: Record<string, boolean> = {};

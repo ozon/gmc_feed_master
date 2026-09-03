@@ -47,6 +47,10 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 ### Quality Findings
 - `GET /feed-sources/{id}/quality-findings` — current findings grouped by severity/rule
 
+### Products
+- `GET /feed-sources/{id}/products` — paginated staged products (raw stage only). Params: `page`, `page_size` (≤200), `q` (id/title substring), `status` (`active`/`removed`/`all`), `sort` (`product_id`/`title`/`status`/`last_seen_at`, `-` prefix for descending). Response: `{items, fields, total, page, page_size}` where `fields` is the sorted union of `raw_data` keys across the returned rows (drives the UI column picker) and each item carries its full `raw_data` alongside the baseline fields (`title`, `description`, `link`, `image_link`, `availability`, `price`, `condition`)
+- `GET /feed-sources/{id}/products/{product_id}` — single product with status, hashes and full `raw_data`
+
 ### Export History
 - `GET /feed-sources/{id}/export-history` — list versions
 - `GET /feed-sources/{id}/export-history/{v}/diff?against={v2}` — field-based diff (per product + attribute, old vs new)

@@ -8,6 +8,7 @@ import { useProductList } from '../../api/hooks';
 import { LoadingState, ErrorState } from '../../components/StateViews';
 import {
   DEFAULT_COLUMNS,
+  SYSTEM_COLUMNS,
   type ProductColumnId,
   useProductColumns,
   loadColumnConfig,
@@ -22,7 +23,6 @@ export function ProductsPage() {
   const { t } = useTranslation('products');
   const { feedSourceId } = useParams<{ feedSourceId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const columns = useProductColumns(t);
 
   const qParam = searchParams.get('q') ?? '';
   const statusParam = searchParams.get('status') ?? 'all';
@@ -32,6 +32,21 @@ export function ProductsPage() {
 
   const [searchInput, setSearchInput] = useState(qParam);
   const [debouncedQ] = useDebouncedValue(searchInput, 300);
+
+  const query = useProductList(feedSourceId ?? '', {
+    page: pageParam,
+    page_size: pageSizeParam,
+    q: debouncedQ || undefined,
+    status: statusParam || undefined,
+    sort: sortParam || undefined,
+  });
+
+  const dataFields = query.data?.fields ?? [];
+  const columns = useProductColumns(t, dataFields);
+  const availableColumnIds = useMemo(
+    () => new Set([...SYSTEM_COLUMNS, ...dataFields]),
+    [dataFields],
+  );
 
   const sortState: SortState = useMemo(() => {
     if (!sortParam) return null;
@@ -102,19 +117,17 @@ export function ProductsPage() {
     }
   };
 
-  const query = useProductList(feedSourceId ?? '', {
-    page: pageParam,
-    page_size: pageSizeParam,
-    q: debouncedQ || undefined,
-    status: statusParam || undefined,
-    sort: sortParam || undefined,
-  });
-
   if (!feedSourceId) return <ErrorState />;
   if (query.isPending) return <LoadingState />;
   if (query.isError) {
     return <ErrorState onRetry={() => void query.refetch()} />;
   }
+
+  // Saved column ids absent from the current data stay persisted (so they
+  // return when data has them again) but are not rendered as columns.
+  const renderableColumnIds = visibleColumnIds.filter((id) =>
+    availableColumnIds.has(id),
+  );
 
   return (
     <Stack gap="md">
@@ -171,7 +184,7 @@ export function ProductsPage() {
       </Group>
       <ProductsTable
         response={query.data}
-        visibleColumns={visibleColumnIds}
+        visibleColumns={renderableColumnIds}
         sort={sortState}
         onSortChange={handleSortChange}
         pageIndex={pageParam - 1}

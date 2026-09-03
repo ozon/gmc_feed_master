@@ -139,6 +139,29 @@ async def test_products_pagination_search_filter_sort(app_factory):
     assert (await client.get(f"/feed-sources/{feed_id}/products", params={"status": "bogus"})).status_code == 422
 
 
+async def test_products_list_returns_fields_union_and_raw_data(app_factory):
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    products = [
+        ("a", {"id": "a", **_BASE, "title": "Alpha", "brand": "Acme",
+               "custom_label_2": "sale"}, "active"),
+        ("b", {"id": "b", **_BASE, "title": "Beta", "brand": "Acme"}, "active"),
+    ]
+    feed_id = await _setup_feed(factory, client, products)
+
+    body = (await client.get(f"/feed-sources/{feed_id}/products")).json()
+    # Union of raw_data keys across the returned rows, sorted.
+    assert body["fields"] == [
+        "availability", "brand", "condition", "custom_label_2",
+        "description", "id", "image_link", "link", "price", "title",
+    ]
+    # Baseline keys stay on items; raw_data is attached per item.
+    for key in ("id", "title", "description", "price", "condition"):
+        assert key in body["items"][0]
+    assert body["items"][0]["raw_data"]["brand"] == "Acme"
+    assert body["items"][1]["raw_data"].get("custom_label_2") is None
+
+
 async def test_product_detail_returns_full_raw_data(app_factory):
     app, factory = app_factory
     client = await logged_in_client(app_factory)
