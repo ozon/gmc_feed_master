@@ -50,6 +50,17 @@ def _repeated_structured(name: str, fields: tuple[SubField, ...]) -> RegistryAtt
     )
 
 
+def _repeated_scalar(name: str) -> RegistryAttribute:
+    return RegistryAttribute(
+        name=name,
+        kind=AttributeKind.REPEATED_SCALAR,
+        type="URL",
+        required=RequirementStatus.OPTIONAL,
+        domain=FeedDomain.PRIMARY,
+        export_status=ExportStatus.EXPORTABLE,
+    )
+
+
 def _registry(attrs: dict[str, RegistryAttribute]) -> RegistryDocument:
     return RegistryDocument(attributes=attrs)
 
@@ -134,7 +145,7 @@ class TestRepeatedScalar:
         reg = _registry({
             "id": _scalar("id"),
             "title": _scalar("title"),
-            "additional_image_link": _scalar("additional_image_link"),
+            "additional_image_link": _repeated_scalar("additional_image_link"),
         })
         data = (_FIXTURES / "repeated.tsv").read_bytes()
         report = parse_delimited(data, "tsv", reg)
@@ -228,6 +239,20 @@ class TestRFC4180:
         assert "\n" not in first["title"]
         assert "shipping" in first and isinstance(first["shipping"], dict)
         assert isinstance(first["additional_image_link"], list)
+
+
+class TestScalarCommaContent:
+    def test_scalar_description_with_commas_not_split(self) -> None:
+        reg = _registry({
+            "id": _scalar("id"),
+            "description": _scalar("description"),
+        })
+        data = b"id\tdescription\n1\tClassic, confident, crafted\n"
+        report = parse_delimited(data, "tsv", reg)
+
+        assert report.row_errors == []
+        assert len(report.products) == 1
+        assert report.products[0]["description"] == "Classic, confident, crafted"
 
 
 class TestEmptyCells:

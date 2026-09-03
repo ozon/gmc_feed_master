@@ -135,6 +135,24 @@ class TestParseHeaderBareStructured:
         ]
 
 
+class TestParseHeaderBareRepeatedScalar:
+    def test_bare_repeated_scalar_attribute_kind(self) -> None:
+        reg = _registry({
+            "additional_image_link": RegistryAttribute(
+                name="additional_image_link",
+                kind=AttributeKind.REPEATED_SCALAR,
+                type="URL",
+                required=RequirementStatus.OPTIONAL,
+                domain=FeedDomain.PRIMARY,
+                export_status=ExportStatus.EXPORTABLE,
+            ),
+        })
+        plan = parse_header(["additional_image_link"], reg)
+        assert plan.columns == [
+            ColumnSpec(name="additional_image_link", kind="repeated_scalar", sub_fields=[]),
+        ]
+
+
 class TestParseHeaderLenientSubFields:
     def test_unknown_sub_field_is_kept_positionally(self) -> None:
         reg = _registry({
@@ -241,7 +259,7 @@ class TestSplitRowScalar:
 class TestSplitRowRepeatedScalar:
     def test_comma_separated(self) -> None:
         plan = HeaderPlan(columns=[
-            ColumnSpec(name="additional_image_link", kind="scalar", sub_fields=[]),
+            ColumnSpec(name="additional_image_link", kind="repeated_scalar", sub_fields=[]),
         ])
         result, err = split_row(["img1.jpg,img2.jpg"], plan)
         assert result == {"additional_image_link": ["img1.jpg", "img2.jpg"]}
@@ -249,7 +267,7 @@ class TestSplitRowRepeatedScalar:
 
     def test_quoted_comma_preserved(self) -> None:
         plan = HeaderPlan(columns=[
-            ColumnSpec(name="additional_image_link", kind="scalar", sub_fields=[]),
+            ColumnSpec(name="additional_image_link", kind="repeated_scalar", sub_fields=[]),
         ])
         result, err = split_row(['"img1.jpg,img2.jpg"'], plan)
         assert result == {"additional_image_link": ["img1.jpg,img2.jpg"]}
@@ -257,10 +275,28 @@ class TestSplitRowRepeatedScalar:
 
     def test_single_value_no_split(self) -> None:
         plan = HeaderPlan(columns=[
-            ColumnSpec(name="additional_image_link", kind="scalar", sub_fields=[]),
+            ColumnSpec(name="additional_image_link", kind="repeated_scalar", sub_fields=[]),
         ])
         result, err = split_row(["img1.jpg"], plan)
         assert result == {"additional_image_link": "img1.jpg"}
+        assert err is None
+
+
+class TestSplitRowScalarKeepsCommas:
+    def test_scalar_cell_with_commas_stays_whole(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="description", kind="scalar", sub_fields=[]),
+        ])
+        result, err = split_row(["Classic, confident, crafted"], plan)
+        assert result == {"description": "Classic, confident, crafted"}
+        assert err is None
+
+    def test_generic_cell_with_commas_stays_whole(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="internal_note", kind="generic", sub_fields=[]),
+        ])
+        result, err = split_row(["note one, note two"], plan)
+        assert result == {"internal_note": "note one, note two"}
         assert err is None
 
 

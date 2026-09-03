@@ -92,6 +92,8 @@ def parse_header(
                     AttributeKind.REPEATED_STRUCTURED,
                 ):
                     kind = "generic"
+                elif attr.kind is AttributeKind.REPEATED_SCALAR:
+                    kind = "repeated_scalar"
                 else:
                     kind = "scalar"
             else:
@@ -185,12 +187,15 @@ def split_row(
             result[spec.name] = dict(zip(spec.sub_fields, parts))
 
         else:
-            # scalar or generic
+            # scalar, repeated_scalar or generic
             cell = cells[col_idx] if col_idx < len(cells) else ""
             col_idx += 1
             if not cell:
                 continue
-            values = _split_csv_cell(cell)
+            if spec.kind == "repeated_scalar":
+                values = _split_csv_cell(cell)
+            else:
+                values = cell
             result[spec.name] = values
 
     return result, None
