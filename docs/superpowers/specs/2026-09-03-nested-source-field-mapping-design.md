@@ -100,12 +100,14 @@ For each mapping key that is not an exact source-field name:
 
 Sub-path key resolution (exact-name-first, same rule):
 
-- Parent value is a dict → sub value is `value.get(sub)`; must be a `str`,
-  else `shape_mismatch`.
+- Parent value is a dict → sub value is `value.get(sub)`; a `str` flows
+  through; an **absent** (`None`) or non-str value is **skipped** (no
+  output, no error) per §5.7 read semantics.
 - Parent value is a list (repeated structured) → sub value is the per-
   element list `[elem.get(sub) for elem in value]`; each element must be a
-  dict; `None`/non-str entries count as `shape_mismatch` for the affected
-  product only.
+  dict (else `shape_mismatch` for the affected product); per-element
+  absent (`None`) sub values are **skipped** (that element contributes
+  nothing to the merge); non-str values count as `shape_mismatch`.
 
 Target merge semantics:
 
@@ -131,7 +133,11 @@ Second pass over source fields with kind `structured` or
 
 - Each sub-field name is normalized and matched against the registry
   exactly like whole fields (case-insensitive, separator-insensitive;
-  **no sub-level synonyms in v1**).
+  **no sub-level synonyms in v1**): first against whole attribute names
+  (`ship.country` → `country`-named scalar attr), then against
+  `attr.subfield` paths whose sub-field matches (`ship.price` →
+  `shipping.price`). Ambiguity between the two resolution orders resolves
+  to the whole-attribute match, mirroring the exact-name-first rule.
 - Matches produce `parent.sub → attr` or `parent.sub → attr.subfield`
   entries with origin `auto`.
 - Sub-matching only proposes targets whose grammar is compatible with the
@@ -182,8 +188,7 @@ Backend (`uv run pytest -n auto` from `backend/`):
   multiple sub-mappings merging by index; sub mapped ⇒ parent not
   `dropped_unmapped`; sub shape mismatch counting; exact-name-wins
   disambiguation.
-- `backend/tests/test_field_mapping_routes.py` (or the existing routes
-  test module) — 422 cases: unknown parent, non-structured parent,
+- `backend/tests/test_field_mapping_api.py` — 422 cases: unknown parent, non-structured parent,
   unknown sub-field, two-dot source path, exclusivity conflict; success
   cases: sub→scalar attr, sub→attr.subfield, save + reload round-trip
   with dotted keys.
