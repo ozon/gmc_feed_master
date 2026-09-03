@@ -272,7 +272,7 @@ Behavior parity (verified against the current implementation — the existing te
 cd backend && uv run pytest tests/test_delimited_reader.py tests/test_flat_notation.py -v
 ```
 
-Expected: `TestRFC4180` tests 1 and 2 PASS; `test_multiline_fixture_parses` still FAILS with `HeaderError` (unknown sub-field `location_group_name`) — that is Task 3. ALL pre-existing tests (TestTSVSimple, TestCSV, TestWideTSV, TestRepeatedScalar, TestMalformedRows, TestBOM, TestEmptyCells, and every `test_flat_notation.py` test incl. the repeated-scalar split tests) must PASS — especially `TestMalformedRows::test_bad_row_skipped_populates_errors` asserting `err.line == 2` (single-line rows keep exact old line numbers).
+Expected: `TestRFC4180` tests 1 and 2 PASS; `test_multiline_fixture_parses` still FAILS with `HeaderError` (unknown sub-field `location_group_name`) — that is Task 3. All pre-existing tests except `TestRepeatedScalar::test_comma_split` must PASS — especially `TestMalformedRows::test_bad_row_skipped_populates_errors` asserting `err.line == 2` (single-line rows keep exact old line numbers). `TestRepeatedScalar::test_comma_split` MAY still pass at this stage (old code comma-splits every scalar cell, and its synthetic registry declares `additional_image_link` as scalar — Task 5A amends that test's registry to repeated_scalar and makes splitting kind-aware). Do not fix it here.
 
 If any pre-existing test fails, the implementation drifted — fix before committing.
 
@@ -586,7 +586,176 @@ git commit -m "feat: expose baseline_required flag on registry attributes"
 
 ---
 
-### Task 5: Full-chain regression tests with the real example feeds
+### Task 5A: Kind-aware comma splitting (registry-truth fix)
+
+**Files:**
+- Modify: `backend/app/ingest/flat_notation.py` (bare-header kind inference + `split_row` scalar branch)
+- Test: `backend/tests/test_flat_notation.py`, `backend/tests/test_delimited_reader.py` (amend synthetic registries; add split-behavior tests)
+
+**Interfaces:**
+- Consumes: `registry.attributes[name].kind` (SCALAR vs REPEATED_SCALAR for bare headers).
+- Produces: `ColumnSpec.kind` may now be `"repeated_scalar"`; `split_row` comma-splits ONLY `repeated_scalar` columns (scalar/generic cells stay whole strings — commas are content); `SourceField.kind` for such columns is `"repeated_scalar"` (passes through `_COMPATIBLE_KINDS["repeated_scalar"] = {"repeated_scalar"}` for same-named targets).
+
+**Why (verified live):** spec §5.8 says "Comma-separated cell values → repeated scalar" — comma-splitting belongs to REPEATED_SCALAR columns only. Current code splits EVERY scalar/generic cell, so 13/14 `multifeed.tsv` descriptions (free text with commas) become lists and `apply_mapping` DROPS them (scalar shape mismatch). The user's feed loses its descriptions. With the fix: `description` (registry SCALAR) stays a string; `additional_image_link` (registry REPEATED_SCALAR, 14/14 rows comma-separated URLs) still splits.
+
+- [ ] **Step 1: Write/amend the tests**
+
+In `backend/tests/test_flat_notation.py`:
+
+1. `TestSplitRowRepeatedScalar`: change all three plans' `kind="scalar"` to `kind="repeated_scalar"` (columns named `additional_image_link`; the split cases and `single_value_no_split` keep their inputs/asserts — a single value still yields a bare string: `{"additional_image_link": "img3.jpg"}`).
+2. Add:
+
+```python
+class TestSplitRowScalarKeepsCommas:
+    def test_scalar_cell_with_commas_stays_whole(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="description", kind="scalar", sub_fields=[]),
+        ])
+        result, err = split_row(["Classic, confident, crafted"], plan)
+        assert result == {"description": "Classic, confident, crafted"}
+        assert err is None
+
+    def test_generic_cell_with_commas_stays_whole(self) -> None:
+        plan = HeaderPlan(columns=[
+            ColumnSpec(name="internal_note", kind="generic", sub_fields=[]),
+        ])
+        result, err = split_row(["note one, note two"], plan)
+        assert result == {"internal_note": "note one, note two"}
+        assert err is None
+```
+
+3. `TestParseHeaderBareScalar` etc. stay unchanged (plain scalars plan `scalar`). Add:
+
+```python
+class TestParseHeaderBareRepeatedScalar:
+    def test_bare_repeated_scalar_attribute_kind(self) -> None:
+        reg = _registry({
+            "additional_image_link": RegistryAttribute(
+                name="additional_image_link",
+                kind=AttributeKind.REPEATED_SCALAR,
+                type="URL",
+                required=RequirementStatus.OPTIONAL,
+                domain=FeedDomain.PRIMARY,
+                export_status=ExportStatus.EXPORTABLE,
+            ),
+        })
+        plan = parse_header(["additional_image_link"], reg)
+        assert plan.columns == [
+            ColumnSpec(name="additional_image_link", kind="repeated_scalar", sub_fields=[]),
+        ]
+```
+
+(If `test_flat_notation.py` lacks an `_repeated_scalar` helper, build the `RegistryAttribute` inline as above — do NOT add a helper for one use.)
+
+In `backend/tests/test_delimited_reader.py`:
+
+4. `TestRepeatedScalar::test_comma_split`: change the registry entry from `_scalar("additional_image_link")` to a repeated-scalar attribute:
+
+```python
+def _repeated_scalar(name: str) -> RegistryAttribute:
+    return RegistryAttribute(
+        name=name,
+        kind=AttributeKind.REPEATED_SCALAR,
+        type="URL",
+        required=RequirementStatus.OPTIONAL,
+        domain=FeedDomain.PRIMARY,
+        export_status=ExportStatus.EXPORTABLE,
+    )
+```
+
+(Add this helper next to `_scalar`; the existing imports already cover `AttributeKind`, `ExportStatus`, `FeedDomain`, `RegistryAttribute`, `RequirementStatus` — keep the fixture's assertions unchanged: `["img1.jpg", "img2.jpg"]` and bare `"img3.jpg"`.)
+
+5. Add after `TestRFC4180`:
+
+```python
+class TestScalarCommaContent:
+    def test_scalar_description_with_commas_not_split(self) -> None:
+        reg = _registry({
+            "id": _scalar("id"),
+            "description": _scalar("description"),
+        })
+        data = b"id\tdescription\n1\tClassic, confident, crafted\n"
+        report = parse_delimited(data, "tsv", reg)
+
+        assert report.row_errors == []
+        assert len(report.products) == 1
+        assert report.products[0]["description"] == "Classic, confident, crafted"
+```
+
+- [ ] **Step 2: Verify RED**
+
+```bash
+cd backend && TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest tests/test_flat_notation.py tests/test_delimited_reader.py -q
+```
+
+Expected: new tests FAIL (scalar/generic cells currently comma-split; bare repeated_scalar headers plan as `scalar`); the amended `TestSplitRowRepeatedScalar`/`TestRepeatedScalar` FAIL (old kind no longer splits after… no wait — at RED stage the OLD code splits everything, so the amended repeated-scalar tests still PASS at RED; only the four NEW tests fail: `test_scalar_cell_with_commas_stays_whole`, `test_generic_cell_with_commas_stays_whole`, `test_bare_repeated_scalar_attribute_kind`, `test_scalar_description_with_commas_not_split`).
+
+- [ ] **Step 3: Implement**
+
+In `backend/app/ingest/flat_notation.py`:
+
+1. Bare-header kind inference (currently: structured kinds → `generic`, everything else → `scalar`) becomes:
+
+```python
+            attr = registry.attributes.get(header)
+            if attr is not None:
+                if attr.kind in (
+                    AttributeKind.STRUCTURED,
+                    AttributeKind.REPEATED_STRUCTURED,
+                ):
+                    kind = "generic"
+                elif attr.kind is AttributeKind.REPEATED_SCALAR:
+                    kind = "repeated_scalar"
+                else:
+                    kind = "scalar"
+            else:
+                kind = "generic"
+```
+
+2. `split_row`'s else-branch (scalar/generic) becomes:
+
+```python
+        else:
+            # scalar, repeated_scalar or generic
+            cell = cells[col_idx] if col_idx < len(cells) else ""
+            col_idx += 1
+            if not cell:
+                continue
+            if spec.kind == "repeated_scalar":
+                values = _split_csv_cell(cell)
+            else:
+                values = cell
+            result[spec.name] = values
+```
+
+(Keep the comment exactly as shown — it replaces the old `# scalar or generic` comment.)
+
+3. `delimited.py` `source_fields` mapping is UNCHANGED — spec.kind is now `"scalar"`, `"repeated_scalar"`, `"structured"`, `"repeated_structured"`, or `"generic"`; the existing `kind="scalar" if spec.kind == "generic" else spec.kind` passes `repeated_scalar` through correctly.
+
+- [ ] **Step 4: Verify GREEN**
+
+```bash
+cd backend && TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest tests/test_flat_notation.py tests/test_delimited_reader.py tests/test_ingest_step.py tests/test_mapping_matcher.py -q
+```
+
+Expected: ALL PASS (amended + new + all pre-existing).
+
+- [ ] **Step 5: Run full suite, commit**
+
+```bash
+cd backend && TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest -n auto
+```
+
+Expected: 0 failures.
+
+```bash
+git add backend/app/ingest/flat_notation.py backend/tests/test_flat_notation.py backend/tests/test_delimited_reader.py
+git commit -m "fix: comma-split only repeated-scalar columns; scalar cells keep commas as content"
+```
+
+---
+
+### Task 5B: Full-chain regression tests with the real example feeds (registry-true scope)
 
 **Files:**
 - Create: `backend/tests/test_example_feed_chain.py`
@@ -595,10 +764,10 @@ git commit -m "feat: expose baseline_required flag on registry attributes"
 - Consumes: `read_feed(data, source_format, registry) -> IngestReport` (`app/ingest/__init__.py`); `auto_match(source_fields, registry, existing=None) -> dict[str, MappingEntry]` (`app/mapping/matcher.py`); `apply_mapping(product, mappings, registry)` (`app/mapping/apply.py`); `render_feed(products, registry, channel)` (`app/export/renderer.py`); `BaselineRequired` (`app/qc/rules.py`); `load_registry()` (`registry/loader.py`); `QcContext(feed_source_id, currency, volume_drop_threshold_pct, registry, clock, image_probe, previous_export_run)` (`app/qc/engine.py`).
 - Produces: proof that both real example feeds survive parse → auto-map → apply → QC → render.
 
-Verified facts the assertions rely on:
-- TSV: 70-col header, 14 logical rows, 0 row errors after Tasks 2+3; `custom_label_1` column exists in header but is EMPTY in all 14 rows → parsed product dicts never contain a `custom_label_1` key (empty cells omitted), but `auto_match` still claims `custom_label_1 → custom_label_1` (registry name match); `tax` column exists but empty in all rows → no `tax` key in products; `shipping` populated in 13/14 rows as a dict at INGEST level (single annotated column → `kind="structured"`) — `apply_mapping` wraps it to `[dict]` because the registry target `shipping` is REPEATED_STRUCTURED, so the assertion `isinstance(first["shipping"], list)` applies to the MAPPED product; `gtin` populated in all 14 rows.
-- XML: 308 products, `custom_label_1` populated on 57 products.
-- `apply_mapping` on a `tax` struct with header-declared `location_group_name` keeps only registry sub-fields (`country`, `region`, `postal_code`, `location_id`, `rate`, `tax_ship`) — `location_group_name` dropped.
+Verified facts the assertions rely on (registry-true, re-verified after Task 5A):
+- REGISTRY GAP (recorded as follow-up, do NOT work around): the registry contains ONLY `custom_label_0` and `custom_label_4` — the parser never expanded the `` `custom_label_0` … `custom_label_4` `` name range (gmc_def.md:127), so `custom_label_1/2/3` do not exist. `auto_match` therefore does NOT claim `custom_label_1` — the source field stays unmapped and its values are dropped (dropped_unmapped). That is the current, correct lenient behavior; the feeds still work end-to-end.
+- TSV: 70-col header, 14 logical rows, 0 row errors; `custom_label_1` column EMPTY in all rows (so even after a future registry fix, no product data); `tax` column empty in all rows → no `tax` key in any product; `shipping` populated in 13/14 rows as a dict at ingest, wrapped to `[dict]` by `apply_mapping` (REPEATED_STRUCTURED target); after Task 5A, `description` stays a whole string in all 14 products (all baseline fields present in every row → 0 baseline findings); `additional_image_link` comma-splits to a list (registry REPEATED_SCALAR).
+- XML: 308 products; `custom_label_0` present on some products (registry-true check — 0 items carry `custom_label_1` post-mapping since it's unmapped); the fixture itself is missing data on some products: 9 products missing ≥1 hard baseline field, 18 missing the description pair → `BaselineRequired` yields EXACTLY 27 findings (9 hard-field + 18 description-pair; 0 title-pair). These findings are the system working as designed (real feed, real gaps) — the test asserts the exact count, NOT zero.
 
 - [ ] **Step 1: Write the chain test file**
 
@@ -615,7 +784,6 @@ from app.clock import TestClock
 from app.export.renderer import ChannelMetadata, render_feed
 from app.ingest import read_feed
 from app.mapping.apply import apply_mapping
-from app.mapping.document import MappingEntry
 from app.mapping.matcher import auto_match
 from app.qc.engine import QcContext
 from app.qc.rules import BaselineRequired
@@ -647,19 +815,6 @@ async def _baseline_findings(products: list[dict]) -> list:
     return [f for f in findings if f.rule_id == "baseline_required"]
 
 
-async def _run_chain(data: bytes, source_format: str) -> tuple[list[dict], bytes]:
-    registry = load_registry()
-    report = read_feed(data, source_format, registry)
-    assert report.row_errors == []
-
-    mappings = auto_match(report.source_fields, registry)
-    mapped_products = []
-    for product in report.products:
-        mapped, _stats = apply_mapping(product, mappings, registry)
-        mapped_products.append(mapped)
-    return mapped_products, mappings
-
-
 class TestMultifeedTsvChain:
     async def test_full_chain(self) -> None:
         data = (_FIXTURES / "multifeed.tsv").read_bytes()
@@ -682,8 +837,6 @@ class TestMultifeedTsvChain:
             ("brand", "brand"),
             ("gtin", "gtin"),
             ("shipping", "shipping"),
-            ("tax", "tax"),
-            ("custom_label_1", "custom_label_1"),
         ]:
             assert mappings[source].target == target, source
 
@@ -699,8 +852,11 @@ class TestMultifeedTsvChain:
         assert "location_group_name" not in first["shipping"][0]
 
         for product in mapped_products:
-            assert "custom_label_1" not in product
+            assert isinstance(product["description"], str)
+            assert "," in product["description"]
             assert "tax" not in product
+            assert "custom_label_1" not in product
+
         assert await _baseline_findings(mapped_products) == []
 
         xml = render_feed(
@@ -711,7 +867,7 @@ class TestMultifeedTsvChain:
         text = xml.decode("utf-8")
         assert text.count("<item>") == 14
         assert "<g:id>shopify_US_" in text
-        assert "<g:custom_label_1>" not in text
+        assert "<g:description>" in text
 
 
 class TestExampleXmlChain:
@@ -726,19 +882,16 @@ class TestExampleXmlChain:
         mappings = auto_match(report.source_fields, registry)
         assert mappings["id"].target == "id"
         assert mappings["title"].target == "title"
-        assert mappings["custom_label_1"].target == "custom_label_1"
+        assert mappings["description"].target == "description"
 
         mapped_products = []
         for product in report.products:
             mapped, _stats = apply_mapping(product, mappings, registry)
             mapped_products.append(mapped)
 
-        with_label = [p for p in mapped_products if "custom_label_1" in p]
-        without_label = [p for p in mapped_products if "custom_label_1" not in p]
-        assert len(with_label) == 57
-        assert len(with_label) + len(without_label) == 308
-
-        assert await _baseline_findings(mapped_products) == []
+        findings = await _baseline_findings(mapped_products)
+        assert len(findings) == 27
+        assert all(f.severity == "critical" for f in findings)
 
         xml = render_feed(
             mapped_products,
@@ -747,20 +900,20 @@ class TestExampleXmlChain:
         )
         text = xml.decode("utf-8")
         assert text.count("<item>") == 308
-        assert "<g:custom_label_1>" in text
+        assert "<g:custom_label_0>" in text
 ```
-
-Note: `_run_chain` helper above is defined but the two tests inline their own flow — DELETE the `_run_chain` helper from the file (unused). Also delete the unused `MappingEntry` import.
 
 - [ ] **Step 2: Run the chain tests**
 
 ```bash
-cd backend && uv run pytest tests/test_example_feed_chain.py -v
+cd backend && TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest tests/test_example_feed_chain.py -v
 ```
 
-Expected: 2 PASS. If a `custom_label_1` mapping assertion fails, check `auto_match` normalized-name behavior (`custom_label_1` normalizes to `customlabel1`; registry has `custom_label_1` → exact normalized match → claimed as `auto`) — it was verified live during planning, so a failure means an implementation drift in Tasks 2/3.
-
-If `await _baseline_findings(...) == []` fails, inspect which baseline fields are missing — the TSV maps all 8 baseline attrs (id, title, description, link, image_link, availability, price, condition all populated) and so does the XML; a finding means the mapping didn't apply correctly. Do not weaken the assertion.
+Expected: 2 PASS. Troubleshooting notes:
+- If `mappings["gtin"]` fails: `gtin` is registry REPEATED_SCALAR and the TSV `gtin` column plans (after Task 5A) as `repeated_scalar` → `_COMPATIBLE_KINDS["repeated_scalar"] = {"repeated_scalar"}` → claim succeeds. A failure means Task 5A's kind inference regressed.
+- If `"," in product["description"]` fails for some product: Task 5A's comma-content fix regressed.
+- If the XML findings count ≠ 27: count per-field — 9 hard-baseline (id/link/image_link/availability/price/condition) + 18 description-pair + 0 title-pair. Do not weaken the count; investigate which field's mapping changed.
+- `assert "<g:description>" in text` (TSV): descriptions survive to export — the exact regression this cycle fixes.
 
 - [ ] **Step 3: Commit**
 
@@ -958,16 +1111,20 @@ git commit -m "fix: mapping alert lists baseline-required attrs only, with alter
 - Modify: `backend/docs/architecture.md` (ingest section)
 - Modify: `backend/docs/api.md` (`/registry/attributes`)
 - Modify: `frontend/docs/architecture.md` (only if it documents the mapping alert — check first)
+- Modify: `docs/superpowers/specs/2026-09-02-lenient-tsv-ingest-and-baseline-alert-design.md` (registry gap note — recorded follow-up)
 
 **Interfaces:**
 - Consumes: all previous tasks.
+
+**Recorded follow-up (write into the spec's Non-goals section, one paragraph):** the registry parser does not expand backtick name ranges (`` `custom_label_0` … `custom_label_4` `` at gmc_def.md:127), so only `custom_label_0` and `custom_label_4` exist. `custom_label_1/2/3` are unmapped by auto-match today; feeds carrying those columns work (values dropped as unmapped fields). A future cycle should teach the parser to expand same-prefix numbered ranges and regenerate `registry/attributes.json` — required before the Labelizer plugin (spec §5.9, target_label slots 0–4) ships. Do NOT change the parser in this cycle.
 
 - [ ] **Step 1: Update backend architecture docs**
 
 In `backend/docs/architecture.md`, find the ingest/parsing section. Update to state:
 
-- Delimited inputs parse via a single RFC-4180 `csv.reader` stream pass; quoted cells may contain embedded newlines.
+- Delimited inputs parse via a single RFC-4180 `csv.reader` stream pass; quoted cells may contain embedded newlines; row-error line numbers are physical end-of-row lines.
 - Annotated headers `attr(sub1:sub2:…)` trust the header's declared sub-field list as the positional truth; sub-fields unknown to the registry are tolerated and dropped at mapping/export (both filter structured values to registry-known sub-fields).
+- Comma-splitting of cell values applies ONLY to repeated-scalar columns (registry REPEATED_SCALAR attributes); scalar and generic columns keep commas as content.
 - Structural header errors still fail the import: duplicate scalar columns, non-adjacent repeated structured columns, annotating a non-structured attribute.
 - `qc/constants.py` `BASELINE_REQUIRED` + `BASELINE_ALTERNATIVE_PAIRS` are the single source of the baseline-required definition (shared by the QC rule and `/registry/attributes`).
 
