@@ -9,7 +9,12 @@ from registry.loader import load_registry
 from ..auth import require_user
 from ..db.engine import get_db_session
 from ..mapping.document import MappingDocument, MappingDocumentError, MappingEntry
-from ..mapping.matcher import _COMPATIBLE_KINDS, auto_match
+from ..mapping.matcher import (
+    _COMPATIBLE_KINDS,
+    _STRUCTURED_SOURCE_KINDS,
+    _SUB_EFFECTIVE_KINDS,
+    auto_match,
+)
 from ..models.feed_source import FeedSource
 from ..schemas.field_mapping import FieldMappingOut, FieldMappingPut
 
@@ -36,26 +41,26 @@ def _validate_mappings(
     document: MappingDocument,
 ) -> list[str]:
     registry = load_registry()
-    known_kinds = {field.name: field.kind for field in document.source_fields}
+    known_fields = {field.name: field for field in document.source_fields}
     errors: list[str] = []
     claimed: dict[str, str] = {}
-    for source, target in mappings.items():
+
+    def check_target(source: str, target: str, source_kind: str | None) -> None:
         parts = target.split(".")
         if len(parts) > 2 or not all(parts):
             errors.append(f"{source}: invalid target path {target!r}")
-            continue
+            return
         attribute = registry.attributes.get(parts[0])
         if attribute is None:
             errors.append(f"{source}: unknown attribute {parts[0]!r}")
-            continue
+            return
         if len(parts) == 2:
             if attribute.kind.value not in _STRUCTURED_KINDS:
                 errors.append(f"{source}: {parts[0]!r} has no sub-fields")
-                continue
+                return
             if parts[1] not in {sub.name for sub in attribute.fields}:
                 errors.append(f"{source}: unknown sub-field {parts[1]!r} on {parts[0]!r}")
-                continue
-        source_kind = known_kinds.get(source)
+                return
         if (
             len(parts) == 1
             and source_kind is not None
@@ -65,10 +70,42 @@ def _validate_mappings(
                 f"{source}: kind {source_kind!r} incompatible with "
                 f"{attribute.kind.value!r} target {target!r}"
             )
+            return
         if target in claimed:
             errors.append(f"{source}: target {target!r} already claimed by {claimed[target]!r}")
-            continue
+            return
         claimed[target] = source
+
+    whole_mapped_parents = {
+        source for source in mappings if source in known_fields
+    }
+
+    for source, target in mappings.items():
+        if source in known_fields:
+            check_target(source, target, known_fields[source].kind)
+            continue
+        parent, dot, sub = source.partition(".")
+        if not dot or not sub:
+            check_target(source, target, None)
+            continue
+        if "." in sub:
+            errors.append(f"{source}: invalid source path")
+            continue
+        if parent in whole_mapped_parents:
+            errors.append(f"{source}: conflicts with whole-field mapping {parent!r}")
+            continue
+        field = known_fields.get(parent)
+        if field is None:
+            errors.append(f"{source}: unknown source field {parent!r}")
+            continue
+        if field.kind not in _STRUCTURED_SOURCE_KINDS:
+            errors.append(f"{source}: {parent!r} is not a structured source field")
+            continue
+        if sub not in field.sub_fields:
+            errors.append(f"{source}: unknown sub-field {sub!r} on {parent!r}")
+            continue
+        check_target(source, target, _SUB_EFFECTIVE_KINDS[field.kind])
+
     return errors
 
 

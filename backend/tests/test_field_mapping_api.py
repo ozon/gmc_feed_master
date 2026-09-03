@@ -299,3 +299,205 @@ async def test_field_mapping_endpoints_require_auth(app_factory):
         await client.put("/feed-sources/1/field-mapping", json={"mappings": {}})
     ).status_code == 401
     assert (await client.post("/feed-sources/1/field-mapping/auto")).status_code == 401
+
+
+def nested_doc(*fields):
+    return {
+        "version": 1,
+        "auto_mapped": True,
+        "source_fields": list(fields),
+        "mappings": {},
+    }
+
+
+async def test_put_nested_key_unknown_parent_returns_422(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory, fs_id, nested_doc(source_field("product_name", "scalar"))
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={"mappings": {"ghost.price": {"target": "shipping.price"}}},
+    )
+    assert resp.status_code == 422
+    assert isinstance(resp.json()["errors"], list)
+
+
+async def test_put_nested_key_non_structured_parent_returns_422(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory, fs_id, nested_doc(source_field("product_name", "scalar"))
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={"mappings": {"product_name.sub": {"target": "title"}}},
+    )
+    assert resp.status_code == 422
+    assert isinstance(resp.json()["errors"], list)
+
+
+async def test_put_nested_key_unknown_sub_field_returns_422(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory,
+        fs_id,
+        nested_doc(source_field("ship", "structured", ["country", "price"])),
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={"mappings": {"ship.bogus": {"target": "title"}}},
+    )
+    assert resp.status_code == 422
+    assert isinstance(resp.json()["errors"], list)
+
+
+async def test_put_nested_key_two_dots_returns_422(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory, fs_id, nested_doc(source_field("ship", "structured", ["country"]))
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={"mappings": {"a.b.c": {"target": "title"}}},
+    )
+    assert resp.status_code == 422
+    assert isinstance(resp.json()["errors"], list)
+
+
+async def test_put_nested_key_conflicts_with_whole_field_mapping_returns_422(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory,
+        fs_id,
+        nested_doc(source_field("ship", "structured", ["country", "price"])),
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={
+            "mappings": {
+                "ship": {"target": "shipping"},
+                "ship.country": {"target": "shipping.country"},
+            }
+        },
+    )
+    assert resp.status_code == 422
+    errors = resp.json()["errors"]
+    assert isinstance(errors, list)
+    assert any("ship.country" in err for err in errors)
+
+
+async def test_put_nested_key_structured_sub_to_scalar_attr_ok(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory, fs_id, nested_doc(source_field("detail", "structured", ["name"]))
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={"mappings": {"detail.name": {"target": "title"}}},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["mappings"] == {
+        "detail.name": {"target": "title", "origin": "manual"}
+    }
+
+
+async def test_put_nested_key_repeated_source_subfield_targets_ok(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory,
+        fs_id,
+        nested_doc(source_field("ship", "repeated_structured", ["country", "price"])),
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={
+            "mappings": {
+                "ship.country": {"target": "shipping.country"},
+                "ship.price": {"target": "shipping.price"},
+            }
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["mappings"] == {
+        "ship.country": {"target": "shipping.country", "origin": "manual"},
+        "ship.price": {"target": "shipping.price", "origin": "manual"},
+    }
+    persisted = (await client.get(f"/feed-sources/{fs_id}/field-mapping")).json()
+    assert persisted["mappings"] == body["mappings"]
+
+
+async def test_put_nested_key_kind_incompatible_returns_422(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory, fs_id, nested_doc(source_field("ship", "structured", ["country"]))
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={"mappings": {"ship.country": {"target": "shipping"}}},
+    )
+    assert resp.status_code == 422
+    assert isinstance(resp.json()["errors"], list)
+
+
+async def test_put_nested_key_sub_target_conflicts_across_parents_returns_422(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory,
+        fs_id,
+        nested_doc(
+            source_field("ship", "structured", ["country"]),
+            source_field("tax", "structured", ["country"]),
+        ),
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={
+            "mappings": {
+                "ship.country": {"target": "shipping.country"},
+                "tax.country": {"target": "shipping.country"},
+            }
+        },
+    )
+    assert resp.status_code == 422
+    assert isinstance(resp.json()["errors"], list)
+
+
+async def test_put_exact_source_name_wins_over_path_resolution(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory,
+        fs_id,
+        nested_doc(
+            source_field("ship", "structured", ["country"]),
+            source_field("ship.price", "scalar"),
+        ),
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={"mappings": {"ship.price": {"target": "price"}}},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["mappings"] == {
+        "ship.price": {"target": "price", "origin": "manual"}
+    }

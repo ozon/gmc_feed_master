@@ -28,6 +28,13 @@ _COMPATIBLE_KINDS: dict[str, frozenset[str]] = {
     "repeated_structured": frozenset({"repeated_structured"}),
 }
 
+_STRUCTURED_SOURCE_KINDS = frozenset({"structured", "repeated_structured"})
+
+_SUB_EFFECTIVE_KINDS: dict[str, str] = {
+    "structured": "scalar",
+    "repeated_structured": "repeated_scalar",
+}
+
 
 def _normalize(name: str) -> str:
     return name.lower().translate(_SEPARATORS)
