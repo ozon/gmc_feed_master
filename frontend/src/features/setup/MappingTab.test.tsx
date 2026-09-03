@@ -224,6 +224,99 @@ describe('MappingTab', () => {
     });
   });
 
+  it('save PUTs the full mapping set, not only local edits', async () => {
+    const user = userEvent.setup();
+    fetchMock = stubFetch((url) => {
+      if (url === '/feed-sources/1/field-mapping') {
+        if (fetchMock.mock.calls.some(
+          ([input, init]) => String(input) === url && init?.method === 'PUT',
+        )) {
+          return jsonResponse({ ...mappingDoc, auto_mapped: false });
+        }
+        return jsonResponse(mappingDoc);
+      }
+      if (url === '/registry/attributes') return jsonResponse(registryAttrs);
+      return jsonResponse({});
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('product_id')).toBeInTheDocument();
+    });
+
+    // Edit a single row; the untouched server-side mappings must survive the PUT.
+    const productRow = screen.getByText('synonym_field').closest('tr')!;
+    const select = productRow.querySelector('[role="combobox"]') as HTMLElement;
+    await user.click(select);
+    const option = await screen.findByRole('option', { name: /^brand$/ });
+    await user.click(option);
+
+    const saveBtn = screen.getByRole('button', { name: /save/i });
+    await waitFor(() => expect(saveBtn).toBeEnabled());
+    await user.click(saveBtn);
+
+    await waitFor(() => {
+      const body = putBody('/feed-sources/1/field-mapping');
+      expect(body).toBeDefined();
+      expect(body?.mappings).toEqual({
+        title: { target: 'title' },
+        description: { target: 'description' },
+        synonym_field: { target: 'brand' },
+      });
+    });
+  });
+
+  it('save excludes rows whose target was cleared', async () => {
+    const user = userEvent.setup();
+    fetchMock = stubFetch((url) => {
+      if (url === '/feed-sources/1/field-mapping') {
+        if (fetchMock.mock.calls.some(
+          ([input, init]) => String(input) === url && init?.method === 'PUT',
+        )) {
+          return jsonResponse({ ...mappingDoc, auto_mapped: false });
+        }
+        return jsonResponse(mappingDoc);
+      }
+      if (url === '/registry/attributes') return jsonResponse(registryAttrs);
+      return jsonResponse({});
+    });
+
+    renderTab();
+
+    await waitFor(() => {
+      expect(screen.getByText('product_id')).toBeInTheDocument();
+    });
+
+    // Clear the description mapping; it must be absent from the PUT body.
+    // Scope to the row whose source-field name is exactly 'description';
+    // the select value/option text also contains 'description'.
+    const descriptionRow = screen
+      .getAllByText('description')
+      .map((el) => el.closest('tr'))
+      .find((tr) => {
+        const sourceCell = tr?.querySelector('td p');
+        return sourceCell?.textContent === 'description';
+      });
+    expect(descriptionRow).toBeDefined();
+    const clearButton = descriptionRow!.querySelector('.mantine-InputClearButton-root');
+    expect(clearButton).not.toBeNull();
+    await user.click(clearButton!);
+
+    const saveBtn = screen.getByRole('button', { name: /save/i });
+    await waitFor(() => expect(saveBtn).toBeEnabled());
+    await user.click(saveBtn);
+
+    await waitFor(() => {
+      const body = putBody('/feed-sources/1/field-mapping');
+      expect(body).toBeDefined();
+      expect(body?.mappings).toEqual({
+        title: { target: 'title' },
+        synonym_field: { target: 'description' },
+      });
+    });
+  });
+
   it('422 errors render on matching rows and show summary notification', async () => {
     const user = userEvent.setup();
     fetchMock = stubFetch((url) => {

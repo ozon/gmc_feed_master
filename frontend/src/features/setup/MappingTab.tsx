@@ -106,10 +106,13 @@ export function MappingTab() {
   );
 
   const handleSave = useCallback(async () => {
+    // The PUT is a full replace: send the complete effective mapping set
+    // (server mappings overlaid with local edits), not just the delta —
+    // otherwise untouched mappings are silently dropped.
     const mappingsPayload: Record<string, { target: string }> = {};
-    for (const [source, target] of Object.entries(localEdits)) {
-      if (target !== null && target !== undefined) {
-        mappingsPayload[source] = { target };
+    for (const [source, entry] of Object.entries(effectiveMappings)) {
+      if (entry.target) {
+        mappingsPayload[source] = { target: entry.target };
       }
     }
     try {
@@ -123,7 +126,7 @@ export function MappingTab() {
       }
       notifyMutationError(error, tSetup('mapping.saveFailed'));
     }
-  }, [localEdits, id, saveMutation, tSetup]);
+  }, [effectiveMappings, id, saveMutation, tSetup]);
 
   const handleAutoMap = useCallback(async () => {
     try {
