@@ -68,12 +68,15 @@ async def _setup_feed(factory, client, products):
                                started_at=datetime.now(timezone.utc))
             session.add(run)
             await session.flush()
-            for pid, raw, status in products:
+            for pid, raw, status, *rest in products:
+                processed = rest[0] if rest else None
+                excluded = rest[1] if len(rest) > 1 else False
                 session.add(
                     StagingProduct(
                         feed_source_id=feed["id"], ingestion_run_id=run.id,
                         product_id=pid, content_hash="h", config_hash="c",
                         status=status, raw_data=raw,
+                        processed_data=processed, excluded=excluded,
                     )
                 )
     return feed["id"]
@@ -91,10 +94,80 @@ async def test_products_requires_auth_and_404(app_factory):
     assert (await client.get("/feed-sources/99999/products")).status_code == 404
 
 
-async def test_products_stage_processed_returns_501(app_factory):
+async def test_products_stage_processed_serves_processed_fields(app_factory):
+    app, factory = app_factory
     client = await logged_in_client(app_factory)
-    feed_id = await _setup_feed(app_factory[1], client, [])
-    assert (await client.get(f"/feed-sources/{feed_id}/products", params={"stage": "processed"})).status_code == 501
+    products = [
+        ("a", {"id": "a", **_BASE, "title": "Alpha Raw"}, "active",
+         {"id": "a", **_BASE, "title": "Alpha Processed", "brand": "Acme"}, False),
+        ("b", {"id": "b", **_BASE, "title": "Beta Raw"}, "active", None, False),
+        ("c", {"id": "c", **_BASE, "title": "Gamma Raw"}, "active", None, True),
+    ]
+    feed_id = await _setup_feed(factory, client, products)
+
+    resp = await client.get(f"/feed-sources/{feed_id}/products", params={"stage": "processed"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] == 3
+    items = {i["product_id"]: i for i in body["items"]}
+
+    assert items["a"]["title"] == "Alpha Processed"
+    assert items["a"]["processed_data"]["brand"] == "Acme"
+    assert items["a"]["processed"] is True
+    assert items["a"]["excluded"] is False
+    assert items["a"]["raw_data"]["title"] == "Alpha Raw"
+    assert items["a"]["processed_data"]["title"] == "Alpha Processed"
+
+    assert items["b"]["title"] == "Beta Raw"
+    assert items["b"]["processed"] is False
+    assert items["b"]["excluded"] is False
+    assert items["b"]["processed_data"] is None
+
+    assert items["c"]["excluded"] is True
+    assert items["c"]["processed"] is False
+    assert items["c"]["title"] == "Gamma Raw"
+
+    assert "brand" in body["fields"]
+    assert "title" in body["fields"]
+
+
+async def test_products_stage_processed_search_and_sort(app_factory):
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    products = [
+        ("a", {"id": "a", **_BASE, "title": "Alpha Raw"}, "active",
+         {"id": "a", **_BASE, "title": "Zebra Processed"}, False),
+        ("b", {"id": "b", **_BASE, "title": "Beta Raw"}, "active",
+         {"id": "b", **_BASE, "title": "Alpha Processed"}, False),
+    ]
+    feed_id = await _setup_feed(factory, client, products)
+
+    resp = await client.get(
+        f"/feed-sources/{feed_id}/products",
+        params={"stage": "processed", "q": "zebra"},
+    )
+    assert [i["product_id"] for i in resp.json()["items"]] == ["a"]
+
+    resp = await client.get(
+        f"/feed-sources/{feed_id}/products",
+        params={"stage": "processed", "sort": "title"},
+    )
+    assert [i["product_id"] for i in resp.json()["items"]] == ["b", "a"]
+
+
+async def test_products_detail_includes_processed(app_factory):
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    processed = {"id": "a", **_BASE, "title": "Processed Title"}
+    feed_id = await _setup_feed(factory, client, [
+        ("a", {"id": "a", **_BASE, "title": "Raw Title"}, "active", processed, False),
+    ])
+
+    resp = await client.get(f"/feed-sources/{feed_id}/products/a")
+    body = resp.json()
+    assert body["processed_data"] == processed
+    assert body["excluded"] is False
+    assert body["raw_data"]["title"] == "Raw Title"
 
 
 async def test_products_pagination_search_filter_sort(app_factory):

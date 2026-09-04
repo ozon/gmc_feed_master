@@ -48,8 +48,8 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 - `GET /feed-sources/{id}/quality-findings` — current findings grouped by severity/rule
 
 ### Products
-- `GET /feed-sources/{id}/products` — paginated staged products (raw stage only). Params: `page`, `page_size` (≤200), `q` (id/title substring), `status` (`active`/`removed`/`all`), `sort` (`product_id`/`title`/`status`/`last_seen_at`, `-` prefix for descending). Response: `{items, fields, total, page, page_size}` where `fields` is the sorted union of `raw_data` keys across the returned rows (drives the UI column picker) and each item carries its full `raw_data` alongside the baseline fields (`title`, `description`, `link`, `image_link`, `availability`, `price`, `condition`)
-- `GET /feed-sources/{id}/products/{product_id}` — single product with status, hashes and full `raw_data`
+- `GET /feed-sources/{id}/products` — paginated staged products. Params: `stage` (`raw` default / `processed`), `page`, `page_size` (≤200), `q` (id/title substring — matches `raw_data` title in raw stage, `processed_data` title in processed stage), `status` (`active`/`removed`/`all`), `sort` (`product_id`/`title`/`status`/`last_seen_at`, `-` prefix for descending; title sorts by the stage's data). Response: `{items, fields, total, page, page_size}` where `fields` is the sorted union of the stage's data keys across the returned rows (drives the UI column picker) and each item carries its full `raw_data` alongside the baseline fields (`title`, `description`, `link`, `image_link`, `availability`, `price`, `condition`). In `processed` stage, baseline/dynamic values resolve from `processed_data` (the post-pipeline-module state; falls back to `raw_data` for rows not yet processed), and items additionally carry `processed` (bool), `excluded` (bool — product dropped/errored by a pipeline module), and the full `processed_data` object
+- `GET /feed-sources/{id}/products/{product_id}` — single product with status, hashes, full `raw_data`, `processed_data` (nullable) and `excluded`
 
 ### Export History
 - `GET /feed-sources/{id}/export-history` — list versions

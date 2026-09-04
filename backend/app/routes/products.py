@@ -19,6 +19,12 @@ _SORTS = {
     "status": StagingProduct.status,
     "last_seen_at": StagingProduct.last_seen_at,
 }
+_SORTS_PROCESSED = {
+    "product_id": StagingProduct.product_id,
+    "title": StagingProduct.processed_data["title"].astext,
+    "status": StagingProduct.status,
+    "last_seen_at": StagingProduct.last_seen_at,
+}
 
 
 def _require_db(db_session: AsyncSession | None) -> AsyncSession:
@@ -27,8 +33,24 @@ def _require_db(db_session: AsyncSession | None) -> AsyncSession:
     return db_session
 
 
-def _list_item(row: StagingProduct) -> dict:
+def _list_item(row: StagingProduct, stage: str = "raw") -> dict:
     raw = row.raw_data or {}
+    if stage == "processed":
+        processed = row.processed_data
+        resolved = processed or raw
+        item = {
+            "product_id": row.product_id,
+            "id": resolved.get("id", row.product_id),
+            "status": row.status,
+            "last_seen_at": row.last_seen_at.isoformat(),
+            "processed": processed is not None,
+            "excluded": row.excluded,
+            "raw_data": raw,
+            "processed_data": processed,
+        }
+        for field in _BASELINE_FIELDS:
+            item[field] = resolved.get(field)
+        return item
     item = {
         "product_id": row.product_id,
         "id": raw.get("id", row.product_id),
@@ -41,10 +63,14 @@ def _list_item(row: StagingProduct) -> dict:
     return item
 
 
-def _fields_union(rows: list[StagingProduct]) -> list[str]:
+def _fields_union(rows: list[StagingProduct], stage: str = "raw") -> list[str]:
     fields: set[str] = set()
     for row in rows:
-        fields.update((row.raw_data or {}).keys())
+        source = row.raw_data or {}
+        if stage == "processed":
+            fields.update((row.processed_data or source).keys())
+        else:
+            fields.update(source.keys())
     return sorted(fields)
 
 
@@ -65,15 +91,14 @@ async def list_products(
     _user: str = Depends(require_user),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict:
-    if stage == "processed":
-        raise HTTPException(status_code=501, detail="processed stage is not available yet")
-    if stage != "raw":
+    if stage not in ("raw", "processed"):
         raise HTTPException(status_code=422, detail=f"unknown stage {stage!r}")
     if status not in ("active", "removed", "all"):
         raise HTTPException(status_code=422, detail=f"unknown status {status!r}")
     descending = sort.startswith("-")
     sort_field = sort[1:] if descending else sort
-    if sort_field not in _SORTS:
+    sorts = _SORTS_PROCESSED if stage == "processed" else _SORTS
+    if sort_field not in sorts:
         raise HTTPException(status_code=422, detail=f"unknown sort field {sort_field!r}")
 
     session = _require_db(db_session)
@@ -84,21 +109,26 @@ async def list_products(
             filters.append(StagingProduct.status == status)
         if q:
             pattern = f"%{q}%"
+            title_field = (
+                StagingProduct.processed_data["title"].astext
+                if stage == "processed"
+                else StagingProduct.raw_data["title"].astext
+            )
             filters.append(or_(
                 StagingProduct.product_id.ilike(pattern),
-                StagingProduct.raw_data["title"].astext.ilike(pattern),
+                title_field.ilike(pattern),
             ))
         total = (await session.execute(
             select(func.count()).select_from(StagingProduct).where(*filters)
         )).scalar_one()
-        order = _SORTS[sort_field].desc() if descending else _SORTS[sort_field].asc()
+        order = sorts[sort_field].desc() if descending else sorts[sort_field].asc()
         rows = list((await session.execute(
             select(StagingProduct).where(*filters).order_by(order)
             .offset((page - 1) * page_size).limit(page_size)
         )).scalars())
     return {
-        "items": [_list_item(row) for row in rows],
-        "fields": _fields_union(rows),
+        "items": [_list_item(row, stage) for row in rows],
+        "fields": _fields_union(rows, stage),
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -131,6 +161,8 @@ async def product_detail(
         "last_seen_at": row.last_seen_at.isoformat(),
         "removed_at": row.removed_at.isoformat() if row.removed_at else None,
         "raw_data": row.raw_data,
+        "processed_data": row.processed_data,
+        "excluded": row.excluded,
     }
 
 
