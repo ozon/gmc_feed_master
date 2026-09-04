@@ -72,19 +72,19 @@ def passes_all(conditions: list[dict[str, Any]], product: dict[str, Any]) -> boo
 
 def _validate_condition(condition: Any, index: int) -> None:
     if not isinstance(condition, dict):
-        raise ValueError(f"conditions[{index}]: condition must be an object")
+        raise FilterError(f"conditions[{index}]: condition must be an object")
     op = condition.get("op")
     if op not in _ALLOWED_OPS:
-        raise ValueError(f"conditions[{index}]: unknown filter op {op!r}")
+        raise FilterError(f"conditions[{index}]: unknown filter op {op!r}")
     field = condition.get("field")
     if not isinstance(field, str) or not field:
-        raise ValueError(f"conditions[{index}]: op {op!r} requires a non-empty field")
+        raise FilterError(f"conditions[{index}]: op {op!r} requires a non-empty field")
     if op in _TEXT_OPS:
         if condition.get("arg") is None:
-            raise ValueError(f"conditions[{index}]: op {op!r} requires arg")
+            raise FilterError(f"conditions[{index}]: op {op!r} requires arg")
     else:
         if condition.get("arg") is not None:
-            raise ValueError(f"conditions[{index}]: op {op!r} does not take arg")
+            raise FilterError(f"conditions[{index}]: op {op!r} does not take arg")
 
 
 def validate_config(config: Any) -> None:
@@ -123,3 +123,54 @@ class FilterPlugin:
         if passes_all(conditions, product):
             return product
         return None
+
+    def register_routes(self, router: Any) -> None:
+        """Mount POST /preview — live pass/fail counts against staged products."""
+        from fastapi import Depends, HTTPException
+        from fastapi.responses import JSONResponse
+        from pydantic import BaseModel, Field
+        from sqlalchemy import select
+
+        from app.auth import require_user
+        from app.db.engine import get_db_session
+        from app.models.feed_source import FeedSource
+        from app.models.staging import StagingProduct
+
+        class PreviewRequest(BaseModel):
+            feed_source_id: int
+            conditions: list[dict[str, Any]] = Field(default_factory=list)
+
+        async def preview(
+            payload: PreviewRequest,
+            _user: str = Depends(require_user),
+            db_session: Any = Depends(get_db_session),
+        ) -> dict[str, int]:
+            for index, condition in enumerate(payload.conditions):
+                try:
+                    _validate_condition(condition, index)
+                except FilterError as exc:
+                    return JSONResponse(status_code=422, content={"errors": [str(exc)]})
+
+            session = db_session
+            if session is None:
+                raise HTTPException(status_code=503, detail="database unavailable")
+            async with session.begin():
+                if await session.get(FeedSource, payload.feed_source_id) is None:
+                    raise HTTPException(status_code=404, detail="feed source not found")
+                rows = (await session.execute(
+                    select(StagingProduct.raw_data).where(
+                        StagingProduct.feed_source_id == payload.feed_source_id,
+                        StagingProduct.status == "active",
+                        StagingProduct.excluded.is_(False),
+                    )
+                )).scalars().all()
+
+            total = len(rows)
+            passing = sum(
+                1 for raw in rows
+                if passes_all(payload.conditions, dict(raw) if raw else {})
+            )
+            return {"total": total, "pass": passing, "fail": total - passing}
+
+        preview.__annotations__["payload"] = PreviewRequest
+        router.post("/preview")(preview)
