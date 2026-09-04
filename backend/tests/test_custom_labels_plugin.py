@@ -314,3 +314,163 @@ class TestProcess:
             {"id": "a", "price": {"value": "9.99"}}, config, data, _ctx(), state=state,
         )
         assert out["custom_label_2"] == "under 9.99"
+
+
+class TestPluginIdempotent:
+    def test_process_is_idempotent_on_same_product(self, plugin):
+        state = _state(plugin)
+        product = {"id": "a", "item_group_id": "g1", "brand": "Acme"}
+        first = plugin.process(dict(product), CONFIG, DATA, _ctx(), state=state)
+        second = plugin.process(dict(product), CONFIG, DATA, _ctx(), state=state)
+        assert first == second
+
+    def test_process_is_idempotent_with_no_match(self, plugin):
+        state = _state(plugin)
+        product = {"id": "zzz", "brand": "B"}
+        first = plugin.process(dict(product), CONFIG, DATA, _ctx(), state=state)
+        second = plugin.process(dict(product), CONFIG, DATA, _ctx(), state=state)
+        assert first == second
+
+    def test_process_is_idempotent_with_fallback(self, plugin):
+        config = {"slotRules": [
+            {"id": "r1", "name": "Fb", "isActive": True, "targetSlot": "custom_label_0",
+             "matchField": "id", "valueTemplate": "{brand} X",
+             "fallbackTemplate": "Fallback Value"},
+        ]}
+        data = {"slotIds": {"r1": "a"}}
+        state = _state(plugin, config, data)
+        product = {"id": "a", "brand": ""}
+        first = plugin.process(dict(product), config, data, _ctx(), state=state)
+        second = plugin.process(dict(product), config, data, _ctx(), state=state)
+        assert first == second
+
+
+class TestContentHashImmutable:
+    @pytest.mark.asyncio
+    async def test_content_hash_persists_across_runs(self, isolated_database_url):
+        from sqlalchemy import select
+        from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+        from app.models import Client, FeedSource, IngestionRun
+        from app.models.pipeline import ModuleInstance, ModulePipeline
+        from app.models.plugin import Plugin, PluginConfig
+        from app.models.staging import StagingProduct
+
+        engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+        factory = async_sessionmaker(engine, expire_on_commit=False)
+
+        TSV = b"sku\ttitle\tean\nA1\tRed Shirt\t1234567890123\n"
+
+        class StubFetcher:
+            async def fetch(self, url, basic_auth=None, _client=None):
+                return TSV
+
+        async with factory() as session, session.begin():
+            client = Client(name="Acme")
+            session.add(client)
+            await session.flush()
+            feed_source = FeedSource(
+                client_id=client.id,
+                name="Main feed",
+                source_format="tsv",
+                source_url="http://test.local/feed.tsv",
+                configuration={},
+            )
+            session.add(feed_source)
+            await session.flush()
+            feed_source_id = feed_source.id
+
+        import tempfile
+        from pathlib import Path
+
+        from app.pipeline import LockRegistry, default_steps
+        from app.pipeline.runner import PipelineRunner
+        from app.plugins.discovery import discover
+        from registry.loader import load_registry
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            plugins_dir = Path(tmpdir) / "plugins"
+            plugins_dir.mkdir()
+            core_dir = plugins_dir / "core" / "custom_labels"
+            core_dir.mkdir(parents=True)
+            import shutil
+            plugin_src = Path(__file__).resolve().parents[2] / "plugins" / "core" / "custom_labels"
+            shutil.copy(plugin_src / "plugin.json", core_dir / "plugin.json")
+            shutil.copy(plugin_src / "plugin.py", core_dir / "plugin.py")
+
+            candidates, _ = discover(plugins_dir)
+            plugin_registry = {c.manifest.id: c.instance for c in candidates}
+
+            async with factory() as session, session.begin():
+                plugin = Plugin(
+                    name="custom_labels",
+                    version="1.0.0",
+                    manifest={"id": "custom_labels"},
+                )
+                session.add(plugin)
+                await session.flush()
+                pipeline = ModulePipeline(
+                    feed_source_id=feed_source_id,
+                    name="pipe",
+                    version="1",
+                    definition={},
+                )
+                session.add(pipeline)
+                await session.flush()
+                instance = ModuleInstance(
+                    pipeline_id=pipeline.id,
+                    plugin_id=plugin.id,
+                    position=0,
+                    name="cl",
+                    configuration={},
+                )
+                session.add(instance)
+                await session.flush()
+                config = PluginConfig(
+                    plugin_id=plugin.id,
+                    scope="global",
+                    key="default",
+                    config={"slotRules": [
+                        {"id": "r1", "name": "Mid", "isActive": True,
+                         "targetSlot": "custom_label_1", "matchField": "id",
+                         "valueTemplate": "Static Label"},
+                    ]},
+                )
+                session.add(config)
+                await session.flush()
+                feed = await session.get(FeedSource, feed_source_id)
+                feed.active_pipeline_id = pipeline.id
+                await session.flush()
+
+            fetcher = StubFetcher()
+            registry = load_registry()
+            export_dir = Path(tmpdir) / "exports"
+            steps = default_steps(fetcher, registry, plugin_registry, export_dir=export_dir)
+            runner = PipelineRunner(LockRegistry(), factory, list(steps))
+
+            run_id_1 = await runner.execute(feed_source_id)
+            async with factory() as session:
+                run1 = await session.get(IngestionRun, run_id_1)
+                assert run1.status == "success"
+                result1 = await session.execute(
+                    select(StagingProduct).where(StagingProduct.feed_source_id == feed_source_id)
+                )
+                row1 = {r.product_id: r for r in result1.scalars()}
+                assert "A1" in row1
+                hash1 = row1["A1"].content_hash
+
+            run_id_2 = await runner.execute(feed_source_id)
+            async with factory() as session:
+                run2 = await session.get(IngestionRun, run_id_2)
+                assert run2.status == "success"
+                result2 = await session.execute(
+                    select(StagingProduct).where(StagingProduct.feed_source_id == feed_source_id)
+                )
+                row2 = {r.product_id: r for r in result2.scalars()}
+                assert "A1" in row2
+                hash2 = row2["A1"].content_hash
+
+            assert hash1 == hash2
+            assert hash1 != ""
+
+        await engine.dispose()
