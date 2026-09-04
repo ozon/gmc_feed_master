@@ -1,0 +1,69 @@
+{
+  "id": "rules",
+  "name": "Rules",
+  "version": "1.0.0",
+  "extension_point": "pipeline_module",
+  "entry_point": "plugin:RulesPlugin",
+  "config_scope": ["global", "client", "feed_source"],
+  "data_scope": ["global", "client", "feed_source"],
+  "config_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "title": "Rules",
+    "properties": {
+      "rules": {
+        "type": "array",
+        "title": "Rules",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "string", "title": "ID"},
+            "name": {"type": "string", "title": "Name"},
+            "isMasterRule": {"type": "boolean", "title": "Master rule", "default": false},
+            "isActive": {"type": "boolean", "title": "Active", "default": true},
+            "when": {
+              "type": "object",
+              "title": "If",
+              "properties": {
+                "op": {"type": "string", "title": "Condition type", "enum": ["all", "and", "or", "equals", "contains", "starts_with", "ends_with", "regex", "exists", "empty", "gt", "lt", "gte", "lte", "between"]},
+                "field": {"type": "string", "title": "Field"},
+                "arg": {"title": "Value"},
+                "arg2": {"type": "number", "title": "Max (between)"},
+                "caseSensitive": {"type": "boolean", "title": "Case sensitive", "default": true},
+                "children": {"type": "array", "title": "Conditions"}
+              },
+              "required": ["op"]
+            },
+            "then": {
+              "type": "array",
+              "title": "Then",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "op": {"type": "string", "title": "Operation", "enum": ["set", "replace", "append", "prepend", "remove", "clear"]},
+                  "field": {"type": "string", "title": "Field"},
+                  "value": {"title": "Value"},
+                  "find": {"type": "string", "title": "Find"},
+                  "with": {"type": "string", "title": "Replace with"},
+                  "caseSensitive": {"type": "boolean", "title": "Case sensitive", "default": true}
+                },
+                "required": ["op", "field"]
+              }
+            }
+          },
+          "required": ["id", "name", "when", "then"]
+        }
+      }
+    }
+  },
+  "data_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "title": "Rules data"
+  },
+  "frontend": {
+    "menu_item": "Rules",
+    "icon": "list-check",
+    "component": "component.tsx"
+  }
+}
