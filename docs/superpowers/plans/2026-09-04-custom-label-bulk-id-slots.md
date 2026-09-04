@@ -1241,7 +1241,7 @@ git commit -m "feat(frontend): plugin data hooks mirroring plugin config hooks"
 - Create: `frontend/src/features/customLabels/__tests__/ids.test.ts`
 - Create: `frontend/src/features/customLabels/__tests__/CustomLabelsUI.test.tsx`
 - Create: `plugins/core/custom_labels/frontend/component.tsx`
-- Modify: `frontend/src/features/plugin/PluginPage.tsx` (imports at lines 10-12, mapping at line 54)
+- Modify: `frontend/src/features/plugin/customComponents.ts` (add entry to `CUSTOM_COMPONENTS` map — this map replaced the old in-page mapping in `PluginPage.tsx`; do NOT edit `PluginPage.tsx`, it already resolves `CUSTOM_COMPONENTS[plugin.id]` when `manifest.frontend.component` is set)
 - Create: `frontend/public/locales/en/customLabels.json`, `frontend/public/locales/de/customLabels.json`
 - Modify: `frontend/docs/plugin-uis.md`
 
@@ -1782,35 +1782,27 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
 export default CustomLabelsUI;
 ```
 
-- [ ] **Step 5: Wire the plugin stub and PluginPage mapping**
+- [ ] **Step 5: Wire the plugin stub and component map entry**
 
-Create `plugins/core/custom_labels/frontend/component.tsx` (same seam as rules):
+Create `plugins/core/custom_labels/frontend/component.tsx` (same seam as rules and filter):
 
 ```tsx
 export { default } from '../../../../frontend/src/features/customLabels/CustomLabelsUI';
 ```
 
-In `frontend/src/features/plugin/PluginPage.tsx`:
-
-(a) Replace lines 10-12 with:
+In `frontend/src/features/plugin/customComponents.ts`, add the import and map entry (mirroring the existing `RulesUI`/`FilterUI` lines):
 
 ```tsx
-// MVP wiring: static import of core plugin components (the plugin stub is the seam).
-// Full build-time discovery of plugin components is a follow-up — see ADR 0002.
-import RulesUI from '../../../../plugins/core/rules/frontend/component';
 import CustomLabelsUI from '../../../../plugins/core/custom_labels/frontend/component';
+
+export const CUSTOM_COMPONENTS: Record<string, ComponentType<CustomComponentProps>> = {
+  rules: RulesUI,
+  filter: FilterUI,
+  custom_labels: CustomLabelsUI,
+};
 ```
 
-(b) Replace line 54 (`const CustomComponent = customComponent === 'component.tsx' ? RulesUI : null;`) with:
-
-```tsx
-  const CUSTOM_COMPONENTS: Record<string, typeof RulesUI> = {
-    rules: RulesUI,
-    custom_labels: CustomLabelsUI,
-  };
-  const CustomComponent =
-    customComponent === 'component.tsx' ? (CUSTOM_COMPONENTS[plugin.id] ?? null) : null;
-```
+Do NOT modify `PluginPage.tsx` — it already resolves `CUSTOM_COMPONENTS[plugin.id]` whenever `manifest.frontend.component` is set.
 
 - [ ] **Step 6: Add i18n files**
 
