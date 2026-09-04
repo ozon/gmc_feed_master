@@ -105,6 +105,50 @@ global → client → feed_source  (per-key dict merge, deeper wins)
 - Labelizer & Category: `["global", "client"]` only (deliberate, per-market labeling/categorization out of MVP)
 - Generic merge replaces non-dict values per key; plugins needing finer-grained list merging implement custom logic (Labelizer dimensions)
 
+### Plugin Architecture Overview
+
+```mermaid
+flowchart TD
+    subgraph Discovery["Plugin Discovery"]
+        SCAN[Scan plugins/\nDirectory]
+        MAN[Parse plugin.json\nManifest]
+        REG[Register in\nPlugin Table]
+    end
+
+    subgraph Config["Three-Tier Config Merge"]
+        G[Global Scope\nplugins/config/]
+        C[Client Scope\nClient Override]
+        FS[Feed Source Scope\nSource Override]
+        MERGE[Per-Key Dict Merge\nDeep Wins]
+    end
+
+    subgraph Runtime["Plugin Runtime"]
+        RUN[PluginStep\nPipeline Module]
+        CTX[RunContext\nclient_id, feed_source_id]
+        PROC[process\nproduct, config, data]
+    end
+
+    subgraph CorePlugins["Core Plugins - Auto-Enabled"]
+        FILTER[Filter Plugin\nScalar Conditions]
+        RULES[Rules Plugin\nIF/THEN AST]
+        LABEL[Labelizer\nPer-Market Labels]
+        CAT[Category\nPer-Market Categories]
+    end
+
+    SCAN --> MAN
+    MAN --> REG
+    G --> MERGE
+    C --> MERGE
+    FS --> MERGE
+    MERGE --> RUN
+    RUN --> CTX
+    CTX --> PROC
+    RUN --> FILTER
+    RUN --> RULES
+    RUN --> LABEL
+    RUN --> CAT
+```
+
 ## Scheduling & Concurrency
 - **APScheduler** in FastAPI process; cron expressions in UTC
 - **Per-feed-source lock** (`app/pipeline/locks.py:LockRegistry`) — overlapping run skipped, logged "previous run still active"
