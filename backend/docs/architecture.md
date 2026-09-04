@@ -20,7 +20,7 @@ flowchart LR
 | 1. Ingest | `IngestStep` | Fetch source feed (HTTP/HTTPS, Basic Auth, 60s timeout, 500MB limit); parse headers via flat notation (`app/ingest/flat_notation.py`); bare structured columns (registry-known structured attribute without annotation) parse as generic (untyped) scalar columns rather than being rejected; only explicit `attr(sub:…)` annotation produces structured kinds |
 | 2. Mapping | `MappingStep` | Apply `FeedSource.field_mapping` (auto-mapped on first run); transform source fields → registry attributes. Mapping keys may be dotted source paths (`parent.sub` for structured/repeated-structured sources; an exact source-field-name match wins over path resolution). A whole-field mapping and sub-field mappings of the same parent are mutually exclusive (PUT → 422). Sub-field values broadcast over all elements of repeated sources; `attr.subfield` targets of repeated structured attributes merge element-wise by index. A whole-attribute target `X` and any `X.subfield` target are mutually exclusive claims across sources (PUT → 422, and the auto-matcher's claim bookkeeping enforces the same exclusion in both directions — whole-claimed `X` blocks sub claims on `X.*`, sub-claimed `X.<sub>` blocks a whole claim on `X`). Empty strings are dropped when materializing repeated-scalar targets (broadcast sentinels for absent elements and genuinely empty list values alike, per spec §5.7). |
 | 3. Staging | `StagingStep` | Delta detection via `content_hash` + `config_hash`; upsert `StagingProduct`; write `StagingHistory` on change |
-| 4. Plugins | `PluginStep` | Execute pipeline modules in order; each plugin receives `original_product` (read-only), resolved config & data |
+| 4. Plugins | `PluginStep` | Execute pipeline modules in order; each plugin receives `original_product` (read-only), resolved config & data. Return `None` → drop product (logged with plugin_id and reason; `excluded=True` in staging) |
 | 5. Quality Check | `QualityCheckStep` | Run per-product + cross-product rules; persist `QualityFinding`; never blocks export |
 | 6. Export | `ExportStep` | Serialize to GMC XML; version in `ExportVersion`; atomic publish to `export_dir/published/{id}.xml` |
 
@@ -84,6 +84,18 @@ class PipelineModulePlugin(Protocol):
 - `RunContext`: `client_id`, `feed_source_id`, `run_id`, `logger`, `original_product` (read-only deep copy)
 - Return `None` → drop product (logged with `plugin_id` and reason)
 - Exception in `process()` → product errored, run continues, logged to `IngestionRun`
+- `PluginStep` calls optional `prepare_run` once per plugin instance per run and passes the returned state to `process`.
+
+### Core Plugins (auto-enabled at discovery)
+
+| Plugin | Extension Point | Purpose | Config Shape |
+|--------|----------------|---------|-------------|
+| **Filter** | `pipeline_module` | Conjunctive scalar condition evaluator; drops non-matching products | `{isActive, conditions[{field, op, arg?, caseSensitive?}]}` — 6 ops: `equals`, `not_equals`, `contains`, `not_contains`, `exists`, `empty` |
+| **Rules** | `pipeline_module` | Ordered rule engine with IF/THEN AST actions | `{isActive, rules[{when, then[], isMasterRule}]}` — all/and/or conditions, 6 action ops |
+| Labelizer | `pipeline_module` | Per-market product labeling | `["global", "client"]` scopes only |
+| Category | `pipeline_module` | Per-market product categorization | `["global", "client"]` scopes only |
+
+Filter and Rules register optional custom routes (`POST /plugins/filter/preview` for live preview counts; Rules uses standard config/data endpoints only). Full config shapes and operator details in `docs/plugins.md`.
 
 ### Three-Tier Scope Merge (`app/staging/config_resolver.py:merge_scopes`)
 ```

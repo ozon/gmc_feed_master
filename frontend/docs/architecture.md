@@ -105,7 +105,8 @@ export function useSavePipeline(feedSourceId) {
     │   ├── /findings                       → MonitoringFindingsPage
     │   └── /dry-run                        → MonitoringDryRunPage
     ├── /clients/:clientId/feeds/:feedSourceId/export         → ExportPage
-    ├── /clients/:clientId/plugins/:pluginId                  → PluginPage
+    ├── /clients/:clientId/feeds/:feedSourceId/plugins/:pluginId  → PluginPage (feed scope)
+    ├── /clients/:clientId/plugins/:pluginId                  → PluginPage (client scope)
     └── /plugins/:pluginId                                    → PluginPage (global scope)
 ```
 
@@ -142,6 +143,13 @@ export function useSavePipeline(feedSourceId) {
   - Schema from `plugin.manifest.config_schema`
   - Auto-rendered via `JsonSchemaForm` (RJSF-style custom impl)
   - Custom component via `manifest.frontend.component` (build-time import)
+  - Registry map in `src/features/plugin/customComponents.ts` — keyed by plugin id (currently `rules` → `RulesUI`, `filter` → `FilterUI`)
+  - Fallback: if plugin id has no registry entry, renders schema form
+- **Feed-scoped plugin routes**: `clients/:clientId/feeds/:feedSourceId/plugins/:pluginId` — Feed-priority nav links appear in AppShell only within feed context; hidden outside
+- **Plugin UIs with custom components**:
+  - `rules` → `RulesUI` (`src/features/rules/`) — ordered rule list with dnd reordering, master pinning, i18n (`rules` namespace)
+  - `filter` → `FilterUI` (`src/features/filter/`) — conjunctive scalar condition editor with live preview, dirty-guard + useBlocker, i18n (`filter` namespace)
+- Both custom components use the same save flow: `lastConfigRef` identity-guard rehydration, `configsEqual` dirty check, `useBlocker` navigation guard, `useSavePluginConfig` mutation
 
 ### Quality Dashboard (`src/features/monitoring/`)
 - `MonitoringRunsPage` — `IngestionRunsTable` with polling
