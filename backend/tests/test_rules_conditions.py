@@ -112,6 +112,13 @@ def test_text_ops_coerce_non_string_values():
     assert evaluate_condition(node, {"price": 20.0}) is False
 
 
+def test_numeric_missing_arg_raises():
+    from plugin import ConditionError
+
+    with pytest.raises(ConditionError):
+        evaluate_condition({"op": "gt", "field": "price"}, {"price": 10})
+
+
 def test_unknown_op_raises():
     from plugin import ConditionError
 

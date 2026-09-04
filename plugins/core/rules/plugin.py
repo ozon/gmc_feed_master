@@ -96,6 +96,8 @@ def evaluate_condition(node: dict[str, Any], product: dict[str, Any]) -> bool:
         return pattern.search(_as_text(value)) is not None
 
     if op in ("gt", "lt", "gte", "lte", "between"):
+        if node.get("arg") is None:
+            raise ConditionError(f"condition op {op!r} requires arg")
         number = _as_number(value)
         arg = _as_number(node.get("arg"))
         if number is None or arg is None:
