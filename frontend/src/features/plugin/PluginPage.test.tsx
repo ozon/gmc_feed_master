@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { notifications, Notifications } from '@mantine/notifications';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { createMemoryRouter, MemoryRouter, Route, Routes, RouterProvider } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
@@ -34,7 +34,7 @@ const plugin = {
 };
 
 beforeAll(async () => {
-  await i18n.loadNamespaces('plugins');
+  await i18n.loadNamespaces(['plugins', 'rules', 'common']);
 });
 
 beforeEach(() => {
@@ -58,6 +58,24 @@ function renderAt(path: string) {
         <Route path="/clients/:clientId/plugins/:pluginId" element={<PluginPage />} />
       </Routes>
     </MemoryRouter>,
+    { wrapper: withQueryClient() },
+  );
+}
+
+function renderWithDataRouter(path: string) {
+  const router = createMemoryRouter(
+    [
+      { path: '/plugins/:pluginId', element: <PluginPage /> },
+      { path: '/clients/:clientId/plugins/:pluginId', element: <PluginPage /> },
+      { path: '/clients/:clientId/feeds/:feedSourceId/plugins/:pluginId', element: <PluginPage /> },
+    ],
+    { initialEntries: [path] },
+  );
+  return render(
+    <>
+      <Notifications position="top-right" limit={1} />
+      <RouterProvider router={router} />
+    </>,
     { wrapper: withQueryClient() },
   );
 }
@@ -134,5 +152,41 @@ describe('PluginPage', () => {
 
     renderAt('/plugins/example_upper');
     expect(await screen.findByText(/no schema|no configuration/i)).toBeInTheDocument();
+  });
+
+  it('renders a custom component when manifest.frontend.component is set', async () => {
+    const rulesPlugin = {
+      ...plugin,
+      id: 'rules',
+      name: 'Rules',
+      manifest: {
+        ...plugin.manifest,
+        frontend: { menu_item: 'Rules', icon: 'list-check', component: 'component.tsx' },
+      },
+    };
+    stubFetch((url, init) => {
+      if (url === '/plugins') return jsonResponse([rulesPlugin]);
+      if (url.startsWith('/plugins/rules/config')) {
+        if (init?.method === 'PUT') return jsonResponse({ rules: [] });
+        return jsonResponse({
+          rules: [
+            {
+              id: 'r1',
+              name: 'Remove HTML',
+              isMasterRule: true,
+              isActive: true,
+              when: { op: 'all' },
+              then: [{ op: 'set', field: 'condition', value: 'new' }],
+            },
+          ],
+        });
+      }
+      if (url.startsWith('/feed-sources/1/fields')) return jsonResponse({ fields: ['title', 'condition'] });
+      return jsonResponse({});
+    });
+    renderWithDataRouter('/clients/1/feeds/1/plugins/rules');
+    expect(await screen.findByTestId('rules-list')).toBeInTheDocument();
+    // Generic Save is hidden with a custom component; the only "Save" button is RulesUI's own, disabled until dirty.
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
   });
 });

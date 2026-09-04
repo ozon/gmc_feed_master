@@ -7,6 +7,9 @@ import { JsonSchemaForm, type JsonSchema } from '../../components/JsonSchemaForm
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import { notifySuccess, mapFieldErrors, notifyApiError } from '../../app/notifications';
 import { ApiError } from '../../api/client';
+// MVP wiring: static import of the core rules plugin component (the plugin stub is the seam).
+// Full build-time discovery of plugin components is a follow-up — see ADR 0002.
+import RulesUI from '../../../../plugins/core/rules/frontend/component';
 
 export function PluginPage() {
   const { t } = useTranslation('plugins');
@@ -44,6 +47,8 @@ export function PluginPage() {
   if (!plugin) return <EmptyState message={t('notFound')} />;
 
   const schema = plugin.manifest?.config_schema as JsonSchema | undefined;
+  const customComponent = plugin.manifest?.frontend?.component;
+  const CustomComponent = customComponent === 'component.tsx' ? RulesUI : null;
   if (!schema) return <EmptyState message={t('noSchema')} />;
 
   async function onSubmit(value: unknown) {
@@ -71,6 +76,8 @@ export function PluginPage() {
         <LoadingState />
       ) : config.isError ? (
         <ErrorState onRetry={() => void config.refetch()} />
+      ) : CustomComponent ? (
+        <CustomComponent pluginId={plugin.id} scope={scope} />
       ) : (
         <JsonSchemaForm
           schema={schema}
@@ -79,11 +86,13 @@ export function PluginPage() {
           errors={saveConfig.error instanceof ApiError ? mapFieldErrors(saveConfig.error.errors) : {}}
         />
       )}
-      <Group justify="flex-end">
-        <Button onClick={() => void onSubmit(formValue)} loading={saveConfig.isPending}>
-          {t('save')}
-        </Button>
-      </Group>
+      {!CustomComponent && (
+        <Group justify="flex-end">
+          <Button onClick={() => void onSubmit(formValue)} loading={saveConfig.isPending}>
+            {t('save')}
+          </Button>
+        </Group>
+      )}
     </Stack>
   );
 }
