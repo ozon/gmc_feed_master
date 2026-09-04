@@ -110,7 +110,7 @@ class TestMatches:
 
 
 CustomLabelsPlugin = _plugin.CustomLabelsPlugin
-validate_config_fn = None  # bound via class in Task 3; tests call the method
+
 
 from registry.model import (
     AttributeKind,

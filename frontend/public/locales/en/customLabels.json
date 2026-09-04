@@ -17,6 +17,6 @@
     "valueTemplate": "Value template",
     "valueTemplateHint": "Use {field} tokens, e.g. {brand} - Mid Funnel. An empty token skips the rule.",
     "fallbackTemplate": "Fallback template",
-    "fallbackHint": "Used when no rule matches this slot. Only the first rule of a slot may declare it."
+    "fallbackHint": "Used when a rule matched but the template resolved empty (e.g. token skip). Only the first rule of a slot may declare it."
   }
 }
