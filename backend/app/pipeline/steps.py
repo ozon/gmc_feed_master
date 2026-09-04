@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import logging
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
@@ -212,6 +213,28 @@ class PluginStep:
         outcomes: list[PluginOutcome] = []
         processed = dropped = errored = 0
 
+        # prepare_run: once per plugin instance per run (run-scoped state).
+        run_states: dict[str, Any] = {}
+        accepts_state: dict[str, bool] = {}
+        for instance in bundle.get("instances", []):
+            plugin_obj = self._registry.get(instance["plugin"])
+            if plugin_obj is None:
+                continue
+            accepts_state[instance["plugin"]] = (
+                "state" in inspect.signature(plugin_obj.process).parameters
+            )
+            prepare = getattr(plugin_obj, "prepare_run", None)
+            if callable(prepare):
+                rctx = RunContext(
+                    client_id=ctx.run_state.client_id or 0,
+                    feed_source_id=ctx.feed_source_id,
+                    run_id=ctx.ingestion_run_id,
+                    logger=ctx.logger,
+                )
+                run_states[instance["plugin"]] = prepare(
+                    instance["resolved_config"], instance["resolved_data"], rctx
+                )
+
         for product in ctx.run_state.products:
             pid = product.get("id")
             current = product
@@ -229,12 +252,21 @@ class PluginStep:
                     original_product=original,
                 )
                 try:
-                    result = plugin_obj.process(
-                        current,
-                        instance["resolved_config"],
-                        instance["resolved_data"],
-                        rctx,
-                    )
+                    if accepts_state.get(instance["plugin"]):
+                        result = plugin_obj.process(
+                            current,
+                            instance["resolved_config"],
+                            instance["resolved_data"],
+                            rctx,
+                            state=run_states.get(instance["plugin"]),
+                        )
+                    else:
+                        result = plugin_obj.process(
+                            current,
+                            instance["resolved_config"],
+                            instance["resolved_data"],
+                            rctx,
+                        )
                 except Exception as exc:
                     ctx.logger.warning(
                         "plugin %s errored on product %s: %s",

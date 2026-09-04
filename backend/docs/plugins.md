@@ -114,6 +114,9 @@ class PipelineModulePlugin(Protocol):
 - **Return `None`**: Drop product (logged with `plugin_id` + reason)
 - **Raise exception**: Product marked errored, run continues, logged to `IngestionRun`
 
+### `prepare_run(config, data, ctx) -> state` (optional)
+Called once per plugin instance per pipeline run, before the first product. Plugins may return any run-scoped state (parsed ID sets, compiled templates). The state is passed to every `process(product, config, data, ctx, state=...)` call of that instance for the run, but only if `process` declares a `state` parameter. Plugins without `prepare_run` are unaffected. Use this instead of caching per-run data on `self` — plugin instances are singletons and runs of different feed sources execute concurrently.
+
 ### Virtual Fields
 Plugins may create **any registry-known attribute** on the product, regardless of input feed schema. Path grammar (§5.7 spec) addresses nested/repeated fields.
 

@@ -13,4 +13,4 @@ class RunContext:
     feed_source_id: int
     run_id: int
     logger: logging.Logger
-    original_product: dict[str, Any]
+    original_product: dict[str, Any] | None = None

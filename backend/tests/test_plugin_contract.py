@@ -194,3 +194,36 @@ class UpperPlugin:
         assert any(
             "route" in v.lower() or "data" in v.lower() for v in violations
         )
+
+
+class TestPrepareRunContract:
+    def test_prepare_run_returning_state_passes(self, tmp_path):
+        manifest_override = json.loads((FIXTURE_DIR / "plugin.json").read_text())
+        manifest_override["config_schema"] = {"type": "object"}
+        code = """
+class UpperPlugin:
+    def validate_config(self, config):
+        pass
+    def process(self, product, config, data, ctx, state=None):
+        return product
+    def prepare_run(self, config, data, ctx):
+        return {"prepared": True}
+"""
+        candidate = _make_candidate(
+            tmp_path, manifest_override=manifest_override, code=code
+        )
+        assert contract_violations(candidate) == []
+
+    def test_prepare_run_raising_returns_violation(self, tmp_path):
+        code = """
+class UpperPlugin:
+    def validate_config(self, config):
+        pass
+    def process(self, product, config, data, ctx):
+        return product
+    def prepare_run(self, config, data, ctx):
+        raise RuntimeError("boom")
+"""
+        candidate = _make_candidate(tmp_path, code=code)
+        violations = contract_violations(candidate)
+        assert any("prepare_run" in v.lower() for v in violations)

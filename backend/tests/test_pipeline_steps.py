@@ -102,3 +102,89 @@ def test_run_state_has_empty_products():
         run_state=RunState(),
     )
     assert ctx.run_state.products == []
+
+
+class _StatefulPlugin:
+    def validate_config(self, config):
+        pass
+
+    def prepare_run(self, config, data, ctx):
+        return {"suffix": str((config or {}).get("suffix", ""))}
+
+    def process(self, product, config, data, ctx, state=None):
+        out = dict(product)
+        out["title"] = str(product.get("title", "")) + state["suffix"]
+        return out
+
+
+class _LegacyPlugin:
+    def validate_config(self, config):
+        pass
+
+    def process(self, product, config, data, ctx):
+        return dict(product)
+
+
+@pytest.mark.asyncio
+async def test_plugin_step_calls_prepare_run_once_and_passes_state(monkeypatch):
+    async def _noop_outcomes(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr("app.pipeline.steps.apply_plugin_outcomes", _noop_outcomes)
+
+    step = PluginStep({"stateful": _StatefulPlugin(), "legacy": _LegacyPlugin()})
+    run_state = RunState(
+        products=[{"id": "p1", "title": "T"}],
+        config_bundle={"instances": [
+            {"plugin": "legacy", "resolved_config": {}, "resolved_data": {}},
+            {"plugin": "stateful", "resolved_config": {"suffix": "-X"}, "resolved_data": {}},
+        ]},
+        product_pks={},
+    )
+    ctx = StepContext(
+        feed_source_id=1,
+        session_factory=None,
+        logger=logging.getLogger("test"),
+        run_state=run_state,
+    )
+
+    result = await step.execute(ctx)
+
+    assert result.processed_count == 1
+    assert run_state.products[0]["title"] == "T-X"
+
+
+@pytest.mark.asyncio
+async def test_plugin_step_legacy_plugins_called_without_state(monkeypatch):
+    async def _noop_outcomes(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr("app.pipeline.steps.apply_plugin_outcomes", _noop_outcomes)
+
+    seen_kwargs: dict[str, object] = {}
+
+    class _Recorder:
+        def validate_config(self, config):
+            pass
+
+        def process(self, product, config, data, ctx):
+            seen_kwargs["keys"] = list(locals().keys())
+            return dict(product)
+
+    step = PluginStep({"rec": _Recorder()})
+    run_state = RunState(
+        products=[{"id": "p1"}],
+        config_bundle={"instances": [{"plugin": "rec", "resolved_config": {}, "resolved_data": {}}]},
+        product_pks={},
+    )
+    ctx = StepContext(
+        feed_source_id=1,
+        session_factory=None,
+        logger=logging.getLogger("test"),
+        run_state=run_state,
+    )
+
+    result = await step.execute(ctx)
+
+    assert result.processed_count == 1
+    assert "state" not in seen_kwargs["keys"]

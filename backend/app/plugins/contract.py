@@ -66,6 +66,23 @@ def _check_validate_config(candidate: Candidate) -> list[str]:
     return []
 
 
+def _check_prepare_run(candidate: Candidate) -> list[str]:
+    prepare = getattr(candidate.instance, "prepare_run", None)
+    if prepare is None:
+        return []
+    rctx = RunContext(
+        client_id=0,
+        feed_source_id=0,
+        run_id=0,
+        logger=logging.getLogger("contract"),
+    )
+    try:
+        prepare({}, {}, rctx)
+    except Exception as exc:
+        return [f"prepare_run() raised: {exc}"]
+    return []
+
+
 def _check_reserved_routes(candidate: Candidate) -> list[str]:
     try:
         router = collect_router(candidate)
@@ -96,6 +113,7 @@ def contract_violations(candidate: Candidate) -> list[str]:
     if not config_gated:
         violations.extend(_check_process(candidate))
         violations.extend(_check_validate_config(candidate))
+        violations.extend(_check_prepare_run(candidate))
 
     violations.extend(_check_reserved_routes(candidate))
 
