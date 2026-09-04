@@ -3,7 +3,6 @@
   "searchPlaceholder": "Produkte suchen…",
   "stageRaw": "Roh",
   "stageProcessed": "Verarbeitet",
-  "processedTooltip": "Verarbeitete Ansicht ist noch nicht verfügbar",
   "columns": "Spalten",
   "all": "Alle",
   "active": "Aktiv",
@@ -28,5 +27,10 @@
   "drawerLastSeenAt": "Zuletzt gesehen",
   "drawerRemovedAt": "Entfernt am",
   "empty": "Keine Produkte gefunden.",
-  "noResults": "Keine Produkte stimmen mit Ihren Filtern überein."
+  "noResults": "Keine Produkte stimmen mit Ihren Filtern überein.",
+  "colState": "Zustand",
+  "stateExcluded": "ausgeschlossen",
+  "stateNotProcessed": "nicht verarbeitet",
+  "drawerProcessedData": "Verarbeitete Daten",
+  "drawerExcluded": "Ausgeschlossen"
 }

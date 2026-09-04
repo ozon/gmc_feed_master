@@ -23,6 +23,7 @@ type SortState = { id: string; desc: boolean } | null;
 type ProductsTableProps = {
   response: ProductsPageResponse;
   visibleColumns: ProductColumnId[];
+  stage: 'raw' | 'processed';
   sort: SortState;
   onSortChange: (sort: SortState) => void;
   pageIndex: number;
@@ -38,6 +39,7 @@ const SORTABLE_COLUMN_IDS = new Set(['product_id', 'title', 'status', 'last_seen
 export function ProductsTable({
   response,
   visibleColumns,
+  stage,
   sort,
   onSortChange,
   pageIndex,
@@ -51,11 +53,21 @@ export function ProductsTable({
   const columns = visibleColumns.map((colId) => ({
     id: colId,
     header: columnLabel(colId, t),
-    accessorFn: (row: ProductListItem) => formatCellValue(colId, row),
+    accessorFn: (row: ProductListItem) => formatCellValue(colId, row, stage),
     // Only ids with backend SQL sort support are sortable; dynamic raw_data
     // fields would produce a 422 from the list endpoint.
     enableSorting: SORTABLE_COLUMN_IDS.has(colId),
   }));
+
+  if (stage === 'processed') {
+    columns.unshift({
+      id: 'state',
+      header: t('colState'),
+      accessorFn: (row: ProductListItem) =>
+        row.excluded ? 'excluded' : row.processed ? '' : 'notProcessed',
+      enableSorting: false,
+    });
+  }
 
   const columnVisibility: Record<string, boolean> = {};
   for (const col of columns) {
@@ -150,6 +162,18 @@ export function ProductsTable({
                 {row.getVisibleCells().map((cell) => {
                   const colId = cell.column.id as ProductColumnId;
                   const value = cell.getValue() as string;
+                  if (colId === 'state') {
+                    if (!value) {
+                      return <MantineTable.Td key={cell.id} />;
+                    }
+                    return (
+                      <MantineTable.Td key={cell.id}>
+                        <Badge color={value === 'excluded' ? 'red' : 'gray'} variant="light" size="sm">
+                          {value === 'excluded' ? t('stateExcluded') : t('stateNotProcessed')}
+                        </Badge>
+                      </MantineTable.Td>
+                    );
+                  }
                   if (colId === 'status') {
                     return (
                       <MantineTable.Td key={cell.id}>

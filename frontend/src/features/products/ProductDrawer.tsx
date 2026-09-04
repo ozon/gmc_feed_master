@@ -1,4 +1,4 @@
-import { Drawer, Table, Text, Title } from '@mantine/core';
+import { Badge, Drawer, Table, Text, Title } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { useProductDetail } from '../../api/hooks';
@@ -53,8 +53,35 @@ export function ProductDrawer({ feedSourceId, productId, onClose }: ProductDrawe
                   <Table.Td>{dayjs(detail.data.removed_at).format('L LTS')}</Table.Td>
                 </Table.Tr>
               )}
+              {detail.data.excluded && (
+                <Table.Tr>
+                  <Table.Td fw={500}>{t('drawerExcluded')}</Table.Td>
+                  <Table.Td>
+                    <Badge color="red" variant="light" size="sm">{t('stateExcluded')}</Badge>
+                  </Table.Td>
+                </Table.Tr>
+              )}
             </Table.Tbody>
           </Table>
+          {detail.data.processed_data && (
+            <>
+              <Title order={5} mt="md" mb="xs">
+                {t('drawerProcessedData')}
+              </Title>
+              <pre
+                style={{
+                  background: 'var(--mantine-color-gray-0)',
+                  padding: 'var(--mantine-spacing-sm)',
+                  borderRadius: 'var(--mantine-radius-sm)',
+                  overflow: 'auto',
+                  maxHeight: 500,
+                  fontSize: 'var(--mantine-font-size-xs)',
+                }}
+              >
+                {JSON.stringify(detail.data.processed_data, null, 2)}
+              </pre>
+            </>
+          )}
           <Title order={5} mt="md" mb="xs">
             raw_data
           </Title>

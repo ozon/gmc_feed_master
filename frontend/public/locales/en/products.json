@@ -3,7 +3,6 @@
   "searchPlaceholder": "Search products…",
   "stageRaw": "Raw",
   "stageProcessed": "Processed",
-  "processedTooltip": "Processed view is not yet available",
   "columns": "Columns",
   "all": "All",
   "active": "Active",
@@ -28,5 +27,10 @@
   "drawerLastSeenAt": "Last seen",
   "drawerRemovedAt": "Removed at",
   "empty": "No products found.",
-  "noResults": "No products match your filters."
+  "noResults": "No products match your filters.",
+  "colState": "State",
+  "stateExcluded": "excluded",
+  "stateNotProcessed": "not processed",
+  "drawerProcessedData": "Processed data",
+  "drawerExcluded": "Excluded"
 }

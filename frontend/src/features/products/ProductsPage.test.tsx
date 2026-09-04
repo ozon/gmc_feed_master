@@ -74,6 +74,10 @@ const productDetail: ProductDetail = {
   last_seen_at: '2026-08-28T12:00:00Z',
   removed_at: '2026-08-29T00:00:00Z',
   raw_data: { title: 'Product 1', price: '10.99', custom_field: 'test-value-42' },
+  processed_data: {
+    title: 'Product 1 PROCESSED', price: '10.99', custom_field: 'test-value-42',
+  },
+  excluded: false,
 };
 
 let fetchMock: ReturnType<typeof stubFetch>;
@@ -277,7 +281,8 @@ describe('ProductsPage', () => {
     await user.click(screen.getByText('Product 1'));
 
     expect(await screen.findByText('Product Details')).toBeInTheDocument();
-    expect(screen.getByText(/test-value-42/)).toBeInTheDocument();
+    expect(screen.getByText(/Product 1 PROCESSED/)).toBeInTheDocument();
+    expect(screen.getAllByText(/test-value-42/)).toHaveLength(2);
   });
 
   it('renders badge for removed item', async () => {
@@ -296,8 +301,22 @@ describe('ProductsPage', () => {
     expect(firstRow.querySelector('[class*="Badge"]')).toBeInTheDocument();
   });
 
-  it('Processed segment is disabled', async () => {
+  it('processed stage toggle fetches processed values and shows state badges', async () => {
+    const user = userEvent.setup();
     setupFetch((url) => {
+      if (url.includes('stage=processed')) {
+        return jsonResponse({
+          ...productsPage1,
+          items: [
+            {
+              ...productsPage1.items[0],
+              title: 'Product 1 PROCESSED',
+              processed: true,
+              excluded: false,
+            },
+          ],
+        });
+      }
       if (url.includes('/feed-sources/2/products')) return jsonResponse(productsPage1);
       return jsonResponse({});
     });
@@ -305,7 +324,38 @@ describe('ProductsPage', () => {
     render(<App />);
     await screen.findByText('Product 1');
 
-    const processed = screen.getByText(/processed/i);
-    expect(processed.closest('[data-disabled]')).toBeTruthy();
+    await user.click(screen.getByText('Processed'));
+
+    expect(await screen.findByText('Product 1 PROCESSED')).toBeInTheDocument();
+  });
+
+  it('shows excluded badge in processed stage', async () => {
+    setupFetch((url) => {
+      if (url.includes('stage=processed')) {
+        return jsonResponse({
+          ...productsPage1,
+          items: [
+            {
+              ...productsPage1.items[0],
+              title: 'Dropped Item',
+              processed: false,
+              excluded: true,
+              processed_data: null,
+            },
+          ],
+        });
+      }
+      if (url.includes('/feed-sources/2/products')) return jsonResponse(productsPage1);
+      return jsonResponse({});
+    });
+
+    render(<App />);
+    await screen.findByText('Product 1');
+
+    const user2 = userEvent.setup();
+    await user2.click(screen.getByText('Processed'));
+
+    expect(await screen.findByText('Dropped Item')).toBeInTheDocument();
+    expect(screen.getByText(/ausgeschlossen|excluded/i)).toBeInTheDocument();
   });
 });

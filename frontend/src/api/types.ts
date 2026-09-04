@@ -115,6 +115,9 @@ export type ProductListItem = {
   price: string | null;
   condition: string | null;
   raw_data: Record<string, unknown>;
+  processed?: boolean;
+  excluded?: boolean;
+  processed_data?: Record<string, unknown> | null;
 };
 
 export type ProductsPageResponse = {
@@ -133,6 +136,8 @@ export type ProductDetail = {
   last_seen_at: string;
   removed_at: string | null;
   raw_data: Record<string, unknown>;
+  processed_data: Record<string, unknown> | null;
+  excluded: boolean;
 };
 
 export type IngestionRunRow = {

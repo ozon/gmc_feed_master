@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Checkbox, Group, Popover, SegmentedControl, Select, Stack, TextInput, Tooltip } from '@mantine/core';
+import { Button, Checkbox, Group, Popover, SegmentedControl, Select, Stack, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconColumns3, IconSearch } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +28,7 @@ export function ProductsPage() {
   const qParam = searchParams.get('q') ?? '';
   const statusParam = searchParams.get('status') ?? 'all';
   const sortParam = searchParams.get('sort') ?? '';
+  const stageParam = searchParams.get('stage') === 'processed' ? 'processed' : 'raw';
   const pageParam = Number(searchParams.get('page') ?? '1');
   const pageSizeParam = Number(searchParams.get('page_size') ?? '50');
 
@@ -40,6 +41,7 @@ export function ProductsPage() {
     q: debouncedQ || undefined,
     status: statusParam || undefined,
     sort: sortParam || undefined,
+    stage: stageParam,
   });
 
   const fieldsQuery = useFeedSourceFields(feedSourceId ?? '');
@@ -158,16 +160,16 @@ export function ProductsPage() {
             w={120}
             aria-label={t('colStatus')}
           />
-          <Tooltip label={t('processedTooltip')}>
-            <SegmentedControl
-              value="raw"
-              data={[
-                { value: 'raw', label: t('stageRaw') },
-                { value: 'processed', label: t('stageProcessed') },
-              ]}
-              disabled
-            />
-          </Tooltip>
+          <SegmentedControl
+            value={stageParam}
+            onChange={(value) => updateParams({ stage: value === 'raw' ? null : value, page: null })}
+            data={[
+              { value: 'raw', label: t('stageRaw') },
+              { value: 'processed', label: t('stageProcessed') },
+            ]}
+            aria-label={t('stageProcessed')}
+            data-testid="stage-segmented"
+          />
         </Group>
         <Popover width={220} position="bottom-end" shadow="md">
           <Popover.Target>
@@ -192,6 +194,7 @@ export function ProductsPage() {
       <ProductsTable
         response={query.data}
         visibleColumns={renderableColumnIds}
+        stage={stageParam}
         sort={sortState}
         onSortChange={handleSortChange}
         pageIndex={pageParam - 1}

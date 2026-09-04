@@ -47,6 +47,7 @@ type ProductListParams = {
   q?: string;
   status?: string;
   sort?: string;
+  stage?: 'raw' | 'processed';
 };
 
 function buildProductsQuery(params: ProductListParams): string {
@@ -56,6 +57,7 @@ function buildProductsQuery(params: ProductListParams): string {
   if (params.q) search.set('q', params.q);
   if (params.status && params.status !== 'all') search.set('status', params.status);
   if (params.sort) search.set('sort', params.sort);
+  if (params.stage && params.stage !== 'raw') search.set('stage', params.stage);
   return search.toString();
 }
 

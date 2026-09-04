@@ -90,16 +90,21 @@ export function saveColumnConfig(
 export function formatCellValue(
   id: ProductColumnId,
   row: ProductListItem,
+  stage: 'raw' | 'processed' = 'raw',
 ): string {
   if (id === 'last_seen_at') {
     return dayjs(row.last_seen_at).format('L LTS');
   }
-  if (id in row && id !== 'raw_data') {
+  if (id in row && id !== 'raw_data' && id !== 'processed_data') {
     const value = row[id as keyof ProductListItem];
     if (value == null) return '';
     return String(value);
   }
-  const raw = row.raw_data?.[id];
+  const source =
+    stage === 'processed' && row.processed_data
+      ? row.processed_data
+      : row.raw_data;
+  const raw = source?.[id];
   if (raw == null) return '';
   if (typeof raw === 'string') return raw;
   return JSON.stringify(raw);
