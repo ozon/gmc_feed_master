@@ -1,0 +1,77 @@
+{
+  "id": "filter",
+  "name": "Filter",
+  "version": "1.0.0",
+  "extension_point": "pipeline_module",
+  "entry_point": "plugin:FilterPlugin",
+  "config_scope": [
+    "global",
+    "client",
+    "feed_source"
+  ],
+  "data_scope": [
+    "global",
+    "client",
+    "feed_source"
+  ],
+  "config_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "title": "Filter",
+    "properties": {
+      "isActive": {
+        "type": "boolean",
+        "title": "Filter active",
+        "default": true
+      },
+      "conditions": {
+        "type": "array",
+        "title": "Conditions",
+        "items": {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string",
+              "title": "Field"
+            },
+            "op": {
+              "type": "string",
+              "title": "Operator",
+              "enum": [
+                "equals",
+                "not_equals",
+                "contains",
+                "not_contains",
+                "exists",
+                "empty"
+              ]
+            },
+            "arg": {
+              "type": "string",
+              "title": "Value"
+            },
+            "caseSensitive": {
+              "type": "boolean",
+              "title": "Case sensitive",
+              "default": true
+            }
+          },
+          "required": [
+            "field",
+            "op"
+          ]
+        }
+      }
+    }
+  },
+  "data_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "title": "Filter data"
+  },
+  "frontend": {
+    "menu_item": "Filter",
+    "icon": "filter",
+    "component": "component.tsx"
+  }
+}
