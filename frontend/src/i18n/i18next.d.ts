@@ -8,6 +8,7 @@ import type monitoring from '../../public/locales/en/monitoring.json';
 import type pipeline from '../../public/locales/en/pipeline.json';
 import type plugins from '../../public/locales/en/plugins.json';
 import type products from '../../public/locales/en/products.json';
+import type rules from '../../public/locales/en/rules.json';
 import type setup from '../../public/locales/en/setup.json';
 import type notifications from '../../public/locales/en/notifications.json';
 
@@ -25,6 +26,7 @@ declare module 'i18next' {
       pipeline: typeof pipeline;
       plugins: typeof plugins;
       products: typeof products;
+      rules: typeof rules;
       setup: typeof setup;
     };
   }
