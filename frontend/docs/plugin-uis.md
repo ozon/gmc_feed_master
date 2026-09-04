@@ -66,6 +66,10 @@ When no `component` is declared, config/data UIs are auto-rendered from JSON Sch
 - Custom components own their save UX: `PluginPage` hides its generic Save button
   when rendering a custom component
 
+### Custom Component Registry
+
+Custom components resolve through a static registry map (`frontend/src/features/plugin/customComponents.ts`, keyed by plugin id — `rules`, `filter`) instead of a single import. Full build-time discovery (ADR 0002) replaces this static map as follow-up.
+
 ### First-Party Reference: Rules (`plugins/core/rules/frontend/component.tsx`)
 
 The Rules module is the first core plugin with a custom UI. MVP wiring:
@@ -85,6 +89,16 @@ The rules UI is reachable at the feed-scoped route
 `/clients/:clientId/feeds/:feedSourceId/plugins/:pluginId` (the nav shows
 feed-scoped plugin links only inside a feed context), and `PluginPage` derives
 the scope tier from route params (most-specific wins).
+
+### First-Party Reference: Filter (`plugins/core/filter/frontend/component.tsx`)
+
+The Filter module is the second core plugin with a custom UI. FilterUI is a
+single-pane condition editor with live preview via `POST /plugins/filter/preview`.
+It renders a conjunctive set of scalar conditions (equals, not_equals, contains,
+not_contains, exists, empty) and shows pass/fail counts against staged products.
+
+The stub re-exports `frontend/src/features/filter/FilterUI`. FilterUI owns its
+own save state and uses the scope-aware plugin config hooks.
 
 Follow-ups: full build-time discovery (Vite scan of `plugins/*/frontend/`
 generating `pluginComponents.ts`, per ADR 0002 — third-party plugins currently
@@ -139,7 +153,7 @@ const menuItems = plugins
 | Labelizer | Custom (`Editor.tsx`) | Dimension editor with global/client scope switch, ID lists per dimension |
 | Rules | Custom (`component.tsx` stub → `frontend/src/features/rules/RulesUI`) | Ordered rule list (IF/THEN AST) with dnd reordering, active/master toggles, per-rule editor, dirty-save guard |
 | Category | Custom (`Editor.tsx`) | 4-bucket dashboard (auto/manual/excluded/uncategorized), drag-drop rule editor, taxonomy autocomplete, match counts, matched-products modal, dirty-state guard |
-| Filter | Schema-rendered | Conjunctive scalar conditions |
+| Filter | Custom (`component.tsx` stub → `frontend/src/features/filter/FilterUI`) | Conjunctive scalar condition editor with live preview |
 
 ## Adding a Plugin UI
 

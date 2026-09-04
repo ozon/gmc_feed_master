@@ -162,7 +162,7 @@ Checks:
 | Labelizer | `labelizer` | `config: [global, client]`, `data: [client]` | `id_in_list` condition only |
 | Rules | `rules` | `config: [global, client, feed_source]`, `data: [global, client, feed_source]` | Ordered rule list (IF/THEN AST): text/numeric/regex conditions; set/replace/append/prepend/remove/clear actions; master flag = UI pinning; `plugins/core/rules/` |
 | Category | `category` | `config: [global, client]`, `data: [client]` | Rules + manual assignments + taxonomy autocomplete |
-| Filter | `filter` | `config: [global, client, feed_source]`, `data: [global, client, feed_source]` | Conjunctive scalar conditions only |
+| Filter | `filter` | `config: [global, client, feed_source]`, `data: [global, client, feed_source]` | Single conjunctive condition set (6 scalar ops); drops non-matching products; live preview endpoint; `plugins/core/filter/` |
 
 ### Rules Plugin (`plugins/core/rules/`)
 
@@ -182,6 +182,19 @@ Config document: `{"rules": [{id, name, isMasterRule, isActive, when, then}]}`.
   numeric args raise `ValueError`); `process` evaluates conditions against the current
   product state (post-previous-plugins) and applies actions in order (copy-on-write);
   never mutates `ctx.original_product`.
+
+### Filter Plugin (`plugins/core/filter/`)
+
+Config document: `{"isActive": true, "conditions": [{field, op, arg?, caseSensitive?}]}`.
+- Ops: `equals`, `not_equals`, `contains`, `not_contains` (text, `caseSensitive` default
+  `true`), `exists`, `empty`. Conjunctive — all conditions must match.
+- Missing field: `equals`/`contains` → false; `not_equals`/`not_contains` → true;
+  `exists` → false; `empty` → true.
+- `isActive: false` → pass-through; empty `conditions` → pass-all.
+- Non-matching product → `process()` returns `None` → dropped (`excluded=true`).
+- `POST /plugins/filter/preview` — `{feed_source_id, conditions}` →
+  `{total, pass, fail}` against active, non-excluded staged products (canonical
+  mapped state; approximation when mutating modules run before the filter).
 
 ## Example Plugin (`plugins/example_upper/`)
 

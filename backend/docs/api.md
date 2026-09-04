@@ -90,6 +90,8 @@ Plugins may register custom routes under `/plugins/{plugin_id}/...` via `registe
 
 Plugin routes must not use these prefixes. Example: Category plugin uses `/plugins/category/rules/stats`, `/plugins/category/matches`.
 
+- `POST /plugins/filter/preview` — live filter preview. Body: `{feed_source_id, conditions}` (same condition shape as the filter config). Response `{total, pass, fail}` counting active, non-excluded staged products. 404 unknown feed source; 422 `{"errors": [...]}` on invalid conditions.
+
 ## Registry
 - `GET /registry/attributes` — full GMC Attribute Registry (from `backend/registry/attributes.json`)
   Each attribute includes `baseline_required: boolean` — true for the baseline-required set (spec §7: `id`, `link`, `image_link`, `availability`, `price`, `condition`, and the `title`/`structured_title`, `description`/`structured_description` alternative-pair members); false otherwise.
