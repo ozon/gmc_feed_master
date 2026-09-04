@@ -1,6 +1,7 @@
 import {
   ActionIcon,
   Badge,
+  Button,
   Group,
   Menu,
   NumberInput,
@@ -288,6 +289,16 @@ export function RuleEditor({
             </Group>
           </Group>
         ))}
+        <Button
+          variant="light"
+          size="xs"
+          leftSection={<IconPlus size={14} />}
+          onClick={() => onPatchThen([...rule.then, { op: 'set', field: '', value: '' }])}
+          data-testid="then-add-footer"
+          w="fit-content"
+        >
+          {t('editor.addSection')}
+        </Button>
       </Stack>
     </Stack>
   );

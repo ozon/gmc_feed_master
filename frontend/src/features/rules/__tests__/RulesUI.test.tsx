@@ -115,4 +115,13 @@ describe('RulesUI', () => {
     await user.click(await screen.findByTestId('then-add-0'));
     expect(await screen.findByTestId('then-row-1')).toBeInTheDocument();
   });
+
+  it('new rule without THEN rows can add its first action via the footer button', async () => {
+    const user = userEvent.setup();
+    renderUI();
+    await user.click(await screen.findByRole('button', { name: /create rule/i }));
+    expect(screen.queryByTestId('then-row-0')).not.toBeInTheDocument();
+    await user.click(await screen.findByTestId('then-add-footer'));
+    expect(await screen.findByTestId('then-row-0')).toBeInTheDocument();
+  });
 });
