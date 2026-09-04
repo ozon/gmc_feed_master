@@ -25,6 +25,24 @@
 - Conventional Commits style messages (see `git log`): `feat:`, `fix:`, `test:`, `docs:`.
 - All user-visible strings through i18n namespace `rules`.
 
+## Amendments (2026-09-04, controller — post-Task-4/5 findings)
+
+**File-layout amendment (resolves Task 5 BLOCKED: bare imports unresolvable from `plugins/`):** `.tsx` files under `plugins/` cannot resolve bare package imports (no `node_modules` above `plugins/`; esbuild injects `react/jsx-dev-runtime`). Real UI code lives in the frontend tree; the plugin dir keeps a pure re-export stub:
+
+- `frontend/src/features/rules/RulesUI.tsx` — default export `RulesUI` (orchestration, save state, `useBlocker`)
+- `frontend/src/features/rules/RuleList.tsx` — list column
+- `frontend/src/features/rules/RuleEditor.tsx` — editor column (+ internal `ConditionNodeEditor`)
+- `frontend/src/features/rules/dndUtils.ts` — Task 6
+- Tests in `frontend/src/features/rules/__tests__/` import siblings directly (`../RulesUI`)
+- `plugins/core/rules/frontend/ast.ts` — UNCHANGED (import-free, single source of truth; imported 4-up from the feature dir: `'../../../../plugins/core/rules/frontend/ast'`)
+- `plugins/core/rules/frontend/component.tsx` — pure re-export stub, one line: `export { default } from '../../../../frontend/src/features/rules/RulesUI';` (relative-only import, resolvable; satisfies manifest `frontend.component`)
+
+**Import-path arithmetic (repo-verified in Tasks 4-5):** from `frontend/src/features/rules/*` the repo root is 4-up (`../../../../`); from `frontend/src/features/rules/__tests__/*` it is 5-up; from `frontend/src/features/plugin/*` (PluginPage) it is 4-up; from `plugins/core/rules/frontend/component.tsx` it is 4-up. Import mapping for RulesUI.tsx (in `frontend/src/features/rules/`): hooks `'../../api/hooks'`, notifications `'../../app/notifications'`, ApiError `'../../api/client'`, ast `'../../../../plugins/core/rules/frontend/ast'`.
+
+**Test-harness amendment:** `useBlocker` requires a data router — RulesUI tests must wrap in `createMemoryRouter` + `RouterProvider` (established `PipelinePage.test.tsx` pattern), not a bare render inside MemoryRouter.
+
+**Full build-time discovery of plugin components remains follow-up** (per ADR 0002) — the stub is the documented seam; when the Vite generator lands, plugin components can move back in-tree.
+
 ---
 
 ### Task 1: Rules engine — condition evaluation
