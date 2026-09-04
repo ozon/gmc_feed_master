@@ -1,4 +1,13 @@
 import { Button, Grid, Group, Stack, Text } from '@mantine/core';
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBlocker } from 'react-router';
@@ -15,6 +24,7 @@ import {
 } from '../../../../plugins/core/rules/frontend/ast';
 import { RuleList } from './RuleList';
 import { RuleEditor } from './RuleEditor';
+import { applyDragEnd } from './dndUtils';
 
 export type RulesUIProps = { pluginId: string; scope: PluginScope };
 
@@ -31,6 +41,8 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const lastConfigRef = useRef<unknown>(null);
   useEffect(() => {
@@ -103,6 +115,11 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
     setRules(normalizeConfig(config.data ?? {}).rules);
   }
 
+  function onDragEnd(event: DragEndEvent) {
+    const next = applyDragEnd(rules, event);
+    if (next) setRules(next);
+  }
+
   return (
     <Stack gap="md">
       <Group justify="space-between">
@@ -120,7 +137,9 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
       </Group>
       <Grid>
         <Grid.Col span={5}>
-          <RuleList
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={localRules.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+              <RuleList
             rules={localRules}
             selectedId={selectedId}
             selectedIds={selectedIds}
@@ -176,7 +195,9 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
               )
             }
             onBulkDelete={confirmDeleteSelected}
-          />
+              />
+            </SortableContext>
+          </DndContext>
         </Grid.Col>
         <Grid.Col span={7}>
           <RuleEditor

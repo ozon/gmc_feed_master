@@ -1,3 +1,5 @@
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   ActionIcon,
   Badge,
@@ -190,6 +192,7 @@ function RuleRow({
   onDelete: () => void;
 }) {
   const { t } = useTranslation('rules');
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: rule.id });
   return (
     <Group
       wrap="nowrap"
@@ -198,18 +201,22 @@ function RuleRow({
       py={6}
       component={UnstyledButton}
       onClick={onSelect}
-      data-testid={`rule-row-${rule.id}`}
+      ref={setNodeRef}
       style={{
         borderRadius: 'var(--mantine-radius-sm)',
         width: '100%',
         textAlign: 'left',
         background: selected ? 'var(--mantine-color-blue-light)' : undefined,
+        transform: CSS.Transform.toString(transform),
+        transition,
       }}
+      data-testid={`rule-row-${rule.id}`}
     >
       <IconGripVertical
         size={16}
-        style={{ color: 'var(--mantine-color-dimmed-text)', flexShrink: 0 }}
-        aria-hidden
+        style={{ color: 'var(--mantine-color-dimmed-text)', flexShrink: 0, cursor: 'grab', touchAction: 'none' }}
+        {...attributes}
+        {...listeners}
       />
       <Checkbox
         aria-label={rule.name}
