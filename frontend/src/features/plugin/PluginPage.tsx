@@ -7,9 +7,7 @@ import { JsonSchemaForm, type JsonSchema } from '../../components/JsonSchemaForm
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import { notifySuccess, mapFieldErrors, notifyApiError } from '../../app/notifications';
 import { ApiError } from '../../api/client';
-// MVP wiring: static import of the core rules plugin component (the plugin stub is the seam).
-// Full build-time discovery of plugin components is a follow-up — see ADR 0002.
-import RulesUI from '../../../../plugins/core/rules/frontend/component';
+import { CUSTOM_COMPONENTS } from './customComponents';
 
 export function PluginPage() {
   const { t } = useTranslation('plugins');
@@ -50,8 +48,8 @@ export function PluginPage() {
   if (!plugin) return <EmptyState message={t('notFound')} />;
 
   const schema = plugin.manifest?.config_schema as JsonSchema | undefined;
-  const customComponent = plugin.manifest?.frontend?.component;
-  const CustomComponent = customComponent === 'component.tsx' ? RulesUI : null;
+  // ADR 0002: static registry map until full build-time discovery lands.
+  const CustomComponent = plugin.manifest?.frontend?.component ? CUSTOM_COMPONENTS[plugin.id] ?? null : null;
   if (!schema && !CustomComponent) return <EmptyState message={t('noSchema')} />;
 
   async function onSubmit(value: unknown) {

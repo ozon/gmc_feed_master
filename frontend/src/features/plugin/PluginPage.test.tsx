@@ -195,6 +195,30 @@ describe('PluginPage', () => {
     expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
   });
 
+  it('renders the filter custom component for the filter plugin', async () => {
+    const filterPlugin = {
+      ...plugin,
+      id: 'filter',
+      name: 'Filter',
+      manifest: {
+        frontend: { menu_item: 'Filter', icon: 'filter', component: 'component.tsx' },
+      },
+    };
+    stubFetch((url, init) => {
+      if (url === '/plugins') return jsonResponse([filterPlugin]);
+      if (url.startsWith('/plugins/filter/config')) {
+        if (init?.method === 'PUT') return jsonResponse({ isActive: true, conditions: [] });
+        return jsonResponse({ isActive: true, conditions: [] });
+      }
+      if (url.startsWith('/feed-sources/1/fields')) return jsonResponse({ fields: ['brand'] });
+      if (url.startsWith('/plugins/filter/preview')) return jsonResponse({ total: 2, pass: 1, fail: 1 });
+      return jsonResponse({});
+    });
+    renderWithDataRouter('/clients/1/feeds/1/plugins/filter');
+    expect(await screen.findByTestId('filter-editor')).toBeInTheDocument();
+    expect(screen.queryByText(/no configuration schema/i)).not.toBeInTheDocument();
+  });
+
   it('renders a custom component even when config_schema is absent', async () => {
     const schemalessRules = {
       ...plugin,
