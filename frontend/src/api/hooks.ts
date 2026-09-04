@@ -392,6 +392,26 @@ export function useSavePluginConfig(pluginId: string, scope?: PluginScope) {
   });
 }
 
+export function usePluginData(pluginId: string, scope?: PluginScope) {
+  return useQuery({
+    queryKey: queryKeys.pluginData(pluginId, scope),
+    queryFn: () =>
+      apiGet<Record<string, unknown>>(`/plugins/${pluginId}/data${buildScopeQuery(scope)}`),
+    enabled: Boolean(pluginId),
+  });
+}
+
+export function useSavePluginData(pluginId: string, scope?: PluginScope) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Record<string, unknown>) =>
+      apiPut<Record<string, unknown>>(`/plugins/${pluginId}/data${buildScopeQuery(scope)}`, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.pluginData(pluginId, scope) });
+    },
+  });
+}
+
 export function useFeedSourcePipeline(feedSourceId: number | string) {
   return useQuery({
     queryKey: queryKeys.feedSource(feedSourceId).pipeline,

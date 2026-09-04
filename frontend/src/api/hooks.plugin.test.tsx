@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { useUpdatePluginEnabled, usePluginConfig, useSavePluginConfig } from './hooks';
+import { useUpdatePluginEnabled, usePluginConfig, useSavePluginConfig, usePluginData, useSavePluginData } from './hooks';
 import { queryClient as defaultClient } from './queryClient';
 import { queryKeys } from './queryKeys';
 import { stubFetch } from '../test/fetch';
@@ -107,5 +107,63 @@ describe('useSavePluginConfig', () => {
       (q) => JSON.stringify(q?.queryKey) === JSON.stringify(expectedKey),
     );
     expect(hasConfigKey).toBe(true);
+  });
+});
+
+describe('usePluginData', () => {
+  it('GETs /plugins/{id}/data with scope query params', async () => {
+    let capturedUrl = '';
+    stubFetch((url) => {
+      if (url.startsWith('/plugins/custom_labels/data')) {
+        capturedUrl = url;
+        return jsonResponse({ slotIds: { r1: 'a' } });
+      }
+      return jsonResponse({});
+    });
+
+    const { result } = renderHook(() => usePluginData('custom_labels', { feedSourceId: 7 }), {
+      wrapper: withClient(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(capturedUrl).toBe('/plugins/custom_labels/data?feed_source_id=7');
+    expect(result.current.data).toEqual({ slotIds: { r1: 'a' } });
+  });
+});
+
+describe('useSavePluginData', () => {
+  it('PUTs /plugins/{id}/data and invalidates the pluginData key', async () => {
+    let captured: { url: string; body: unknown } | null = null;
+    stubFetch((url, init) => {
+      if (url === '/plugins/custom_labels/data?feed_source_id=7' && init?.method === 'PUT') {
+        captured = { url, body: JSON.parse(String(init.body)) };
+        return jsonResponse({ status: 'ok' });
+      }
+      return jsonResponse({});
+    });
+
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useSavePluginData('custom_labels', { feedSourceId: 7 }), {
+      wrapper,
+    });
+    result.current.mutate({ slotIds: { r1: 'a' } });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(captured).toEqual({
+      url: '/plugins/custom_labels/data?feed_source_id=7',
+      body: { slotIds: { r1: 'a' } },
+    });
+    const invalidated = invalidateSpy.mock.calls.map((c) => c[0]);
+    const hasDataKey = invalidated.some(
+      (q) =>
+        JSON.stringify(q?.queryKey) ===
+        JSON.stringify(queryKeys.pluginData('custom_labels', { feedSourceId: 7 })),
+    );
+    expect(hasDataKey).toBe(true);
   });
 });

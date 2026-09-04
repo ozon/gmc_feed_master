@@ -21,4 +21,6 @@ export const queryKeys = {
   }),
   pluginConfig: (pluginId: string, scope?: { clientId?: number; feedSourceId?: number }) =>
     ['plugin-config', pluginId, scope ?? {}] as const,
+  pluginData: (pluginId: string, scope?: { clientId?: number; feedSourceId?: number }) =>
+    ['plugin-data', pluginId, scope ?? {}] as const,
 };
