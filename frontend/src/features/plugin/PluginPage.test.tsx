@@ -189,4 +189,27 @@ describe('PluginPage', () => {
     // Generic Save is hidden with a custom component; the only "Save" button is RulesUI's own, disabled until dirty.
     expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
   });
+
+  it('renders a custom component even when config_schema is absent', async () => {
+    const schemalessRules = {
+      ...plugin,
+      id: 'rules',
+      name: 'Rules',
+      manifest: {
+        frontend: { menu_item: 'Rules', icon: 'list-check', component: 'component.tsx' },
+      },
+    };
+    stubFetch((url, init) => {
+      if (url === '/plugins') return jsonResponse([schemalessRules]);
+      if (url.startsWith('/plugins/rules/config')) {
+        if (init?.method === 'PUT') return jsonResponse({ rules: [] });
+        return jsonResponse({ rules: [] });
+      }
+      if (url.startsWith('/feed-sources/1/fields')) return jsonResponse({ fields: ['title'] });
+      return jsonResponse({});
+    });
+    renderWithDataRouter('/clients/1/feeds/1/plugins/rules');
+    expect(await screen.findByTestId('rules-list')).toBeInTheDocument();
+    expect(screen.queryByText(/no configuration schema/i)).not.toBeInTheDocument();
+  });
 });

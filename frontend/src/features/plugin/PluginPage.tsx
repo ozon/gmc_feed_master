@@ -49,7 +49,7 @@ export function PluginPage() {
   const schema = plugin.manifest?.config_schema as JsonSchema | undefined;
   const customComponent = plugin.manifest?.frontend?.component;
   const CustomComponent = customComponent === 'component.tsx' ? RulesUI : null;
-  if (!schema) return <EmptyState message={t('noSchema')} />;
+  if (!schema && !CustomComponent) return <EmptyState message={t('noSchema')} />;
 
   async function onSubmit(value: unknown) {
     if (!pluginId) return;
@@ -80,7 +80,7 @@ export function PluginPage() {
         <CustomComponent pluginId={plugin.id} scope={scope} />
       ) : (
         <JsonSchemaForm
-          schema={schema}
+          schema={schema!}
           value={formValue}
           onChange={(next) => setFormValue((next ?? {}) as Record<string, unknown>)}
           errors={saveConfig.error instanceof ApiError ? mapFieldErrors(saveConfig.error.errors) : {}}
