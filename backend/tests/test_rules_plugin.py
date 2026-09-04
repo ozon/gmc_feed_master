@@ -51,6 +51,30 @@ def test_replace_regex_with_capture_group():
     assert result == {"title": "SKU-123 - Blue"}
 
 
+def test_replace_case_insensitive_backslash_in_with():
+    result = apply_action(
+        {"title": "Big Sale"},
+        {"op": "replace", "field": "title", "find": "sale", "with": "C:\\path", "caseSensitive": False},
+    )
+    assert result == {"title": "Big C:\\path"}
+
+
+def test_replace_regex_preserves_backslash_in_with():
+    result = apply_action(
+        {"title": "Item 1"},
+        {"op": "replace", "field": "title", "find": r"/Item (\d+)/", "with": "C:\\path $1"},
+    )
+    assert result == {"title": "C:\\path 1"}
+
+
+def test_validate_config_rejects_empty_find():
+    with pytest.raises(ValueError):
+        validate_config({"rules": [{
+            "id": "r", "name": "n", "when": {"op": "all"},
+            "then": [{"op": "replace", "field": "f", "find": "", "with": "x"}],
+        }]})
+
+
 def test_append_and_prepend_coerce():
     assert apply_action({"title": "A"}, {"op": "append", "field": "title", "value": 5})["title"] == "A5"
     assert apply_action({"title": "A"}, {"op": "prepend", "field": "title", "value": "x"})["title"] == "xA"

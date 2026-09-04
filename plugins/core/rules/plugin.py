@@ -143,7 +143,8 @@ def _apply_replace(text: str, action: dict[str, Any]) -> str:
     case_sensitive = action.get("caseSensitive", True)
     if find.startswith("/"):
         pattern = find[1:].removesuffix("/")
-        replacement = re.sub(r"\$(\d+)", r"\\\1", with_value)
+        escaped = with_value.replace("\\", "\\\\")
+        replacement = re.sub(r"\$(\d+)", r"\\\1", escaped)
         try:
             flags = 0 if case_sensitive else re.IGNORECASE
             return re.sub(pattern, replacement, text, flags=flags)
@@ -151,7 +152,7 @@ def _apply_replace(text: str, action: dict[str, Any]) -> str:
             raise ActionError(f"invalid regex find {find!r}: {exc}") from exc
     if case_sensitive:
         return text.replace(find, with_value)
-    return re.sub(re.escape(find), with_value, text, flags=re.IGNORECASE)
+    return re.sub(re.escape(find), lambda _m: with_value, text, flags=re.IGNORECASE)
 
 
 def apply_action(product: dict[str, Any], action: dict[str, Any]) -> dict[str, Any]:
@@ -266,6 +267,8 @@ def validate_config(config: Any) -> None:
                     raise ValueError(f"{action_path}: op {op!r} requires {key}")
             if not isinstance(action.get("field"), str) or not action.get("field"):
                 raise ValueError(f"{action_path}: op {op!r} requires a non-empty field")
+            if op == "replace" and action.get("find") == "":
+                raise ValueError(f"{action_path}: op 'replace' requires a non-empty find")
 
 
 # ---------------------------------------------------------------------------
