@@ -123,7 +123,7 @@ export function RuleEditor({
         </Group>
         <Menu shadow="md" width={180}>
           <Menu.Target>
-            <ActionIcon variant="default" aria-label="rule settings">
+            <ActionIcon variant="default" aria-label={t('editor.settings')}>
               <IconSettings size={14} />
             </ActionIcon>
           </Menu.Target>
@@ -257,14 +257,14 @@ export function RuleEditor({
               <ActionIcon
                 variant="subtle"
                 color="red"
-                aria-label="delete action"
+                aria-label={t('actions.deleteAction')}
                 onClick={() => onPatchThen(rule.then.filter((_, i) => i !== index))}
               >
                 <IconTrash size={14} />
               </ActionIcon>
               <ActionIcon
                 variant="subtle"
-                aria-label="clone action"
+                aria-label={t('actions.cloneAction')}
                 onClick={() => {
                   const next = [...rule.then];
                   next.splice(index + 1, 0, { ...action });
@@ -275,7 +275,7 @@ export function RuleEditor({
               </ActionIcon>
               <ActionIcon
                 variant="subtle"
-                aria-label="add action"
+                aria-label={t('actions.addAction')}
                 onClick={() => {
                   const next = [...rule.then];
                   next.splice(index + 1, 0, { op: 'set', field: '', value: '' });
@@ -336,7 +336,7 @@ function ConditionNodeEditor({
               <ActionIcon
                 variant="subtle"
                 color="red"
-                aria-label="delete section"
+                aria-label={t('actions.deleteSection')}
                 onClick={() =>
                   onChange({ ...node, children: children.filter((_, i) => i !== index) })
                 }
@@ -345,10 +345,10 @@ function ConditionNodeEditor({
               </ActionIcon>
               <ActionIcon
                 variant="subtle"
-                aria-label="clone section"
+                aria-label={t('actions.cloneSection')}
                 onClick={() => {
                   const next = [...children];
-                  next.splice(index + 1, 0, child);
+                  next.splice(index + 1, 0, { ...child });
                   onChange({ ...node, children: next });
                 }}
               >
@@ -356,7 +356,7 @@ function ConditionNodeEditor({
               </ActionIcon>
               <ActionIcon
                 variant="subtle"
-                aria-label="add section"
+                aria-label={t('actions.addSection')}
                 onClick={() => {
                   const next = [...children];
                   next.splice(index + 1, 0, { op: 'equals', field: fields[0]?.value ?? '', arg: '' });

@@ -22,7 +22,8 @@
     "and": "and",
     "addSection": "Add section",
     "addField": "Field",
-    "operation": "Operation"
+    "operation": "Operation",
+    "settings": "Rule settings"
   },
   "ops": {
     "all": "evaluates to all",
@@ -67,9 +68,17 @@
     "deleteSelectedTitle": "Delete selected rules",
     "deleteSelectedBody": "Delete {{count}} rule(s)? This cannot be undone after saving.",
     "activateSelected": "Activate selected",
-    "deactivateSelected": "Deactivate selected"
+    "deactivateSelected": "Deactivate selected",
+    "ruleMenu": "{{name}} menu",
+    "deleteAction": "Delete action",
+    "cloneAction": "Clone action",
+    "addAction": "Add action",
+    "deleteSection": "Delete condition",
+    "cloneSection": "Clone condition",
+    "addSection": "Add condition"
   },
   "unsavedChanges": "You have unsaved changes. Leave anyway?",
   "saved": "Rules saved",
-  "saveFailed": "Failed to save rules"
+  "saveFailed": "Failed to save rules",
+  "duplicateSuffix": "(copy)"
 }

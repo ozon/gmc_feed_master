@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
 import { stubFetch } from '../../../test/fetch';
-import RulesUI from '../RulesUI';
+import RulesUI from '../../../../../plugins/core/rules/frontend/component';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

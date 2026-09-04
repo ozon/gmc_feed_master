@@ -235,7 +235,7 @@ function RuleRow({
         <Menu.Target>
           <ActionIcon
             variant="subtle"
-            aria-label={`${rule.name} menu`}
+            aria-label={t('actions.ruleMenu', { name: rule.name })}
             onClick={(e) => e.stopPropagation()}
           >
             <IconDotsVertical size={14} />

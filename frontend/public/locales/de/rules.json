@@ -22,7 +22,8 @@
     "and": "und",
     "addSection": "Abschnitt hinzufügen",
     "addField": "Feld",
-    "operation": "Operation"
+    "operation": "Operation",
+    "settings": "Regeleinstellungen"
   },
   "ops": {
     "all": "gilt für alle",
@@ -67,9 +68,17 @@
     "deleteSelectedTitle": "Ausgewählte Regeln löschen",
     "deleteSelectedBody": "{{count}} Regel(n) löschen? Nach dem Speichern nicht rückgängig machbar.",
     "activateSelected": "Auswahl aktivieren",
-    "deactivateSelected": "Auswahl deaktivieren"
+    "deactivateSelected": "Auswahl deaktivieren",
+    "ruleMenu": "{{name}} Menü",
+    "deleteAction": "Aktion löschen",
+    "cloneAction": "Aktion duplizieren",
+    "addAction": "Aktion hinzufügen",
+    "deleteSection": "Bedingung löschen",
+    "cloneSection": "Bedingung duplizieren",
+    "addSection": "Bedingung hinzufügen"
   },
   "unsavedChanges": "Ungespeicherte Änderungen. Trotzdem verlassen?",
   "saved": "Regeln gespeichert",
-  "saveFailed": "Regeln speichern fehlgeschlagen"
+  "saveFailed": "Regeln speichern fehlgeschlagen",
+  "duplicateSuffix": "(Kopie)"
 }

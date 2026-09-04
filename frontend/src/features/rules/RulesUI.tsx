@@ -1,5 +1,5 @@
 import { Button, Grid, Group, Stack, Text } from '@mantine/core';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBlocker } from 'react-router';
 import { useFeedSourceFields, usePluginConfig, useSavePluginConfig, type PluginScope } from '../../api/hooks';
@@ -31,14 +31,14 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const [hydrated, setHydrated] = useState(false);
 
+  const lastConfigRef = useRef<unknown>(null);
   useEffect(() => {
-    if (config.data && !hydrated) {
+    if (config.data !== undefined && config.data !== lastConfigRef.current) {
+      lastConfigRef.current = config.data;
       setRules(normalizeConfig(config.data).rules);
-      setHydrated(true);
     }
-  }, [config.data, hydrated]);
+  }, [config.data]);
 
   const serverRules = useMemo(
     () => (config.data ? sortRulesPinned(normalizeConfig(config.data).rules) : []),
@@ -94,7 +94,6 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
     try {
       await saveConfig.mutateAsync(payload);
       notifySuccess(t('saved'));
-      setHydrated(false);
     } catch (error) {
       notifyApiError(error, t('saveFailed'));
     }
@@ -102,7 +101,6 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
 
   function onReset() {
     setRules(normalizeConfig(config.data ?? {}).rules);
-    setHydrated(true);
   }
 
   return (
@@ -152,7 +150,7 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
               setRules((prev) => {
                 const source = prev.find((r) => r.id === id);
                 if (!source) return prev;
-                const copy = { ...source, id: newRule('').id, name: `${source.name} (copy)` };
+                const copy = { ...source, id: newRule('').id, name: `${source.name} ${t('duplicateSuffix')}` };
                 return enforcePinning([...prev, copy]);
               })
             }
