@@ -1,0 +1,23 @@
+{
+  "title": "Filter",
+  "active": "Filter active",
+  "addCondition": "Add condition",
+  "field": "Field",
+  "operator": "Operator",
+  "value": "Value",
+  "caseSensitive": "Case sensitive",
+  "incomplete": "Complete all rows to see the preview",
+  "previewPass": "{{pass}} of {{total}} products pass",
+  "previewError": "Preview failed",
+  "saved": "Filter saved",
+  "saveFailed": "Failed to save filter",
+  "unsavedChanges": "You have unsaved changes. Leave anyway?",
+  "ops": {
+    "equals": "equals",
+    "not_equals": "does not equal",
+    "contains": "contains",
+    "not_contains": "does not contain",
+    "exists": "exists",
+    "empty": "is empty"
+  }
+}

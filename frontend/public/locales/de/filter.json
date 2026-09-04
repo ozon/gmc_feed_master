@@ -1,0 +1,23 @@
+{
+  "title": "Filter",
+  "active": "Filter aktiv",
+  "addCondition": "Bedingung hinzufügen",
+  "field": "Feld",
+  "operator": "Operator",
+  "value": "Wert",
+  "caseSensitive": "Groß-/Kleinschreibung beachten",
+  "incomplete": "Alle Zeilen ausfüllen, um die Vorschau zu sehen",
+  "previewPass": "{{pass}} von {{total}} Produkten bestehen",
+  "previewError": "Vorschau fehlgeschlagen",
+  "saved": "Filter gespeichert",
+  "saveFailed": "Filter speichern fehlgeschlagen",
+  "unsavedChanges": "Ungespeicherte Änderungen. Trotzdem verlassen?",
+  "ops": {
+    "equals": "ist gleich",
+    "not_equals": "ist nicht gleich",
+    "contains": "enthält",
+    "not_contains": "enthält nicht",
+    "exists": "existiert",
+    "empty": "ist leer"
+  }
+}

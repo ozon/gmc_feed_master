@@ -3,6 +3,7 @@ import type auth from '../../public/locales/en/auth.json';
 import type common from '../../public/locales/en/common.json';
 import type dashboard from '../../public/locales/en/dashboard.json';
 import type exportNs from '../../public/locales/en/export.json';
+import type filter from '../../public/locales/en/filter.json';
 import type mapping from '../../public/locales/en/mapping.json';
 import type monitoring from '../../public/locales/en/monitoring.json';
 import type pipeline from '../../public/locales/en/pipeline.json';
@@ -20,6 +21,7 @@ declare module 'i18next' {
       common: typeof common;
       dashboard: typeof dashboard;
       export: typeof exportNs;
+      filter: typeof filter;
       mapping: typeof mapping;
       monitoring: typeof monitoring;
       notifications: typeof notifications;
