@@ -369,12 +369,12 @@ function buildScopeQuery(scope?: PluginScope): string {
   return qs ? `?${qs}` : '';
 }
 
-export function usePluginConfig(pluginId: string, scope?: PluginScope) {
+export function usePluginConfig(pluginId: string, scope?: PluginScope, enabled = true) {
   return useQuery({
     queryKey: queryKeys.pluginConfig(pluginId, scope),
+    enabled: Boolean(pluginId) && enabled,
     queryFn: () =>
       apiGet<PluginConfigResponse>(`/plugins/${pluginId}/config${buildScopeQuery(scope)}`),
-    enabled: Boolean(pluginId),
   });
 }
 
@@ -392,12 +392,12 @@ export function useSavePluginConfig(pluginId: string, scope?: PluginScope) {
   });
 }
 
-export function usePluginData(pluginId: string, scope?: PluginScope) {
+export function usePluginData(pluginId: string, scope?: PluginScope, enabled = true) {
   return useQuery({
     queryKey: queryKeys.pluginData(pluginId, scope),
+    enabled: Boolean(pluginId) && enabled,
     queryFn: () =>
       apiGet<Record<string, unknown>>(`/plugins/${pluginId}/data${buildScopeQuery(scope)}`),
-    enabled: Boolean(pluginId),
   });
 }
 

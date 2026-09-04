@@ -13,17 +13,20 @@ export type SlotRuleSummary = {
 export function SortableRuleRow({
   rule,
   selected,
+  disabled = false,
   onSelect,
   onToggleActive,
 }: {
   rule: SlotRuleSummary;
   selected: boolean;
+  disabled?: boolean;
   onSelect: () => void;
   onToggleActive: (isActive: boolean) => void;
 }) {
   const { t } = useTranslation('customLabels');
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: rule.id,
+    disabled,
   });
   return (
     <Group
@@ -39,7 +42,7 @@ export function SortableRuleRow({
         {...attributes}
         {...listeners}
         aria-label={t('dragHandle')}
-        style={{ cursor: 'grab' }}
+        style={{ cursor: disabled ? 'default' : 'grab' }}
       >
         ⠿
       </UnstyledButton>
@@ -51,6 +54,7 @@ export function SortableRuleRow({
       </Badge>
       <Switch
         checked={rule.isActive}
+        disabled={disabled}
         onClick={(e) => e.stopPropagation()}
         onChange={(e) => onToggleActive(e.currentTarget.checked)}
       />

@@ -188,7 +188,10 @@ describe('PluginPage', () => {
     });
     renderWithDataRouter('/clients/1/feeds/1/plugins/rules');
     expect(await screen.findByTestId('rules-list')).toBeInTheDocument();
-    // Feed scope wins (most-specific): config is fetched for the feed tier only, never both params.
+    // Custom components fetch their own config; PluginPage's generic config
+    // fetch is skipped (asymmetric-scope plugins like custom_labels would 422
+    // at undeclared tiers). Feed scope wins (most-specific): the custom
+    // component's own config fetch targets the feed tier only.
     await waitFor(() => expect(capturedConfigUrl).toBe('/plugins/rules/config?feed_source_id=1'));
     expect(capturedConfigUrl).not.toContain('client_id');
     // Generic Save is hidden with a custom component; the only "Save" button is RulesUI's own, disabled until dirty.
@@ -240,5 +243,38 @@ describe('PluginPage', () => {
     renderWithDataRouter('/clients/1/feeds/1/plugins/rules');
     expect(await screen.findByTestId('rules-list')).toBeInTheDocument();
     expect(screen.queryByText(/no configuration schema/i)).not.toBeInTheDocument();
+  });
+
+  it('renders the custom_labels component at feed scope without a 422 on the generic config fetch', async () => {
+    const customLabelsPlugin = {
+      ...plugin,
+      id: 'custom_labels',
+      name: 'Custom Labels',
+      manifest: {
+        config_scope: ['global', 'client'],
+        data_scope: ['client', 'feed_source'],
+        frontend: { menu_item: 'Custom Labels', icon: 'tag', component: 'component.tsx' },
+      },
+    };
+    const captured: string[] = [];
+    stubFetch((url) => {
+      captured.push(url);
+      if (url === '/plugins') return jsonResponse([customLabelsPlugin]);
+      // Backend would 422 a feed-scoped config request; if the buggy generic
+      // fetch fires, this stub returns the error and the page must not die.
+      if (url.startsWith('/plugins/custom_labels/config')) {
+        return url.includes('feed_source_id')
+          ? jsonResponse({ errors: ['scope not declared for this plugin'] }, 422)
+          : jsonResponse({ slotRules: [] });
+      }
+      if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse({ slotIds: {} });
+      if (url.startsWith('/registry/attributes')) return jsonResponse([]);
+      return jsonResponse({});
+    });
+    renderWithDataRouter('/clients/1/feeds/1/plugins/custom_labels');
+    // The component renders (its own config fetch resolves at client tier).
+    expect(await screen.findByRole('tab', { name: /bulk ids/i })).toBeInTheDocument();
+    // PluginPage never issued the feed-scoped generic config request.
+    expect(captured).not.toContain('/plugins/custom_labels/config?feed_source_id=1');
   });
 });

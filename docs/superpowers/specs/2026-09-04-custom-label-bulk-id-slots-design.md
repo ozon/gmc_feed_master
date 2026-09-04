@@ -114,6 +114,15 @@ Custom plugin frontend component (pattern established by `core/rules`; build-tim
 - Wrapper has `overflow-x: auto` so more columns than fit the viewport scroll horizontally.
 - Live parsed-ID count (post trim/dedupe, via the shared parser) under each textarea; save via `/plugins/custom_labels/data`.
 
+### 4.3 Scope-aware rendering (fix, 2026-09-04)
+
+Because `config_scope` (global, client) and `data_scope` (client, feed_source) are asymmetric, the UI must not send each payload kind's request to a URL tier the manifest does not declare (the backend answers 422 "scope not declared"). Resolution rules (`resolveKindScope` in `CustomLabelsUI`):
+
+- URL tier declared for the kind → fetch at the URL tier.
+- Feed-source URL + config → fetch at client tier (config is shared templates); the slot-rules tab renders read-only with a hint.
+- Global URL + data → request not sent; the bulk-IDs tab is disabled with a hint and the slot-rules tab opens by default.
+- `PluginPage` skips its generic config fetch for any plugin with a custom component (the component owns its fetching; a 422 there must not kill the page).
+
 ## 5. Validation & Error Handling
 
 - `validate_config()` rejects: unknown `targetSlot`, empty `matchField`, empty `valueTemplate`, `matchField`/token paths that do not resolve against the registry document, duplicate rule IDs, a fallback declared on a rule that is not the first rule targeting its slot.

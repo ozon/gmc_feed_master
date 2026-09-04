@@ -65,10 +65,33 @@ When no `component` is declared, config/data UIs are auto-rendered from JSON Sch
 - Full access to Mantine, TanStack, React APIs
 - Custom components own their save UX: `PluginPage` hides its generic Save button
   when rendering a custom component
+- Custom components fetch their own config/data; `PluginPage` skips its generic
+  config fetch whenever `manifest.frontend.component` is set (the fetch is also
+  gated on the plugins list resolving, so it cannot race ahead of the hint).
+  This keeps asymmetric-scope plugins (e.g. `custom_labels`: config at
+  global/client, data at client/feed_source) from 422ing on URL tiers the
+  manifest does not declare for that payload kind.
+
+### Scope-Aware Fetching (asymmetric scopes)
+
+Plugins may declare different tiers per payload kind (`config_scope` vs
+`data_scope`). A component rendering at a URL tier the manifest does not
+declare for a kind must resolve a declared fallback tier instead of sending
+the request (the backend's `_resolve_target` answers undeclared scopes with
+422). `CustomLabelsUI` implements the reference pattern
+(`resolveKindScope` in `frontend/src/features/customLabels/CustomLabelsUI.tsx`):
+
+- URL tier declared → fetch at the URL tier
+- URL tier not declared → fall back to the most-specific declared tier
+  reachable from the route (feed-source URL + config → client tier; the
+  affected tab is rendered read-only with a hint)
+- No declared tier reachable (global URL + data for `custom_labels`) →
+  the request is not sent; the tab is disabled with a hint and the other
+  tab becomes the default
 
 ### Custom Component Registry
 
-`PluginPage` maps plugin IDs to statically imported components (`rules` → RulesUI, `custom_labels` → CustomLabelsUI) and renders the match when `manifest.frontend.component === 'component.tsx'`; add new custom components to that map until build-time discovery lands.
+`frontend/src/features/plugin/customComponents.ts` maps plugin IDs to statically imported components (`rules` → RulesUI, `filter` → FilterUI, `custom_labels` → CustomLabelsUI); `PluginPage` resolves `CUSTOM_COMPONENTS[plugin.id]` when `manifest.frontend.component` is set. Add new custom components to that map until build-time discovery lands.
 
 ### First-Party Reference: Rules (`plugins/core/rules/frontend/component.tsx`)
 

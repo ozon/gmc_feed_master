@@ -1,5 +1,7 @@
 {
   "tabs": { "bulkIds": "Bulk-IDs", "slotRules": "Slot-Regeln" },
+  "idsUnavailable": "Bulk-ID-Listen leben auf Client- oder Feed-Source-Ebene. Öffne dieses Plugin über einen Client oder eine Feed-Source, um sie zu verwalten.",
+  "rulesReadOnly": "Slot-Regeln sind gemeinsam genutzte Vorlagen, die auf globaler oder Client-Ebene verwaltet werden. Öffne dieses Plugin auf globaler oder Client-Ebene, um sie zu bearbeiten; diese Ansicht ist schreibgeschützt.",
   "idsPlaceholder": "Eine ID pro Zeile oder kommagetrennt",
   "idCount": "{{count}} eindeutige IDs",
   "noActiveRules": "Keine aktiven Slot-Regeln — unter Slot-Regeln anlegen.",
@@ -17,6 +19,6 @@
     "valueTemplate": "Wert-Vorlage",
     "valueTemplateHint": "{field}-Tokens verwenden, z. B. {brand} - Mid Funnel. Ein leerer Token überspringt die Regel.",
     "fallbackTemplate": "Fallback-Vorlage",
-    "fallbackHint": "Wird verwendet, wenn keine Regel für diesen Slot greift. Nur die erste Regel eines Slots darf sie setzen."
+    "fallbackHint": "Wird verwendet, wenn eine Regel gegriffen hat, aber die Vorlage leer aufgelöst wurde (z. B. Token-Skip). Nur die erste Regel eines Slots darf sie setzen."
   }
 }

@@ -1,5 +1,7 @@
 {
   "tabs": { "bulkIds": "Bulk IDs", "slotRules": "Slot rules" },
+  "idsUnavailable": "Bulk ID lists live at client or feed-source scope. Open this plugin from a client or feed source to manage them.",
+  "rulesReadOnly": "Slot rules are shared templates managed at global or client scope. Open this plugin at the global or client level to edit them; this view is read-only.",
   "idsPlaceholder": "One ID per line, or comma-separated",
   "idCount": "{{count}} unique IDs",
   "noActiveRules": "No active slot rules — add one under Slot rules.",

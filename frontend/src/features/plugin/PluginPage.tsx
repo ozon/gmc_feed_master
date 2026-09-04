@@ -24,7 +24,16 @@ export function PluginPage() {
     return {};
   }, [clientId, feedSourceId]);
 
-  const config = usePluginConfig(pluginId ?? '', scope);
+  // Custom components fetch their own config/data at manifest-declared scopes
+  // (asymmetric scopes like custom_labels would 422 the URL-tier request).
+  // PluginPage's fetch stays enabled only for the auto-form path, and only
+  // after the plugins list resolves (the hint lives in the manifest).
+  const hasCustomComponentHint = (plugins ?? []).some(
+    (p) => p.id === pluginId && p.manifest?.frontend?.component,
+  );
+  const configFetchEnabled = plugins !== undefined && Boolean(pluginId) && !hasCustomComponentHint;
+
+  const config = usePluginConfig(pluginId ?? '', scope, configFetchEnabled);
   const saveConfig = useSavePluginConfig(pluginId ?? '', scope);
 
   const [formValue, setFormValue] = useState<Record<string, unknown>>({});
@@ -73,9 +82,9 @@ export function PluginPage() {
   return (
     <Stack gap="md">
       <Title order={3}>{plugin.name}</Title>
-      {config.isPending ? (
+      {configFetchEnabled && config.isPending ? (
         <LoadingState />
-      ) : config.isError ? (
+      ) : configFetchEnabled && config.isError ? (
         <ErrorState onRetry={() => void config.refetch()} />
       ) : CustomComponent ? (
         <CustomComponent pluginId={plugin.id} scope={scope} />
