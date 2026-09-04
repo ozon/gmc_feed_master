@@ -2,6 +2,7 @@
   "title": "Filter",
   "active": "Filter aktiv",
   "addCondition": "Bedingung hinzufügen",
+  "deleteCondition": "Bedingung löschen",
   "field": "Feld",
   "operator": "Operator",
   "value": "Wert",

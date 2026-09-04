@@ -197,7 +197,7 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
             <ActionIcon
               variant="subtle"
               color="red"
-              aria-label="delete condition"
+              aria-label={t('deleteCondition')}
               onClick={() => setDraft((prev) => ({
                 ...prev,
                 conditions: prev.conditions.filter((_, i) => i !== index),
