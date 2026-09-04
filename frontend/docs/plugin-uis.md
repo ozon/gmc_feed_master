@@ -68,7 +68,7 @@ When no `component` is declared, config/data UIs are auto-rendered from JSON Sch
 
 ### Custom Component Registry
 
-Custom components resolve through a static registry map (`frontend/src/features/plugin/customComponents.ts`, keyed by plugin id — `rules`, `filter`) instead of a single import. Full build-time discovery (ADR 0002) replaces this static map as follow-up.
+`PluginPage` maps plugin IDs to statically imported components (`rules` → RulesUI, `custom_labels` → CustomLabelsUI) and renders the match when `manifest.frontend.component === 'component.tsx'`; add new custom components to that map until build-time discovery lands.
 
 ### First-Party Reference: Rules (`plugins/core/rules/frontend/component.tsx`)
 

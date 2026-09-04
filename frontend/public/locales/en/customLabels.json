@@ -1,0 +1,22 @@
+{
+  "tabs": { "bulkIds": "Bulk IDs", "slotRules": "Slot rules" },
+  "idsPlaceholder": "One ID per line, or comma-separated",
+  "idCount": "{{count}} unique IDs",
+  "noActiveRules": "No active slot rules — add one under Slot rules.",
+  "addRule": "Add rule",
+  "newRuleName": "New slot rule",
+  "configSaved": "Slot rules saved",
+  "idsSaved": "Bulk IDs saved",
+  "unsavedChanges": "You have unsaved changes. Leave anyway?",
+  "dragHandle": "Drag to reorder",
+  "fields": {
+    "name": "Name",
+    "isActive": "Active",
+    "targetSlot": "Target slot",
+    "matchField": "Match field",
+    "valueTemplate": "Value template",
+    "valueTemplateHint": "Use {field} tokens, e.g. {brand} - Mid Funnel. An empty token skips the rule.",
+    "fallbackTemplate": "Fallback template",
+    "fallbackHint": "Used when no rule matches this slot. Only the first rule of a slot may declare it."
+  }
+}

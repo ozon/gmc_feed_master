@@ -1,6 +1,7 @@
 import 'i18next';
 import type auth from '../../public/locales/en/auth.json';
 import type common from '../../public/locales/en/common.json';
+import type customLabels from '../../public/locales/en/customLabels.json';
 import type dashboard from '../../public/locales/en/dashboard.json';
 import type exportNs from '../../public/locales/en/export.json';
 import type filter from '../../public/locales/en/filter.json';
@@ -19,6 +20,7 @@ declare module 'i18next' {
     resources: {
       auth: typeof auth;
       common: typeof common;
+      customLabels: typeof customLabels;
       dashboard: typeof dashboard;
       export: typeof exportNs;
       filter: typeof filter;

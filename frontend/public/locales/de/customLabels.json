@@ -1,0 +1,22 @@
+{
+  "tabs": { "bulkIds": "Bulk-IDs", "slotRules": "Slot-Regeln" },
+  "idsPlaceholder": "Eine ID pro Zeile oder kommagetrennt",
+  "idCount": "{{count}} eindeutige IDs",
+  "noActiveRules": "Keine aktiven Slot-Regeln — unter Slot-Regeln anlegen.",
+  "addRule": "Regel hinzufügen",
+  "newRuleName": "Neue Slot-Regel",
+  "configSaved": "Slot-Regeln gespeichert",
+  "idsSaved": "Bulk-IDs gespeichert",
+  "unsavedChanges": "Du hast ungespeicherte Änderungen. Trotzdem verlassen?",
+  "dragHandle": "Zum Neusortieren ziehen",
+  "fields": {
+    "name": "Name",
+    "isActive": "Aktiv",
+    "targetSlot": "Ziel-Slot",
+    "matchField": "Match-Feld",
+    "valueTemplate": "Wert-Vorlage",
+    "valueTemplateHint": "{field}-Tokens verwenden, z. B. {brand} - Mid Funnel. Ein leerer Token überspringt die Regel.",
+    "fallbackTemplate": "Fallback-Vorlage",
+    "fallbackHint": "Wird verwendet, wenn keine Regel für diesen Slot greift. Nur die erste Regel eines Slots darf sie setzen."
+  }
+}
