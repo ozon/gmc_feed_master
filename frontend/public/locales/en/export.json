@@ -37,6 +37,7 @@
   "rollbackFailed": "Could not rollback.",
   "rollbackFailedWithErrors": "Could not rollback: {{errors}}",
   "selectVersions": "Select two versions above to see the diff.",
+  "compareVersions": "Compare Versions",
   "noChanges": "No changes between these versions.",
   "added": "Added",
   "removed": "Removed",

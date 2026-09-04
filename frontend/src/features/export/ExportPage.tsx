@@ -1,4 +1,5 @@
-import { Stack, Title } from '@mantine/core';
+import { Button, Stack, Title } from '@mantine/core';
+import { IconGitCompare } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -25,20 +26,16 @@ export function ExportPage() {
   const rollback = useRollbackToVersion(id);
   const [versionA, setVersionA] = useState<number | undefined>();
   const [versionB, setVersionB] = useState<number | undefined>();
+  const [compared, setCompared] = useState(false);
   const [rollbackTarget, setRollbackTarget] = useState<number | null>(null);
 
   const versions = useMemo(() => history.data ?? [], [history.data]);
 
   useEffect(() => {
-    if (versions.length >= 2 && versionA === undefined && versionB === undefined) {
-      setVersionA(versions[0].version_number);
-      setVersionB(versions[1].version_number);
-    } else if (versions.length === 1 && versionA === undefined) {
-      setVersionA(versions[0].version_number);
-    }
-  }, [versions, versionA, versionB]);
+    setCompared(false);
+  }, [versionA, versionB]);
 
-  const diff = useExportVersionDiff(id, versionA, versionB);
+  const diff = useExportVersionDiff(id, compared ? versionA : undefined, compared ? versionB : undefined);
 
   if (feed.isPending || history.isPending) return <LoadingState />;
   if (feed.isError) return <ErrorState onRetry={() => void feed.refetch()} />;
@@ -83,6 +80,15 @@ export function ExportPage() {
             onSelectB={setVersionB}
             onRollback={setRollbackTarget}
           />
+          {versionA !== undefined && versionB !== undefined && !compared && (
+            <Button
+              leftSection={<IconGitCompare size={16} />}
+              onClick={() => setCompared(true)}
+              data-testid="compare-versions-button"
+            >
+              {t('compareVersions')}
+            </Button>
+          )}
           <ExportVersionDiff
             diff={diff.data}
             isPending={diff.isPending}
