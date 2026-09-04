@@ -100,6 +100,18 @@ const plugins = [
     },
     used_by_feed_sources: 0,
   },
+  {
+    id: 'feed_rules',
+    name: 'Feed Rules',
+    version: '1.0.0',
+    enabled: true,
+    manifest: {
+      frontend: { menu_item: 'Feed Rules' },
+      config_scope: ['global', 'client', 'feed_source'],
+      data_scope: ['global', 'client', 'feed_source'],
+    },
+    used_by_feed_sources: 0,
+  },
 ];
 
 function authenticatedHandler(url: string) {
@@ -252,5 +264,28 @@ describe('AppShell', () => {
       'href',
       '/plugins/example_upper',
     );
+  });
+
+  it('links a feed-scoped plugin to the feed route while inside a feed context', async () => {
+    window.history.replaceState({}, '', '/clients/1/feeds/2/products');
+    render(<App />);
+    expect(await screen.findByText('Feed Rules')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Feed Rules' })).toHaveAttribute(
+      'href',
+      '/clients/1/feeds/2/plugins/feed_rules',
+    );
+  });
+
+  it('hides a feed-scoped plugin from the nav outside a feed context', async () => {
+    window.history.replaceState({}, '', '/clients/1/plugins/client_widget');
+    render(<App />);
+    expect(await screen.findByText('Client Widget')).toBeInTheDocument();
+    expect(screen.queryByText('Feed Rules')).not.toBeInTheDocument();
+  });
+
+  it('hides a feed-scoped plugin from the nav on the dashboard', async () => {
+    render(<App />);
+    expect(await screen.findByText('Global Tool')).toBeInTheDocument();
+    expect(screen.queryByText('Feed Rules')).not.toBeInTheDocument();
   });
 });

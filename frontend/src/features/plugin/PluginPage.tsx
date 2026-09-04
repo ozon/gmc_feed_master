@@ -16,11 +16,14 @@ export function PluginPage() {
   const { pluginId, clientId, feedSourceId } = useParams();
   const { data: plugins, isPending, isError, refetch } = usePlugins();
 
+  // Most-specific scope tier wins: the backend `_resolve_target` requires
+  // client_id/feed_source_id to be mutually exclusive, and the three-tier
+  // merge (global → client → feed_source) makes the feed tier inherit
+  // client/global defaults.
   const scope: PluginScope = useMemo(() => {
-    const s: PluginScope = {};
-    if (clientId) s.clientId = Number(clientId);
-    if (feedSourceId) s.feedSourceId = Number(feedSourceId);
-    return s;
+    if (feedSourceId) return { feedSourceId: Number(feedSourceId) };
+    if (clientId) return { clientId: Number(clientId) };
+    return {};
   }, [clientId, feedSourceId]);
 
   const config = usePluginConfig(pluginId ?? '', scope);

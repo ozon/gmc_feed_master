@@ -63,6 +63,13 @@ function isClientScoped(manifest: PluginInfo['manifest']): boolean {
   );
 }
 
+function isFeedScoped(manifest: PluginInfo['manifest']): boolean {
+  return (
+    manifestScopes(manifest, 'config_scope').includes('feed_source') ||
+    manifestScopes(manifest, 'data_scope').includes('feed_source')
+  );
+}
+
 function ColorSchemeToggle() {
   const { t } = useTranslation();
   const { setColorScheme } = useMantineColorScheme();
@@ -319,10 +326,14 @@ export function AppShell() {
                 const PluginIcon = pluginIcon(plugin.manifest?.frontend?.icon);
                 const scope = plugin.manifest?.frontend;
                 const clientScoped = isClientScoped(plugin.manifest);
-                if (clientScoped && !clientId) return null;
-                const to = clientScoped
-                  ? `/clients/${clientId}/plugins/${plugin.id}`
-                  : `/plugins/${plugin.id}`;
+                const feedScopedPlugin = isFeedScoped(plugin.manifest);
+                if (feedScopedPlugin && !feedBase) return null;
+                if (!feedScopedPlugin && clientScoped && !clientId) return null;
+                const to = feedScopedPlugin
+                  ? `${feedBase}/plugins/${plugin.id}`
+                  : clientScoped
+                    ? `/clients/${clientId}/plugins/${plugin.id}`
+                    : `/plugins/${plugin.id}`;
                 return (
                   <NavLink
                     key={plugin.id}

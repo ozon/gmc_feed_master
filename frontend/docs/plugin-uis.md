@@ -81,6 +81,11 @@ documented seam until full build-time discovery lands.
 RulesUI owns its own save state (dirty check + `useBlocker`); it fetches and
 saves via the scope-aware plugin config hooks.
 
+The rules UI is reachable at the feed-scoped route
+`/clients/:clientId/feeds/:feedSourceId/plugins/:pluginId` (the nav shows
+feed-scoped plugin links only inside a feed context), and `PluginPage` derives
+the scope tier from route params (most-specific wins).
+
 Follow-ups: full build-time discovery (Vite scan of `plugins/*/frontend/`
 generating `pluginComponents.ts`, per ADR 0002 — third-party plugins currently
 use schema-rendered forms) and error isolation via `PluginErrorBoundary`

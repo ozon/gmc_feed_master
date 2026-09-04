@@ -132,6 +132,7 @@ const routes = [
             element: <MonitoringDryRunPage />,
           },
           { path: 'clients/:clientId/feeds/:feedSourceId/export', element: <ExportPage /> },
+          { path: 'clients/:clientId/feeds/:feedSourceId/plugins/:pluginId', element: <PluginPage /> },
           { path: 'clients/:clientId/plugins/:pluginId', element: <PluginPage /> },
           { path: 'plugins/:pluginId', element: <PluginPage /> },
         ],

@@ -230,6 +230,42 @@ describe('RequireSession non-401 session errors', () => {
   });
 });
 
+describe('feed-scoped plugin route', () => {
+  const schemaPlugin = {
+    id: 'example_upper',
+    name: 'Example Upper',
+    version: '1.0.0',
+    enabled: true,
+    manifest: {
+      config_schema: {
+        type: 'object',
+        properties: { suffix: { type: 'string', title: 'Suffix' } },
+      },
+    },
+    used_by_feed_sources: 0,
+  };
+
+  it('renders PluginPage at /clients/:clientId/feeds/:feedSourceId/plugins/:pluginId', async () => {
+    let captured: string | null = null;
+    stubFetch((url) => {
+      if (url === '/auth/me') return jsonResponse({ username: 'operator' });
+      if (url === '/dashboard/summary') return jsonResponse(emptySummary);
+      if (url === '/plugins') return jsonResponse([schemaPlugin]);
+      if (url.startsWith('/plugins/example_upper/config')) {
+        captured = url;
+        return jsonResponse({ suffix: '!' });
+      }
+      return jsonResponse({});
+    });
+
+    window.history.replaceState({}, '', '/clients/1/feeds/2/plugins/example_upper');
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Example Upper' })).toBeInTheDocument();
+    await waitFor(() => expect(captured).toBe('/plugins/example_upper/config?feed_source_id=2'));
+  });
+});
+
 describe('route error boundary', () => {
   const chunkError = new TypeError('Failed to fetch dynamically imported module');
 

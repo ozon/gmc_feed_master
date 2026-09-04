@@ -108,6 +108,7 @@ export function useFeedSourceFields(feedSourceId: number | string) {
     queryKey: queryKeys.feedSource(feedSourceId).fields,
     queryFn: () =>
       apiGet<FeedSourceFieldsResponse>(`/feed-sources/${feedSourceId}/fields`),
+    enabled: Boolean(feedSourceId),
   });
 }
 

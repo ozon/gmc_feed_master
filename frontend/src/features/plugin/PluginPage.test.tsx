@@ -164,10 +164,12 @@ describe('PluginPage', () => {
         frontend: { menu_item: 'Rules', icon: 'list-check', component: 'component.tsx' },
       },
     };
+    let capturedConfigUrl: string | null = null;
     stubFetch((url, init) => {
       if (url === '/plugins') return jsonResponse([rulesPlugin]);
       if (url.startsWith('/plugins/rules/config')) {
         if (init?.method === 'PUT') return jsonResponse({ rules: [] });
+        capturedConfigUrl = url;
         return jsonResponse({
           rules: [
             {
@@ -186,6 +188,9 @@ describe('PluginPage', () => {
     });
     renderWithDataRouter('/clients/1/feeds/1/plugins/rules');
     expect(await screen.findByTestId('rules-list')).toBeInTheDocument();
+    // Feed scope wins (most-specific): config is fetched for the feed tier only, never both params.
+    await waitFor(() => expect(capturedConfigUrl).toBe('/plugins/rules/config?feed_source_id=1'));
+    expect(capturedConfigUrl).not.toContain('client_id');
     // Generic Save is hidden with a custom component; the only "Save" button is RulesUI's own, disabled until dirty.
     expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
   });

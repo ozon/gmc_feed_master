@@ -3,7 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { queryKeys } from './queryKeys';
-import { useAutoMap, useClients, useCreateClient, useProductList } from './hooks';
+import { useAutoMap, useClients, useCreateClient, useFeedSourceFields, useProductList } from './hooks';
 import { stubFetch } from '../test/fetch';
 import type { FieldMappingDoc } from './types';
 
@@ -122,5 +122,16 @@ describe('m10-c hooks', () => {
       expect.objectContaining({ method: 'POST' }),
     );
     expect(queryClient.getQueryState(mappingKey)?.isInvalidated).toBe(true);
+  });
+
+  it('useFeedSourceFields does not fetch when feedSourceId is empty', async () => {
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      throw new Error(`Unexpected fetch in test: ${String(input)}`);
+    });
+    const { result } = renderHook(() => useFeedSourceFields(''), { wrapper });
+
+    await waitFor(() => expect(result.current.fetchStatus).toBe('idle'));
+    expect(result.current.data).toBeUndefined();
+    expect(callCount('/feed-sources//fields')).toBe(0);
   });
 });
