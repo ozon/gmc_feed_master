@@ -7,6 +7,7 @@ import type {
   DashboardSummary,
   DiffOut,
   ExportVersionOut,
+  FeedSourceFieldsResponse,
   FeedSourceRow,
   FeedSourceSummary,
   FieldMappingDoc,
@@ -26,6 +27,7 @@ export type {
   DashboardSummary,
   DiffOut,
   ExportVersionOut,
+  FeedSourceFieldsResponse,
   FeedSourceRow,
   FeedSourceSummary,
   FieldMappingDoc,
@@ -98,6 +100,14 @@ export function useFeedSource(id: number | string) {
   return useQuery({
     queryKey: queryKeys.feedSource(id).detail,
     queryFn: () => apiGet<FeedSourceRow>(`/feed-sources/${id}`),
+  });
+}
+
+export function useFeedSourceFields(feedSourceId: number | string) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId).fields,
+    queryFn: () =>
+      apiGet<FeedSourceFieldsResponse>(`/feed-sources/${feedSourceId}/fields`),
   });
 }
 

@@ -4,10 +4,11 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { IconColumns3, IconSearch } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useSearchParams } from 'react-router';
-import { useProductList } from '../../api/hooks';
+import { useProductList, useFeedSourceFields } from '../../api/hooks';
 import { LoadingState, ErrorState } from '../../components/StateViews';
 import {
   DEFAULT_COLUMNS,
+  GMC_BASELINE_COLUMNS,
   SYSTEM_COLUMNS,
   type ProductColumnId,
   useProductColumns,
@@ -41,11 +42,17 @@ export function ProductsPage() {
     sort: sortParam || undefined,
   });
 
+  const fieldsQuery = useFeedSourceFields(feedSourceId ?? '');
+  const allFields = fieldsQuery.data?.fields ?? [];
   const dataFields = query.data?.fields ?? [];
-  const columns = useProductColumns(t, dataFields);
+  const mergedFields = useMemo(
+    () => [...new Set([...allFields, ...dataFields])],
+    [allFields, dataFields],
+  );
+  const columns = useProductColumns(t, mergedFields);
   const availableColumnIds = useMemo(
-    () => new Set([...SYSTEM_COLUMNS, ...dataFields]),
-    [dataFields],
+    () => new Set([...SYSTEM_COLUMNS, ...GMC_BASELINE_COLUMNS, ...mergedFields]),
+    [mergedFields],
   );
 
   const sortState: SortState = useMemo(() => {

@@ -16,7 +16,7 @@ export const SYSTEM_COLUMNS: ProductColumnId[] = [
   'last_seen_at',
 ];
 
-export const DEFAULT_COLUMNS: ProductColumnId[] = [
+export const GMC_BASELINE_COLUMNS: ProductColumnId[] = [
   'id',
   'title',
   'description',
@@ -25,7 +25,11 @@ export const DEFAULT_COLUMNS: ProductColumnId[] = [
   'availability',
   'price',
   'condition',
-  'status',
+];
+
+export const DEFAULT_COLUMNS: ProductColumnId[] = [
+  ...SYSTEM_COLUMNS,
+  ...GMC_BASELINE_COLUMNS,
 ];
 
 const BASELINE_LABEL_KEYS: Record<string, string> = {
@@ -53,8 +57,14 @@ export function useProductColumns(
 ): ProductColumn[] {
   return useMemo<ProductColumn[]>(
     () => {
-      const ids = [...SYSTEM_COLUMNS, ...fields];
-      return ids.map((id) => ({ id, label: columnLabel(id, t) }));
+      const known = new Set([...SYSTEM_COLUMNS, ...GMC_BASELINE_COLUMNS]);
+      const baselineCols = [...SYSTEM_COLUMNS, ...GMC_BASELINE_COLUMNS].map(
+        (id) => ({ id, label: columnLabel(id, t) }),
+      );
+      const extraCols = fields
+        .filter((id) => !known.has(id))
+        .map((id) => ({ id, label: columnLabel(id, t) }));
+      return [...baselineCols, ...extraCols];
     },
     [t, fields],
   );

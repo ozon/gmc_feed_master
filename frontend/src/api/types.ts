@@ -208,3 +208,7 @@ export type DiffOut = {
   removed: string[];
   changed: DiffProductOut[];
 };
+
+export type FeedSourceFieldsResponse = {
+  fields: string[];
+};

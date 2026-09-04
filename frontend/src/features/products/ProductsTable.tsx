@@ -1,6 +1,9 @@
 import {
+  Anchor,
   Badge,
+  Box,
   Group,
+  Image,
   Pagination,
   Select,
   Table as MantineTable,
@@ -157,6 +160,36 @@ export function ProductsTable({
                         >
                           {value}
                         </Badge>
+                      </MantineTable.Td>
+                    );
+                  }
+                  if (colId === 'image_link' && value) {
+                    return (
+                      <MantineTable.Td key={cell.id}>
+                        <Image
+                          src={value}
+                          alt={row.original.title ?? 'product'}
+                          w={48}
+                          h={48}
+                          fit="cover"
+                          radius="sm"
+                          fallbackSrc="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIGZpbGw9IiNmM2Y0ZjYiLz48L3N2Zz4="
+                        />
+                      </MantineTable.Td>
+                    );
+                  }
+                  if (colId === 'link' && value) {
+                    return (
+                      <MantineTable.Td key={cell.id}>
+                        <Anchor
+                          href={value}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          size="sm"
+                          truncate
+                        >
+                          {value}
+                        </Anchor>
                       </MantineTable.Td>
                     );
                   }

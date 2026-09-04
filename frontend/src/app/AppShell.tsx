@@ -226,11 +226,18 @@ function FeedBreadcrumb() {
 
 export function AppShell() {
   const { t } = useTranslation();
-  const [opened, { toggle }] = useDisclosure();
+  const [opened, { toggle, close }] = useDisclosure();
+  const location = useLocation();
   const { clientId, feedSourceId } = useParams();
   const { data: plugins } = usePlugins();
 
   const feedBase = clientId && feedSourceId ? `/clients/${clientId}/feeds/${feedSourceId}` : null;
+
+  function isActive(to: string | null): boolean {
+    if (!to) return false;
+    if (to === '/') return location.pathname === '/';
+    return location.pathname.startsWith(to);
+  }
 
   const pluginItems = useMemo(
     () =>
@@ -276,6 +283,10 @@ export function AppShell() {
             to="/"
             label={t('nav.dashboard')}
             leftSection={<IconDashboard size={16} />}
+            active={isActive('/')}
+            variant={isActive('/') ? 'light' : undefined}
+            color={isActive('/') ? 'blue' : undefined}
+            onClick={close}
           />
           {feedScoped.map((item) =>
             item.to ? (
@@ -285,6 +296,10 @@ export function AppShell() {
                 to={item.to}
                 label={item.label}
                 leftSection={<item.icon size={16} />}
+                active={isActive(item.to)}
+                variant={isActive(item.to) ? 'light' : undefined}
+                color={isActive(item.to) ? 'blue' : undefined}
+                onClick={close}
               />
             ) : (
               <NavLink
@@ -315,6 +330,10 @@ export function AppShell() {
                     to={to}
                     label={scope?.menu_item ?? plugin.name}
                     leftSection={<PluginIcon size={16} />}
+                    active={isActive(to)}
+                    variant={isActive(to) ? 'light' : undefined}
+                    color={isActive(to) ? 'blue' : undefined}
+                    onClick={close}
                   />
                 );
               })}

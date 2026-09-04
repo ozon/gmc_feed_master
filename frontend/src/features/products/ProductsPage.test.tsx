@@ -84,10 +84,18 @@ beforeEach(() => {
   localStorage.clear();
 });
 
+const feedFields = {
+  fields: [
+    'availability', 'brand', 'condition', 'description', 'id',
+    'image_link', 'link', 'price', 'title',
+  ],
+};
+
 function setupFetch(handler: (url: string) => Response | Promise<Response>) {
   fetchMock = stubFetch((url) => {
     if (url === '/auth/me') return jsonResponse({ username: 'operator' });
     if (url === '/plugins') return jsonResponse([]);
+    if (url.includes('/feed-sources/2/fields')) return jsonResponse(feedFields);
     return handler(url);
   });
 }

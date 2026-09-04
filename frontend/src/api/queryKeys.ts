@@ -17,6 +17,7 @@ export const queryKeys = {
       ['feed-source', id, 'export-diff', params ?? { disabled: true }] as const,
     fieldMapping: ['feed-source', id, 'field-mapping'] as const,
     mapping: ['feed-source', id, 'field-mapping'] as const,
+    fields: ['feed-source', id, 'fields'] as const,
   }),
   pluginConfig: (pluginId: string, scope?: { clientId?: number; feedSourceId?: number }) =>
     ['plugin-config', pluginId, scope ?? {}] as const,

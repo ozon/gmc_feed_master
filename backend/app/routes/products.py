@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import require_user
@@ -132,3 +132,23 @@ async def product_detail(
         "removed_at": row.removed_at.isoformat() if row.removed_at else None,
         "raw_data": row.raw_data,
     }
+
+
+@router.get("/feed-sources/{feed_source_id}/fields")
+async def feed_source_fields(
+    feed_source_id: int,
+    _user: str = Depends(require_user),
+    db_session: AsyncSession | None = Depends(get_db_session),
+) -> dict:
+    session = _require_db(db_session)
+    async with session.begin():
+        await _require_feed_source(session, feed_source_id)
+        rows = (await session.execute(
+            text(
+                "SELECT DISTINCT jsonb_object_keys(raw_data)"
+                " FROM staging_products WHERE feed_source_id = :fid"
+            ),
+            {"fid": feed_source_id},
+        )).scalars().all()
+    all_fields = sorted(set(rows) | set(_BASELINE_FIELDS))
+    return {"fields": all_fields}
