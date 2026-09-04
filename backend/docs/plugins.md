@@ -166,6 +166,7 @@ Checks:
 | Rules | `rules` | `config: [global, client, feed_source]`, `data: [global, client, feed_source]` | Ordered rule list (IF/THEN AST): text/numeric/regex conditions; set/replace/append/prepend/remove/clear actions; master flag = UI pinning; `plugins/core/rules/` |
 | Category | `category` | `config: [global, client]`, `data: [client]` | Rules + manual assignments + taxonomy autocomplete |
 | Filter | `filter` | `config: [global, client, feed_source]`, `data: [global, client, feed_source]` | Single conjunctive condition set (6 scalar ops); drops non-matching products; live preview endpoint; `plugins/core/filter/` |
+| Custom Labels | `custom_labels` | `config: [global, client]`, `data: [client, feed_source]` | Bulk-ID slot rules: `slotRules` (global/client) config; `slotIds` keyed by rule id (client/feed_source) data; matching = registry attribute path membership in a trimmed/deduped set; first-match-wins per slot; empty token skips rule; per-slot fallback from first rule when rule matched but template empty; `plugins/core/custom_labels/` |
 
 ### Rules Plugin (`plugins/core/rules/`)
 
@@ -198,6 +199,21 @@ Config document: `{"isActive": true, "conditions": [{field, op, arg?, caseSensit
 - `POST /plugins/filter/preview` — `{feed_source_id, conditions}` →
   `{total, pass, fail}` against active, non-excluded staged products (canonical
   mapped state; approximation when mutating modules run before the filter).
+
+### Custom Labels Plugin (`plugins/core/custom_labels/`)
+
+Config document: `{"slotRules": [{id, name, isActive, targetSlot, matchField, valueTemplate, fallbackTemplate?}]}`.
+- `targetSlot`: one of `custom_label_0` through `custom_label_4`.
+- `matchField`: any registry-known attribute path (e.g. `id`, `brand`, `price.value`).
+- `valueTemplate`: compiled template with `{attr}` / `{attr.subfield}` tokens.
+- First-match-wins per slot; empty token in a matched rule skips to the next rule.
+- `fallbackTemplate`: applied only when a rule matched but the template resolved
+  empty (token skip). One fallback per slot (first rule declares it).
+- `isActive: false` skips the rule.
+- Data document: `{"slotIds": {"<rule_id>": "<newline/comma-separated IDs>"}}`.
+- `validate_config` strictly validates on save (empty config passes; unknown
+  targetSlot, empty matchField/valueTemplate, non-registry matchField, unknown
+  token paths, duplicate ids, duplicate fallback per slot raise `ValueError`).
 
 ## Example Plugin (`plugins/example_upper/`)
 

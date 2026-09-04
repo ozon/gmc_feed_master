@@ -86,3 +86,147 @@ def render_template(
 def matches(product: dict[str, Any], match_field: str, ids: frozenset[str]) -> bool:
     """True when any candidate value of `match_field` is in `ids`."""
     return any(value in ids for value in resolve_path(product, match_field))
+
+
+# ---------------------------------------------------------------------------
+# Config validation
+# ---------------------------------------------------------------------------
+
+
+def _registry_document():
+    # Imported lazily so tests can monkeypatch registry.loader.load_registry.
+    from registry.loader import load_registry
+
+    return load_registry()
+
+
+def _validate_registry_path(path: str, registry: Any, where: str) -> None:
+    head, _, sub = path.partition(".")
+    attribute = registry.attributes.get(head)
+    if attribute is None:
+        raise ValueError(f"{where}: unknown registry attribute {head!r}")
+    if sub:
+        field_names = {field.name for field in attribute.fields}
+        if sub not in field_names:
+            raise ValueError(f"{where}: unknown subfield {sub!r} on {head!r}")
+
+
+def _validate_template(template: str, where: str) -> None:
+    registry = _registry_document()
+    for kind, token_path in compile_template(template):
+        if kind == "tok":
+            _validate_registry_path(token_path, registry, f"{where} token {{{token_path}}}")
+
+
+def validate_config(config: Any) -> None:
+    """Strict validation of a custom_labels config document. Empty config passes."""
+    if not isinstance(config, dict) or not config:
+        return
+    rules = config.get("slotRules")
+    if rules is None:
+        return
+    if not isinstance(rules, list):
+        raise ValueError("config.slotRules must be an array")
+    seen_ids: set[str] = set()
+    first_rule_per_slot: dict[str, str] = {}
+    for index, rule in enumerate(rules):
+        path = f"slotRules[{index}]"
+        if not isinstance(rule, dict):
+            raise ValueError(f"{path}: rule must be an object")
+        rule_id = rule.get("id")
+        if not isinstance(rule_id, str) or not rule_id:
+            raise ValueError(f"{path}: id must be a non-empty string")
+        if rule_id in seen_ids:
+            raise ValueError(f"{path}: duplicate rule id {rule_id!r}")
+        seen_ids.add(rule_id)
+        if not isinstance(rule.get("name"), str) or not rule["name"]:
+            raise ValueError(f"{path}: name must be a non-empty string")
+        if rule.get("targetSlot") not in _TARGET_SLOTS:
+            raise ValueError(f"{path}: targetSlot must be one of {', '.join(_TARGET_SLOTS)}")
+        match_field = rule.get("matchField")
+        if not isinstance(match_field, str) or not match_field:
+            raise ValueError(f"{path}: matchField must be a non-empty string")
+        _validate_registry_path(match_field, _registry_document(), f"{path}.matchField")
+        template = rule.get("valueTemplate")
+        if not isinstance(template, str) or not template:
+            raise ValueError(f"{path}: valueTemplate must be a non-empty string")
+        _validate_template(template, path)
+        fallback = rule.get("fallbackTemplate", "")
+        if not isinstance(fallback, str):
+            raise ValueError(f"{path}: fallbackTemplate must be a string")
+        if fallback:
+            _validate_template(fallback, path)
+            slot = rule["targetSlot"]
+            if slot in first_rule_per_slot:
+                raise ValueError(
+                    f"{path}: fallbackTemplate already declared by rule "
+                    f"{first_rule_per_slot[slot]!r} for {slot}"
+                )
+        first_rule_per_slot.setdefault(rule["targetSlot"], rule_id)
+
+
+# ---------------------------------------------------------------------------
+# Plugin
+# ---------------------------------------------------------------------------
+
+
+def _build_state(config: Any, data: Any) -> dict[str, Any]:
+    rules = (config or {}).get("slotRules") or []
+    slot_ids = (data or {}).get("slotIds") or {}
+    prepared: list[dict[str, Any]] = []
+    for rule in rules:
+        if not isinstance(rule, dict) or not rule.get("isActive", True):
+            continue
+        raw = slot_ids.get(rule.get("id"), "")
+        prepared.append({
+            "id": rule["id"],
+            "targetSlot": rule["targetSlot"],
+            "matchField": rule["matchField"],
+            "ids": parse_id_list(raw if isinstance(raw, str) else ""),
+            "template": compile_template(rule["valueTemplate"]),
+            "fallback": compile_template(rule.get("fallbackTemplate") or ""),
+        })
+    return {"rules": prepared}
+
+
+class CustomLabelsPlugin:
+    """Pipeline module assigning custom labels from bulk-ID slot rules."""
+
+    def validate_config(self, config: Any) -> None:
+        validate_config(config)
+
+    def prepare_run(self, config: Any, data: Any, ctx: Any) -> dict[str, Any]:
+        return _build_state(config, data)
+
+    def process(
+        self,
+        product: dict[str, Any],
+        config: Any,
+        data: Any,
+        ctx: Any,
+        state: Any = None,
+    ) -> dict[str, Any]:
+        rules = (state or _build_state(config, data)).get("rules") or []
+        if not rules:
+            return product
+        result = dict(product)
+        by_slot: dict[str, list[dict[str, Any]]] = {}
+        for rule in rules:
+            by_slot.setdefault(rule["targetSlot"], []).append(rule)
+
+        for slot, slot_rules in by_slot.items():
+            value: str | None = None
+            any_matched = False
+            for rule in slot_rules:
+                if not matches(product, rule["matchField"], rule["ids"]):
+                    continue
+                any_matched = True
+                value = render_template(rule["template"], product)
+                if value is not None:
+                    break
+                # matched but a token resolved empty -> skip to the next rule
+            if value is None and any_matched and slot_rules[0]["fallback"]:
+                value = render_template(slot_rules[0]["fallback"], product)
+            if value:
+                result[slot] = value
+        return result

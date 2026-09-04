@@ -1,0 +1,54 @@
+{
+  "id": "custom_labels",
+  "name": "Custom Labels",
+  "version": "1.0.0",
+  "extension_point": "pipeline_module",
+  "entry_point": "plugin:CustomLabelsPlugin",
+  "config_scope": ["global", "client"],
+  "data_scope": ["client", "feed_source"],
+  "frontend": {
+    "menu_item": "Custom Labels",
+    "icon": "tag",
+    "component": "component.tsx"
+  },
+  "config_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "title": "Custom Labels",
+    "properties": {
+      "slotRules": {
+        "type": "array",
+        "title": "Slot rules",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "string", "title": "ID"},
+            "name": {"type": "string", "title": "Name"},
+            "isActive": {"type": "boolean", "title": "Active", "default": true},
+            "targetSlot": {
+              "type": "string",
+              "title": "Target slot",
+              "enum": ["custom_label_0", "custom_label_1", "custom_label_2", "custom_label_3", "custom_label_4"]
+            },
+            "matchField": {"type": "string", "title": "Match field"},
+            "valueTemplate": {"type": "string", "title": "Value template"},
+            "fallbackTemplate": {"type": "string", "title": "Fallback template", "default": ""}
+          },
+          "required": ["id", "name", "targetSlot", "matchField", "valueTemplate"]
+        }
+      }
+    }
+  },
+  "data_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "title": "Custom Labels bulk IDs",
+    "properties": {
+      "slotIds": {
+        "type": "object",
+        "title": "Slot ID lists",
+        "additionalProperties": {"type": "string"}
+      }
+    }
+  }
+}
