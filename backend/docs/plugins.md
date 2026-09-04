@@ -160,9 +160,28 @@ Checks:
 | Plugin | Manifest ID | Scope | MVP Scope |
 |--------|-------------|-------|-----------|
 | Labelizer | `labelizer` | `config: [global, client]`, `data: [client]` | `id_in_list` condition only |
-| Rules | `rules` | `config: [global, client, feed_source]`, `data: [global, client, feed_source]` | Flat rule list, `replace`/`set` ops |
+| Rules | `rules` | `config: [global, client, feed_source]`, `data: [global, client, feed_source]` | Ordered rule list (IF/THEN AST): text/numeric/regex conditions; set/replace/append/prepend/remove/clear actions; master flag = UI pinning; `plugins/core/rules/` |
 | Category | `category` | `config: [global, client]`, `data: [client]` | Rules + manual assignments + taxonomy autocomplete |
 | Filter | `filter` | `config: [global, client, feed_source]`, `data: [global, client, feed_source]` | Conjunctive scalar conditions only |
+
+### Rules Plugin (`plugins/core/rules/`)
+
+Config document: `{"rules": [{id, name, isMasterRule, isActive, when, then}]}`.
+- `when`: condition AST — `all` | `and`/`or` groups | leaf ops
+  (`equals, contains, starts_with, ends_with, regex, exists, empty, gt, lt, gte, lte, between`);
+  `caseSensitive` defaults `true`. Missing `arg` on a numeric op (`gt/lt/gte/lte/between`)
+  raises `ConditionError` at evaluation; a non-numeric field *value* evaluates `False`.
+- `then`: ordered actions (`set, replace, append, prepend, remove, clear`);
+  `replace` supports regex mode when `find` starts with `/pattern/` (trailing slash
+  stripped, JS-style; capture groups via `$1`, backslashes in the replacement are
+  literal); empty-string `find` is rejected by `validate_config`.
+- `isMasterRule` is UI-only (badge + list pinning); engine order = array order.
+- `isActive: false` skips the rule at run time.
+- `validate_config` strictly validates the document on save (`{}` and `{"rules": []}`
+  pass; unknown ops, missing required keys, empty `and`/`or` children and missing
+  numeric args raise `ValueError`); `process` evaluates conditions against the current
+  product state (post-previous-plugins) and applies actions in order (copy-on-write);
+  never mutates `ctx.original_product`.
 
 ## Example Plugin (`plugins/example_upper/`)
 

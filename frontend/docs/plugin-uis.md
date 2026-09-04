@@ -60,28 +60,42 @@ When no `component` is declared, config/data UIs are auto-rendered from JSON Sch
 ## Custom Plugin Components
 
 ### Component Contract
-```tsx
-// plugins/labelizer/frontend/Editor.tsx
-import { usePluginConfig, useSavePluginConfig } from '@/api/hooks';
-
-export default function LabelizerEditor({ pluginId, scope }) {
-  // Use hooks for data fetching/mutation
-  // Return JSX
-}
-```
-- Receives `pluginId` and `scope` via route params (`useParams()`)
+- Receives `{ pluginId, scope }` as props from `PluginPage` (resolved from route params)
 - Uses `usePluginConfig` / `useSavePluginConfig` hooks (scope-aware)
 - Full access to Mantine, TanStack, React APIs
+- Custom components own their save UX: `PluginPage` hides its generic Save button
+  when rendering a custom component
+
+### First-Party Reference: Rules (`plugins/core/rules/frontend/component.tsx`)
+
+The Rules module is the first core plugin with a custom UI. MVP wiring:
+`PluginPage` statically imports the plugin stub and renders it when
+`manifest.frontend.component === 'component.tsx'`, passing `{ pluginId, scope }`.
+
+The stub is a one-line re-export of the real implementation
+(`export { default } from '../../../../frontend/src/features/rules/RulesUI'` —
+rule list, editor, dnd reordering, i18n). It exists because bare package imports
+are unresolvable from `plugins/` (no `node_modules` above it); the stub is the
+documented seam until full build-time discovery lands.
+
+RulesUI owns its own save state (dirty check + `useBlocker`); it fetches and
+saves via the scope-aware plugin config hooks.
+
+Follow-ups: full build-time discovery (Vite scan of `plugins/*/frontend/`
+generating `pluginComponents.ts`, per ADR 0002 — third-party plugins currently
+use schema-rendered forms) and error isolation via `PluginErrorBoundary`
+(per ADR 0004, not yet implemented).
 
 ### Error Isolation (ADR-0004)
-Every plugin component renders inside `<PluginErrorBoundary>`:
+Planned follow-up — `PluginErrorBoundary` does not exist yet. When implemented,
+every plugin component will render inside it:
 ```tsx
 <PluginErrorBoundary pluginName={plugin.name} fallback={<PluginErrorFallback />}>
   <CustomComponent />
 </PluginErrorBoundary>
 ```
-- Catches render errors, shows fallback with "Reload plugin" button
-- Logs error to console with plugin context
+- Will catch render errors, show fallback with "Reload plugin" button
+- Will log error to console with plugin context
 - Prevents dashboard crash
 
 ### Build-Time Contract Test
@@ -118,7 +132,7 @@ const menuItems = plugins
 | Plugin | UI Type | Key Features |
 |--------|---------|--------------|
 | Labelizer | Custom (`Editor.tsx`) | Dimension editor with global/client scope switch, ID lists per dimension |
-| Rules | Schema-rendered | Rule list: operation (replace/set), target path, value/pattern |
+| Rules | Custom (`component.tsx` stub → `frontend/src/features/rules/RulesUI`) | Ordered rule list (IF/THEN AST) with dnd reordering, active/master toggles, per-rule editor, dirty-save guard |
 | Category | Custom (`Editor.tsx`) | 4-bucket dashboard (auto/manual/excluded/uncategorized), drag-drop rule editor, taxonomy autocomplete, match counts, matched-products modal, dirty-state guard |
 | Filter | Schema-rendered | Conjunctive scalar conditions |
 
