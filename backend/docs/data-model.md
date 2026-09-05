@@ -71,7 +71,7 @@ Seeded from `INITIAL_USERNAME` / `INITIAL_PASSWORD` env vars on first start.
 | `feed_source_id` | Integer | FK → FeedSource, RESTRICT |
 | `name` | String(255) | |
 | `version` | String(100) | Semantic version |
-| `definition` | JSONB | Ordered list of module instances |
+| `definition` | JSONB | Mirrors the `ModuleInstance` rows: `{instances: [{plugin_id, name, configuration, enabled}]}` (string manifest plugin ids). Rebuilt on every PUT/PATCH of the pipeline |
 | `created_at` | DateTime | |
 
 Unique constraint on `(name, version)`.
@@ -83,7 +83,7 @@ Unique constraint on `(name, version)`.
 | `pipeline_id` | Integer | FK → ModulePipeline, RESTRICT |
 | `plugin_id` | Integer | FK → Plugin, RESTRICT |
 | `position` | Integer | Order in pipeline |
-| `enabled` | Boolean | Per-instance toggle, default true |
+| `enabled` | Boolean | Per-feed-source per-instance toggle, default true; `false` → excluded from the config bundle (never executed) and `config_hash` changes so the next run reprocesses |
 | `name` | String(255) | Display name |
 | `configuration` | JSONB | Instance-specific config |
 

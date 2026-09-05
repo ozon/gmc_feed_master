@@ -44,6 +44,7 @@ queryKeys = {
   clients: ['clients'],
   plugins: ['plugins'],
   registryAttributes: ['registry', 'attributes'],
+  productDetail: (feedSourceId, productId) => ['feed-source', feedSourceId, 'products', 'detail', productId],
   feedSource: (id) => ({
     detail: ['feed-source', id],
     products: (params) => ['feed-source', id, 'products', params],
@@ -53,9 +54,11 @@ queryKeys = {
     exportHistory: ['feed-source', id, 'export-history'],
     exportDiff: (params | undefined) => ['feed-source', id, 'export-diff', params ?? { disabled: true }],
     fieldMapping: ['feed-source', id, 'field-mapping'],
+    mapping: ['feed-source', id, 'field-mapping'],   // alias of fieldMapping
+    fields: ['feed-source', id, 'fields'],
   }),
-  pluginConfig: (pluginId, scope) => ['plugin-config', pluginId, scope],
-  productDetail: (feedSourceId, productId) => ['feed-source', feedSourceId, 'products', 'detail', productId],
+  pluginConfig: (pluginId, scope) => ['plugin-config', pluginId, scope ?? {}],
+  pluginData: (pluginId, scope) => ['plugin-data', pluginId, scope ?? {}],
 }
 ```
 
@@ -68,6 +71,8 @@ queryKeys = {
 | `useRunDryRun` | — | Invalidates `runs` + `findings` |
 | `useRotateExportToken` | — | Invalidates `feedSource.detail` |
 | `useSavePipeline` | — | Invalidates `feedSource.pipeline` |
+| `usePatchPipelineInstance` | — | Invalidates `feedSource.pipeline` (on success and failure — failure refetches to roll back the optimistic toggle) |
+| `useUpdatePluginEnabled` | — | Invalidates `plugins` (global registry toggle) |
 | `useRollbackToVersion` | — | Invalidates `feedSource.exportHistory` + `export-diff` (prefix) |
 
 **Rule**: All server state in TanStack Query. **No duplicate stores** (Zustand, Redux, Context for server data).
@@ -120,24 +125,27 @@ export function useSavePipeline(feedSourceId) {
 |------|----------|----------|
 | User session | TanStack Query (`useSession`) | `login`/`logout`/`password` mutations |
 | Clients, feed sources | TanStack Query | `create`/`update`/`delete` mutations |
-| Pipeline definition | TanStack Query (`useFeedSourcePipeline`) | `useSavePipeline` |
+| Pipeline definition | TanStack Query (`useFeedSourcePipeline`) | `useSavePipeline` (Save), `usePatchPipelineInstance` (per-instance enable) |
 | Field mapping | TanStack Query (`useFieldMapping`) | `useSaveFieldMapping` / `useAutoMap` |
 | Plugin config/data | TanStack Query (`usePluginConfig`) | `useSavePluginConfig` / `useSavePluginData` |
 | Products (paginated) | TanStack Query (`useProductList`) | — (read-only from staging) |
 | Quality findings | TanStack Query (`useQualityFindings`) | — (read-only from QC) |
 | Export history | TanStack Query (`useExportHistory`) | `useRollbackToVersion` |
-| Pipeline builder workspace | **Local React state** (`PipelinePage`) | Drag/drop reorder, instance toggles, config edits |
+| Pipeline builder workspace | **Local React state** (`PipelinePage` `LocalInstance[]`) | Drag/drop reorder, add/remove instances, config edits, toggles on unsaved instances (saved instances persist via PATCH immediately) |
 | Form drafts (plugin UIs) | **Local React state** (`PluginPage`) | `onChange` → local, `onSubmit` → mutation |
 | Notifications | `src/app/notifications.ts` (Mantine `Notifications` provider) | `notifySuccess` / `notifyApiError` |
 
 ## Key Components
 
 ### Pipeline Builder (`src/features/pipeline/`) — master-detail layout
-- `PipelinePage` — container; local instance state (`LocalInstance`), dirty tracking, `useBlocker`, Save (PUT) / Reset
+- `PipelinePage` — container; local instance state (`LocalInstance` = `PipelineInstance` + position-based `clientId`), dirty tracking (`isInstancesEqual` vs server snapshot), `useBlocker` navigation guard
+  - Layout: `PipelineOverviewStrip` on top, `PluginList` left (`Grid.Col span={4}`), `PluginConfigPanel` right (`Grid.Col span={8}`)
+  - Save (PUT) persists the full local array — reorder, add, remove, and config edits in one request; Reset restores the server snapshot; unsaved-instance toggles also flush on Save
+  - **Per-instance enable is immediate-persist**: the Switch PATCHes `enabled` for saved instances (optimistic; on failure rolls back the whole local array snapshot and invalidates the pipeline query to refetch); unsaved instances (no `id` yet) flip locally and persist with Save
 - `PipelineOverviewStrip` — total/enabled/disabled counters + dirty badge
-- `PluginList` — master list; owns the dnd-kit `DndContext`/`SortableContext` (row reorder), per-instance enable switches (optimistic PATCH via `usePatchPipelineInstance`), add-from-registry
-- `PluginConfigPanel` — detail panel; JSON-schema config form for the selected instance (internal draft, keyed remount on selection change)
-- `dndUtils` — pure helpers: `addInstance` / `applyDragEnd` / `removeInstance` / `isInstancesEqual`
+- `PluginList` — master list; owns the dnd-kit `DndContext`/`SortableContext` (row reorder via drag handles), per-instance enable switches (`plugin-toggle-*`), add-from-registry (`add-plugin-*`), global registry toggles (registry section, `registry-toggle-*` → `useUpdatePluginEnabled`)
+- `PluginConfigPanel` — detail panel; JSON-schema config form for the selected instance (internal draft, keyed remount on selection change), remove button
+- `dndUtils` — pure helpers: `addInstance` / `reorderInstances` / `applyDragEnd` / `removeInstance` / `isInstancesEqual`
 
 ### Plugin System (`src/features/plugin/`)
 - `PluginPage` — renders plugin config/data form
@@ -194,6 +202,6 @@ cd frontend && npm run dev
 - `src/api/queryClient.ts` — QueryClient config (no retry, no background refetch)
 - `src/api/queryKeys.ts` — Hierarchical query key factory
 - `src/api/hooks.ts` — All data fetching + mutation hooks
-- `src/api/client.ts` — `apiGet`/`apiPost`/`apiPut`/`apiDelete` with cookie handling
+- `src/api/client.ts` — `apiGet`/`apiPost`/`apiPut`/`apiPatch`/`apiDelete` with cookie handling
 - `src/components/JsonSchemaForm.tsx` — Mantine-themed schema form renderer
 - `src/components/StateViews.tsx` — `LoadingState`, `ErrorState`, `EmptyState`

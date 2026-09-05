@@ -122,7 +122,7 @@ Plugins may create **any registry-known attribute** on the product, regardless o
 
 ## Pipeline Integration (`app/pipeline/steps.py:PluginStep`)
 
-1. Load `config_bundle` via `resolve_config_bundle()` (includes ordered instances + resolved config/data)
+1. Load `config_bundle` via `resolve_config_bundle()` (includes ordered instances + resolved config/data; instances with `enabled=false` are excluded from the bundle and never execute)
 2. For each product in `delta.enqueue`:
    - `original = deepcopy(product)`
    - For each `instance` in pipeline order:
