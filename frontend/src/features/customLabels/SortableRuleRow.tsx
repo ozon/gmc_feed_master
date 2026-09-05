@@ -2,6 +2,7 @@ import { Badge, Group, Switch, Text, UnstyledButton } from '@mantine/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useTranslation } from 'react-i18next';
+import type { ReactNode } from 'react';
 
 export type SlotRuleSummary = {
   id: string;
@@ -14,12 +15,14 @@ export function SortableRuleRow({
   rule,
   selected,
   disabled = false,
+  badge,
   onSelect,
   onToggleActive,
 }: {
   rule: SlotRuleSummary;
   selected: boolean;
   disabled?: boolean;
+  badge?: ReactNode;
   onSelect: () => void;
   onToggleActive: (isActive: boolean) => void;
 }) {
@@ -49,6 +52,7 @@ export function SortableRuleRow({
       <Text size="sm" style={{ flex: 1 }}>
         {rule.name}
       </Text>
+      {badge}
       <Badge size="xs" variant="light">
         {rule.targetSlot}
       </Badge>

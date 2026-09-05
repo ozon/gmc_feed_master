@@ -145,7 +145,7 @@ describe('CustomLabelsUI operational page', () => {
     expect(dataUrls).toContain('/plugins/custom_labels/data?feed_source_id=1');
   });
 
-  it('at feed-source tier the slot-rules tab is read-only (config edits belong to client/global tier)', async () => {
+  it('at global tier the bulk-IDs tab is unavailable (data_scope lacks global) and the rules tab opens by default (near-duplicate: one config URL)', async () => {
     const captured: string[] = [];
     stubFetch((url) => {
       captured.push(url);
@@ -216,12 +216,7 @@ describe('CustomLabelsUI operational page', () => {
     const captured: string[] = [];
     stubFetch((url) => {
       captured.push(url);
-      if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse(CONFIG);
-      if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse(DATA);
-      if (url.startsWith('/registry/attributes')) return jsonResponse([
-        { name: 'id', kind: 'scalar', sub_fields: [] },
-      ]);
-      return jsonResponse({});
+      return jsonResponseFor(url);
     });
     const router = createMemoryRouter(
       [
@@ -241,20 +236,17 @@ describe('CustomLabelsUI operational page', () => {
     expect(await screen.findByText('Mid Funnel'));
     // No data request was sent at all.
     expect(captured.some((u) => u.includes('/data'))).toBe(false);
+    // Exactly one config request: the global tier only.
+    expect(captured.filter((u) => u.includes('/config'))).toEqual([
+      '/plugins/custom_labels/config',
+    ]);
     // The bulk-IDs tab is disabled; the rules tab (read-write at global tier) is active.
     expect(screen.getByRole('tab', { name: /bulk ids/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /add rule/i })).toBeInTheDocument();
   });
 
   it('at feed-source tier the slot-rules tab is read-only (config edits belong to client/global tier)', async () => {
-    stubFetch((url) => {
-      if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse(CONFIG);
-      if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse(DATA);
-      if (url.startsWith('/registry/attributes')) return jsonResponse([
-        { name: 'id', kind: 'scalar', sub_fields: [] },
-      ]);
-      return jsonResponse({});
-    });
+    stubFetch((url) => jsonResponseFor(url));
     const router = createMemoryRouter(
       [
         {
@@ -275,5 +267,60 @@ describe('CustomLabelsUI operational page', () => {
     // Read-only: no Add rule, no Save for rules; inputs disabled.
     expect(screen.queryByRole('button', { name: /add rule/i })).not.toBeInTheDocument();
     expect(screen.getByTestId('rules-readonly-hint')).toBeInTheDocument();
+  });
+
+  it('at client tier shows global rules with a Global badge and keeps them read-only', async () => {
+    renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels');
+    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
+    expect(screen.getAllByTestId('scope-badge-global').length).toBeGreaterThan(0);
+    await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    await userEvent.click(screen.getByText('Mid Funnel'));
+    expect(screen.getByLabelText(/name/i, { selector: 'input' })).toBeDisabled();
+    // Client rule stays editable.
+    await userEvent.click(screen.getByText('Client Only'));
+    expect(screen.getByLabelText(/name/i, { selector: 'input' })).toBeEnabled();
+  });
+
+  it('at client tier save writes only client-origin rules', async () => {
+    const puts: { url: string; body: unknown }[] = [];
+    stubFetch((url, init) => {
+      if (url.includes('/config?client_id=1') && init?.method === 'PUT') {
+        puts.push({ url, body: JSON.parse(String(init.body)) });
+        return jsonResponse(CLIENT_CONFIG);
+      }
+      return jsonResponseFor(url);
+    });
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/clients/:clientId/plugins/:pluginId',
+          element: <CustomLabelsUI pluginId="custom_labels" scope={{ clientId: 1 }} />,
+        },
+      ],
+      { initialEntries: ['/clients/1/plugins/custom_labels'] },
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <Notifications position="top-right" limit={5} />
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+    await screen.findByText('Client Only');
+    await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    await userEvent.click(screen.getByText('Client Only'));
+    await userEvent.type(screen.getByLabelText(/name/i, { selector: 'input' }), '!');
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    await screen.findByText(/saved/i);
+    const payload = puts[0].body as { slotRules: { id: string }[] };
+    expect(payload.slotRules.map((r) => r.id)).toEqual(['r3']);
+  });
+
+  it('at feed tier the read-only hint links to the client-level page', async () => {
+    renderUI({ feedSourceId: 1 });
+    await screen.findByText('Mid Funnel');
+    await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    const link = screen.getByRole('link', { name: /manage slot rules at client level/i });
+    expect(link).toHaveAttribute('href', '/clients/1/plugins/custom_labels');
   });
 });
