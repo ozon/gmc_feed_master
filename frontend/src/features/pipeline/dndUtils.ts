@@ -13,6 +13,8 @@ export function addInstance(
   return [
     ...instances,
     {
+      id: null,
+      enabled: true,
       clientId,
       position: instances.length,
       plugin_id: plugin.id,
@@ -45,13 +47,8 @@ export function applyDragEnd(
     over: { id: string | number } | null;
   },
 ): LocalInstance[] | null {
-  const activeData = event.active.data?.current as
-    | { source?: string; plugin?: { id: string; name: string } }
-    | undefined;
-  if (activeData?.source === 'palette' && activeData.plugin && event.over?.id === 'workspace-droppable') {
-    return addInstance(instances, activeData.plugin);
-  }
-  if (activeData?.source === 'workspace' && event.over && event.over.id !== 'workspace-droppable') {
+  const activeData = event.active.data?.current as { source?: string } | undefined;
+  if (activeData?.source === 'workspace' && event.over) {
     const fromIdx = instances.findIndex((i) => i.clientId === event.active.id);
     const toIdx = instances.findIndex((i) => i.clientId === event.over!.id);
     if (fromIdx >= 0 && toIdx >= 0) return reorderInstances(instances, fromIdx, toIdx);

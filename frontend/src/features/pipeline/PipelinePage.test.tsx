@@ -95,7 +95,7 @@ describe('PipelinePage', () => {
 
   it('Save becomes enabled when local diverges from server snapshot (dirty tracking)', async () => {
     const serverInstances: PipelineInstance[] = [
-      { position: 0, plugin_id: 'upper', name: 'Upper', configuration: {} },
+      { id: 1, enabled: true, position: 0, plugin_id: 'upper', name: 'Upper', configuration: {} },
     ];
     stubFetch((url) => {
       if (url === '/plugins') return jsonResponse([plugin]);
@@ -121,7 +121,7 @@ describe('PipelinePage', () => {
   it('useBlocker calls window.confirm when navigating away while dirty', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm');
     const serverInstances: PipelineInstance[] = [
-      { position: 0, plugin_id: 'upper', name: 'Upper', configuration: {} },
+      { id: 1, enabled: true, position: 0, plugin_id: 'upper', name: 'Upper', configuration: {} },
     ];
     stubFetch((url) => {
       if (url === '/plugins') return jsonResponse([plugin]);
@@ -139,41 +139,5 @@ describe('PipelinePage', () => {
     const dirtyLocal = addInstance(baseLocal, { id: 'upper', name: 'Upper' });
     expect(isInstancesEqual(dirtyLocal, serverInstances)).toBe(false);
     expect(confirmSpy).not.toHaveBeenCalled();
-  });
-
-  it('dragging a palette plugin onto the workspace adds it as an instance', async () => {
-    const user = userEvent.setup();
-    renderAt();
-    await screen.findByText('Drag a plugin from the palette to start.');
-
-    const paletteCard = screen.getByTestId('palette-card-upper');
-    const workspace = screen.getByTestId('pipeline-workspace');
-    const cardBox = { left: 0, top: 0, width: 100, height: 40 };
-    const workBox = { left: 200, top: 200, width: 400, height: 300 };
-    vi.spyOn(paletteCard, 'getBoundingClientRect').mockReturnValue({
-      ...cardBox,
-      right: cardBox.left + cardBox.width,
-      bottom: cardBox.top + cardBox.height,
-      x: cardBox.left,
-      y: cardBox.top,
-      toJSON: () => ({}),
-    } as DOMRect);
-    vi.spyOn(workspace, 'getBoundingClientRect').mockReturnValue({
-      ...workBox,
-      right: workBox.left + workBox.width,
-      bottom: workBox.top + workBox.height,
-      x: workBox.left,
-      y: workBox.top,
-      toJSON: () => ({}),
-    } as DOMRect);
-
-    await user.pointer([
-      { keys: '[MouseLeft>]', target: paletteCard, coords: { clientX: 20, clientY: 10 } },
-      { target: paletteCard, coords: { clientX: 30, clientY: 10 } },
-      { target: workspace, coords: { clientX: 400, clientY: 350 } },
-      { keys: '[/MouseLeft]', target: workspace, coords: { clientX: 400, clientY: 350 } },
-    ]);
-
-    expect(await screen.findByTestId('pipeline-instance-upper-0')).toBeInTheDocument();
   });
 });

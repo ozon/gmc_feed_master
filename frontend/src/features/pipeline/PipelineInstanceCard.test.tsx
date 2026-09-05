@@ -8,6 +8,8 @@ import type { LocalInstance } from './dndUtils';
 import type { JsonSchema } from '../../components/JsonSchemaForm';
 
 const instance: LocalInstance = {
+  id: 1,
+  enabled: true,
   clientId: 'abc',
   position: 0,
   plugin_id: 'upper',

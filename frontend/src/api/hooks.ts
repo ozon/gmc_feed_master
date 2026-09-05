@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiDelete, apiGet, apiPost, apiPut, changePassword, getCurrentUser, logout } from './client';
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut, changePassword, getCurrentUser, logout } from './client';
 import { queryKeys } from './queryKeys';
 import type {
   ClientRow,
@@ -464,6 +464,22 @@ export function useSavePipeline(feedSourceId: number | string) {
       apiPut<PipelineDoc>(`/feed-sources/${feedSourceId}/pipeline`, doc),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).pipeline });
+    },
+  });
+}
+
+export function usePatchPipelineInstance(feedSourceId: number | string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ instanceId, enabled }: { instanceId: number; enabled: boolean }) =>
+      apiPatch<{ id: number; enabled: boolean }>(
+        `/feed-sources/${feedSourceId}/pipeline/instances/${instanceId}`,
+        { enabled },
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.feedSource(feedSourceId).pipeline,
+      });
     },
   });
 }

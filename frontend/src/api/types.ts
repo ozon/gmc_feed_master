@@ -173,10 +173,12 @@ export type QualityFindingsResponse = {
 export type PluginConfigResponse = Record<string, unknown>;
 
 export type PipelineInstance = {
+  id: number | null;
   position: number;
   plugin_id: string;
   name: string;
   configuration: Record<string, unknown>;
+  enabled: boolean;
 };
 
 export type PipelineDoc = {
