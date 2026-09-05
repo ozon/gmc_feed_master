@@ -890,7 +890,7 @@ export function SlotGroup({
                   <Text size="xs" c="dimmed">{rule.matchField}</Text>
                 </Group>
                 <Text size="xs" c="dimmed">{renderPreview(rule.valueTemplate)}</Text>
-                <Collapse in={!allMode}>
+                <Collapse expanded={!allMode}>
                   <Stack gap={4}>
                     <Textarea
                       label={rule.matchField === 'id'
@@ -908,7 +908,7 @@ export function SlotGroup({
                     <Text size="xs" c="dimmed">{t('idCount', { count })}</Text>
                   </Stack>
                 </Collapse>
-                <Collapse in={allMode}>
+                <Collapse expanded={allMode}>
                   <Paper withBorder p="xs" data-testid={`all-mode-${rule.id}`}>
                     <Stack gap={4}>
                       <Text size="sm" c="dimmed">{t('bulk.controlledByRule')}</Text>
