@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
 import {
-  Anchor, Badge, Button, Card, Collapse, Group, Paper, SegmentedControl, Select, Stack, Switch, Tabs, Text, TextInput, Textarea,
+  Accordion, ActionIcon, Anchor, Badge, Button, Card, Collapse, Drawer, Group, Paper,
+  SegmentedControl, Select, Stack, Switch, Tabs, Text, TextInput, Textarea,
 } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { IconHelp } from '@tabler/icons-react';
 import {
   DndContext, PointerSensor, closestCenter, useSensor, useSensors,
 } from '@dnd-kit/core';
@@ -118,6 +121,7 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
   const activeRules = effectiveRules.filter((r) => r.isActive);
   const selected = effectiveRules.find((r) => r.id === selectedId) ?? null;
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const [helpOpened, { open: openHelp, close: closeHelp }] = useDisclosure(false);
 
   function patchSelected(patch: Partial<SlotRule>) {
     if (!selected) return;
@@ -187,6 +191,52 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
         configLabel={t('tabs.slotRules')}
         dataLabel={t('tabs.bulkIds')}
       />
+      <Group justify="space-between" align="flex-start" wrap="nowrap">
+        <Text size="sm" c="dimmed" data-testid="labelizer-description">
+          {t('description')}
+        </Text>
+        <ActionIcon variant="light" aria-label={t('help.open')} onClick={openHelp}>
+          <IconHelp size={16} />
+        </ActionIcon>
+      </Group>
+      <Accordion>
+        <Accordion.Item value="concepts">
+          <Accordion.Control>{t('howItWorks.concepts.question')}</Accordion.Control>
+          <Accordion.Panel>{t('howItWorks.concepts.answer')}</Accordion.Panel>
+        </Accordion.Item>
+        <Accordion.Item value="matchModes">
+          <Accordion.Control>{t('howItWorks.matchModes.question')}</Accordion.Control>
+          <Accordion.Panel>{t('howItWorks.matchModes.answer')}</Accordion.Panel>
+        </Accordion.Item>
+        <Accordion.Item value="templates">
+          <Accordion.Control>{t('howItWorks.templates.question')}</Accordion.Control>
+          <Accordion.Panel>{t('howItWorks.templates.answer')}</Accordion.Panel>
+        </Accordion.Item>
+        <Accordion.Item value="scopes">
+          <Accordion.Control>{t('howItWorks.scopes.question')}</Accordion.Control>
+          <Accordion.Panel>{t('howItWorks.scopes.answer')}</Accordion.Panel>
+        </Accordion.Item>
+      </Accordion>
+      <Drawer
+        opened={helpOpened}
+        onClose={closeHelp}
+        title={t('help.title')}
+        position="right"
+        size="lg"
+      >
+        <Stack gap="sm">
+          {(['concepts', 'matchModes', 'templates', 'scopes'] as const).map((key) => (
+            <Stack key={key} gap={4}>
+              <Text fw={600} size="sm">{t(`howItWorks.${key}.question`)}</Text>
+              <Text size="sm" c="dimmed">{t(`howItWorks.${key}.answer`)}</Text>
+            </Stack>
+          ))}
+          <Stack gap={4}>
+            <Text fw={600} size="sm">{t('help.gettingStarted')}</Text>
+            <Text size="sm" c="dimmed">{t('help.gettingStartedBody')}</Text>
+          </Stack>
+        </Stack>
+      </Drawer>
       <Tabs defaultValue={initialTab} keepMounted={false}>
         <Tabs.List>
           <Tabs.Tab value="ids" disabled={idsUnavailable}>{t('tabs.bulkIds')}</Tabs.Tab>

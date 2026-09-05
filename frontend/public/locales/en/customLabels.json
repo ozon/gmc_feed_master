@@ -40,5 +40,30 @@
     "valueTemplateHint": "Use {field} tokens, e.g. {brand} - Mid Funnel. An empty token skips the rule.",
     "fallbackTemplate": "Fallback template",
     "fallbackHint": "Used when a rule matched but the template resolved empty (e.g. token skip). Only the first rule of a slot may declare it."
+  },
+  "description": "Labelizer fills Google Shopping's custom_label_0–4 slots from an ordered list of slot rules: a rule matches products (by value list or all products), renders a value template, and the first match per slot wins.",
+  "howItWorks": {
+    "concepts": {
+      "question": "What are slot rules?",
+      "answer": "Each rule targets one custom_label slot. Rules are evaluated top to bottom; the first matching rule with a non-empty template result fills the slot."
+    },
+    "matchModes": {
+      "question": "Match value list vs. match all products?",
+      "answer": "Value-list rules label products whose match field equals one of the listed values. Match-all rules label every product — no value list needed."
+    },
+    "templates": {
+      "question": "How do value templates work?",
+      "answer": "Use {field} tokens like {brand} - Mid Funnel. If a token resolves empty the rule is skipped; a fallback template covers that case."
+    },
+    "scopes": {
+      "question": "Where do rules and bulk values live?",
+      "answer": "Slot rules live at Global or Client level and merge client-over-global. Bulk values live at Client or Feed level; a feed pins inherited values on its first save."
+    }
+  },
+  "help": {
+    "open": "Open user guide",
+    "title": "Labelizer user guide",
+    "gettingStarted": "Getting started",
+    "gettingStartedBody": "1. Add a rule under Slot rules and pick a target slot. 2. Choose a match mode — paste bulk IDs or let all products match. 3. Write a value template. 4. Save, then run the pipeline to see the labels in the export."
   }
 }

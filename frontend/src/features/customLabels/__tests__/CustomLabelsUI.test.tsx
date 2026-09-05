@@ -352,6 +352,15 @@ describe('CustomLabelsUI operational page', () => {
     await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
     expect(screen.getByText('inactive')).toBeInTheDocument();
   });
+
+  it('shows the description, how-it-works accordion, and opens the guide drawer', async () => {
+    renderUI({ feedSourceId: 1 });
+    expect(await screen.findByTestId('labelizer-description')).toHaveTextContent(/labelizer/i);
+    expect(screen.getByText(/what are slot rules\?/i)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /open user guide/i }));
+    expect(await screen.findByText(/labelizer user guide/i)).toBeInTheDocument();
+    expect(screen.getByText(/getting started/i)).toBeInTheDocument();
+  });
 });
 
 describe('CustomLabelsUI bulk tab mode-awareness', () => {

@@ -40,5 +40,30 @@
     "valueTemplateHint": "{field}-Tokens verwenden, z. B. {brand} - Mid Funnel. Ein leerer Token überspringt die Regel.",
     "fallbackTemplate": "Fallback-Vorlage",
     "fallbackHint": "Wird verwendet, wenn eine Regel gegriffen hat, aber die Vorlage leer aufgelöst wurde (z. B. Token-Skip). Nur die erste Regel eines Slots darf sie setzen."
+  },
+  "description": "Labelizer füllt Googles custom_label_0–4-Slots aus einer geordneten Liste von Slot-Regeln: Eine Regel matcht Produkte (per Werteliste oder alle Produkte), rendert eine Wertvorlage — der erste Treffer pro Slot gewinnt.",
+  "howItWorks": {
+    "concepts": {
+      "question": "Was sind Slot-Regeln?",
+      "answer": "Jede Regel zielt auf einen custom_label-Slot. Regeln werden von oben nach unten ausgewertet; die erste passende Regel mit nicht-leerem Vorlagenergebnis füllt den Slot."
+    },
+    "matchModes": {
+      "question": "Werteliste abgleichen oder alle Produkte?",
+      "answer": "Wertelisten-Regeln labeln Produkte, deren Match-Feld einem der gelisteten Werte entspricht. „Alle Produkte“-Regeln labeln jedes Produkt — ohne Werteliste."
+    },
+    "templates": {
+      "question": "Wie funktionieren Wertvorlagen?",
+      "answer": "Verwende {field}-Tokens wie {brand} - Mid Funnel. Löst ein Token leer auf, wird die Regel übersprungen; eine Fallback-Vorlage deckt diesen Fall ab."
+    },
+    "scopes": {
+      "question": "Wo leben Regeln und Bulk-Werte?",
+      "answer": "Slot-Regeln leben auf Global- oder Client-Ebene und mergen Client-über-Global. Bulk-Werte leben auf Client- oder Feed-Ebene; ein Feed pinnt geerbte Werte beim ersten Speichern."
+    }
+  },
+  "help": {
+    "open": "Benutzerhandbuch öffnen",
+    "title": "Labelizer-Benutzerhandbuch",
+    "gettingStarted": "Erste Schritte",
+    "gettingStartedBody": "1. Unter „Slot-Regeln“ eine Regel anlegen und einen Ziel-Slot wählen. 2. Match-Modus wählen — Bulk-IDs einfügen oder alle Produkte matchen lassen. 3. Wertvorlage schreiben. 4. Speichern und die Pipeline ausführen, um die Labels im Export zu sehen."
   }
 }
