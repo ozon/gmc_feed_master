@@ -122,7 +122,7 @@ ROWS = [
 class TestPreviewRoute:
     async def test_mounted_route_returns_counts(self, app_factory):
         client = await logged_in_client(app_factory)
-        app, factory = app_factory
+        _app, factory = app_factory
         feed = await _setup_feed(factory, client, ROWS)
         rules = [
             _rule("r1", "custom_label_0", matchField="brand"),
@@ -143,7 +143,7 @@ class TestPreviewRoute:
 
     async def test_first_match_wins_and_token_skip(self, app_factory):
         client = await logged_in_client(app_factory)
-        app, factory = app_factory
+        _app, factory = app_factory
         feed = await _setup_feed(factory, client, ROWS)
         rules = [
             # first rule matches a1 but its brand token renders; second matches too
@@ -165,7 +165,7 @@ class TestPreviewRoute:
 
     async def test_token_skip_shadowed_rule_is_matched_not_labeled(self, app_factory):
         client = await logged_in_client(app_factory)
-        app, factory = app_factory
+        _app, factory = app_factory
         feed = await _setup_feed(factory, client, ROWS)
         rules = [
             # nobrand has empty brand -> token skips on BOTH rules
@@ -186,7 +186,7 @@ class TestPreviewRoute:
 
     async def test_match_all_counts_every_product(self, app_factory):
         client = await logged_in_client(app_factory)
-        app, factory = app_factory
+        _app, factory = app_factory
         feed = await _setup_feed(factory, client, ROWS)
         rules = [_rule("all1", "custom_label_3", matchMode="all")]
         resp = await client.post("/plugins/custom_labels/preview", json={
@@ -201,7 +201,7 @@ class TestPreviewRoute:
 
     async def test_fallback_credits_slot_not_rule(self, app_factory):
         client = await logged_in_client(app_factory)
-        app, factory = app_factory
+        _app, factory = app_factory
         feed = await _setup_feed(factory, client, ROWS)
         rules = [
             _rule("r1", "custom_label_4", matchField="brand",
@@ -219,7 +219,7 @@ class TestPreviewRoute:
 
     async def test_inactive_rules_are_excluded(self, app_factory):
         client = await logged_in_client(app_factory)
-        app, factory = app_factory
+        _app, factory = app_factory
         feed = await _setup_feed(factory, client, ROWS)
         rules = [_rule("off", "custom_label_0", isActive=False)]
         resp = await client.post("/plugins/custom_labels/preview", json={
@@ -231,7 +231,7 @@ class TestPreviewRoute:
 
     async def test_sample_cap(self, app_factory):
         client = await logged_in_client(app_factory)
-        app, factory = app_factory
+        _app, factory = app_factory
         feed = await _setup_feed(factory, client, ROWS)
         rules = [_rule("all1", "custom_label_0", matchMode="all")]
         resp = await client.post("/plugins/custom_labels/preview", json={
@@ -242,7 +242,7 @@ class TestPreviewRoute:
 
     async def test_empty_feed_returns_zero_total(self, app_factory):
         client = await logged_in_client(app_factory)
-        app, factory = app_factory
+        _app, factory = app_factory
         feed = await _setup_feed(factory, client, [])
         rules = [_rule("r1", "custom_label_0", matchMode="all")]
         resp = await client.post("/plugins/custom_labels/preview", json={
@@ -262,7 +262,7 @@ class TestPreviewRoute:
     async def test_invalid_draft_422(self, app_factory, monkeypatch):
         monkeypatch.setattr("registry.loader.load_registry", lambda: _registry())
         client = await logged_in_client(app_factory)
-        app, factory = app_factory
+        _app, factory = app_factory
         feed = await _setup_feed(factory, client, ROWS)
         rules = [_rule("bad", "custom_label_9")]
         resp = await client.post("/plugins/custom_labels/preview", json={
