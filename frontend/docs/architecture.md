@@ -126,17 +126,18 @@ export function useSavePipeline(feedSourceId) {
 | Products (paginated) | TanStack Query (`useProductList`) | — (read-only from staging) |
 | Quality findings | TanStack Query (`useQualityFindings`) | — (read-only from QC) |
 | Export history | TanStack Query (`useExportHistory`) | `useRollbackToVersion` |
-| Pipeline builder workspace | **Local React state** (`PipelineWorkspace`) | Drag/drop, instance config edits |
+| Pipeline builder workspace | **Local React state** (`PipelinePage`) | Drag/drop reorder, instance toggles, config edits |
 | Form drafts (plugin UIs) | **Local React state** (`PluginPage`) | `onChange` → local, `onSubmit` → mutation |
 | Notifications | `src/app/notifications.ts` (Mantine `Notifications` provider) | `notifySuccess` / `notifyApiError` |
 
 ## Key Components
 
-### Pipeline Builder (`src/features/pipeline/`)
-- `PipelinePage` — container, fetches pipeline + plugins
-- `PipelineWorkspace` — dnd-kit `SortableContext`, dirty tracking
-- `PluginPalette` — available enabled plugins (draggable)
-- `PipelineInstanceCard` — configured instance (draggable, editable config)
+### Pipeline Builder (`src/features/pipeline/`) — master-detail layout
+- `PipelinePage` — container; local instance state (`LocalInstance`), dirty tracking, `useBlocker`, Save (PUT) / Reset
+- `PipelineOverviewStrip` — total/enabled/disabled counters + dirty badge
+- `PluginList` — master list; owns the dnd-kit `DndContext`/`SortableContext` (row reorder), per-instance enable switches (optimistic PATCH via `usePatchPipelineInstance`), add-from-registry
+- `PluginConfigPanel` — detail panel; JSON-schema config form for the selected instance (internal draft, keyed remount on selection change)
+- `dndUtils` — pure helpers: `addInstance` / `applyDragEnd` / `removeInstance` / `isInstancesEqual`
 
 ### Plugin System (`src/features/plugin/`)
 - `PluginPage` — renders plugin config/data form
