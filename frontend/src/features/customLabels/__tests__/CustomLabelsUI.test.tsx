@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { notifications, Notifications } from '@mantine/notifications';
 import { createMemoryRouter, RouterProvider } from 'react-router';
@@ -65,8 +65,9 @@ function jsonResponseFor(url: string) {
 function renderUI(
   scope: { clientId?: number; feedSourceId?: number },
   url = '/clients/1/feeds/1/plugins/custom_labels',
+  fetchHandler?: (url: string, init?: RequestInit) => Response | Promise<Response>,
 ) {
-  stubFetch(jsonResponseFor);
+  stubFetch(fetchHandler ?? jsonResponseFor);
   const element = <CustomLabelsUI pluginId="custom_labels" scope={scope} />;
   const router = createMemoryRouter(
     [
@@ -506,5 +507,64 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
     expect(
       screen.queryByRole('button', { name: /switch to value list/i }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('CustomLabelsUI live preview stats', () => {
+  const PREVIEW = {
+    total: 3,
+    rules: {
+      r1: { matched: 2, labeled: 2, sample: ['a1', 'a2'] },
+      r3: { matched: 1, labeled: 0, sample: ['z1'] },
+    },
+    slots: {
+      custom_label_1: { labeled: 2, coverage: 66.7, rules: ['r1'] },
+      custom_label_2: { labeled: 0, coverage: 0, rules: ['r3'] },
+    },
+  };
+
+  it('renders live stats, sample links, and the shadowed marker on the feed page', async () => {
+    renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', (url) => {
+      if (url.startsWith('/plugins/custom_labels/preview')) return jsonResponse(PREVIEW);
+      return jsonResponseFor(url);
+    });
+    expect(await waitFor(() =>
+      expect(screen.getByText(/2 products get this label/i)).toBeInTheDocument(),
+      { timeout: 2500 })).toBeTruthy();
+    expect(screen.getByText(/66\.7% coverage/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/based on the last run's 3 staged products/i).length).toBeGreaterThan(0);
+    const sample = screen.getByRole('link', { name: 'a1' });
+    expect(sample).toHaveAttribute(
+      'href', '/clients/1/feeds/1/products?q=a1',
+    );
+    // r3 matched but never labeled -> shadowed marker
+    expect(screen.getByText(/never applied/i)).toBeInTheDocument();
+  });
+
+  it('total=0 shows the never-run hint instead of zero stats', async () => {
+    renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', (url) => {
+      if (url.startsWith('/plugins/custom_labels/preview')) {
+        return jsonResponse({ total: 0, rules: {}, slots: {} });
+      }
+      return jsonResponseFor(url);
+    });
+    expect(await waitFor(() =>
+      expect(screen.getAllByText(/no staged products yet/i).length).toBeGreaterThan(0),
+      { timeout: 2500 })).toBeTruthy();
+  });
+
+  it('client page sends no preview request and shows the open-from-feed hint', async () => {
+    const calls: string[] = [];
+    renderUI(
+      { clientId: 1 },
+      '/clients/1/plugins/custom_labels',
+      (url) => {
+        calls.push(url);
+        return jsonResponseFor(url);
+      },
+    );
+    await screen.findByText('Client Only');
+    expect(screen.getAllByText(/open this plugin from a feed/i).length).toBeGreaterThan(0);
+    expect(calls.some((u) => u.includes('/preview'))).toBe(false);
   });
 });

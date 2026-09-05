@@ -1,7 +1,9 @@
-import { Badge, Button, Card, Collapse, Group, Paper, Stack, Text, Textarea } from '@mantine/core';
+import { Anchor, Badge, Button, Card, Collapse, Group, Loader, Paper, Stack, Text, Textarea, Tooltip } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 import { parseIdList, renderPreview } from './ids';
 import type { ScopedSlotRule, SlotRule, Tier } from './scopeMerge';
+import type { PreviewRuleStats } from './usePreview';
 
 export type SlotGroupProps = {
   slot: string;
@@ -12,10 +14,19 @@ export type SlotGroupProps = {
   editableTier: Tier | null;
   onSetSlotIds: (next: Record<string, string>) => void;
   onPatchRule: (id: string, patch: Partial<SlotRule>) => void;
+  showLive: boolean;
+  stats?: { labeled: number; coverage: number };
+  ruleStats?: Record<string, PreviewRuleStats>;
+  total?: number;
+  previewPending: boolean;
+  previewErrors: string[] | null;
+  previewUnavailable: boolean;
+  productsHref: string | null;
 };
 
 export function SlotGroup({
   slot, rules, values, inheritedFor, isRuleEditable, editableTier, onSetSlotIds, onPatchRule,
+  showLive, stats, ruleStats, total, previewPending, previewErrors, previewUnavailable, productsHref,
 }: SlotGroupProps) {
   const { t } = useTranslation('customLabels');
   const { t: tCommon } = useTranslation('common');
@@ -29,6 +40,63 @@ export function SlotGroup({
           </Group>
           <Text size="xs" c="dimmed">{t('activeRulesCount', { count: rules.length })}</Text>
         </Group>
+        {!showLive ? (
+          <Text size="xs" c="dimmed">{t('openFromFeed')}</Text>
+        ) : previewUnavailable ? (
+          <Text size="xs" c="dimmed">{t('previewUnavailable')}</Text>
+        ) : previewErrors ? (
+          <Stack gap={2}>
+            {previewErrors.map((error) => (
+              <Text key={error} size="xs" c="dimmed">{error}</Text>
+            ))}
+          </Stack>
+        ) : total === undefined ? (
+          previewPending ? <Loader size="xs" /> : null
+        ) : total === 0 ? (
+          <Text size="xs" c="dimmed">{t('noStagedProducts')}</Text>
+        ) : (
+          <Stack gap={4}>
+            <Group gap="xs" wrap="nowrap">
+              {previewPending && <Loader size="xs" />}
+              <Text size="xs" c="dimmed">
+                {t('slotLabeled', { count: stats?.labeled ?? 0 })}
+              </Text>
+              <Text size="xs" c="dimmed">
+                {t('coveragePct', { coverage: stats?.coverage ?? 0 })}
+              </Text>
+              <Text size="xs" c="dimmed">{t('freshnessHint', { count: total })}</Text>
+            </Group>
+            {rules.map((rule) => {
+              const rs = ruleStats?.[rule.id];
+              const neverApplied = (rs?.matched ?? 0) > 0 && (rs?.labeled ?? 0) === 0;
+              return (
+                <Group key={rule.id} gap="xs" wrap="nowrap">
+                  <Text size="xs" fw={500}>{rule.name}</Text>
+                  <Text size="xs" c="dimmed">
+                    {t('matchedCount', { count: rs?.matched ?? 0 })}
+                  </Text>
+                  {neverApplied && (
+                    <Tooltip label={t('neverAppliedHint')} withArrow position="top">
+                      <Badge size="xs" variant="light" color="gray">
+                        {t('neverApplied')}
+                      </Badge>
+                    </Tooltip>
+                  )}
+                  {(rs?.sample ?? []).map((pid) => (
+                    <Anchor
+                      key={pid}
+                      component={Link}
+                      to={`${productsHref}?q=${encodeURIComponent(pid)}`}
+                      size="xs"
+                    >
+                      {pid}
+                    </Anchor>
+                  ))}
+                </Group>
+              );
+            })}
+          </Stack>
+        )}
         <Stack gap="md">
           {rules.map((rule) => {
             const allMode = rule.matchMode === 'all';

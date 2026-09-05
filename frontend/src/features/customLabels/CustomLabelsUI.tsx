@@ -22,6 +22,7 @@ import { notifySuccess } from '../../app/notifications';
 import { SlotGroup } from './SlotGroup';
 import { SortableRuleRow } from './SortableRuleRow';
 import { MatchFieldCombobox } from './MatchFieldCombobox';
+import { useLabelizerPreview } from './usePreview';
 import {
   configTierChain, currentDataTier, dataTierChain, editableConfigTier,
   mergeSlotIds, mergeSlotRules, type ScopedSlotRule, type SlotRule, type Tier,
@@ -121,6 +122,16 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
   const activeRules = effectiveRules.filter((r) => r.isActive);
   const selected = effectiveRules.find((r) => r.id === selectedId) ?? null;
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const atFeed = scope.feedSourceId !== undefined;
+  const preview = useLabelizerPreview({
+    enabled: atFeed,
+    feedSourceId: scope.feedSourceId,
+    rules: effectiveRules,
+    slotIds: effectiveIds,
+  });
+  const productsHref = atFeed && routeContext.clientId && routeContext.feedSourceId
+    ? `/clients/${routeContext.clientId}/feeds/${routeContext.feedSourceId}/products`
+    : null;
   const [helpOpened, { open: openHelp, close: closeHelp }] = useDisclosure(false);
 
   function patchSelected(patch: Partial<SlotRule>) {
@@ -263,6 +274,14 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
                       editableTier={editableTier}
                       onSetSlotIds={setSlotIds}
                       onPatchRule={patchRule}
+                      showLive={atFeed}
+                      stats={preview.result?.slots[slot]}
+                      ruleStats={preview.result?.rules}
+                      total={preview.result?.total}
+                      previewPending={preview.isPending}
+                      previewErrors={preview.errors}
+                      previewUnavailable={preview.unavailable}
+                      productsHref={productsHref}
                     />
                   );
                 })}
