@@ -48,19 +48,6 @@ uses this for `slotRules`; its rules additionally support
 `matchMode: "values" | "all"` (`"all"` matches every product without a value
 list).
 
-### Optional `config_merge` (list merge strategy)
-
-```json
-"config_merge": {"slotRules": {"strategy": "union_by_key", "key": "id"}}
-```
-
-Declared keys merge by union: ancestor entries keep their positions, more
-specific tiers override entries with the same key, unseen entries are appended.
-Undeclared keys keep the default wholesale-replacement semantics. `custom_labels`
-uses this for `slotRules`; its rules additionally support
-`matchMode: "values" | "all"` (`"all"` matches every product without a value
-list).
-
 ## Discovery & Registration (`app/plugins/discovery.py`)
 
 1. **Scan** `plugins/` directory at startup
