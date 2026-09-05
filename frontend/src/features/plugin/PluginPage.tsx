@@ -11,6 +11,7 @@ import { CUSTOM_COMPONENTS } from './customComponents';
 
 export function PluginPage() {
   const { t } = useTranslation('plugins');
+  const { t: tCommon } = useTranslation('common');
   const { pluginId, clientId, feedSourceId } = useParams();
   const { data: plugins, isPending, isError, refetch } = usePlugins();
 
@@ -81,7 +82,7 @@ export function PluginPage() {
 
   return (
     <Stack gap="md">
-      <Title order={3}>{plugin.name}</Title>
+      <Title order={3}>{tCommon(`pluginNames.${plugin.id}`, { defaultValue: plugin.name })}</Title>
       {configFetchEnabled && config.isPending ? (
         <LoadingState />
       ) : configFetchEnabled && config.isError ? (

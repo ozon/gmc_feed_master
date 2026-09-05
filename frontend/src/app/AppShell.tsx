@@ -339,7 +339,9 @@ export function AppShell() {
                     key={plugin.id}
                     component={Link}
                     to={to}
-                    label={scope?.menu_item ?? plugin.name}
+                    label={t(`pluginNames.${plugin.id}`, {
+                      defaultValue: scope?.menu_item ?? plugin.name,
+                    })}
                     leftSection={<PluginIcon size={16} />}
                     active={isActive(to)}
                     variant={isActive(to) ? 'light' : undefined}

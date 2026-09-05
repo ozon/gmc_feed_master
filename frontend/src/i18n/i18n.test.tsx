@@ -47,4 +47,10 @@ describe('i18n', () => {
 
     await i18n.changeLanguage('en');
   });
+
+  it('resolves plugin display names with manifest fallback', async () => {
+    await i18n.changeLanguage('en');
+    expect(i18n.t('pluginNames.custom_labels')).toBe('Labelizer');
+    expect(i18n.t('pluginNames.rules', { defaultValue: 'Rules' })).toBe('Rules');
+  });
 });
