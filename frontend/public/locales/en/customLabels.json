@@ -11,6 +11,9 @@
   "idsSaved": "Bulk IDs saved",
   "unsavedChanges": "You have unsaved changes. Leave anyway?",
   "dragHandle": "Drag to reorder",
+  "manageAtClient": "Manage slot rules at client level",
+  "ruleInherited": "Managed at {{tier}} level — read-only here.",
+  "inheritedFrom": "Inherited from {{tier}}",
   "fields": {
     "name": "Name",
     "isActive": "Active",

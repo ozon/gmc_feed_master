@@ -11,6 +11,9 @@
   "idsSaved": "Bulk-IDs gespeichert",
   "unsavedChanges": "Du hast ungespeicherte Änderungen. Trotzdem verlassen?",
   "dragHandle": "Zum Neusortieren ziehen",
+  "manageAtClient": "Slot-Regeln auf Client-Ebene verwalten",
+  "ruleInherited": "Wird auf {{tier}}-Ebene verwaltet — hier schreibgeschützt.",
+  "inheritedFrom": "Geerbt von {{tier}}",
   "fields": {
     "name": "Name",
     "isActive": "Aktiv",

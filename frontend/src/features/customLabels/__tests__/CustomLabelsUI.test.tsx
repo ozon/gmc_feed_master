@@ -1,6 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { notifications, Notifications } from '@mantine/notifications';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
@@ -22,9 +23,10 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  notifications.clean();
 });
 
-const CONFIG = {
+const GLOBAL_CONFIG = {
   slotRules: [
     {
       id: 'r1', name: 'Mid Funnel', isActive: true, targetSlot: 'custom_label_1',
@@ -36,31 +38,50 @@ const CONFIG = {
     },
   ],
 };
-const DATA = { slotIds: { r1: 'a,b,c' } };
+const CLIENT_CONFIG = {
+  slotRules: [
+    {
+      id: 'r3', name: 'Client Only', isActive: true, targetSlot: 'custom_label_2',
+      matchField: 'id', valueTemplate: '{brand} - ClientOnly', fallbackTemplate: '',
+    },
+  ],
+};
+const DATA = { slotIds: { r1: 'a,b,c', r3: 'z' } };
 
-function renderUI(scope: { clientId?: number; feedSourceId?: number }, url = '/clients/1/feeds/1/plugins/custom_labels') {
-  stubFetch((url) => {
-    if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse(CONFIG);
-    if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse(DATA);
-    if (url.startsWith('/registry/attributes')) return jsonResponse([
-      { name: 'id', kind: 'scalar', sub_fields: [] },
-      { name: 'brand', kind: 'scalar', sub_fields: [] },
-      { name: 'item_group_id', kind: 'scalar', sub_fields: [] },
-    ]);
-    return jsonResponse({});
-  });
+function jsonResponseFor(url: string) {
+  if (url.startsWith('/plugins/custom_labels/config') && url.includes('client_id=')) {
+    return jsonResponse(CLIENT_CONFIG);
+  }
+  if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse(GLOBAL_CONFIG);
+  if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse(DATA);
+  if (url.startsWith('/registry/attributes')) return jsonResponse([
+    { name: 'id', kind: 'scalar', sub_fields: [] },
+    { name: 'brand', kind: 'scalar', sub_fields: [] },
+    { name: 'item_group_id', kind: 'scalar', sub_fields: [] },
+  ]);
+  return jsonResponse({});
+}
+
+function renderUI(
+  scope: { clientId?: number; feedSourceId?: number },
+  url = '/clients/1/feeds/1/plugins/custom_labels',
+) {
+  stubFetch(jsonResponseFor);
+  const element = <CustomLabelsUI pluginId="custom_labels" scope={scope} />;
   const router = createMemoryRouter(
     [
-      {
-        path: '/clients/:clientId/feeds/:feedSourceId/plugins/:pluginId',
-        element: <CustomLabelsUI pluginId="custom_labels" scope={scope} />,
-      },
+      { path: '/clients/:clientId/feeds/:feedSourceId/plugins/:pluginId', element },
+      { path: '/clients/:clientId/plugins/:pluginId', element },
+      { path: '/plugins/:pluginId', element },
     ],
     { initialEntries: [url] },
   );
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const Wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    <QueryClientProvider client={client}>
+      <Notifications position="top-right" limit={5} />
+      {children}
+    </QueryClientProvider>
   );
   render(
     <Wrapper>
@@ -70,13 +91,14 @@ function renderUI(scope: { clientId?: number; feedSourceId?: number }, url = '/c
 }
 
 describe('CustomLabelsUI operational page', () => {
-  it('renders one column per active rule with header metadata', async () => {
+  it('renders one column per active merged rule (global + client)', async () => {
     renderUI({ feedSourceId: 1 });
-    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
+    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument(); // global rule
+    expect(screen.getByText('Client Only')).toBeInTheDocument(); // client rule
     expect(screen.getByText('custom_label_1')).toBeInTheDocument();
-    expect(screen.getByText('id')).toBeInTheDocument();
-    expect(screen.getByText('Brand - Mid Funnel')).toBeInTheDocument(); // template preview
-    expect(screen.queryByText('Off')).not.toBeInTheDocument(); // inactive rule hidden
+    expect(screen.getByText('custom_label_2')).toBeInTheDocument();
+    expect(screen.getByText('Brand - ClientOnly')).toBeInTheDocument();
+    expect(screen.queryByText('Off')).not.toBeInTheDocument(); // inactive hidden
   });
 
   it('shows the parsed/deduped ID count from prefilled data', async () => {
@@ -92,16 +114,11 @@ describe('CustomLabelsUI operational page', () => {
     expect(grid.style.overflowX).toBe('auto');
   });
 
-  it('at feed-source tier fetches config at client scope (config_scope lacks feed_source) and keeps data at feed scope', async () => {
+  it('at feed tier fetches config at global AND client scope, data at feed scope', async () => {
     const captured: string[] = [];
     stubFetch((url) => {
       captured.push(url);
-      if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse(CONFIG);
-      if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse(DATA);
-      if (url.startsWith('/registry/attributes')) return jsonResponse([
-        { name: 'id', kind: 'scalar', sub_fields: [] },
-      ]);
-      return jsonResponse({});
+      return jsonResponseFor(url);
     });
     const router = createMemoryRouter(
       [
@@ -119,22 +136,20 @@ describe('CustomLabelsUI operational page', () => {
       </QueryClientProvider>,
     );
     expect(await screen.findByText('Mid Funnel'));
-    const configUrl = captured.find((u) => u.includes('/config'));
-    const dataUrl = captured.find((u) => u.includes('/data'));
-    expect(configUrl).toBe('/plugins/custom_labels/config?client_id=1');
-    expect(dataUrl).toBe('/plugins/custom_labels/data?feed_source_id=1');
+    const configUrls = captured.filter((u) => u.includes('/config'));
+    expect(configUrls).toEqual([
+      '/plugins/custom_labels/config',
+      '/plugins/custom_labels/config?client_id=1',
+    ]);
+    const dataUrls = captured.filter((u) => u.includes('/data'));
+    expect(dataUrls).toContain('/plugins/custom_labels/data?feed_source_id=1');
   });
 
   it('at feed-source tier the slot-rules tab is read-only (config edits belong to client/global tier)', async () => {
     const captured: string[] = [];
     stubFetch((url) => {
       captured.push(url);
-      if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse(CONFIG);
-      if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse(DATA);
-      if (url.startsWith('/registry/attributes')) return jsonResponse([
-        { name: 'id', kind: 'scalar', sub_fields: [] },
-      ]);
-      return jsonResponse({});
+      return jsonResponseFor(url);
     });
     const router = createMemoryRouter(
       [
@@ -154,6 +169,10 @@ describe('CustomLabelsUI operational page', () => {
     expect(await screen.findByText('Mid Funnel'));
     // No data request was sent at all.
     expect(captured.some((u) => u.includes('/data'))).toBe(false);
+    // Exactly one config request: the global tier only.
+    expect(captured.filter((u) => u.includes('/config'))).toEqual([
+      '/plugins/custom_labels/config',
+    ]);
     // The bulk-IDs tab is disabled; the rules tab (read-write at global tier) is active.
     expect(screen.getByRole('tab', { name: /bulk ids/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /add rule/i })).toBeInTheDocument();
@@ -163,12 +182,7 @@ describe('CustomLabelsUI operational page', () => {
     const captured: string[] = [];
     stubFetch((url) => {
       captured.push(url);
-      if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse(CONFIG);
-      if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse(DATA);
-      if (url.startsWith('/registry/attributes')) return jsonResponse([
-        { name: 'id', kind: 'scalar', sub_fields: [] },
-      ]);
-      return jsonResponse({});
+      return jsonResponseFor(url);
     });
     const router = createMemoryRouter(
       [
@@ -186,9 +200,12 @@ describe('CustomLabelsUI operational page', () => {
       </QueryClientProvider>,
     );
     expect(await screen.findByText('Mid Funnel'));
-    const configUrl = captured.find((u) => u.includes('/config'));
+    const configUrls = captured.filter((u) => u.includes('/config'));
+    expect(configUrls).toEqual([
+      '/plugins/custom_labels/config',
+      '/plugins/custom_labels/config?client_id=7',
+    ]);
     const dataUrl = captured.find((u) => u.includes('/data'));
-    expect(configUrl).toBe('/plugins/custom_labels/config?client_id=7');
     expect(dataUrl).toBe('/plugins/custom_labels/data?client_id=7');
     // Both tabs are usable at client tier; the bulk-IDs tab is active by default.
     expect(screen.getByRole('tab', { name: /bulk ids/i })).not.toBeDisabled();

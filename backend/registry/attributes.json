@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_fingerprint": "effa575de2b31aa991160a66d3cad97036ed686dfa7e6417789dd6ef50c640cf",
+  "source_fingerprint": "a3c0a27e67aad548c38ea9142a8c45aa5f4c3467812a327136d9706c4e1e5a54",
   "attributes": {
     "Buy_on_Google_listings": {
       "kind": "scalar",
@@ -8,9 +8,9 @@
       "required": "removed",
       "domain": "primary",
       "export_status": "non_exportable",
-      "source_line": 227,
+      "source_line": 228,
       "source_lines": [
-        227
+        228
       ],
       "applicability": [],
       "qualifiers": [],
@@ -32,10 +32,10 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 44,
+      "source_line": 45,
       "source_lines": [
-        44,
-        193
+        45,
+        194
       ],
       "applicability": [
         "primary",
@@ -62,9 +62,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 129,
+      "source_line": 130,
       "source_lines": [
-        129
+        130
       ],
       "applicability": [],
       "qualifiers": [
@@ -88,9 +88,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 111,
+      "source_line": 112,
       "source_lines": [
-        111
+        112
       ],
       "applicability": [],
       "qualifiers": [],
@@ -115,9 +115,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 105,
+      "source_line": 106,
       "source_lines": [
-        105
+        106
       ],
       "applicability": [],
       "qualifiers": [],
@@ -145,9 +145,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 70,
+      "source_line": 71,
       "source_lines": [
-        70
+        71
       ],
       "applicability": [],
       "qualifiers": [],
@@ -169,10 +169,10 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 58,
+      "source_line": 59,
       "source_lines": [
-        58,
-        176
+        59,
+        177
       ],
       "applicability": [
         "primary",
@@ -202,10 +202,10 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 59,
+      "source_line": 60,
       "source_lines": [
-        59,
-        176
+        60,
+        177
       ],
       "applicability": [
         "primary",
@@ -230,9 +230,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 203,
+      "source_line": 204,
       "source_lines": [
-        203
+        204
       ],
       "applicability": [],
       "qualifiers": [],
@@ -265,9 +265,9 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 88,
+      "source_line": 89,
       "source_lines": [
-        88
+        89
       ],
       "applicability": [],
       "qualifiers": [],
@@ -289,9 +289,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 42,
+      "source_line": 43,
       "source_lines": [
-        42
+        43
       ],
       "applicability": [],
       "qualifiers": [],
@@ -313,9 +313,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 116,
+      "source_line": 117,
       "source_lines": [
-        116
+        117
       ],
       "applicability": [],
       "qualifiers": [],
@@ -382,9 +382,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 197,
+      "source_line": 198,
       "source_lines": [
-        197
+        198
       ],
       "applicability": [],
       "qualifiers": [],
@@ -406,9 +406,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 209,
+      "source_line": 210,
       "source_lines": [
-        209
+        210
       ],
       "applicability": [],
       "qualifiers": [],
@@ -430,9 +430,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 100,
+      "source_line": 101,
       "source_lines": [
-        100
+        101
       ],
       "applicability": [],
       "qualifiers": [],
@@ -456,10 +456,10 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 99,
+      "source_line": 100,
       "source_lines": [
-        99,
-        196
+        100,
+        197
       ],
       "applicability": [
         "primary",
@@ -488,9 +488,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 119,
+      "source_line": 120,
       "source_lines": [
-        119
+        120
       ],
       "applicability": [],
       "qualifiers": [],
@@ -539,9 +539,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 63,
+      "source_line": 64,
       "source_lines": [
-        63
+        64
       ],
       "applicability": [],
       "qualifiers": [],
@@ -563,9 +563,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 127,
+      "source_line": 128,
       "source_lines": [
-        127
+        128
       ],
       "applicability": [],
       "qualifiers": [],
@@ -589,9 +589,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 127,
+      "source_line": 128,
       "source_lines": [
-        127
+        128
       ],
       "applicability": [],
       "qualifiers": [],
@@ -615,9 +615,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 127,
+      "source_line": 128,
       "source_lines": [
-        127
+        128
       ],
       "applicability": [],
       "qualifiers": [],
@@ -641,9 +641,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 127,
+      "source_line": 128,
       "source_lines": [
-        127
+        128
       ],
       "applicability": [],
       "qualifiers": [],
@@ -667,9 +667,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 127,
+      "source_line": 128,
       "source_lines": [
-        127
+        128
       ],
       "applicability": [],
       "qualifiers": [],
@@ -693,9 +693,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 215,
+      "source_line": 216,
       "source_lines": [
-        215
+        216
       ],
       "applicability": [],
       "qualifiers": [],
@@ -717,9 +717,9 @@
       "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 190,
+      "source_line": 191,
       "source_lines": [
-        190
+        191
       ],
       "applicability": [],
       "qualifiers": [],
@@ -741,9 +741,9 @@
       "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 190,
+      "source_line": 191,
       "source_lines": [
-        190
+        191
       ],
       "applicability": [],
       "qualifiers": [],
@@ -765,10 +765,10 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 39,
+      "source_line": 40,
       "source_lines": [
-        39,
-        211
+        40,
+        212
       ],
       "applicability": [
         "primary",
@@ -793,9 +793,9 @@
       "required": "removed",
       "domain": "primary",
       "export_status": "non_exportable",
-      "source_line": 224,
+      "source_line": 225,
       "source_lines": [
-        224
+        225
       ],
       "applicability": [],
       "qualifiers": [],
@@ -817,9 +817,9 @@
       "required": "removed",
       "domain": "primary",
       "export_status": "non_exportable",
-      "source_line": 224,
+      "source_line": 225,
       "source_lines": [
-        224
+        225
       ],
       "applicability": [],
       "qualifiers": [],
@@ -841,9 +841,9 @@
       "required": "removed",
       "domain": "primary",
       "export_status": "non_exportable",
-      "source_line": 224,
+      "source_line": 225,
       "source_lines": [
-        224
+        225
       ],
       "applicability": [],
       "qualifiers": [],
@@ -865,9 +865,9 @@
       "required": "removed",
       "domain": "primary",
       "export_status": "non_exportable",
-      "source_line": 224,
+      "source_line": 225,
       "source_lines": [
-        224
+        225
       ],
       "applicability": [],
       "qualifiers": [],
@@ -889,9 +889,9 @@
       "required": "removed",
       "domain": "primary",
       "export_status": "non_exportable",
-      "source_line": 224,
+      "source_line": 225,
       "source_lines": [
-        224
+        225
       ],
       "applicability": [],
       "qualifiers": [],
@@ -913,9 +913,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 205,
+      "source_line": 206,
       "source_lines": [
-        205
+        206
       ],
       "applicability": [],
       "qualifiers": [],
@@ -942,10 +942,10 @@
       "required": "deprecated",
       "domain": "primary",
       "export_status": "non_exportable",
-      "source_line": 117,
+      "source_line": 118,
       "source_lines": [
-        117,
-        223
+        118,
+        224
       ],
       "applicability": [
         "primary"
@@ -971,9 +971,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 206,
+      "source_line": 207,
       "source_lines": [
-        206
+        207
       ],
       "applicability": [],
       "qualifiers": [],
@@ -995,9 +995,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 207,
+      "source_line": 208,
       "source_lines": [
-        207
+        208
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1019,9 +1019,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 207,
+      "source_line": 208,
       "source_lines": [
-        207
+        208
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1043,9 +1043,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 131,
+      "source_line": 132,
       "source_lines": [
-        131
+        132
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1067,9 +1067,9 @@
       "required": "removed",
       "domain": "primary",
       "export_status": "non_exportable",
-      "source_line": 228,
+      "source_line": 229,
       "source_lines": [
-        228
+        229
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1091,9 +1091,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 64,
+      "source_line": 65,
       "source_lines": [
-        64
+        65
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1115,9 +1115,9 @@
       "required": "recommended",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 202,
+      "source_line": 203,
       "source_lines": [
-        202
+        203
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1139,9 +1139,9 @@
       "required": "recommended",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 202,
+      "source_line": 203,
       "source_lines": [
-        202
+        203
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1163,9 +1163,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 141,
+      "source_line": 142,
       "source_lines": [
-        141
+        142
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1187,9 +1187,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 157,
+      "source_line": 158,
       "source_lines": [
-        157
+        158
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1211,9 +1211,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 206,
+      "source_line": 207,
       "source_lines": [
-        206
+        207
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1235,9 +1235,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 206,
+      "source_line": 207,
       "source_lines": [
-        206
+        207
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1259,9 +1259,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 104,
+      "source_line": 105,
       "source_lines": [
-        104
+        105
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1287,9 +1287,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 79,
+      "source_line": 80,
       "source_lines": [
-        79
+        80
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1311,9 +1311,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 89,
+      "source_line": 90,
       "source_lines": [
-        89
+        90
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1335,9 +1335,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 154,
+      "source_line": 155,
       "source_lines": [
-        154
+        155
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1407,7 +1407,7 @@
       "source_line": 36,
       "source_lines": [
         36,
-        188
+        189
       ],
       "applicability": [
         "primary",
@@ -1432,9 +1432,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 91,
+      "source_line": 92,
       "source_lines": [
-        91
+        92
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1459,10 +1459,10 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 43,
+      "source_line": 44,
       "source_lines": [
-        43,
-        193
+        44,
+        194
       ],
       "applicability": [
         "primary",
@@ -1487,9 +1487,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 130,
+      "source_line": 131,
       "source_lines": [
-        130
+        131
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1511,9 +1511,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 67,
+      "source_line": 68,
       "source_lines": [
-        67
+        68
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1583,9 +1583,9 @@
       "required": "recommended",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 202,
+      "source_line": 203,
       "source_lines": [
-        202
+        203
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1607,9 +1607,9 @@
       "required": "recommended",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 202,
+      "source_line": 203,
       "source_lines": [
-        202
+        203
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1631,9 +1631,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 110,
+      "source_line": 111,
       "source_lines": [
-        110
+        111
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1658,9 +1658,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 106,
+      "source_line": 107,
       "source_lines": [
-        106
+        107
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1682,9 +1682,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 210,
+      "source_line": 211,
       "source_lines": [
-        210
+        211
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1701,14 +1701,14 @@
       "fields": []
     },
     "lifestyle_image_link": {
-      "kind": "repeated_scalar",
+      "kind": "scalar",
       "type": "URL",
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 45,
+      "source_line": 46,
       "source_lines": [
-        45
+        46
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1732,10 +1732,10 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 41,
+      "source_line": 42,
       "source_lines": [
-        41,
-        192
+        42,
+        193
       ],
       "applicability": [
         "primary",
@@ -1760,9 +1760,9 @@
       "required": "removed",
       "domain": "primary",
       "export_status": "non_exportable",
-      "source_line": 225,
+      "source_line": 226,
       "source_lines": [
-        225
+        226
       ],
       "applicability": [
         "vehicle_listings"
@@ -1786,9 +1786,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 69,
+      "source_line": 70,
       "source_lines": [
-        69
+        70
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1888,9 +1888,9 @@
       "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 198,
+      "source_line": 199,
       "source_lines": [
-        198
+        199
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1912,9 +1912,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 191,
+      "source_line": 192,
       "source_lines": [
-        191
+        192
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1936,9 +1936,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 107,
+      "source_line": 108,
       "source_lines": [
-        107
+        108
       ],
       "applicability": [],
       "qualifiers": [],
@@ -1960,10 +1960,10 @@
       "required": "deprecated",
       "domain": "primary",
       "export_status": "non_exportable",
-      "source_line": 118,
+      "source_line": 119,
       "source_lines": [
-        118,
-        223
+        119,
+        224
       ],
       "applicability": [
         "primary"
@@ -1989,9 +1989,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 153,
+      "source_line": 154,
       "source_lines": [
-        153
+        154
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2013,9 +2013,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 71,
+      "source_line": 72,
       "source_lines": [
-        71
+        72
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2037,9 +2037,9 @@
       "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 201,
+      "source_line": 202,
       "source_lines": [
-        201
+        202
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2061,10 +2061,10 @@
       "required": "deprecated",
       "domain": "primary",
       "export_status": "non_exportable",
-      "source_line": 118,
+      "source_line": 119,
       "source_lines": [
-        118,
-        223
+        119,
+        224
       ],
       "applicability": [
         "primary"
@@ -2090,9 +2090,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 153,
+      "source_line": 154,
       "source_lines": [
-        153
+        154
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2114,9 +2114,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 158,
+      "source_line": 159,
       "source_lines": [
-        158
+        159
       ],
       "applicability": [],
       "qualifiers": [
@@ -2191,9 +2191,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 48,
+      "source_line": 49,
       "source_lines": [
-        48
+        49
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2215,9 +2215,9 @@
       "required": "removed",
       "domain": "primary",
       "export_status": "non_exportable",
-      "source_line": 225,
+      "source_line": 226,
       "source_lines": [
-        225
+        226
       ],
       "applicability": [
         "vehicle_listings"
@@ -2241,9 +2241,9 @@
       "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 198,
+      "source_line": 199,
       "source_lines": [
-        198
+        199
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2265,9 +2265,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 214,
+      "source_line": 215,
       "source_lines": [
-        214
+        215
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2289,9 +2289,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 90,
+      "source_line": 91,
       "source_lines": [
-        90
+        91
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2313,9 +2313,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 109,
+      "source_line": 110,
       "source_lines": [
-        109
+        110
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2337,9 +2337,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 208,
+      "source_line": 209,
       "source_lines": [
-        208
+        209
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2361,9 +2361,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 108,
+      "source_line": 109,
       "source_lines": [
-        108
+        109
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2385,9 +2385,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 133,
+      "source_line": 134,
       "source_lines": [
-        133
+        134
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2411,9 +2411,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 159,
+      "source_line": 160,
       "source_lines": [
-        159
+        160
       ],
       "applicability": [],
       "qualifiers": [
@@ -2460,9 +2460,9 @@
       "required": "optional",
       "domain": "local_inventory",
       "export_status": "exportable",
-      "source_line": 174,
+      "source_line": 175,
       "source_lines": [
-        174
+        175
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2489,9 +2489,9 @@
       "required": "conditional",
       "domain": "local_inventory",
       "export_status": "exportable",
-      "source_line": 175,
+      "source_line": 176,
       "source_lines": [
-        175
+        176
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2523,9 +2523,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 191,
+      "source_line": 192,
       "source_lines": [
-        191
+        192
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2547,11 +2547,11 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 60,
+      "source_line": 61,
       "source_lines": [
-        60,
-        176,
-        194
+        61,
+        177,
+        195
       ],
       "applicability": [
         "primary",
@@ -2577,9 +2577,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 115,
+      "source_line": 116,
       "source_lines": [
-        115
+        116
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2635,9 +2635,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 112,
+      "source_line": 113,
       "source_lines": [
-        112
+        113
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2659,9 +2659,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 114,
+      "source_line": 115,
       "source_lines": [
-        114
+        115
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2687,9 +2687,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 112,
+      "source_line": 113,
       "source_lines": [
-        112
+        113
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2711,9 +2711,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 80,
+      "source_line": 81,
       "source_lines": [
-        80
+        81
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2737,9 +2737,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 113,
+      "source_line": 114,
       "source_lines": [
-        113
+        114
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2761,9 +2761,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 112,
+      "source_line": 113,
       "source_lines": [
-        112
+        113
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2785,9 +2785,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 128,
+      "source_line": 129,
       "source_lines": [
-        128
+        129
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2809,9 +2809,9 @@
       "required": "required",
       "domain": "local_inventory",
       "export_status": "exportable",
-      "source_line": 173,
+      "source_line": 174,
       "source_lines": [
-        173
+        174
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2833,9 +2833,9 @@
       "required": "required",
       "domain": "local_inventory",
       "export_status": "exportable",
-      "source_line": 177,
+      "source_line": 178,
       "source_lines": [
-        177
+        178
       ],
       "applicability": [],
       "qualifiers": [],
@@ -2857,9 +2857,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 162,
+      "source_line": 163,
       "source_lines": [
-        162
+        163
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3026,10 +3026,10 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 61,
+      "source_line": 62,
       "source_lines": [
-        61,
-        176
+        62,
+        177
       ],
       "applicability": [
         "primary",
@@ -3054,9 +3054,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 62,
+      "source_line": 63,
       "source_lines": [
-        62
+        63
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3078,9 +3078,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 208,
+      "source_line": 209,
       "source_lines": [
-        208
+        209
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3102,9 +3102,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 208,
+      "source_line": 209,
       "source_lines": [
-        208
+        209
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3126,9 +3126,9 @@
       "required": "removed",
       "domain": "primary",
       "export_status": "non_exportable",
-      "source_line": 226,
+      "source_line": 227,
       "source_lines": [
-        226
+        227
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3150,9 +3150,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 149,
+      "source_line": 150,
       "source_lines": [
-        149
+        150
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3298,9 +3298,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 152,
+      "source_line": 153,
       "source_lines": [
-        152
+        153
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3322,9 +3322,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 150,
+      "source_line": 151,
       "source_lines": [
-        150
+        151
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3346,9 +3346,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 152,
+      "source_line": 153,
       "source_lines": [
-        152
+        153
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3370,9 +3370,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 151,
+      "source_line": 152,
       "source_lines": [
-        151
+        152
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3394,9 +3394,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 152,
+      "source_line": 153,
       "source_lines": [
-        152
+        153
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3418,9 +3418,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 156,
+      "source_line": 157,
       "source_lines": [
-        156
+        157
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3442,9 +3442,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 132,
+      "source_line": 133,
       "source_lines": [
-        132
+        133
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3460,15 +3460,39 @@
       },
       "fields": []
     },
+    "short_title": {
+      "kind": "scalar",
+      "type": "String",
+      "required": "optional",
+      "domain": "primary",
+      "export_status": "exportable",
+      "source_line": 39,
+      "source_lines": [
+        39
+      ],
+      "applicability": [],
+      "qualifiers": [],
+      "metadata": {
+        "description": "Concise title for Demand Gen campaigns and visual placements (YouTube, Discover) in Performance Max; max. 150 chars; does NOT affect Search/PLA titles; must describe the landing-page product; no promotional text, ALL-CAPS emphasis, HTML tags, or extra whitespace; brand name only if it differentiates (and only the original manufacturer's brand for resold products)"
+      },
+      "enum_values": [],
+      "cardinality": null,
+      "constraints": {
+        "max_length": 150,
+        "min_length": null,
+        "format": null
+      },
+      "fields": []
+    },
     "size": {
       "kind": "scalar",
       "type": "String",
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 101,
+      "source_line": 102,
       "source_lines": [
-        101
+        102
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3490,9 +3514,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 103,
+      "source_line": 104,
       "source_lines": [
-        103
+        104
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3526,9 +3550,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 102,
+      "source_line": 103,
       "source_lines": [
-        102
+        103
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3556,10 +3580,10 @@
       "required": "required",
       "domain": "local_inventory",
       "export_status": "exportable",
-      "source_line": 172,
+      "source_line": 173,
       "source_lines": [
-        172,
-        189
+        173,
+        190
       ],
       "applicability": [
         "local_inventory",
@@ -3584,9 +3608,9 @@
       "required": "required",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 40,
+      "source_line": 41,
       "source_lines": [
-        40
+        41
       ],
       "applicability": [],
       "qualifiers": [
@@ -3688,9 +3712,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 68,
+      "source_line": 69,
       "source_lines": [
-        68
+        69
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3750,9 +3774,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 160,
+      "source_line": 161,
       "source_lines": [
-        160
+        161
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3841,9 +3865,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 161,
+      "source_line": 162,
       "source_lines": [
-        161
+        162
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3889,9 +3913,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 191,
+      "source_line": 192,
       "source_lines": [
-        191
+        192
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3913,9 +3937,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 155,
+      "source_line": 156,
       "source_lines": [
-        155
+        156
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3937,9 +3961,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 206,
+      "source_line": 207,
       "source_lines": [
-        206
+        207
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3961,9 +3985,9 @@
       "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 199,
+      "source_line": 200,
       "source_lines": [
-        199
+        200
       ],
       "applicability": [],
       "qualifiers": [],
@@ -3985,9 +4009,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 66,
+      "source_line": 67,
       "source_lines": [
-        66
+        67
       ],
       "applicability": [],
       "qualifiers": [],
@@ -4009,9 +4033,9 @@
       "required": "conditional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 65,
+      "source_line": 66,
       "source_lines": [
-        65
+        66
       ],
       "applicability": [],
       "qualifiers": [],
@@ -4033,9 +4057,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 212,
+      "source_line": 213,
       "source_lines": [
-        212
+        213
       ],
       "applicability": [],
       "qualifiers": [],
@@ -4061,9 +4085,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 214,
+      "source_line": 215,
       "source_lines": [
-        214
+        215
       ],
       "applicability": [],
       "qualifiers": [],
@@ -4085,9 +4109,9 @@
       "required": "optional",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 213,
+      "source_line": 214,
       "source_lines": [
-        213
+        214
       ],
       "applicability": [],
       "qualifiers": [],
@@ -4109,9 +4133,9 @@
       "required": "recommended",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 195,
+      "source_line": 196,
       "source_lines": [
-        195
+        196
       ],
       "applicability": [],
       "qualifiers": [],
@@ -4133,9 +4157,9 @@
       "required": "recommended",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 204,
+      "source_line": 205,
       "source_lines": [
-        204
+        205
       ],
       "applicability": [],
       "qualifiers": [],
@@ -4157,9 +4181,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 46,
+      "source_line": 47,
       "source_lines": [
-        46
+        47
       ],
       "applicability": [],
       "qualifiers": [],
@@ -4181,9 +4205,9 @@
       "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 187,
+      "source_line": 188,
       "source_lines": [
-        187
+        188
       ],
       "applicability": [],
       "qualifiers": [],
@@ -4205,9 +4229,9 @@
       "required": "optional",
       "domain": "primary",
       "export_status": "exportable",
-      "source_line": 47,
+      "source_line": 48,
       "source_lines": [
-        47
+        48
       ],
       "applicability": [],
       "qualifiers": [],
@@ -4229,9 +4253,9 @@
       "required": "required",
       "domain": "vehicle_listings",
       "export_status": "exportable",
-      "source_line": 200,
+      "source_line": 201,
       "source_lines": [
-        200
+        201
       ],
       "applicability": [],
       "qualifiers": [],

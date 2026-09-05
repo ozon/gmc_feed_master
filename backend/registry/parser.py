@@ -267,7 +267,12 @@ def _field_spec(name: str, spec: str, description: str, line: int) -> SubField:
 
 def _type_info(syntax: str, description: str, line: int):
     text = syntax.strip().replace("×", "x")
-    repeated = bool(re.search(r"\brepeatable\b", text, re.I))
+    # "NOT repeatable" / "non-repeatable" must not count as repeated:
+    # only an un-negated "repeatable" makes the attribute repeated.
+    repeated = any(
+        not re.search(r"(?:not|non)[\s-]*$", text[max(0, m.start() - 10):m.start()], re.I)
+        for m in re.finditer(r"\brepeatable\b", text, re.I)
+    )
     count = re.search(r"up to\s+(\d+)", text, re.I)
     cardinality = Cardinality(int(count.group(1)) if count else None)
     enum_match = re.search(r"Enum(?:-like)?\s*:\s*(.*)", text, re.I)
