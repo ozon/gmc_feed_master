@@ -17,5 +17,13 @@
   "disableFailed": "Could not disable plugin.",
   "saved": "Pipeline saved.",
   "saveFailed": "Could not save pipeline.",
-  "saveFailedWithErrors": "Could not save pipeline: {{errors}}"
+  "saveFailedWithErrors": "Could not save pipeline: {{errors}}",
+  "overviewTotal": "{{count}} instances",
+  "overviewEnabled": "{{count}} enabled",
+  "overviewDisabled": "{{count}} disabled",
+  "overviewDirty": "Unsaved changes",
+  "configSelectPlugin": "Select a plugin from the list to configure it.",
+  "configDisabledInfo": "This instance is disabled and does not run.",
+  "configNoSchema": "This plugin has no configuration options.",
+  "configRemove": "Remove"
 }

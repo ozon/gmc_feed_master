@@ -17,5 +17,13 @@
   "disableFailed": "Plugin konnte nicht deaktiviert werden.",
   "saved": "Pipeline gespeichert.",
   "saveFailed": "Pipeline konnte nicht gespeichert werden.",
-  "saveFailedWithErrors": "Pipeline konnte nicht gespeichert werden: {{errors}}"
+  "saveFailedWithErrors": "Pipeline konnte nicht gespeichert werden: {{errors}}",
+  "overviewTotal": "{{count}} Instanzen",
+  "overviewEnabled": "{{count}} aktiv",
+  "overviewDisabled": "{{count}} deaktiviert",
+  "overviewDirty": "Ungespeicherte Änderungen",
+  "configSelectPlugin": "Wählen Sie ein Plugin aus der Liste, um es zu konfigurieren.",
+  "configDisabledInfo": "Diese Instanz ist deaktiviert und wird nicht ausgeführt.",
+  "configNoSchema": "Dieses Plugin hat keine Konfigurationsoptionen.",
+  "configRemove": "Entfernen"
 }
