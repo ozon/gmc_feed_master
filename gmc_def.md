@@ -1,7 +1,7 @@
 # Google Merchant Center – Product Data Specification (Reference for Coding Agent)
 
 > Source: https://support.google.com/merchants/answer/7052112 (+ individual attribute docs, see Sources at the end)
-> Last updated: August 2026 (incl. 2025/2026 spec update)
+> Last updated: September 2026 (incl. 2025/2026 spec update)
 > Purpose: Complete attribute reference for implementing a Google Shopping feed exporter (XML/TXT/API).
 > Requirement levels: REQUIRED | CONDITIONAL (depends on product/country) | OPTIONAL | DEPRECATED (removed/replaced)
 
@@ -36,6 +36,7 @@
 | `id` | REQUIRED | String | Unique product ID (ideally the SKU), max. 50 chars, stable across updates, valid Unicode only, identical across countries |
 | `title` | REQUIRED* | String | Product name, max. 150 chars; no promotional text, no ALL CAPS, must match landing page; include distinguishing attribute (color/size) for variants |
 | `structured_title` | REQUIRED* (alternative) | Object: `digital_source_type` (`default`\|`trained_algorithmic_media`, opt) + `content` (req, max. 150) | Required variant for AI-generated titles |
+| `short_title` | OPTIONAL | String, 1–150 chars (recommended: 5–65, best under 40; not repeatable) | Concise title for Demand Gen campaigns and visual placements (YouTube, Discover) in Performance Max; does NOT affect Search/PLA titles; must describe the landing-page product; no promotional text, ALL-CAPS emphasis, HTML tags, or extra whitespace; brand name only if it differentiates (and only the original manufacturer's brand for resold products) |
 | `description` | REQUIRED* | String | Product description, max. 5000 chars; no links/sales info/competitor mentions; formatting allowed |
 | `structured_description` | REQUIRED* (alternative) | Object like `structured_title`, `content` max. 5000 | Required variant for AI-generated descriptions |
 | `link` | REQUIRED | URL | Landing page, max. 2000 chars, verified domain, http/https |
@@ -252,6 +253,7 @@ Source: https://developers.google.com/vehicle-listings/reference/feed-specificat
 - returns: https://support.google.com/merchants/answer/17081382
 - external_seller_id: https://support.google.com/merchants/answer/11537846
 - lifestyle_image_link: https://support.google.com/merchants/answer/9103186
+- short_title: https://support.google.com/merchants/answer/11551083
 - certification: https://support.google.com/merchants/answer/13528839
 - maximum_retail_price: https://support.google.com/merchants/answer/15972291
 - Vehicle feed specification: https://developers.google.com/vehicle-listings/reference/feed-specification
