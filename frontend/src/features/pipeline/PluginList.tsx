@@ -93,11 +93,8 @@ function InstanceRow({
         <Text size="sm" fw={selected ? 600 : 400} style={{ flex: 1 }}>{instance.name}</Text>
         <Switch
           checked={instance.enabled}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => {
-            e.stopPropagation();
-            onToggleEnabled(e.currentTarget.checked);
-          }}
+          wrapperProps={{ onClick: (e) => e.stopPropagation() }}
+          onChange={(e) => onToggleEnabled(e.currentTarget.checked)}
           data-testid={`plugin-toggle-${instance.clientId}`}
         />
       </Group>

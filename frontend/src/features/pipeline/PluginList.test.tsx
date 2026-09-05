@@ -83,9 +83,11 @@ describe('PluginList', () => {
   it('calls onToggleEnabled when the per-instance switch flips', async () => {
     const user = userEvent.setup();
     const onToggleEnabled = vi.fn();
-    renderAt({ onToggleEnabled });
+    const onSelect = vi.fn();
+    renderAt({ onToggleEnabled, onSelect });
     await user.click(screen.getByTestId('plugin-toggle-lower-1'));
     expect(onToggleEnabled).toHaveBeenCalledWith('lower-1', true);
+    expect(onSelect).not.toHaveBeenCalled();
   });
 
   it('does not select the row when toggling its switch', async () => {
