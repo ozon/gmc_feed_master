@@ -305,7 +305,7 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
                                   preview: renderPreview(rule.valueTemplate),
                                 })}
                               </Text>
-                              {editableTier !== null && (
+                              {ruleEditable(rule) && (
                                 <Button
                                   variant="subtle"
                                   size="xs"

@@ -452,4 +452,43 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
     await userEvent.click(override);
     expect(await screen.findByLabelText(/all products ids/i)).toBeInTheDocument();
   });
+
+  it('at client tier a GLOBAL-origin all-mode rule does NOT offer the switch-to-value-list override (save would silently drop it)', async () => {
+    stubFetch((url) => {
+      if (url.startsWith('/plugins/custom_labels/config') && url.includes('client_id=')) {
+        return jsonResponse({ slotRules: [] });
+      }
+      if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse({
+        slotRules: [
+          { id: 'g1', name: 'Global All', isActive: true, targetSlot: 'custom_label_0',
+            matchField: 'id', matchMode: 'all', valueTemplate: '{brand} - Global All',
+            fallbackTemplate: '' },
+        ],
+      });
+      if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse({ slotIds: {} });
+      if (url.startsWith('/registry/attributes')) return jsonResponse([
+        { name: 'id', kind: 'scalar', sub_fields: [] },
+      ]);
+      return jsonResponse({});
+    });
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/clients/:clientId/plugins/:pluginId',
+          element: <CustomLabelsUI pluginId="custom_labels" scope={{ clientId: 1 }} />,
+        },
+      ],
+      { initialEntries: ['/clients/1/plugins/custom_labels'] },
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText(/every product gets/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /switch to value list/i }),
+    ).not.toBeInTheDocument();
+  });
 });
