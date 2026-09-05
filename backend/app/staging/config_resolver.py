@@ -66,6 +66,7 @@ async def resolve_config_bundle(session: Any, feed_source: Any) -> dict[str, Any
     result = await session.execute(
         select(ModuleInstance)
         .where(ModuleInstance.pipeline_id == pipeline.id)
+        .where(ModuleInstance.enabled.is_(True))
         .order_by(ModuleInstance.position)
     )
     instances = list(result.scalars())

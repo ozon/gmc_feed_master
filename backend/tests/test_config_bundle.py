@@ -178,3 +178,25 @@ async def test_declared_feed_source_scope_wins(isolated_database_url):
 
     assert bundle["instances"][0]["resolved_config"] == {"min_price": "30"}
     await engine.dispose()
+
+
+async def test_bundle_excludes_disabled_instances(isolated_database_url):
+    engine, factory = _make(isolated_database_url)
+    async with factory() as session:
+        async with session.begin():
+            _, plugin, feed_source = await _seed(session)
+            pipeline = await session.get(ModulePipeline, feed_source.active_pipeline_id)
+            session.add(ModuleInstance(
+                pipeline_id=pipeline.id,
+                plugin_id=plugin.id,
+                position=1,
+                name="lbl-disabled",
+                configuration={"slot": "custom_label_1"},
+                enabled=False,
+            ))
+        bundle = await resolve_config_bundle(session, feed_source)
+
+    positions = [i["position"] for i in bundle["instances"]]
+    assert positions == [0]  # only the enabled instance is in the bundle
+    assert bundle["instances"][0]["instance_config"] == {"slot": "custom_label_0"}
+    await engine.dispose()
