@@ -200,3 +200,80 @@ async def test_bundle_excludes_disabled_instances(isolated_database_url):
     assert positions == [0]  # only the enabled instance is in the bundle
     assert bundle["instances"][0]["instance_config"] == {"slot": "custom_label_0"}
     await engine.dispose()
+
+
+async def test_bundle_slotrules_union_by_id_matches_frontend(
+    isolated_database_url,
+):
+    # Keep in lockstep with test_config_merge.py and
+    # frontend scopeMerge.test.ts (spec §1.2 gate).
+    global_rules = [
+        {"id": "g1", "name": "Global Mid", "isActive": True,
+         "targetSlot": "custom_label_1", "matchField": "id",
+         "valueTemplate": "{brand} - Mid"},
+        {"id": "g2", "name": "Global Top", "isActive": True,
+         "targetSlot": "custom_label_0", "matchField": "id",
+         "valueTemplate": "{brand} - Top"},
+    ]
+    client_rules = [
+        {"id": "g1", "name": "Client Mid", "isActive": True,
+         "targetSlot": "custom_label_1", "matchField": "brand",
+         "valueTemplate": "{brand} - Client"},
+        {"id": "c2", "name": "Client Only", "isActive": True,
+         "targetSlot": "custom_label_0", "matchField": "id",
+         "valueTemplate": "{brand} - ClientOnly"},
+        {"id": "c3", "name": "Same Slot As G1", "isActive": True,
+         "targetSlot": "custom_label_1", "matchField": "id",
+         "valueTemplate": "{brand} - C3"},
+    ]
+    engine, factory = _make(isolated_database_url)
+    async with factory() as session:
+        async with session.begin():
+            client = Client(name="Acme")
+            session.add(client)
+            await session.flush()
+            plugin = Plugin(
+                name="labelizer", version="1.0.0",
+                manifest={
+                    "id": "labelizer",
+                    "config_scope": ["global", "client"],
+                    "data_scope": "client",
+                    "config_merge": {"slotRules": {
+                        "strategy": "union_by_key", "key": "id",
+                    }},
+                },
+            )
+            session.add(plugin)
+            await session.flush()
+            feed_source = FeedSource(
+                client_id=client.id, name="US feed", source_format="tsv"
+            )
+            session.add(feed_source)
+            await session.flush()
+            pipeline = ModulePipeline(
+                feed_source_id=feed_source.id, name="pipe", version="1",
+                definition={},
+            )
+            session.add(pipeline)
+            await session.flush()
+            feed_source.active_pipeline_id = pipeline.id
+            session.add(ModuleInstance(
+                pipeline_id=pipeline.id, plugin_id=plugin.id,
+                position=0, name="lbl", configuration={},
+            ))
+            session.add(PluginConfig(
+                plugin_id=plugin.id, scope="global", key="default",
+                config={"slotRules": global_rules},
+            ))
+            session.add(PluginConfig(
+                plugin_id=plugin.id, scope="client", client_id=client.id,
+                key="default", config={"slotRules": client_rules},
+            ))
+        bundle = await resolve_config_bundle(session, feed_source)
+
+    rules = bundle["instances"][0]["resolved_config"]["slotRules"]
+    assert [r["id"] for r in rules] == ["g1", "g2", "c2", "c3"]
+    assert [r["name"] for r in rules] == [
+        "Client Mid", "Global Top", "Client Only", "Same Slot As G1",
+    ]
+    await engine.dispose()

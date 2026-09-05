@@ -4,6 +4,7 @@ import importlib.util
 import logging
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
@@ -474,3 +475,35 @@ class TestContentHashImmutable:
             assert hash1 != ""
 
         await engine.dispose()
+
+
+class TestMergedStateWinningOrder:
+    """Spec §1.2 gate: state built from the union-merged config must preserve
+    the fixture order of test_config_merge.py / frontend scopeMerge.test.ts."""
+
+    MERGED_CONFIG: ClassVar[dict] = {
+        "slotRules": [
+            {"id": "g1", "name": "Client Mid", "isActive": True,
+             "targetSlot": "custom_label_1", "matchField": "brand",
+             "valueTemplate": "{brand} - Client"},
+            {"id": "g2", "name": "Global Top", "isActive": True,
+             "targetSlot": "custom_label_0", "matchField": "id",
+             "valueTemplate": "{brand} - Top"},
+            {"id": "c2", "name": "Client Only", "isActive": True,
+             "targetSlot": "custom_label_0", "matchField": "id",
+             "valueTemplate": "{brand} - ClientOnly"},
+            {"id": "c3", "name": "Same Slot As G1", "isActive": True,
+             "targetSlot": "custom_label_1", "matchField": "id",
+             "valueTemplate": "{brand} - C3"},
+        ]
+    }
+
+    def test_state_per_slot_order_matches_merged_list(self, plugin):
+        state = plugin.prepare_run(self.MERGED_CONFIG, {"slotIds": {}}, _ctx())
+        by_slot: dict[str, list[str]] = {}
+        for rule in state["rules"]:
+            by_slot.setdefault(rule["targetSlot"], []).append(rule["id"])
+        assert by_slot == {
+            "custom_label_1": ["g1", "c3"],
+            "custom_label_0": ["g2", "c2"],
+        }
