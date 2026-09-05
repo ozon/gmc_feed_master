@@ -616,11 +616,12 @@ class TestMatchMode:
         with pytest.raises(ValueError, match="matchMode"):
             plugin.validate_config(bad)
 
-    def test_accepts_match_mode_all(self, plugin):
+    def test_accepts_match_mode_all(self, plugin, monkeypatch):
+        monkeypatch.setattr("registry.loader.load_registry", _registry)
         ok = {"slotRules": [
             {**CONFIG["slotRules"][0], "matchMode": "all"},
         ]}
-        plugin.validate_config(ok)  # registry not needed: 'all' skips matchField check
+        plugin.validate_config(ok)
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -632,8 +633,8 @@ Expected: FAIL — `KeyError: 'matchAll'` / no `matchMode` validation error.
 
 `plugins/core/custom_labels/plugin.py`:
 
-In `validate_config`, after the `matchField` check (after line
-`_validate_registry_path(match_field, ...)`), insert:
+In `validate_config`, directly after the `targetSlot` check, insert (BEFORE the
+`matchField` block so the matchMode error surfaces without registry access):
 
 ```python
         if rule.get("matchMode", "values") not in ("values", "all"):
