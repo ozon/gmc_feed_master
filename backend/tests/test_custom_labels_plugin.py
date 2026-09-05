@@ -507,3 +507,74 @@ class TestMergedStateWinningOrder:
             "custom_label_1": ["g1", "c3"],
             "custom_label_0": ["g2", "c2"],
         }
+
+
+class TestMatchMode:
+    def test_match_all_labels_every_product_without_ids(self, plugin):
+        rule = {
+            "id": "all1", "name": "All products", "isActive": True,
+            "targetSlot": "custom_label_0", "matchField": "id",
+            "matchMode": "all", "valueTemplate": "{brand} - All",
+        }
+        config = {"slotRules": [rule]}
+        state = plugin.prepare_run(config, {"slotIds": {}}, _ctx())
+        out = plugin.process(
+            {"id": "zzz", "brand": "B"}, config, {"slotIds": {}}, _ctx(),
+            state=state,
+        )
+        assert out["custom_label_0"] == "B - All"
+
+    def test_match_all_beats_later_same_slot_rule(self, plugin):
+        # g2 wins custom_label_0 because it comes first in the list —
+        # the values-mode rule never gets a turn.
+        rules = [
+            {"id": "all1", "name": "All", "isActive": True,
+             "targetSlot": "custom_label_0", "matchField": "id",
+             "matchMode": "all", "valueTemplate": "ALL"},
+            {"id": "v1", "name": "Vals", "isActive": True,
+             "targetSlot": "custom_label_0", "matchField": "id",
+             "valueTemplate": "VALS"},
+        ]
+        config = {"slotRules": rules}
+        state = plugin.prepare_run(
+            config, {"slotIds": {"v1": "x"}}, _ctx()
+        )
+        out = plugin.process({"id": "x"}, config, {"slotIds": {"v1": "x"}},
+                             _ctx(), state=state)
+        assert out["custom_label_0"] == "ALL"
+
+    def test_match_all_supports_fallback_on_token_skip(self, plugin):
+        rule = {
+            "id": "all1", "name": "All", "isActive": True,
+            "targetSlot": "custom_label_2", "matchField": "id",
+            "matchMode": "all", "valueTemplate": "{brand}",
+            "fallbackTemplate": "NOBRAND",
+        }
+        config = {"slotRules": [rule]}
+        state = plugin.prepare_run(config, {"slotIds": {}}, _ctx())
+        out = plugin.process({"id": "1"}, config, {"slotIds": {}}, _ctx(),
+                             state=state)
+        assert out["custom_label_2"] == "NOBRAND"
+
+    def test_values_mode_default_unchanged(self, plugin):
+        # rules without matchMode behave exactly as before: no ids -> no match
+        rule = {k: v for k, v in CONFIG["slotRules"][0].items()}
+        config = {"slotRules": [rule]}
+        state = plugin.prepare_run(config, {"slotIds": {}}, _ctx())
+        out = plugin.process({"id": "a", "brand": "B"}, config,
+                             {"slotIds": {}}, _ctx(), state=state)
+        assert "custom_label_1" not in out
+
+    def test_rejects_bad_match_mode(self, plugin):
+        bad = {"slotRules": [
+            {**CONFIG["slotRules"][0], "matchMode": "sometimes"},
+        ]}
+        with pytest.raises(ValueError, match="matchMode"):
+            plugin.validate_config(bad)
+
+    def test_accepts_match_mode_all(self, plugin, monkeypatch):
+        monkeypatch.setattr("registry.loader.load_registry", _registry)
+        ok = {"slotRules": [
+            {**CONFIG["slotRules"][0], "matchMode": "all"},
+        ]}
+        plugin.validate_config(ok)

@@ -143,6 +143,8 @@ def validate_config(config: Any) -> None:
             raise ValueError(f"{path}: name must be a non-empty string")
         if rule.get("targetSlot") not in _TARGET_SLOTS:
             raise ValueError(f"{path}: targetSlot must be one of {', '.join(_TARGET_SLOTS)}")
+        if rule.get("matchMode", "values") not in ("values", "all"):
+            raise ValueError(f"{path}: matchMode must be 'values' or 'all'")
         match_field = rule.get("matchField")
         if not isinstance(match_field, str) or not match_field:
             raise ValueError(f"{path}: matchField must be a non-empty string")
@@ -182,6 +184,7 @@ def _build_state(config: Any, data: Any) -> dict[str, Any]:
             "id": rule["id"],
             "targetSlot": rule["targetSlot"],
             "matchField": rule["matchField"],
+            "matchAll": rule.get("matchMode") == "all",
             "ids": parse_id_list(raw if isinstance(raw, str) else ""),
             "template": compile_template(rule["valueTemplate"]),
             "fallback": compile_template(rule.get("fallbackTemplate") or ""),
@@ -218,7 +221,9 @@ class CustomLabelsPlugin:
             value: str | None = None
             any_matched = False
             for rule in slot_rules:
-                if not matches(product, rule["matchField"], rule["ids"]):
+                if not rule["matchAll"] and not matches(
+                    product, rule["matchField"], rule["ids"]
+                ):
                     continue
                 any_matched = True
                 value = render_template(rule["template"], product)

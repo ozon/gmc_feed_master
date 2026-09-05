@@ -6,6 +6,7 @@
   "entry_point": "plugin:CustomLabelsPlugin",
   "config_scope": ["global", "client"],
   "data_scope": ["client", "feed_source"],
+  "config_merge": {"slotRules": {"strategy": "union_by_key", "key": "id"}},
   "frontend": {
     "menu_item": "Custom Labels",
     "icon": "tag",
@@ -31,6 +32,12 @@
               "enum": ["custom_label_0", "custom_label_1", "custom_label_2", "custom_label_3", "custom_label_4"]
             },
             "matchField": {"type": "string", "title": "Match field"},
+            "matchMode": {
+              "type": "string",
+              "title": "Match mode",
+              "enum": ["values", "all"],
+              "default": "values"
+            },
             "valueTemplate": {"type": "string", "title": "Value template"},
             "fallbackTemplate": {"type": "string", "title": "Fallback template", "default": ""}
           },
