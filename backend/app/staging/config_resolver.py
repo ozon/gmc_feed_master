@@ -1,15 +1,46 @@
+"""Three-tier scope resolution for plugin config/data payloads."""
+
 from __future__ import annotations
 
 from typing import Any
 
 
-def _merge_dicts(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+def _merge_dicts(
+    base: dict[str, Any],
+    overlay: dict[str, Any],
+    merge_hints: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     merged = dict(base)
     for key, value in overlay.items():
         if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
             merged[key] = _merge_dicts(merged[key], value)
+        elif (
+            merge_hints
+            and key in merge_hints
+            and isinstance(merged.get(key), list)
+            and isinstance(value, list)
+        ):
+            merged[key] = _merge_list(merged[key], value, merge_hints[key])
         else:
             merged[key] = value
+    return merged
+
+
+def _merge_list(base: list[Any], overlay: list[Any], hint: Any) -> list[Any]:
+    """Merge lists per manifest hint. Unknown/absent strategy: wholesale replace."""
+    if not isinstance(hint, dict) or hint.get("strategy") != "union_by_key":
+        return overlay
+    key = hint.get("key") or "id"
+    merged = list(base)
+    positions: dict[Any, int] = {}
+    for index, item in enumerate(merged):
+        if isinstance(item, dict) and key in item:
+            positions.setdefault(item[key], index)
+    for item in overlay:
+        if isinstance(item, dict) and item.get(key) in positions:
+            merged[positions[item[key]]] = item
+        else:
+            merged.append(item)
     return merged
 
 
@@ -38,13 +69,15 @@ def _normalize_scopes(raw: Any) -> list[str]:
 
 
 def _resolve_declared(
-    scopes: list[str], maps: dict[str, dict[str, Any]]
+    scopes: list[str],
+    maps: dict[str, dict[str, Any]],
+    merge_hints: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     resolved: dict[str, Any] = {}
     for scope in _SCOPE_ORDER:
         if scope not in scopes:
             continue
-        resolved = _merge_dicts(resolved, maps.get(scope) or {})
+        resolved = _merge_dicts(resolved, maps.get(scope) or {}, merge_hints)
     return resolved
 
 
@@ -110,6 +143,7 @@ async def resolve_config_bundle(session: Any, feed_source: Any) -> dict[str, Any
             "resolved_config": _resolve_declared(
                 _normalize_scopes(manifest.get("config_scope")),
                 scoped_rows(configs_by_plugin.get(plugin.id, []), "config"),
+                manifest.get("config_merge"),
             ),
             "resolved_data": _resolve_declared(
                 _normalize_scopes(manifest.get("data_scope")),
