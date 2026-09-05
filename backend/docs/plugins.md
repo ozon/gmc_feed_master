@@ -227,6 +227,16 @@ Config document: `{"slotRules": [{id, name, isActive, targetSlot, matchField, va
 - `validate_config` strictly validates on save (empty config passes; unknown
   targetSlot, empty matchField/valueTemplate, non-registry matchField, unknown
   token paths, duplicate ids, duplicate fallback per slot raise `ValueError`).
+- `POST /plugins/custom_labels/preview` — live preview of draft rules against
+  staged products. Body: `{feed_source_id, rules, slotIds, sample_size (1–50,
+  default 5)}`. Response `{total, rules: {id: {matched, labeled, sample}},
+  slots: {slot: {labeled, coverage, rules}}}` against active, non-excluded
+  staged products (raw_data as mapped state). A rule matches a product when its
+  matchField values hit the rule's id list, or — when the matchField resolves
+  no candidates (empty/missing value) — when the product's own id is in the id
+  list (spec §197: payloads are product-ID lists, `id_in_list`). 404 unknown
+  feed source; 422 `{"errors": [...]}` on invalid rules; 503 database
+  unavailable.
 
 ## Example Plugin (`plugins/example_upper/`)
 

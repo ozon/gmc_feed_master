@@ -92,6 +92,7 @@ Plugins may register custom routes under `/plugins/{plugin_id}/...` via `registe
 Plugin routes must not use these prefixes. Example: Category plugin uses `/plugins/category/rules/stats`, `/plugins/category/matches`.
 
 - `POST /plugins/filter/preview` — live filter preview. Body: `{feed_source_id, conditions}` (same condition shape as the filter config). Response `{total, pass, fail}` counting active, non-excluded staged products. 404 unknown feed source; 422 `{"errors": [...]}` on invalid conditions.
+- `POST /plugins/custom_labels/preview` — live custom-labels preview. Body: `{feed_source_id, rules, slotIds, sample_size}` (1–50, default 5). Response `{total, rules: {id: {matched, labeled, sample}}, slots: {slot: {labeled, coverage, rules}}}` over active, non-excluded staged products. A product with an empty/missing matchField value can still be matched by its product id appearing in the rule's id list. 404 unknown feed source; 422 `{"errors": [...]}` on invalid rules; 503 database unavailable.
 
 ## Registry
 - `GET /registry/attributes` — full GMC Attribute Registry (from `backend/registry/attributes.json`)
