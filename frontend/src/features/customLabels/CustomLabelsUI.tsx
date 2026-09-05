@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  Anchor, Badge, Button, Card, Group, Select, Stack, Switch, Tabs, Text, TextInput, Textarea,
+  Anchor, Badge, Button, Card, Group, SegmentedControl, Select, Stack, Switch, Tabs, Text, TextInput, Textarea,
 } from '@mantine/core';
 import {
   DndContext, PointerSensor, closestCenter, useSensor, useSensors,
@@ -18,6 +18,7 @@ import { ScopeContextBar } from '../../components/ScopeContextBar';
 import { notifySuccess } from '../../app/notifications';
 import { parseIdList, renderPreview } from './ids';
 import { SortableRuleRow } from './SortableRuleRow';
+import { MatchFieldCombobox } from './MatchFieldCombobox';
 import {
   configTierChain, currentDataTier, dataTierChain, editableConfigTier,
   mergeSlotIds, mergeSlotRules, type ScopedSlotRule, type SlotRule, type Tier,
@@ -348,6 +349,7 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
                     />
                     <Switch
                       label={t('fields.isActive')}
+                      description={t('fields.isActiveHint')}
                       checked={selected.isActive}
                       disabled={!ruleEditable(selected)}
                       onChange={(e) => patchSelected({ isActive: e.currentTarget.checked })}
@@ -359,20 +361,22 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
                       disabled={!ruleEditable(selected)}
                       onChange={(v) => patchSelected({ targetSlot: v ?? 'custom_label_0' })}
                     />
-                    <TextInput
-                      label={t('fields.matchField')}
-                      value={selected.matchField}
+                    <SegmentedControl
+                      aria-label={t('matchMode.label')}
+                      value={selected.matchMode ?? 'values'}
+                      onChange={(mode) => patchSelected({ matchMode: mode as 'values' | 'all' })}
                       disabled={!ruleEditable(selected)}
-                      onChange={(e) => patchSelected({ matchField: e.currentTarget.value })}
-                      list="match-field-suggestions"
+                      data={[
+                        { value: 'values', label: t('matchMode.values') },
+                        { value: 'all', label: t('matchMode.all') },
+                      ]}
                     />
-                    <datalist id="match-field-suggestions">
-                      {(attributes.data ?? []).flatMap((attr) =>
-                        [attr.name, ...(attr.sub_fields ?? []).map((s) => `${attr.name}.${s.name}`)]
-                      ).map((s) => (
-                        <option key={s} value={s} />
-                      ))}
-                    </datalist>
+                    <MatchFieldCombobox
+                      value={selected.matchField}
+                      onChange={(matchField) => patchSelected({ matchField })}
+                      attributes={attributes.data ?? []}
+                      disabled={!ruleEditable(selected)}
+                    />
                     <TextInput
                       label={t('fields.valueTemplate')}
                       description={t('fields.valueTemplateHint')}

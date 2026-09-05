@@ -34,7 +34,11 @@ export function SortableRuleRow({
   return (
     <Group
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: rule.isActive ? undefined : 0.55,
+      }}
       gap="xs"
       px="xs"
       py={4}
@@ -56,6 +60,11 @@ export function SortableRuleRow({
       <Badge size="xs" variant="light">
         {rule.targetSlot}
       </Badge>
+      {!rule.isActive && (
+        <Badge size="xs" variant="light" color="gray">
+          {t('inactive')}
+        </Badge>
+      )}
       <Switch
         checked={rule.isActive}
         disabled={disabled}

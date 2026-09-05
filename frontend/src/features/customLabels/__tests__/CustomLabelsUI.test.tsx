@@ -323,4 +323,33 @@ describe('CustomLabelsUI operational page', () => {
     const link = screen.getByRole('link', { name: /manage slot rules at client level/i });
     expect(link).toHaveAttribute('href', '/clients/1/plugins/custom_labels');
   });
+
+  it('match field is a searchable combobox offering registry fields and custom entry', async () => {
+    renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels');
+    await screen.findByText('Mid Funnel');
+    await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    await userEvent.click(screen.getByText('Client Only'));
+    const input = screen.getByLabelText(/match field/i);
+    await userEvent.clear(input);
+    await userEvent.type(input, 'brand');
+    await userEvent.click(screen.getByRole('option', { name: 'brand' }));
+    expect(screen.getByLabelText(/match field/i)).toHaveValue('brand');
+  });
+
+  it('rule editor offers the two match modes', async () => {
+    renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels');
+    await screen.findByText('Mid Funnel');
+    await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    await userEvent.click(screen.getByText('Client Only'));
+    expect(screen.getByRole('radio', { name: /match value list/i })).toBeChecked();
+    await userEvent.click(screen.getByRole('radio', { name: /match all products/i }));
+    expect(screen.getByRole('radio', { name: /match all products/i })).toBeChecked();
+  });
+
+  it('inactive rows are dimmed and badged', async () => {
+    renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels');
+    await screen.findByText('Mid Funnel');
+    await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    expect(screen.getByText('inactive')).toBeInTheDocument();
+  });
 });

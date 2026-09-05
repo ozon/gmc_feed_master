@@ -14,11 +14,21 @@
   "manageAtClient": "Manage slot rules at client level",
   "ruleInherited": "Managed at {{tier}} level — read-only here.",
   "inheritedFrom": "Inherited from {{tier}}",
+  "inactive": "inactive",
+  "matchMode": {
+    "label": "Match mode",
+    "values": "Match value list",
+    "all": "Match all products"
+  },
   "fields": {
     "name": "Name",
     "isActive": "Active",
+    "isActiveHint": "Inactive rules are skipped during runs and hidden from bulk value lists.",
     "targetSlot": "Target slot",
     "matchField": "Match field",
+    "matchFieldHint": "Product field matched against the value list. Pick from the registry or type a custom path.",
+    "matchFieldPlaceholder": "Pick or type a field",
+    "matchFieldCustom": "Use custom field \"{{value}}\"",
     "valueTemplate": "Value template",
     "valueTemplateHint": "Use {field} tokens, e.g. {brand} - Mid Funnel. An empty token skips the rule.",
     "fallbackTemplate": "Fallback template",
