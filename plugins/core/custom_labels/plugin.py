@@ -83,23 +83,9 @@ def render_template(
     return "".join(parts)
 
 
-def matches(
-    product: dict[str, Any],
-    match_field: str,
-    ids: frozenset[str],
-    product_id: str | None = None,
-) -> bool:
-    """True when any candidate value of `match_field` is in `ids`.
-
-    If the match field resolves to no candidates (e.g. empty or missing
-    value) and `product_id` is given, the product id itself is matched
-    against `ids` — per the engine spec, plugin data payloads are
-    product-ID lists, so a product pinned by its own id still matches.
-    """
-    values = resolve_path(product, match_field)
-    if not values and product_id is not None:
-        values = [product_id]
-    return any(value in ids for value in values)
+def matches(product: dict[str, Any], match_field: str, ids: frozenset[str]) -> bool:
+    """True when any candidate value of `match_field` is in `ids`."""
+    return any(value in ids for value in resolve_path(product, match_field))
 
 
 # ---------------------------------------------------------------------------
@@ -243,7 +229,7 @@ def evaluate_rules(
             any_matched = False
             for rule in slot_rules:
                 if not rule["matchAll"] and not matches(
-                    product, rule["matchField"], rule["ids"], product_id=product_id
+                    product, rule["matchField"], rule["ids"]
                 ):
                     continue
                 any_matched = True

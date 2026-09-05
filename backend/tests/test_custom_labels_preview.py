@@ -168,9 +168,9 @@ class TestPreviewRoute:
         _app, factory = app_factory
         feed = await _setup_feed(factory, client, ROWS)
         rules = [
-            # nobrand has empty brand -> token skips on BOTH rules
+            # nobrand matches r2 by its id, but its empty brand -> token skips
             _rule("r1", "custom_label_2", matchField="brand"),
-            _rule("r2", "custom_label_2", matchField="brand",
+            _rule("r2", "custom_label_2", matchField="id",
                   valueTemplate="{brand} - r2"),
         ]
         resp = await client.post("/plugins/custom_labels/preview", json={
@@ -204,7 +204,7 @@ class TestPreviewRoute:
         _app, factory = app_factory
         feed = await _setup_feed(factory, client, ROWS)
         rules = [
-            _rule("r1", "custom_label_4", matchField="brand",
+            _rule("r1", "custom_label_4", matchField="id",
                   valueTemplate="{brand} - r1", fallbackTemplate="NOBRAND"),
         ]
         resp = await client.post("/plugins/custom_labels/preview", json={
