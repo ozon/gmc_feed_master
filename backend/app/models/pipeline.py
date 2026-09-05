@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 from typing import TYPE_CHECKING
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, func, true
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
@@ -36,5 +36,6 @@ class ModuleInstance(Base):
     pipeline_id: Mapped[int] = mapped_column(ForeignKey("module_pipelines.id", ondelete="RESTRICT"), nullable=False)
     plugin_id: Mapped[int] = mapped_column(ForeignKey("plugins.id", ondelete="RESTRICT"), nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     configuration: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)

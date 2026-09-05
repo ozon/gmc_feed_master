@@ -83,6 +83,7 @@ Unique constraint on `(name, version)`.
 | `pipeline_id` | Integer | FK → ModulePipeline, RESTRICT |
 | `plugin_id` | Integer | FK → Plugin, RESTRICT |
 | `position` | Integer | Order in pipeline |
+| `enabled` | Boolean | Per-instance toggle, default true |
 | `name` | String(255) | Display name |
 | `configuration` | JSONB | Instance-specific config |
 
