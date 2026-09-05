@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
 import type { SlotRule } from './scopeMerge';
@@ -34,6 +36,26 @@ function Probe(props: { rules: SlotRule[]; slotIds?: Record<string, string>; ena
       <span data-testid="pending">{String(state.isPending)}</span>
       <span data-testid="errors">{state.errors?.join('|') ?? ''}</span>
       <span data-testid="unavailable">{String(state.unavailable)}</span>
+      <span data-testid="total">{state.result?.total ?? ''}</span>
+    </div>
+  );
+}
+
+// Changes its own draft on click — rerender() remounts in this RTL setup,
+// so prop-driven draft changes need a stateful harness to stay mounted.
+function DraftProbe() {
+  const [draft, setDraft] = useState<SlotRule[]>(RULES);
+  const state = useLabelizerPreview({
+    enabled: true,
+    feedSourceId: 1,
+    rules: draft,
+    slotIds: {},
+  });
+  return (
+    <div>
+      <button onClick={() => setDraft([{ ...RULES[0], valueTemplate: 'y' }])}>
+        change draft
+      </button>
       <span data-testid="total">{state.result?.total ?? ''}</span>
     </div>
   );
@@ -89,35 +111,35 @@ describe('useLabelizerPreview', () => {
   });
 
   it('discards stale responses (newest draft wins)', async () => {
+    let calls = 0;
     stubFetch((url) => {
       if (url.startsWith('/plugins/custom_labels/preview')) {
-        return new Promise<Response>((resolve) => {
-          const body = { total: 1, rules: {}, slots: {} };
-          // every response resolves slowly; the hook's sequence guard must
-          // still end up consistent because each tick bumps seq
-          setTimeout(() => resolve(jsonResponse(body)), 50);
-        });
-      }
-      return jsonResponse({});
-    });
-    const { rerender } = render(<Probe rules={RULES} />);
-    await waitFor(
-      () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('1'),
-      { timeout: 2500 },
-    );
-    // draft changes -> new debounced call; stale (slow) first response must be dropped
-    stubFetch((url) => {
-      if (url.startsWith('/plugins/custom_labels/preview')) {
+        calls += 1;
+        if (calls === 1) {
+          // first response is slow: it resolves only AFTER the second
+          // request has started and been applied — so the guard is load-bearing
+          return new Promise<Response>((resolve) => {
+            setTimeout(() => resolve(jsonResponse({ total: 1, rules: {}, slots: {} })), 1500);
+          });
+        }
         return jsonResponse({ total: 2, rules: {}, slots: {} });
       }
       return jsonResponse({});
     });
-    rerender(<Probe rules={[{ ...RULES[0], valueTemplate: 'y' }]} />);
+    render(<DraftProbe />);
+    // let the first debounced request start, then change the draft so a
+    // second request begins while the first is still in flight — the harness
+    // must change its own state (rerender remounts in this RTL setup and
+    // would never exercise the per-instance guard)
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    await userEvent.click(screen.getByRole('button', { name: /change draft/i }));
     expect(await waitFor(
-      () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('2'),
+      () => expect(screen.getByTestId('total').textContent).toBe('2'),
       { timeout: 2500 },
     )).toBeTruthy();
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('2');
-  });
+    // the slow FIRST response resolves now — the guard must discard it
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    expect(screen.getByTestId('total').textContent).toBe('2');
+    expect(calls).toBe(2);
+  }, 10000);
 });
