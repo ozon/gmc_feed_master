@@ -105,6 +105,11 @@ global → client → feed_source  (per-key dict merge, deeper wins)
 - Labelizer & Category: `["global", "client"]` only (deliberate, per-market labeling/categorization out of MVP)
 - Generic merge replaces non-dict values per key; plugins needing finer-grained list merging implement custom logic (Labelizer dimensions)
 
+Lists are replaced wholesale by default. A manifest may declare
+`config_merge` per config key to switch a list to `union_by_key` semantics
+(ancestor order preserved, more-specific entries override by key, new entries
+appended) — used by `custom_labels.slotRules` (ADR-0005).
+
 ### Plugin Architecture Overview
 
 ```mermaid

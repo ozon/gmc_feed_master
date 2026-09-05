@@ -194,3 +194,25 @@ const menuItems = plugins
 - `src/api/hooks.ts` — `usePluginConfig`, `useSavePluginConfig`, `usePluginData`, `useSavePluginData`
 - `vite.config.ts` — Build config (vendor chunking, HTTPS proxy)
 - `backend/tests/test_plugin_contract.py` — Contract test (includes reserved route check)
+
+## Custom component scope behavior (custom_labels / "Labelizer")
+
+- **Merged tier view:** `CustomLabelsUI` fetches every declared config tier
+  reachable from the URL (global always, client when known) and merges
+  `slotRules` union-by-id — identical to the run-time merge declared via the
+  manifest's `config_merge` (see ADR-0005). Inherited rules render with a
+  ScopeBadge and are read-only; saving writes only the editable tier's rules.
+- **Bulk values:** data tiers merge per rule id; inherited values are badged.
+  Saving pins the merged dict to the current tier (ADR-0005).
+- **Rule modes:** `matchMode: "values"` (explicit value list, textarea relabels
+  to the match field) or `"all"` (every product matches; the bulk tab shows a
+  "controlled by rule" summary).
+- **Help UI:** inline description, a "How it works" accordion, and a user-guide
+  drawer per plugin page.
+- **Nav entries for multi-scope plugins:** `AppShell` derives the target from
+  the manifest scopes — feed-scoped plugins link to
+  `` ${feedBase}/plugins/{id} `` (nav item hidden without a feed selected),
+  client-scoped plugins to `/clients/:c/plugins/{id}`, otherwise
+  `/plugins/{id}`. The label resolves through `pluginNames.*` i18n with the
+  manifest `frontend.menu_item` as fallback (display name "Labelizer" for
+  `custom_labels`).
