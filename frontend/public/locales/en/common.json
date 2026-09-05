@@ -46,5 +46,15 @@
   "breadcrumbs": {
     "selectClient": "Select client",
     "selectFeed": "Select feed"
-  }
+  },
+  "scope": {
+    "global": "Global",
+    "client": "Client",
+    "feed_source": "Feed",
+    "globalHint": "Shared across all clients",
+    "clientHint": "Applies to one client",
+    "feed_sourceHint": "Applies to this feed source",
+    "viewing": "Viewing"
+  },
+  "pluginNames": {}
 }

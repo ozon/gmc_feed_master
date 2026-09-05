@@ -46,5 +46,15 @@
   "breadcrumbs": {
     "selectClient": "Mandant auswählen",
     "selectFeed": "Feed auswählen"
-  }
+  },
+  "scope": {
+    "global": "Global",
+    "client": "Client",
+    "feed_source": "Feed",
+    "globalHint": "Wird von allen Mandanten geteilt",
+    "clientHint": "Gilt für einen Mandanten",
+    "feed_sourceHint": "Gilt für diese Feed-Source",
+    "viewing": "Ansicht"
+  },
+  "pluginNames": {}
 }
