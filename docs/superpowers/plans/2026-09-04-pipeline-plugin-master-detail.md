@@ -27,31 +27,32 @@
 
 ### Task 1: Backend — `module_instances.enabled` column + migration
 
+> Name the migration/test `m10_pipeline_page` — `test_m9_*` names are taken by the scheduler milestone.
+
 **Files:**
 - Modify: `backend/app/models/pipeline.py:32-40`
-- Create: `backend/alembic/versions/20260905_0001_module_instance_enabled.py` (via autogenerate)
-- Test: `backend/tests/test_m9_migration.py` (create, patterned on `test_m2_migration.py`)
+- Create: `backend/alembic/versions/20260905_0001_m10_module_instance_enabled.py` (via autogenerate)
+- Test: `backend/tests/test_m10_pipeline_page_migration.py` (create)
 
 **Interfaces:**
 - Produces: `ModuleInstance.enabled: Mapped[bool]` (nullable=False, default True, server_default true) — later tasks rely on this attribute existing on the ORM model.
 
+**Note:** `backend/tests/conftest.py` applies migrations automatically for `isolated_database_url` (via the testdb factory's alembic load), so the test is pure schema introspection — no migration runner import needed.
+
 - [ ] **Step 1: Write the failing migration test**
 
-Read `backend/tests/test_m2_migration.py` first and follow its pattern. Create `backend/tests/test_m9_migration.py`:
+Create `backend/tests/test_m10_pipeline_page_migration.py`:
 
 ```python
-"""module_instances.enabled column migration test (M9 master-detail pipeline page)."""
+"""module_instances.enabled column migration test (pipeline page master-detail)."""
 
 import pytest
-import pytest_asyncio
 from sqlalchemy import text
-
-from tests.conftest import run_migrations
 
 
 @pytest.mark.asyncio
 async def test_module_instances_enabled_column(isolated_database_url):
-    # Migrations run once per test session by conftest; verify the column shape.
+    # Migrations run per test-database by conftest's alembic load; verify shape.
     from sqlalchemy.ext.asyncio import create_async_engine
 
     engine = create_async_engine(isolated_database_url)
@@ -65,8 +66,6 @@ async def test_module_instances_enabled_column(isolated_database_url):
     assert col[0] == "NO"
     assert col[1] == "true"
 ```
-
-Note: before writing this step, read `backend/tests/conftest.py` and `backend/tests/test_m2_migration.py` and adapt to the actual migration-runner pattern used there (fixture names, how migrations are invoked). If conftest applies migrations automatically for `isolated_database_url`, keep the test as schema introspection; otherwise trigger migrations the way `test_m2_migration.py` does.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -97,11 +96,11 @@ class ModuleInstance(Base):
 Run (from `backend/`, with postgres up and `DATABASE_URL` set as in AGENTS.md):
 `DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed uv run alembic revision --autogenerate -m "module_instance_enabled"`
 
-Verify the generated file contains `op.add_column('module_instances', sa.Column('enabled', sa.Boolean(), nullable=False, server_default=sa.text('true')))`. Edit revision metadata (revision id, `down_revision` = `'20260828_0001'` if that is the current head — check `uv run alembic heads` first) to follow repo style (`20260905_0001`).
+Verify the generated file contains `op.add_column('module_instances', sa.Column('enabled', sa.Boolean(), nullable=False, server_default=sa.text('true')))`. Set `down_revision` to the current head (`20260828_0001` — confirm with `uv run alembic heads` first) and name the revision id `20260905_0001`, following the repo's `20260826_0002_m6_plugin_enabled.py` precedent. Add a downgrade (`op.drop_column('module_instances', 'enabled')`).
 
 - [ ] **Step 5: Apply migration and run test**
 
-Run: `DATABASE_URL=... uv run alembic upgrade head && uv run pytest tests/test_m9_migration.py -v`
+Run: `DATABASE_URL=... uv run alembic upgrade head && uv run pytest tests/test_m10_pipeline_page_migration.py -v`
 Expected: PASS.
 
 - [ ] **Step 6: Run full backend suite, lint, typecheck**
@@ -112,7 +111,7 @@ Expected: all pass (no existing behavior changed yet — `enabled` defaults to t
 - [ ] **Step 7: Commit**
 
 ```bash
-git add backend/app/models/pipeline.py backend/alembic/versions/ backend/tests/test_m9_migration.py
+git add backend/app/models/pipeline.py backend/alembic/versions/ backend/tests/test_m10_pipeline_page_migration.py
 git commit -m "feat(pipeline): module_instances.enabled column + migration"
 ```
 
@@ -184,6 +183,37 @@ async def test_put_pipeline_upsert_keeps_ids(app_factory):
     async with factory() as session:
         count = (await session.execute(select(func.count()).select_from(ModuleInstance))).scalar_one()
         assert count == 1
+
+
+async def test_put_pipeline_reorder_swaps_positions(app_factory):
+    # Regression guard for uq_module_instances_pipeline_position: naive
+    # in-place UPDATEs collide on any swap; the handler must two-pass.
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    await _register_plugin(factory)
+    created = (await client.post("/clients", json={"name": "Acme"})).json()
+    feed = (await client.post(f"/clients/{created['id']}/feed-sources",
+                              json={"name": "DE", "source_format": "wide_tsv"})).json()
+    put = (await client.put(f"/feed-sources/{feed['id']}/pipeline", json={
+        "instances": [
+            {"plugin_id": "example_upper", "name": "A", "configuration": {"suffix": "a"}},
+            {"plugin_id": "example_upper", "name": "B", "configuration": {"suffix": "b"}},
+        ]})).json()
+    id_a, id_b = put["instances"][0]["id"], put["instances"][1]["id"]
+
+    # Swap the two rows.
+    resp = await client.put(f"/feed-sources/{feed['id']}/pipeline", json={
+        "instances": [
+            {"id": id_b, "plugin_id": "example_upper", "name": "B", "configuration": {"suffix": "b"}},
+            {"id": id_a, "plugin_id": "example_upper", "name": "A", "configuration": {"suffix": "a"}},
+        ]})
+    assert resp.status_code == 200
+    assert [i["id"] for i in resp.json()["instances"]] == [id_b, id_a]
+    async with factory() as session:
+        fs = await session.get(FeedSource, feed["id"])
+        pipeline = await session.get(ModulePipeline, fs.active_pipeline_id)
+        assert pipeline.definition["instances"][0]["name"] == "B"
+        assert pipeline.definition["instances"][0]["plugin_id"] == "example_upper"
 
 
 async def test_put_pipeline_rejects_foreign_instance_id(app_factory):
@@ -263,7 +293,7 @@ GET (`get_pipeline`) — replace the comprehension at lines 47-53:
     ]}
 ```
 
-PUT (`put_pipeline`) — after the validation loop (unchanged) and pipeline fetch (unchanged), replace the delete-all/reinsert block (lines 108-124) with upsert-by-id:
+PUT (`put_pipeline`) — after the validation loop (unchanged) and pipeline fetch (unchanged), replace the delete-all/reinsert block (lines 108-124) with upsert-by-id + **two-pass positioning** (the `uq_module_instances_pipeline_position` unique constraint makes in-place repositioning collide on swaps, so all kept rows are first flushed to temporary out-of-range positions, then set to their final positions):
 
 ```python
         existing_rows = (await session.execute(
@@ -282,6 +312,16 @@ PUT (`put_pipeline`) — after the validation loop (unchanged) and pipeline fetc
         for row in existing_rows:
             if row.id not in kept_ids:
                 await session.delete(row)
+        await session.flush()  # apply deletes before repositioning
+
+        # Pass 1: move every kept row to a temporary position outside the
+        # unique range so no UPDATE collides with an old position.
+        temp_base = len(payload.instances) + len(existing_rows) + 1
+        for temp_pos, item in enumerate(payload.instances):
+            if item.id is not None:
+                row = existing_by_id[item.id]
+                row.position = temp_base + temp_pos
+        await session.flush()
 
         instances_out = []
         definition = []
@@ -313,7 +353,7 @@ PUT (`put_pipeline`) — after the validation loop (unchanged) and pipeline fetc
         pipeline.definition = {"instances": definition}
 ```
 
-Note: `errors` must be initialized before the id check — it already is (line 73). The old `errors` collection loop for unknown plugins etc. stays. Keep the module imports (`select` already imported; add nothing new except `ModuleInstance` is already imported).
+Note: `errors` must be initialized before the id check — it already is (line 73). The old `errors` collection loop for unknown plugins etc. stays. New rows insert directly at their final position — safe, because pass 1 already vacated all old positions. Keep the module imports (`select` already imported; `ModuleInstance` is already imported).
 
 - [ ] **Step 5: Run tests**
 
@@ -415,7 +455,7 @@ class InstancePatch(BaseModel):
     enabled: bool
 ```
 
-Append to `backend/app/routes/pipeline.py` (after `put_pipeline`):
+Append to `backend/app/routes/pipeline.py` (after `put_pipeline`); import `InstancePatch` alongside the existing schema import:
 
 ```python
 @router.patch("/feed-sources/{feed_source_id}/pipeline/instances/{instance_id}")
@@ -437,23 +477,22 @@ async def patch_pipeline_instance(
         instance.enabled = payload.enabled
 
         pipeline = await session.get(ModulePipeline, feed_source.active_pipeline_id)
-        definition = pipeline.definition or {"instances": []}
-        for row in definition.get("instances", []):
-            pass  # definition rows are keyed by position, id-less; rebuild below
         rows = (await session.execute(
-            select(ModuleInstance)
+            select(ModuleInstance, Plugin)
+            .join(Plugin, ModuleInstance.plugin_id == Plugin.id)
             .where(ModuleInstance.pipeline_id == pipeline.id)
             .order_by(ModuleInstance.position)
-        )).scalars().all()
+        )).all()
+        # definition rows use the STRING plugin id (manifest id or name),
+        # exactly like put_pipeline writes — never the integer FK.
         pipeline.definition = {"instances": [
-            {"plugin_id": r.plugin_id, "name": r.name,
-             "configuration": r.configuration, "enabled": r.enabled}
-            for r in rows
+            {"plugin_id": (plugin.manifest or {}).get("id") or plugin.name,
+             "name": row.name, "configuration": row.configuration,
+             "enabled": row.enabled}
+            for row, plugin in rows
         ]}
     return {"id": instance_id, "enabled": payload.enabled}
 ```
-
-Import `InstancePatch` in the route module's schema import line. Remove the placeholder `for row in ...: pass` loop before committing (it exists only to show definition rebuild; final code goes straight to rebuilding from rows).
 
 - [ ] **Step 4: Run tests**
 
@@ -486,18 +525,30 @@ git commit -m "feat(pipeline): PATCH instance enabled endpoint"
 
 - [ ] **Step 1: Write the failing test**
 
-Read `backend/tests/test_config_bundle.py` first and follow its fixture pattern (it builds pipeline rows directly). Append a test that:
+Append to `backend/tests/test_config_bundle.py` (follows the file's `_make`/`_seed` pattern — `_seed` returns `(client, plugin, feed_source)` and creates one instance at position 0):
 
 ```python
-async def test_bundle_excludes_disabled_instances(...):  # keep the module's existing fixture args
-    # ...create pipeline + two ModuleInstance rows (same plugin ok), one enabled=True,
-    # one enabled=False, following the existing tests' row-creation pattern...
-    bundle = await resolve_config_bundle(session, feed_source)
+async def test_bundle_excludes_disabled_instances(isolated_database_url):
+    engine, factory = _make(isolated_database_url)
+    async with factory() as session:
+        async with session.begin():
+            _, plugin, feed_source = await _seed(session)
+            pipeline = await session.get(ModulePipeline, feed_source.active_pipeline_id)
+            session.add(ModuleInstance(
+                pipeline_id=pipeline.id,
+                plugin_id=plugin.id,
+                position=1,
+                name="lbl-disabled",
+                configuration={"slot": "custom_label_1"},
+                enabled=False,
+            ))
+        bundle = await resolve_config_bundle(session, feed_source)
+
     positions = [i["position"] for i in bundle["instances"]]
     assert positions == [0]  # only the enabled instance is in the bundle
+    assert bundle["instances"][0]["instance_config"] == {"slot": "custom_label_0"}
+    await engine.dispose()
 ```
-
-Follow the file's existing fixture/row-creation code verbatim — the exact test must be written against the real fixtures in that file (it has helpers creating `ModulePipeline`/`ModuleInstance` rows; mirror `test_config_bundle.py`'s existing "instances" test and add `enabled=False` to one row).
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -554,6 +605,8 @@ git commit -m "feat(pipeline): config bundle excludes disabled instances"
 - Modify: `frontend/src/api/types.ts:175-180`
 - Modify: `frontend/src/api/client.ts:57-79`
 - Modify: `frontend/src/api/hooks.ts` (after `useSavePipeline`, line ~469)
+- Modify: `frontend/src/features/pipeline/dndUtils.ts` + `dndUtils.test.ts` (types + palette-branch removal)
+- Modify: `frontend/src/features/pipeline/PipelinePage.test.tsx:97-99,123-124` (legacy fixtures gain `id`/`enabled` — one-line spreads) and `frontend/src/features/pipeline/PipelineInstanceCard.test.tsx:10-16` (same)
 - Test: `frontend/src/api/hooks.pipeline.test.tsx` (new)
 
 **Interfaces:**
@@ -562,14 +615,14 @@ git commit -m "feat(pipeline): config bundle excludes disabled instances"
 
 - [ ] **Step 1: Write the failing hook test**
 
-Create `frontend/src/api/hooks.pipeline.test.tsx` (pattern from `hooks.plugin.test.tsx` — read it first for its QueryClient + stubFetch setup):
+Create `frontend/src/api/hooks.pipeline.test.tsx` (pattern from `hooks.plugin.test.tsx` — read it first; `renderHook` is available in the installed RTL):
 
 ```tsx
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook } from '@testing-library/react';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { render, renderHook, waitFor as waitForHook } from '@testing-library/react';
 import { usePatchPipelineInstance } from './hooks';
 import { stubFetch } from '../test/fetch';
 
@@ -580,9 +633,26 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+let pipelineGets = 0;
+
+function Probe() {
+  // Active observer so invalidateQueries actually refetches the pipeline.
+  const q = useQuery({
+    queryKey: ['feed-source', 7, 'pipeline'],
+    queryFn: () => fetch('/feed-sources/7/pipeline').then((r) => r.json()),
+  });
+  return <div data-testid="probe">{q.dataUpdatedAt}</div>;
+}
+
 describe('usePatchPipelineInstance', () => {
   beforeEach(() => {
+    pipelineGets = 0;
     stubFetch((url, init) => {
+      if (url === '/feed-sources/7/pipeline' && (!init || init.method === 'GET')) {
+        pipelineGets += 1;
+        return jsonResponse({ instances: [{ id: 42, position: 0, plugin_id: 'p',
+          name: 'P', configuration: {}, enabled: true }] });
+      }
       if (url === '/feed-sources/7/pipeline/instances/42' && init?.method === 'PATCH') {
         return jsonResponse({ id: 42, enabled: false });
       }
@@ -591,30 +661,25 @@ describe('usePatchPipelineInstance', () => {
   });
 
   it('PATCHes the instance and invalidates the pipeline query', async () => {
-    let pipelineRefetched = false;
-    stubFetch((url) => {
-      if (url === '/feed-sources/7/pipeline') {
-        pipelineRefetched = true;
-        return jsonResponse({ instances: [] });
-      }
-      return jsonResponse({});
-    });
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      <QueryClientProvider client={client}>
+        <Probe />
+        {children}
+      </QueryClientProvider>
     );
-    client.setQueryData(['feed-source', 7, 'pipeline'], { instances: [] });
 
-    const { result } = renderHook(() => usePatchPipelineInstance('7'), { wrapper });
+    // Number 7 on BOTH the hook and the Probe's query key so the keys hash identically.
+    const { result } = renderHook(() => usePatchPipelineInstance(7), { wrapper });
     result.current.mutate({ instanceId: 42, enabled: false });
-    await waitForHook(() => expect(result.current.isSuccess).toBe(true));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual({ id: 42, enabled: false });
-    await waitForHook(() => expect(pipelineRefetched).toBe(true));
+    // Initial mount = 1 GET; onSuccess invalidation refetches the observed query → ≥2.
+    await waitFor(() => expect(pipelineGets).toBeGreaterThanOrEqual(2), { timeout: 2000 });
   });
 });
 ```
-
-Adapt to the actual helpers the repo's test setup exports (`renderHook` availability in the RTL version used; if not available, mount a tiny probe component instead — check how `hooks.plugin.test.tsx` tests mutations).
 
 - [ ] **Step 2: Run test to verify it fail**
 
@@ -664,7 +729,10 @@ export function usePatchPipelineInstance(feedSourceId: number | string) {
 }
 ```
 
-Note: typecheck will now fail in `dndUtils.ts` / `PipelinePage.tsx` / tests because `PipelineInstance` gained required `id`/`enabled` — that is expected and will be fixed in Task 6. To keep this task green in isolation, EITHER do steps of Task 6 that touch `dndUtils.ts` (types only) in the same task, OR accept the temporary typecheck failure and run only `npm run test -- hooks.pipeline` here (full `npm run typecheck` becomes green again in Task 6). Prefer: include `dndUtils.ts` type updates (below) in THIS task so typecheck stays green.
+Note: typecheck MUST stay green in this task, so also patch the legacy test fixtures that construct `PipelineInstance`/`LocalInstance` without the new required fields:
+- `frontend/src/features/pipeline/PipelinePage.test.tsx:97-99` and `:123-124`: add `id: 1, enabled: true` to each `serverInstances` entry (the whole file is rewritten in Task 8; this is just to keep `tsc -b` green in between).
+- `frontend/src/features/pipeline/PipelineInstanceCard.test.tsx:10-16`: same one-line spread additions (`id: 1, enabled: true`) — that file gets deleted in Task 8.
+- The palette-drag test at `PipelinePage.test.tsx:144-178` ("dragging a palette plugin onto the workspace") exercises the removed palette branch — DELETE that one test now (the palette component itself still renders until Task 8; only the `applyDragEnd` palette branch is gone, which that test depends on). Deleting a test for removed behavior is part of this task's red→green cycle.
 
 `frontend/src/features/pipeline/dndUtils.ts` — update `addInstance` to set `id: null, enabled: true` on new instances and remove the palette branch from `applyDragEnd`:
 
@@ -714,15 +782,15 @@ export function applyDragEnd(
 
 Update `dndUtils.test.ts` accordingly: instances gain `id: null, enabled: true` in fixtures; remove palette-drop tests; add a case asserting `addInstance` sets `enabled: true` and `id: null`.
 
-- [ ] **Step 4: Run tests**
+- [ ] **Step 4: Run tests + typecheck**
 
-Run: `npm run test -- hooks.pipeline dndUtils`
-Expected: pass.
+Run: `npm run test -- hooks.pipeline dndUtils PipelinePage PipelineInstanceCard && npm run typecheck`
+Expected: pass (typecheck green — legacy fixtures patched).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add frontend/src/api/types.ts frontend/src/api/client.ts frontend/src/api/hooks.ts frontend/src/api/hooks.pipeline.test.tsx frontend/src/features/pipeline/dndUtils.ts frontend/src/features/pipeline/dndUtils.test.ts
+git add frontend/src/api/types.ts frontend/src/api/client.ts frontend/src/api/hooks.ts frontend/src/api/hooks.pipeline.test.tsx frontend/src/features/pipeline/dndUtils.ts frontend/src/features/pipeline/dndUtils.test.ts frontend/src/features/pipeline/PipelinePage.test.tsx frontend/src/features/pipeline/PipelineInstanceCard.test.tsx
 git commit -m "feat(frontend): pipeline instance patch hook + typed instances"
 ```
 
@@ -765,8 +833,9 @@ describe('PipelineOverviewStrip', () => {
   it('shows total, enabled and disabled counts', () => {
     render(<PipelineOverviewStrip instances={instances} dirty={false} />);
     expect(screen.getByTestId('overview-strip')).toBeInTheDocument();
-    expect(screen.getByText('2')).toBeInTheDocument();       // total (see i18n: "{{count}} instances")
-    expect(screen.getByText('1')).toBeInTheDocument();       // enabled
+    expect(screen.getByText(/^2 instances$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^1 enabled$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^1 disabled$/i)).toBeInTheDocument();
   });
 
   it('shows a dirty badge when dirty', () => {
@@ -776,7 +845,7 @@ describe('PipelineOverviewStrip', () => {
 });
 ```
 
-Careful: counting text "1"/"2" is ambiguous if badges render counts alone — assert on the full i18n strings instead (e.g. `screen.getByText(/^2 instances$/i)` and `/^1 enabled$/i`, `/^1 disabled$/i`) with the i18n keys defined in Step 3.
+Careful: counting bare text is ambiguous — the assertions above use the full i18n strings (`/^2 instances$/i` etc.) matching the flat keys defined in Step 2.
 
 `PluginConfigPanel.test.tsx`:
 
@@ -843,33 +912,40 @@ describe('PluginConfigPanel', () => {
 
 (The last `onChange` call receives the FULL form value — verify against `JsonSchemaForm`'s actual onChange payload when writing; the assertion uses `expect.objectContaining`.)
 
-- [ ] **Step 2: Add i18n keys**
+- [ ] **Step 2: Add i18n keys (flat keys — the pipeline namespace is a flat JSON file)**
 
-`frontend/public/locales/en/pipeline.json` — add:
+`frontend/public/locales/en/pipeline.json` — add these flat keys (do NOT nest):
 
 ```json
-{
-  "overview": {
-    "total": "{{count}} instances",
-    "enabled": "{{count}} enabled",
-    "disabled": "{{count}} disabled",
-    "dirty": "Unsaved changes"
-  },
-  "configPanel": {
-    "selectPlugin": "Select a plugin from the list to configure it.",
-    "disabledInfo": "This instance is disabled and does not run.",
-    "noSchema": "This plugin has no configuration options.",
-    "remove": "Remove"
-  }
-}
+"overviewTotal": "{{count}} instances",
+"overviewTotal_one": "{{count}} instance",
+"overviewEnabled": "{{count}} enabled",
+"overviewDisabled": "{{count}} disabled",
+"overviewDirty": "Unsaved changes",
+"configSelectPlugin": "Select a plugin from the list to configure it.",
+"configDisabledInfo": "This instance is disabled and does not run.",
+"configNoSchema": "This plugin has no configuration options.",
+"configRemove": "Remove"
 ```
 
-Merge these into the existing flat file (the file is flat today — either keep flat keys `overviewTotal`, `overviewEnabled`, `overviewDisabled`, `overviewDirty`, `configSelectPlugin`, `configDisabledInfo`, `configNoSchema`, `configRemove` OR introduce nesting; react-i18next supports both with `keySeparator: false` behavior differing — SAFEST: flat keys, e.g. `"overviewTotal": "{{count}} instances"`, and `t('overviewTotal', {count})`. Check how existing keys like `inUse` are used — they are flat). Use flat keys to match the file's existing style.
+(The `_one` plural variant is how i18next resolves English singular; if the repo's i18n config uses `simple` plural handling, the base key handles both — check `i18n/index.ts` `interpolation`/`pluralRule` settings and mirror the existing `inUse` key's approach: it has no `_one` variant, so add none here either. Final decision: match `inUse` — base keys only.)
 
-Do the same for `de/pipeline.json`:
-`"overviewTotal": "{{count}} Instanzen"`, `"overviewEnabled": "{{count}} aktiv"`, `"overviewDisabled": "{{count}} deaktiviert"`, `"overviewDirty": "Ungespeicherte Änderungen"`, `"configSelectPlugin": "Wählen Sie ein Plugin aus der Liste, um es zu konfigurieren."`, `"configDisabledInfo": "Diese Instanz ist deaktiviert und wird nicht ausgeführt."`, `"configNoSchema": "Dieses Plugin hat keine Konfigurationsoptionen."`, `"configRemove": "Entfernen"`.
+`frontend/public/locales/de/pipeline.json` — add:
 
-Also remove now-dead keys (Task 8 cleans the rest): none yet.
+```json
+"overviewTotal": "{{count}} Instanzen",
+"overviewEnabled": "{{count}} aktiv",
+"overviewDisabled": "{{count}} deaktiviert",
+"overviewDirty": "Ungespeicherte Änderungen",
+"configSelectPlugin": "Wählen Sie ein Plugin aus der Liste, um es zu konfigurieren.",
+"configDisabledInfo": "Diese Instanz ist deaktiviert und wird nicht ausgeführt.",
+"configNoSchema": "Dieses Plugin hat keine Konfigurationsoptionen.",
+"configRemove": "Entfernen"
+```
+
+Usage in components: `t('overviewTotal', { count })`, `t('overviewEnabled', { count })`, `t('overviewDisabled', { count })`, `t('overviewDirty')`, `t('configSelectPlugin')`, `t('configDisabledInfo')`, `t('configNoSchema')`, `t('configRemove')`.
+
+No dead keys removed yet — that happens in Task 8.
 
 - [ ] **Step 3: Implement components**
 
@@ -980,8 +1056,8 @@ git commit -m "feat(frontend): pipeline overview strip + plugin config panel"
 - Create: `frontend/src/features/pipeline/PluginList.test.tsx`
 
 **Interfaces:**
-- Consumes: `LocalInstance`, `addInstance` from `dndUtils`; `useUpdatePluginEnabled`, `usePatchPipelineInstance` (Task 5); `ConfirmModal`; `getPluginIcon`.
-- Produces: `<PluginList instances={LocalInstance[]} plugins={PluginInfo[]} selectedClientId={string | null} onSelect={(clientId: string) => void} onToggleEnabled={(clientId: string, next: boolean) => void} onAdd={(pluginId: string) => void} onReorderDragEnd={(event: DragEndEvent) => void} />` — rendered inside `DndContext` + `SortableContext` provided by `PipelinePage` (Task 8 wires it; but for testability PluginList owns its `DndContext` internally wrapping the SortableContext, like PipelineWorkspace did with its droppable — decide: PluginList renders `DndContext` itself so it is self-contained; PipelinePage must NOT wrap another DndContext around it).
+- Consumes: `LocalInstance`, `addInstance` from `dndUtils`; `useUpdatePluginEnabled` (global toggles); `ConfirmModal`; `getPluginIcon`.
+- Produces: `<PluginList instances={LocalInstance[]} plugins={PluginInfo[]} selectedClientId={string | null} onSelect={(clientId: string) => void} onToggleEnabled={(clientId: string, next: boolean) => void} onAdd={(pluginId: string) => void} onReorderDragEnd={(event: DragEndEvent) => void} />` — no `feedSourceId` prop (per-instance PATCH lives in PipelinePage, passed through `onToggleEnabled`).
 
 RESOLVED: `PluginList` owns `DndContext` (sensors: PointerSensor with `activationConstraint: { distance: 4 }`) and `SortableContext` with `verticalListSortingStrategy` over `instances.map(i => i.clientId)`. Callback `onReorderDragEnd` receives the raw DragEndEvent; PipelinePage applies `applyDragEnd`.
 
@@ -995,7 +1071,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { notifications, Notifications } from '@mantine/notifications';
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
@@ -1031,8 +1107,8 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function renderAt(overrides?: Partial<Parameters<typeof PluginList>[0]>) {
-  const props = {
+function renderAt(overrides?: Partial<ComponentProps<typeof PluginList>>) {
+  const props: ComponentProps<typeof PluginList> = {
     instances,
     plugins,
     selectedClientId: 'upper-0',
@@ -1150,12 +1226,11 @@ type Props = {
   onToggleEnabled: (clientId: string, next: boolean) => void;
   onAdd: (pluginId: string) => void;
   onReorderDragEnd: (event: DragEndEvent) => void;
-  feedSourceId: number | string;
 };
 
 export function PluginList({
   instances, plugins, selectedClientId, onSelect, onToggleEnabled, onAdd,
-  onReorderDragEnd, feedSourceId,
+  onReorderDragEnd,
 }: Props) {
   const { t } = useTranslation('pipeline');
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
@@ -1178,7 +1253,7 @@ export function PluginList({
         </SortableContext>
       </DndContext>
       <AddFromRegistry instances={instances} plugins={plugins} onAdd={onAdd} />
-      <RegistrySection plugins={plugins} feedSourceId={feedSourceId} />
+      <RegistrySection plugins={plugins} />
     </Stack>
   );
 }
@@ -1270,17 +1345,10 @@ function AddFromRegistry({
   );
 }
 
-function RegistrySection({
-  plugins, feedSourceId,
-}: {
-  plugins: PluginInfo[];
-  feedSourceId: number | string;
-}) {
+function RegistrySection({ plugins }: { plugins: PluginInfo[] }) {
   const { t } = useTranslation('pipeline');
   const [pendingToggle, setPendingToggle] = useState<PluginInfo | null>(null);
   const toggleEnabled = useUpdatePluginEnabled();
-  // PATCH hook is used by InstanceRow's parent (PipelinePage) — this section only
-  // handles the GLOBAL registry toggle.
 
   function mutateToggle(plugin: PluginInfo, enabled: boolean) {
     toggleEnabled.mutate(
@@ -1354,7 +1422,7 @@ function RegistrySection({
 }
 ```
 
-Note: `Box` import may be unused — drop it. Verify `usePatchPipelineInstance` is NOT needed inside PluginList (the per-instance switch calls the `onToggleEnabled` prop; PipelinePage performs the optimistic flip + PATCH + rollback).
+Note: `Box` import may be unused — drop it. Verify `usePatchPipelineInstance` is NOT needed inside PluginList (the per-instance switch calls the `onToggleEnabled` prop; PipelinePage performs the optimistic flip + PATCH + rollback). To keep the row's Switch from bubbling into the row click (`onSelect`), call `event.stopPropagation()` in the Switch `onChange` handler.
 
 - [ ] **Step 4: Run tests**
 
@@ -1462,6 +1530,8 @@ describe('PipelinePage', () => {
   it('clicking a row selects it; config edits update only local state', async () => {
     const user = userEvent.setup();
     renderAt();
+    const row = await screen.findByTestId('plugin-row-upper-0');
+    await user.click(row);
     const input = await screen.findByLabelText(/suffix/i);
     await user.clear(input);
     await user.type(input, '?');
@@ -1501,13 +1571,61 @@ describe('PipelinePage', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /save/i })).toBeEnabled());
   });
 
-  it('Save sends PUT with ids and reordering applies after drag', async () => {
-    // two server instances; drag row 0 handle onto row 1 using the pointer
-    // sequence pattern from the current test file, then Save; assert the
-    // captured PUT body has the reordered instances with stable ids.
-    // (Copy the pointer-drag mechanics from the existing
-    // 'dragging a palette plugin onto the workspace' test, adjusted to
-    // drag-handle → plugin-row targets.)
+  it('drag reorders rows and Save PUTs the new order with stable ids', async () => {
+    const user = userEvent.setup();
+    const twoInstanceDoc = {
+      instances: [
+        { id: 11, position: 0, plugin_id: 'upper', name: 'First',
+          configuration: {}, enabled: true },
+        { id: 12, position: 1, plugin_id: 'upper', name: 'Second',
+          configuration: {}, enabled: true },
+      ],
+    };
+    let putBody: unknown = null;
+    stubFetch((url, init) => {
+      if (url === '/plugins') return jsonResponse([plugin]);
+      if (url === '/feed-sources/1/pipeline' && init?.method === 'PUT') {
+        putBody = JSON.parse(String(init.body));
+        return jsonResponse(twoInstanceDoc);
+      }
+      if (url === '/feed-sources/1/pipeline') return jsonResponse(twoInstanceDoc);
+      return jsonResponse({});
+    });
+    renderAt();
+    await screen.findByTestId('plugin-row-upper-0');
+    await screen.findByTestId('plugin-row-upper-1');
+
+    const handle = screen.getByTestId('drag-handle-upper-0');
+    const secondRow = screen.getByTestId('plugin-row-upper-1');
+    const rowBox = { left: 0, top: 0, width: 300, height: 48 };
+    const secondBox = { left: 0, top: 60, width: 300, height: 48 };
+    vi.spyOn(handle, 'getBoundingClientRect').mockReturnValue({
+      ...rowBox, right: rowBox.left + rowBox.width, bottom: rowBox.top + rowBox.height,
+      x: rowBox.left, y: rowBox.top, toJSON: () => ({}),
+    } as DOMRect);
+    vi.spyOn(secondRow, 'getBoundingClientRect').mockReturnValue({
+      ...secondBox, right: secondBox.left + secondBox.width,
+      bottom: secondBox.top + secondBox.height,
+      x: secondBox.left, y: secondBox.top, toJSON: () => ({}),
+    } as DOMRect);
+
+    // activationConstraint distance: 4 — move ≥4px to activate, then drop on row 2
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: handle, coords: { clientX: 10, clientY: 10 } },
+      { target: handle, coords: { clientX: 10, clientY: 20 } },
+      { target: secondRow, coords: { clientX: 150, clientY: 80 } },
+      { keys: '[/MouseLeft]', target: secondRow, coords: { clientX: 150, clientY: 80 } },
+    ]);
+
+    // Row order flipped: the row that was at index 0 now holds "Second"
+    const firstRow = await screen.findByTestId('plugin-row-upper-1');
+    expect(firstRow).toHaveTextContent('Second');
+
+    await user.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() => expect(putBody).not.toBeNull());
+    const saved = putBody as { instances: Array<{ id: number; name: string }> };
+    expect(saved.instances[0]).toMatchObject({ id: 12, name: 'Second' });
+    expect(saved.instances[1]).toMatchObject({ id: 11, name: 'First' });
   });
 
   it('remove button deletes the instance locally and enables Save', async () => {
@@ -1536,7 +1654,7 @@ describe('PipelinePage', () => {
 });
 ```
 
-Write out the drag test fully (do not leave a comment-only step): simulate the existing pointer pattern on `drag-handle-upper-0` → `plugin-row-lower-1` with mocked `getBoundingClientRect` (rows stacked: first row {left:0,top:0,w:300,h:48}, second {left:0,top:60,w:300,h:48}), assert order via `onReorderDragEnd`-driven state: after drag, first row shows the second instance's name; capture the PUT on Save with stubFetch and assert `instances[0].id === 12` (or whichever got dragged where). Update `serverDoc` for this test to two instances with ids 11 and 12.
+Write the drag test fully — the complete code is the `drag reorders rows and Save PUTs the new order with stable ids` test above. Note the testid gotcha: after a swap, clientIds stay position-derived (`upper-0`, `upper-1`), so `plugin-row-upper-1` after the drag is the row rendered SECOND (holding "Second"). If dnd-kit's pointer simulation proves flaky in jsdom, fall back to testing `applyDragEnd` directly in `dndUtils.test.ts` and assert the page renders the new order — keep the Save PUT assertion either way.
 
 - [ ] **Step 2: Rewrite PipelinePage.tsx**
 
@@ -1545,6 +1663,8 @@ import { Grid, Group, Button, Stack, Title } from '@mantine/core';
 import { useEffect, useMemo, useState } from 'react';
 import { useBlocker, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../../api/queryKeys';
 import { useFeedSourcePipeline, usePatchPipelineInstance, usePlugins, useSavePipeline } from '../../api/hooks';
 import { ApiError } from '../../api/client';
 import type { PipelineDoc, PipelineInstance } from '../../api/types';
@@ -1556,10 +1676,16 @@ import { PipelineOverviewStrip } from './PipelineOverviewStrip';
 import { addInstance, applyDragEnd, isInstancesEqual, removeInstance, type LocalInstance } from './dndUtils';
 
 function toLocal(instances: PipelineInstance[]): LocalInstance[] {
-  return instances.map((instance, index) => ({
-    ...instance,
-    clientId: `${instance.plugin_id}-${instance.id ?? `new-${index}`}`,
-  }));
+  // clientId is position-based (matches addInstance's minted ids and keeps
+  // testids stable in tests). Use index, not id: two unsaved rows of the same
+  // plugin must not collide, and server ids may be null for new rows.
+  const taken = new Set<string>();
+  return instances.map((instance, index) => {
+    let clientId = `${instance.plugin_id}-${index}`;
+    while (taken.has(clientId)) clientId = `${clientId}x`;
+    taken.add(clientId);
+    return { ...instance, clientId };
+  });
 }
 
 function toServer(instances: LocalInstance[]): PipelineDoc {
@@ -1580,6 +1706,7 @@ export function PipelinePage() {
   const savePipeline = useSavePipeline(id);
   const patchInstance = usePatchPipelineInstance(id);
   const { data: plugins } = usePlugins();
+  const queryClient = useQueryClient();
 
   const [local, setLocal] = useState<LocalInstance[]>([]);
   const [hydrated, setHydrated] = useState(false);
@@ -1643,6 +1770,9 @@ export function PipelinePage() {
         onError: (error) => {
           setLocal(before); // rollback
           notifyApiError(error, t('toggleFailed'));
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.feedSource(id).pipeline,
+          }); // refetch — server state is source of truth after a failed PATCH
         },
       },
     );
@@ -1653,6 +1783,9 @@ export function PipelinePage() {
     if (!plugin) return;
     setLocal((prev) => addInstance(prev, { id: plugin.id, name: plugin.name }));
   }
+
+  if (pipeline.isPending) return <LoadingState />;
+  if (pipeline.isError) return <ErrorState onRetry={() => void pipeline.refetch()} />;
 
   return (
     <Stack gap="md">
@@ -1681,7 +1814,6 @@ export function PipelinePage() {
               const next = applyDragEnd(local, event);
               if (next) setLocal(next);
             }}
-            feedSourceId={id}
           />
         </Grid.Col>
         <Grid.Col span={8}>
@@ -1769,8 +1901,9 @@ git commit -m "docs: pipeline master-detail API, enabled column, page architectu
 
 ---
 
-## Self-Review notes (already applied)
+## Self-Review notes (updated after external plan review)
 
 - Spec coverage: schema (T1), GET/PUT + upsert (T2), PATCH (T3), bundle exclusion (T4), frontend types/hook (T5), overview strip + config panel (T6), master list (T7), page rewire + deletions (T8), docs (T9). Registry toggles in left list: T7. Immediate-persist switch: T5+T8. Dirty/save semantics unchanged: T8. i18n both locales: T6/T7/T8.
-- Type consistency: `LocalInstance = PipelineInstance & { clientId }` with `id: number | null`, `enabled: boolean` everywhere; `usePatchPipelineInstance(feedSourceId)` takes `{ instanceId, enabled }`; PluginList props match PipelinePage call site; testids consistent (`plugin-row-*`, `plugin-toggle-*` per-instance vs `registry-toggle-*` global vs `add-plugin-*`).
-- Known intentional deviations: (a) `paletteEmpty` i18n key reused for empty add-from-registry (avoiding churn); (b) PluginList owns DndContext (self-contained, testable); (c) per-instance PATCH rollback replaces the whole `local` array snapshot (simple, correct since single-flight toggles).
+- Type consistency: `LocalInstance = PipelineInstance & { clientId }` with `id: number | null`, `enabled: boolean` everywhere; `usePatchPipelineInstance(feedSourceId)` takes `{ instanceId, enabled }`; PluginList props match PipelinePage call site (no `feedSourceId` prop — PATCH lives in PipelinePage); testids consistent (`plugin-row-*`, `plugin-toggle-*` per-instance vs `registry-toggle-*` global vs `add-plugin-*`).
+- Fixes applied after review: upsert uses two-pass temp positioning to respect `uq_module_instances_pipeline_position` (+ swap regression test); PATCH rebuilds `definition` with STRING plugin ids (joins Plugin for manifest id/name); clientId scheme is position-based (`upper-0`) consistent between `toLocal`, `addInstance`, and all testids; Task 5 hook test uses one merged stub, a mounted probe query, and number-keyed `7`; Task 5 patches legacy test fixtures so typecheck stays green and deletes the palette-branch test; Task 4 test written in full against the real `_seed` fixture; Task 8 drag test written in full; PATCH failure also invalidates the pipeline query (spec: rollback + refetch); PipelinePage keeps LoadingState/ErrorState guards; PluginList Switch stops propagation; migration/test named `m10` (m9 taken).
+- Known intentional deviations: (a) `paletteEmpty` i18n key reused for empty add-from-registry; (b) PluginList owns DndContext (self-contained, testable); (c) per-instance PATCH rollback replaces the whole `local` array snapshot; (d) docs land in a final dedicated commit (Task 9) rather than spread across feature commits — single docs commit per feature rework, acknowledged deviation from "same commit" letter while satisfying "same change" spirit.
