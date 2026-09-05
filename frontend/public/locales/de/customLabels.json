@@ -5,6 +5,15 @@
   "idsPlaceholder": "Eine ID pro Zeile oder kommagetrennt",
   "idCount": "{{count}} eindeutige IDs",
   "noActiveRules": "Keine aktiven Slot-Regeln — unter Slot-Regeln anlegen.",
+  "noRulesYet": "noch keine Regeln",
+  "activeRulesCount": "{{count}} aktive Regeln",
+  "slotExplanations": {
+    "custom_label_0": "Gruppierung auf Kampagnen-Ebene, z. B. Bestseller vs. Long Tail.",
+    "custom_label_1": "Mid-Funnel-Segmentierung, z. B. Marge oder Funnel-Stufe.",
+    "custom_label_2": "Saisonale oder Event-Labels, z. B. Sale, Winter.",
+    "custom_label_3": "Produkttyp- oder Kategorie-Gruppierung.",
+    "custom_label_4": "Freie Reserve, z. B. Preisstufe oder Lieferant."
+  },
   "addRule": "Regel hinzufügen",
   "newRuleName": "Neue Slot-Regel",
   "configSaved": "Slot-Regeln gespeichert",

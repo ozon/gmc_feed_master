@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
-  ActionIcon, Anchor, Badge, Button, Card, Collapse, Drawer, Group, Paper,
-  SegmentedControl, Select, Stack, Switch, Tabs, Text, TextInput, Textarea,
+  ActionIcon, Anchor, Badge, Button, Card, Drawer, Group,
+  SegmentedControl, Select, Stack, Switch, Tabs, Text, TextInput,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconHelp } from '@tabler/icons-react';
@@ -19,7 +19,7 @@ import { ErrorState, LoadingState } from '../../components/StateViews';
 import { ScopeBadge } from '../../components/ScopeBadge';
 import { ScopeContextBar } from '../../components/ScopeContextBar';
 import { notifySuccess } from '../../app/notifications';
-import { parseIdList, renderPreview } from './ids';
+import { SlotGroup } from './SlotGroup';
 import { SortableRuleRow } from './SortableRuleRow';
 import { MatchFieldCombobox } from './MatchFieldCombobox';
 import {
@@ -238,73 +238,35 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
                   {tCommon('actions.save')}
                 </Button>
               </Group>
-              <div data-testid="slot-grid" style={{ overflowX: 'auto' }}>
-                <Group gap="md" wrap="nowrap" align="flex-start">
-                  {activeRules.map((rule) => {
-                    const allMode = rule.matchMode === 'all';
-                    const raw = effectiveIds[rule.id] ?? '';
-                    const count = parseIdList(raw).size;
-                    const inherited = serverIds[rule.id]?.inherited === true
-                      && raw === serverIds[rule.id].value;
+              <Stack gap="md" data-testid="slot-grid">
+                {TARGET_SLOTS.map((slot) => {
+                  const slotRules = activeRules.filter((r) => r.targetSlot === slot);
+                  if (slotRules.length === 0) {
                     return (
-                      <Stack key={rule.id} gap={4} miw={280} w={280}>
-                        <Group gap="xs" justify="space-between" wrap="nowrap">
-                          <Group gap="xs" wrap="nowrap">
-                            <Text size="sm" fw={600}>{rule.name}</Text>
-                            <Badge size="xs" variant="light">{rule.targetSlot}</Badge>
-                          </Group>
-                          {inherited && (
-                            <Badge size="xs" variant="light" color="teal">
-                              {t('inheritedFrom', { tier: tCommon('scope.client') })}
-                            </Badge>
-                          )}
-                        </Group>
-                        <Text size="xs" c="dimmed">{rule.matchField}</Text>
-                        <Text size="xs" c="dimmed">{renderPreview(rule.valueTemplate)}</Text>
-                        <Collapse expanded={!allMode} keepMounted={false}>
-                          <Stack gap={4}>
-                            <Textarea
-                              label={rule.matchField === 'id'
-                                ? t('bulk.productIds')
-                                : t('bulk.valuesFor', { field: rule.matchField })}
-                              aria-label={`${rule.name} ids`}
-                              minRows={10}
-                              autosize
-                              value={raw}
-                              onChange={(e) =>
-                                setSlotIds({ ...effectiveIds, [rule.id]: e.currentTarget.value })}
-                              placeholder={t('idsPlaceholder')}
-                            />
-                            <Text size="xs" c="dimmed">{t('idCount', { count })}</Text>
-                          </Stack>
-                        </Collapse>
-                        <Collapse expanded={allMode} keepMounted={false}>
-                          <Paper withBorder p="xs" data-testid={`all-mode-${rule.id}`}>
-                            <Stack gap={4}>
-                              <Text size="sm" c="dimmed">{t('bulk.controlledByRule')}</Text>
-                              <Text size="sm" fw={600}>
-                                {t('bulk.allProductsGet', {
-                                  preview: renderPreview(rule.valueTemplate),
-                                })}
-                              </Text>
-                              {ruleEditable(rule) && (
-                                <Button
-                                  variant="subtle"
-                                  size="xs"
-                                  onClick={() => patchRule(rule.id, { matchMode: 'values' })}
-                                >
-                                  {t('bulk.switchToValueList')}
-                                </Button>
-                              )}
-                            </Stack>
-                          </Paper>
-                        </Collapse>
-                      </Stack>
+                      <Group key={slot} gap="xs" data-testid={`slot-empty-${slot}`}>
+                        <Badge size="xs" variant="light">{slot}</Badge>
+                        <Text size="sm" c="dimmed">{t('noRulesYet')}</Text>
+                      </Group>
                     );
-                  })}
-                  {activeRules.length === 0 && <Text c="dimmed">{t('noActiveRules')}</Text>}
-                </Group>
-              </div>
+                  }
+                  return (
+                    <SlotGroup
+                      key={slot}
+                      slot={slot}
+                      rules={slotRules}
+                      values={effectiveIds}
+                      inheritedFor={(id) =>
+                        serverIds[id]?.inherited === true
+                        && (effectiveIds[id] ?? '') === serverIds[id].value
+                      }
+                      isRuleEditable={ruleEditable}
+                      editableTier={editableTier}
+                      onSetSlotIds={setSlotIds}
+                      onPatchRule={patchRule}
+                    />
+                  );
+                })}
+              </Stack>
             </Stack>
           )}
         </Tabs.Panel>

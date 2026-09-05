@@ -5,6 +5,15 @@
   "idsPlaceholder": "One ID per line, or comma-separated",
   "idCount": "{{count}} unique IDs",
   "noActiveRules": "No active slot rules — add one under Slot rules.",
+  "noRulesYet": "no rules yet",
+  "activeRulesCount": "{{count}} active rules",
+  "slotExplanations": {
+    "custom_label_0": "Top-level campaign grouping, e.g. bestsellers vs. long tail.",
+    "custom_label_1": "Mid-funnel segmentation, e.g. margin or funnel stage.",
+    "custom_label_2": "Seasonal or event labels, e.g. sale, winter.",
+    "custom_label_3": "Product type or category grouping.",
+    "custom_label_4": "Free reserve, e.g. price tier or supplier."
+  },
   "addRule": "Add rule",
   "newRuleName": "New slot rule",
   "configSaved": "Slot rules saved",

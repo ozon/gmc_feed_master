@@ -107,11 +107,25 @@ describe('CustomLabelsUI operational page', () => {
     expect(screen.getByText('3 unique IDs')).toBeInTheDocument();
   });
 
-  it('wraps the slot grid in a horizontally scrollable container', async () => {
+  it('groups the bulk tab by target slot in registry order', async () => {
     renderUI({ feedSourceId: 1 });
-    expect(await screen.findByText('Mid Funnel'));
+    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
     const grid = document.querySelector('[data-testid="slot-grid"]') as HTMLElement;
-    expect(grid.style.overflowX).toBe('auto');
+    const groups = grid.querySelectorAll('[data-testid^="slot-group-"]');
+    expect(Array.from(groups).map((g) => g.getAttribute('data-testid'))).toEqual([
+      'slot-group-custom_label_1', 'slot-group-custom_label_2',
+    ]);
+    expect(screen.getByTestId('slot-empty-custom_label_0')).toBeInTheDocument();
+  });
+
+  it('info boxes show slot explanation and active rule count', async () => {
+    renderUI({ feedSourceId: 1 });
+    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
+    expect(
+      screen.getByText(/mid-funnel segmentation/i),
+    ).toBeInTheDocument();
+    // both groups have exactly one active rule
+    expect(screen.getAllByText('1 active rules').length).toBe(2);
   });
 
   it('at feed tier fetches config at global AND client scope, data at feed scope', async () => {
