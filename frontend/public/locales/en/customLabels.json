@@ -20,6 +20,13 @@
     "values": "Match value list",
     "all": "Match all products"
   },
+  "bulk": {
+    "productIds": "Product IDs",
+    "valuesFor": "Values for {{field}}",
+    "controlledByRule": "Controlled by rule — no value list needed.",
+    "allProductsGet": "Every product gets: {{preview}}",
+    "switchToValueList": "Switch to value list"
+  },
   "fields": {
     "name": "Name",
     "isActive": "Active",

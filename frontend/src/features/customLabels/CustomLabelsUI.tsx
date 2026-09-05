@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  Anchor, Badge, Button, Card, Group, SegmentedControl, Select, Stack, Switch, Tabs, Text, TextInput, Textarea,
+  Anchor, Badge, Button, Card, Collapse, Group, Paper, SegmentedControl, Select, Stack, Switch, Tabs, Text, TextInput, Textarea,
 } from '@mantine/core';
 import {
   DndContext, PointerSensor, closestCenter, useSensor, useSensors,
@@ -124,6 +124,10 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
     setRules(effectiveRules.map((r) => (r.id === selected.id ? { ...r, ...patch } : r)));
   }
 
+  function patchRule(id: string, patch: Partial<SlotRule>) {
+    setRules(effectiveRules.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  }
+
   useBlocker(({ currentLocation, nextLocation }) => {
     if (!dirty) return false;
     if (currentLocation.pathname === nextLocation.pathname) return false;
@@ -205,35 +209,64 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
               <div data-testid="slot-grid" style={{ overflowX: 'auto' }}>
                 <Group gap="md" wrap="nowrap" align="flex-start">
                   {activeRules.map((rule) => {
+                    const allMode = rule.matchMode === 'all';
                     const raw = effectiveIds[rule.id] ?? '';
                     const count = parseIdList(raw).size;
                     const inherited = serverIds[rule.id]?.inherited === true
                       && raw === serverIds[rule.id].value;
                     return (
                       <Stack key={rule.id} gap={4} miw={280} w={280}>
-                        <Group gap="xs">
-                          <Text size="sm" fw={600}>{rule.name}</Text>
-                          <Badge size="xs" variant="light">{rule.targetSlot}</Badge>
-                        </Group>
-                        <Group gap={4}>
-                          <Text size="xs" c="dimmed">{rule.matchField}</Text>
+                        <Group gap="xs" justify="space-between" wrap="nowrap">
+                          <Group gap="xs" wrap="nowrap">
+                            <Text size="sm" fw={600}>{rule.name}</Text>
+                            <Badge size="xs" variant="light">{rule.targetSlot}</Badge>
+                          </Group>
                           {inherited && (
                             <Badge size="xs" variant="light" color="teal">
                               {t('inheritedFrom', { tier: tCommon('scope.client') })}
                             </Badge>
                           )}
                         </Group>
+                        <Text size="xs" c="dimmed">{rule.matchField}</Text>
                         <Text size="xs" c="dimmed">{renderPreview(rule.valueTemplate)}</Text>
-                        <Textarea
-                          aria-label={`${rule.name} ids`}
-                          minRows={10}
-                          autosize
-                          value={raw}
-                          onChange={(e) =>
-                            setSlotIds({ ...effectiveIds, [rule.id]: e.currentTarget.value })}
-                          placeholder={t('idsPlaceholder')}
-                        />
-                        <Text size="xs" c="dimmed">{t('idCount', { count })}</Text>
+                        <Collapse expanded={!allMode} keepMounted={false}>
+                          <Stack gap={4}>
+                            <Textarea
+                              label={rule.matchField === 'id'
+                                ? t('bulk.productIds')
+                                : t('bulk.valuesFor', { field: rule.matchField })}
+                              aria-label={`${rule.name} ids`}
+                              minRows={10}
+                              autosize
+                              value={raw}
+                              onChange={(e) =>
+                                setSlotIds({ ...effectiveIds, [rule.id]: e.currentTarget.value })}
+                              placeholder={t('idsPlaceholder')}
+                            />
+                            <Text size="xs" c="dimmed">{t('idCount', { count })}</Text>
+                          </Stack>
+                        </Collapse>
+                        <Collapse expanded={allMode} keepMounted={false}>
+                          <Paper withBorder p="xs" data-testid={`all-mode-${rule.id}`}>
+                            <Stack gap={4}>
+                              <Text size="sm" c="dimmed">{t('bulk.controlledByRule')}</Text>
+                              <Text size="sm" fw={600}>
+                                {t('bulk.allProductsGet', {
+                                  preview: renderPreview(rule.valueTemplate),
+                                })}
+                              </Text>
+                              {editableTier !== null && (
+                                <Button
+                                  variant="subtle"
+                                  size="xs"
+                                  onClick={() => patchRule(rule.id, { matchMode: 'values' })}
+                                >
+                                  {t('bulk.switchToValueList')}
+                                </Button>
+                              )}
+                            </Stack>
+                          </Paper>
+                        </Collapse>
                       </Stack>
                     );
                   })}

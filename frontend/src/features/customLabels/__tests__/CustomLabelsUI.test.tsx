@@ -353,3 +353,94 @@ describe('CustomLabelsUI operational page', () => {
     expect(screen.getByText('inactive')).toBeInTheDocument();
   });
 });
+
+describe('CustomLabelsUI bulk tab mode-awareness', () => {
+  function renderFeedWithConfig(config: unknown) {
+    stubFetch((url) => {
+      if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse(config);
+      if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse({ slotIds: {} });
+      if (url.startsWith('/registry/attributes')) return jsonResponse([
+        { name: 'id', kind: 'scalar', sub_fields: [] },
+        { name: 'brand', kind: 'scalar', sub_fields: [] },
+      ]);
+      return jsonResponse({});
+    });
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/clients/:clientId/feeds/:feedSourceId/plugins/:pluginId',
+          element: <CustomLabelsUI pluginId="custom_labels" scope={{ feedSourceId: 1 }} />,
+        },
+      ],
+      { initialEntries: ['/clients/1/feeds/1/plugins/custom_labels'] },
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+  }
+
+  it('all-mode rules show a controlled-by summary instead of the value textarea', async () => {
+    renderFeedWithConfig({
+      slotRules: [
+        { id: 'a1', name: 'All Products', isActive: true, targetSlot: 'custom_label_0',
+          matchField: 'id', matchMode: 'all', valueTemplate: '{brand} - All',
+          fallbackTemplate: '' },
+      ],
+    });
+    expect(await screen.findByText(/every product gets: brand - all/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/all products ids/i)).not.toBeInTheDocument();
+    // feed tier: config is read-only -> no override button
+    expect(
+      screen.queryByRole('button', { name: /switch to value list/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('values-mode rules relabel the textarea to the match field', async () => {
+    renderFeedWithConfig({
+      slotRules: [
+        { id: 'v1', name: 'By Brand', isActive: true, targetSlot: 'custom_label_1',
+          matchField: 'brand', matchMode: 'values', valueTemplate: '{brand} - Mid',
+          fallbackTemplate: '' },
+      ],
+    });
+    expect(await screen.findByLabelText(/values for brand/i)).toBeInTheDocument();
+  });
+
+  it('at client tier an all-mode rule offers the switch-to-value-list override', async () => {
+    stubFetch((url) => {
+      if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse({
+        slotRules: [
+          { id: 'a1', name: 'All Products', isActive: true, targetSlot: 'custom_label_0',
+            matchField: 'id', matchMode: 'all', valueTemplate: '{brand} - All',
+            fallbackTemplate: '' },
+        ],
+      });
+      if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse({ slotIds: {} });
+      if (url.startsWith('/registry/attributes')) return jsonResponse([
+        { name: 'id', kind: 'scalar', sub_fields: [] },
+      ]);
+      return jsonResponse({});
+    });
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/clients/:clientId/plugins/:pluginId',
+          element: <CustomLabelsUI pluginId="custom_labels" scope={{ clientId: 1 }} />,
+        },
+      ],
+      { initialEntries: ['/clients/1/plugins/custom_labels'] },
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+    const override = await screen.findByRole('button', { name: /switch to value list/i });
+    await userEvent.click(override);
+    expect(await screen.findByLabelText(/all products ids/i)).toBeInTheDocument();
+  });
+});

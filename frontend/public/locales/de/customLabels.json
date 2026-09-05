@@ -20,6 +20,13 @@
     "values": "Werteliste abgleichen",
     "all": "Alle Produkte treffen"
   },
+  "bulk": {
+    "productIds": "Produkt-IDs",
+    "valuesFor": "Werte für {{field}}",
+    "controlledByRule": "Wird von der Regel gesteuert — keine Werteliste nötig.",
+    "allProductsGet": "Jedes Produkt erhält: {{preview}}",
+    "switchToValueList": "Zur Werteliste wechseln"
+  },
   "fields": {
     "name": "Name",
     "isActive": "Aktiv",
