@@ -10,7 +10,7 @@ from ..db.engine import get_db_session
 from ..models.feed_source import FeedSource
 from ..models.pipeline import ModuleInstance, ModulePipeline
 from ..models.plugin import Plugin
-from ..schemas.pipeline import PipelineOut, PipelinePut
+from ..schemas.pipeline import InstancePatch, PipelineOut, PipelinePut
 
 router = APIRouter()
 
@@ -164,3 +164,39 @@ async def put_pipeline(
         pipeline.definition = {"instances": definition}
 
     return {"instances": instances_out}
+
+
+@router.patch("/feed-sources/{feed_source_id}/pipeline/instances/{instance_id}")
+async def patch_pipeline_instance(
+    feed_source_id: int,
+    instance_id: int,
+    payload: InstancePatch,
+    _user: str = Depends(require_user),
+    db_session: AsyncSession | None = Depends(get_db_session),
+) -> dict:
+    session = _require_db(db_session)
+    async with session.begin():
+        feed_source = await session.get(FeedSource, feed_source_id)
+        if feed_source is None or feed_source.active_pipeline_id is None:
+            raise HTTPException(status_code=404, detail="instance not found")
+        instance = await session.get(ModuleInstance, instance_id)
+        if instance is None or instance.pipeline_id != feed_source.active_pipeline_id:
+            raise HTTPException(status_code=404, detail="instance not found")
+        instance.enabled = payload.enabled
+
+        pipeline = await session.get(ModulePipeline, feed_source.active_pipeline_id)
+        rows = (await session.execute(
+            select(ModuleInstance, Plugin)
+            .join(Plugin, ModuleInstance.plugin_id == Plugin.id)
+            .where(ModuleInstance.pipeline_id == pipeline.id)
+            .order_by(ModuleInstance.position)
+        )).all()
+        # definition rows use the STRING plugin id (manifest id or name),
+        # exactly like put_pipeline writes — never the integer FK.
+        pipeline.definition = {"instances": [
+            {"plugin_id": (plugin.manifest or {}).get("id") or plugin.name,
+             "name": row.name, "configuration": row.configuration,
+             "enabled": row.enabled}
+            for row, plugin in rows
+        ]}
+    return {"id": instance_id, "enabled": payload.enabled}

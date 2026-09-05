@@ -270,3 +270,40 @@ async def test_put_pipeline_rejects_foreign_instance_id(app_factory):
                        "configuration": {"suffix": "!"}}]})
     assert resp.status_code == 422
     assert any("unknown instance" in e for e in resp.json()["errors"])
+
+
+async def test_patch_instance_enabled(app_factory):
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    await _register_plugin(factory)
+    created = (await client.post("/clients", json={"name": "Acme"})).json()
+    feed = (await client.post(f"/clients/{created['id']}/feed-sources",
+                              json={"name": "DE", "source_format": "wide_tsv"})).json()
+    put = (await client.put(f"/feed-sources/{feed['id']}/pipeline", json={
+        "instances": [{"plugin_id": "example_upper", "configuration": {"suffix": "!"}}]})).json()
+    inst_id = put["instances"][0]["id"]
+
+    resp = await client.patch(f"/feed-sources/{feed['id']}/pipeline/instances/{inst_id}",
+                              json={"enabled": False})
+    assert resp.status_code == 200
+    assert resp.json() == {"id": inst_id, "enabled": False}
+
+    got = (await client.get(f"/feed-sources/{feed['id']}/pipeline")).json()
+    assert got["instances"][0]["enabled"] is False
+
+    # definition JSONB mirrors rows
+    async with factory() as session:
+        fs = await session.get(FeedSource, feed["id"])
+        pipeline = await session.get(ModulePipeline, fs.active_pipeline_id)
+        assert pipeline.definition["instances"][0]["enabled"] is False
+
+
+async def test_patch_instance_not_found(app_factory):
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    created = (await client.post("/clients", json={"name": "Acme"})).json()
+    feed = (await client.post(f"/clients/{created['id']}/feed-sources",
+                              json={"name": "DE", "source_format": "wide_tsv"})).json()
+    resp = await client.patch(f"/feed-sources/{feed['id']}/pipeline/instances/999999",
+                              json={"enabled": True})
+    assert resp.status_code == 404

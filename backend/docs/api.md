@@ -35,6 +35,7 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
   ```
   {instances: [{id, plugin_id, position, name, configuration, enabled}]}
   ```
+- `PATCH /feed-sources/{id}/pipeline/instances/{instance_id}` — toggle a single instance's `enabled` flag with immediate persist (per-instance Switch in the pipeline page). Body: `{"enabled": bool}` → `200 {"id": int, "enabled": bool}`; 404 for unknown feed source or instance (instance must belong to the feed source's active pipeline). Also rebuilds `pipeline.definition` so the JSONB mirrors the rows (string plugin ids, same as PUT)
 
 ### Field Mapping
 - `GET /feed-sources/{id}/field-mapping` — get mapping document
