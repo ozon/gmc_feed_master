@@ -353,12 +353,14 @@ describe('CustomLabelsUI operational page', () => {
     expect(screen.getByText('inactive')).toBeInTheDocument();
   });
 
-  it('shows the description, how-it-works accordion, and opens the guide drawer', async () => {
+  it('shows the description and opens the guide drawer with the how-it-works sections', async () => {
     renderUI({ feedSourceId: 1 });
     expect(await screen.findByTestId('labelizer-description')).toHaveTextContent(/labelizer/i);
-    expect(screen.getByText(/what are slot rules\?/i)).toBeInTheDocument();
+    // No inline accordion on the page itself.
+    expect(screen.queryByText(/what are slot rules\?/i)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /open user guide/i }));
     expect(await screen.findByText(/labelizer user guide/i)).toBeInTheDocument();
+    expect(screen.getByText(/what are slot rules\?/i)).toBeInTheDocument();
     expect(screen.getByText(/getting started/i)).toBeInTheDocument();
   });
 });

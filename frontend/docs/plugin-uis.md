@@ -207,8 +207,8 @@ const menuItems = plugins
 - **Rule modes:** `matchMode: "values"` (explicit value list, textarea relabels
   to the match field) or `"all"` (every product matches; the bulk tab shows a
   "controlled by rule" summary).
-- **Help UI:** inline description, a "How it works" accordion, and a user-guide
-  drawer per plugin page.
+- **Help UI:** inline description and a user-guide drawer (opened via the "?"
+  action icon) per plugin page.
 - **Nav entries for multi-scope plugins:** `AppShell` derives the target from
   the manifest scopes — feed-scoped plugins link to
   `` ${feedBase}/plugins/{id} `` (nav item hidden without a feed selected),

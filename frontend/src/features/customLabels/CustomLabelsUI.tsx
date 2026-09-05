@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  Accordion, ActionIcon, Anchor, Badge, Button, Card, Collapse, Drawer, Group, Paper,
+  ActionIcon, Anchor, Badge, Button, Card, Collapse, Drawer, Group, Paper,
   SegmentedControl, Select, Stack, Switch, Tabs, Text, TextInput, Textarea,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -199,24 +199,6 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
           <IconHelp size={16} />
         </ActionIcon>
       </Group>
-      <Accordion>
-        <Accordion.Item value="concepts">
-          <Accordion.Control>{t('howItWorks.concepts.question')}</Accordion.Control>
-          <Accordion.Panel>{t('howItWorks.concepts.answer')}</Accordion.Panel>
-        </Accordion.Item>
-        <Accordion.Item value="matchModes">
-          <Accordion.Control>{t('howItWorks.matchModes.question')}</Accordion.Control>
-          <Accordion.Panel>{t('howItWorks.matchModes.answer')}</Accordion.Panel>
-        </Accordion.Item>
-        <Accordion.Item value="templates">
-          <Accordion.Control>{t('howItWorks.templates.question')}</Accordion.Control>
-          <Accordion.Panel>{t('howItWorks.templates.answer')}</Accordion.Panel>
-        </Accordion.Item>
-        <Accordion.Item value="scopes">
-          <Accordion.Control>{t('howItWorks.scopes.question')}</Accordion.Control>
-          <Accordion.Panel>{t('howItWorks.scopes.answer')}</Accordion.Panel>
-        </Accordion.Item>
-      </Accordion>
       <Drawer
         opened={helpOpened}
         onClose={closeHelp}
