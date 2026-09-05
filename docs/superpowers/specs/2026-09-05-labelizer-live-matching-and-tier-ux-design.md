@@ -92,9 +92,12 @@ Builds on: `2026-09-05-labelizer-plugin-ux-design.md` (merged view, rule modes, 
   - `useLabelizerPreview()` returns `{ preview, isPending, result, error }`
     wrapping a TanStack mutation calling
     `apiPost('/plugins/custom_labels/preview', payload)`.
-  - Debounced (~500 ms) on changes to the merged DRAFT rules + slotIds; only
-    active when the URL tier is a feed (`feedSourceId` known) — the only tier
-    with staged products in context.
+  - Debounced (~500 ms) on changes to the merged DRAFT rules + slotIds, plus an
+    initial call on mount (feed page) so stats are populated before the first
+    edit; only active when the URL tier is a feed (`feedSourceId` known) — the
+    only tier with staged products in context.
+  - Transient 422s while a match field/template is mid-typing are expected:
+    shown dimmed inline, cleared by the next valid preview.
   - Stale guard: a sequence number per call; only the newest response is applied.
   - 422 → per-rule/field error list surfaced inline under the group info box;
     404/503/network → dimmed "Live preview unavailable" line, non-blocking,
@@ -108,10 +111,22 @@ Builds on: `2026-09-05-labelizer-plugin-ux-design.md` (merged view, rule modes, 
 - **Slot group = info box card + nested rule editors.**
   - Info box (Card header): slot name (`custom_label_1`), short static
     explanation (en + de — what the slot is for in Google Shopping campaign
-    structuring, generic wording), rules-targeting count, live stats
-    (labeled products, coverage %, per-rule breakdown like
+    structuring, generic wording), **active**-rules-targeting count (consistent
+    with `_build_state`/preview, which exclude inactive rules), live stats
+    (labeled products, coverage % up to one decimal, per-rule breakdown like
     "Mid Funnel · 120 match"), freshness hint
     ("based on the last run's N staged products").
+  - **Clickable samples:** the sample product ids render as links to the
+    Products page with the id pre-filled as search —
+    `/clients/:clientId/feeds/:feedSourceId/products?q=<product_id>`
+    (the Products page already reads `?q=` from search params). Feed-page only.
+  - **Shadowed marker:** a rule with `matched > 0 && labeled == 0` renders with
+    a dimmed "never applied" marker in the breakdown; its tooltip explains the
+    causes (shadowed by an earlier rule on the slot, or its template always
+    resolved empty). Derived client-side — no response-shape change.
+  - **Never-run feed:** when `total == 0` the info box shows a distinct dimmed
+    hint "No staged products yet — run the pipeline first." instead of zero
+    stats (so "no products staged" is never confused with "no matches").
   - Nested under it: the existing per-rule editors (values textarea with dynamic
     label, or all-mode "controlled by rule" summary + override button), stacked
     with their inherited badges and editability unchanged.
@@ -131,11 +146,13 @@ Builds on: `2026-09-05-labelizer-plugin-ux-design.md` (merged view, rule modes, 
 
 - In the rule editor card, a compact action row:
   - **Duplicate** (editable-origin rules only): copies the selected rule with a
-    fresh id, `name (copy)`, same slot, inserted immediately after the
-    original; selects the copy; dirty until Save.
+    fresh id, `name + t('actions.duplicateSuffix')` (localized suffix, en + de),
+    same slot, inserted immediately after the original; selects the copy; dirty
+    until Save.
   - **Delete** (editable-origin rules only): ConfirmModal confirmation, then
     removes the rule from the editable tier's list; dirty until Save (Cancel
-    still reverts).
+    still reverts). For global-origin rules on the global page, the confirm
+    body notes the blast radius: deleting affects every client inheriting it.
   - Both hidden for inherited rules and on the feed page.
 
 ## 6. Read-only hint reword
@@ -192,9 +209,12 @@ Builds on: `2026-09-05-labelizer-plugin-ux-design.md` (merged view, rule modes, 
   coverage math incl. total=0).
 - Frontend: `usePreview` hook tests (debounce, stale guard, 422 surfacing);
   component tests — slot groups render in order with info boxes, live stats
-  render from a stubbed preview, slim empty-slot rows, non-feed hint, duplicate/
-  delete actions (visible/editable-origin only), override flips origin and
-  saves only client rules, ScopeContextBar link badges + current-tier static.
+  render from a stubbed preview, clickable sample links (`?q=`), shadowed
+  "never applied" marker (`matched>0 && labeled==0`), never-run state
+  (`total==0` distinct hint), active-only rule counts, slim empty-slot rows,
+  non-feed hint, duplicate/delete actions (visible/editable-origin only),
+  override flips origin and saves only client rules, ScopeContextBar link
+  badges + current-tier static.
 - i18n: all new strings in en + de (slot explanations ×5, stats labels, action
   labels, reworded hints).
 - Gates: `uv run pytest -n auto`, `uvx ruff/mypy` (zero new in touched files),
