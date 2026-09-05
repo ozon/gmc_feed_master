@@ -201,3 +201,46 @@ class TestErrorReasons:
             except ManifestError as e:
                 reasons.add(e.reason)
         assert len(reasons) == len(cases)
+
+
+class TestConfigMergeValidation:
+    def test_valid_config_merge_parses(self):
+        doc = {
+            **minimal_manifest(),
+            "config_merge": {"slotRules": {"strategy": "union_by_key", "key": "id"}},
+        }
+        parsed = parse_manifest(doc)
+        assert parsed.raw["config_merge"]["slotRules"]["key"] == "id"
+
+    def test_config_merge_defaults_key_to_id(self):
+        doc = {
+            **minimal_manifest(),
+            "config_merge": {"slotRules": {"strategy": "union_by_key"}},
+        }
+        parsed = parse_manifest(doc)
+        assert parsed.raw["config_merge"]["slotRules"]["key"] == "id"
+
+    def test_rejects_unknown_strategy(self):
+        doc = {
+            **minimal_manifest(),
+            "config_merge": {"slotRules": {"strategy": "replace_things"}},
+        }
+        with pytest.raises(ManifestError, match="strategy"):
+            parse_manifest(doc)
+
+    def test_rejects_non_object_config_merge(self):
+        doc = {
+            **minimal_manifest(),
+            "config_merge": ["bad"],
+        }
+        with pytest.raises(ManifestError, match="config_merge"):
+            parse_manifest(doc)
+
+    def test_rejects_empty_key(self):
+        doc = {
+            **minimal_manifest(),
+            "config_merge": {"slotRules": {"strategy": "union_by_key", "key": ""}},
+        }
+        with pytest.raises(ManifestError, match="key"):
+            parse_manifest(doc)
+

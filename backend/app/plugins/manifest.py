@@ -54,6 +54,25 @@ def _parse_scope(doc: dict[str, Any], key: str) -> tuple[str, ...]:
     return tuple(items)
 
 
+def _parse_config_merge(data: dict[str, Any]) -> None:
+    value = data.get("config_merge")
+    if value is None:
+        return
+    if not isinstance(value, dict) or not value:
+        raise ManifestError("config_merge must be a non-empty object")
+    for key, hint in value.items():
+        if not isinstance(key, str) or not key:
+            raise ManifestError("config_merge keys must be non-empty strings")
+        if not isinstance(hint, dict) or hint.get("strategy") != "union_by_key":
+            raise ManifestError(
+                f"config_merge.{key}: strategy must be 'union_by_key'"
+            )
+        merge_key = hint.get("key", "id")
+        if not isinstance(merge_key, str) or not merge_key:
+            raise ManifestError(f"config_merge.{key}.key must be a non-empty string")
+        hint.setdefault("key", merge_key)
+
+
 def parse_manifest(data: Any) -> PluginManifest:
     if not isinstance(data, dict):
         raise ManifestError("manifest document must be a JSON object")
@@ -92,6 +111,8 @@ def parse_manifest(data: Any) -> PluginManifest:
                 f"manifest {field} is not a valid 2020-12 JSON Schema: {exc.message}"
             ) from exc
         schemas[field] = schema
+
+    _parse_config_merge(data)
 
     return PluginManifest(
         id=plugin_id,
