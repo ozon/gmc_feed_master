@@ -262,8 +262,9 @@ async def test_put_pipeline_rejects_foreign_instance_id(app_factory):
     created = (await client.post("/clients", json={"name": "Acme"})).json()
     feed = (await client.post(f"/clients/{created['id']}/feed-sources",
                               json={"name": "DE", "source_format": "wide_tsv"})).json()
-    first = (await client.put(f"/feed-sources/{feed['id']}/pipeline", json={
-        "instances": [{"plugin_id": "example_upper", "configuration": {"suffix": "!"}}]})).json()
+    seeded = await client.put(f"/feed-sources/{feed['id']}/pipeline", json={
+        "instances": [{"plugin_id": "example_upper", "configuration": {"suffix": "!"}}]})
+    assert seeded.status_code == 200
     # Instance id belonging to another pipeline would be rejected; simulate with a bogus id.
     resp = await client.put(f"/feed-sources/{feed['id']}/pipeline", json={
         "instances": [{"id": 999999, "plugin_id": "example_upper",
