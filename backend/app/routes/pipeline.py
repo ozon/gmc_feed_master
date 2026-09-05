@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import require_user
@@ -45,10 +45,12 @@ async def get_pipeline(
             .order_by(ModuleInstance.position)
         )).all())
     return {"instances": [
-        {"position": instance.position,
+        {"id": instance.id,
+         "position": instance.position,
          "plugin_id": (plugin.manifest or {}).get("id") or plugin.name,
          "name": instance.name,
-         "configuration": instance.configuration}
+         "configuration": instance.configuration,
+         "enabled": instance.enabled}
         for instance, plugin in rows
     ]}
 
@@ -105,22 +107,60 @@ async def put_pipeline(
             await session.flush()
             feed_source.active_pipeline_id = pipeline.id
 
-        await session.execute(
-            delete(ModuleInstance).where(ModuleInstance.pipeline_id == pipeline.id)
-        )
+        existing_rows = (await session.execute(
+            select(ModuleInstance).where(ModuleInstance.pipeline_id == pipeline.id)
+        )).scalars().all()
+        existing_by_id = {row.id: row for row in existing_rows}
+
+        # Reject ids that do not belong to this pipeline.
+        for index, item in enumerate(payload.instances):
+            if item.id is not None and item.id not in existing_by_id:
+                errors.append(f"instance {index}: unknown instance id {item.id}")
+        if errors:
+            return _validation_error(errors)
+
+        kept_ids = {item.id for item in payload.instances if item.id is not None}
+        for row in existing_rows:
+            if row.id not in kept_ids:
+                await session.delete(row)
+        await session.flush()  # apply deletes before repositioning
+
+        # Pass 1: move every kept row to a temporary position outside the
+        # unique range so no UPDATE collides with an old position.
+        temp_base = len(payload.instances) + len(existing_rows) + 1
+        for temp_pos, item in enumerate(payload.instances):
+            if item.id is not None:
+                row = existing_by_id[item.id]
+                row.position = temp_base + temp_pos
+        await session.flush()
+
         instances_out = []
         definition = []
         for position, item in enumerate(payload.instances):
             plugin = plugins[item.plugin_id]
             name = item.name or (plugin.manifest or {}).get("name") or plugin.name
-            session.add(ModuleInstance(
-                pipeline_id=pipeline.id, plugin_id=plugin.id, position=position,
-                name=name, configuration=item.configuration,
-            ))
-            instances_out.append({"position": position, "plugin_id": item.plugin_id,
-                                  "name": name, "configuration": item.configuration})
+            if item.id is not None:
+                row = existing_by_id[item.id]
+                row.position = position
+                row.name = name
+                row.configuration = item.configuration
+                row.enabled = item.enabled
+                instance_id = row.id
+            else:
+                row = ModuleInstance(
+                    pipeline_id=pipeline.id, plugin_id=plugin.id, position=position,
+                    name=name, configuration=item.configuration, enabled=item.enabled,
+                )
+                session.add(row)
+                await session.flush()
+                instance_id = row.id
+            instances_out.append({"id": instance_id, "position": position,
+                                  "plugin_id": item.plugin_id, "name": name,
+                                  "configuration": item.configuration,
+                                  "enabled": item.enabled})
             definition.append({"plugin_id": item.plugin_id, "name": name,
-                               "configuration": item.configuration})
+                               "configuration": item.configuration,
+                               "enabled": item.enabled})
         pipeline.definition = {"instances": definition}
 
     return {"instances": instances_out}

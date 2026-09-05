@@ -96,8 +96,9 @@ async def test_put_pipeline_roundtrip(app_factory):
                        "configuration": {"suffix": "!"}}]})
     assert resp.status_code == 200
     body = resp.json()
-    assert body["instances"] == [{"position": 0, "plugin_id": "example_upper",
-                                  "name": "Upper", "configuration": {"suffix": "!"}}]
+    assert body["instances"] == [{"id": body["instances"][0]["id"], "position": 0,
+                                  "plugin_id": "example_upper", "name": "Upper",
+                                  "configuration": {"suffix": "!"}, "enabled": True}]
     assert (await client.get(f"/feed-sources/{feed['id']}/pipeline")).json() == body
 
     async with factory() as session:
@@ -165,7 +166,107 @@ async def test_put_pipeline_same_feed_name_no_collision(app_factory):
     feed_a = (await client.post(f"/clients/{first_client['id']}/feed-sources",
                                 json={"name": "DE", "source_format": "wide_tsv"})).json()
     feed_b = (await client.post(f"/clients/{second_client['id']}/feed-sources",
-                                json={"name": "DE", "source_format": "wide_tsv"})).json()
+                                 json={"name": "DE", "source_format": "wide_tsv"})).json()
     payload = {"instances": [{"plugin_id": "example_upper", "configuration": {"suffix": "!"}}]}
     assert (await client.put(f"/feed-sources/{feed_a['id']}/pipeline", json=payload)).status_code == 200
     assert (await client.put(f"/feed-sources/{feed_b['id']}/pipeline", json=payload)).status_code == 200
+
+
+async def test_get_pipeline_returns_id_and_enabled(app_factory):
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    await _register_plugin(factory)
+    created = (await client.post("/clients", json={"name": "Acme"})).json()
+    feed = (await client.post(f"/clients/{created['id']}/feed-sources",
+                              json={"name": "DE", "source_format": "wide_tsv"})).json()
+    resp = await client.put(f"/feed-sources/{feed['id']}/pipeline", json={
+        "instances": [{"plugin_id": "example_upper", "name": "Upper",
+                       "configuration": {"suffix": "!"}}]})
+    assert resp.status_code == 200
+    inst = resp.json()["instances"][0]
+    assert isinstance(inst["id"], int)
+    assert inst["enabled"] is True
+
+
+async def test_put_pipeline_upsert_keeps_ids(app_factory):
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    await _register_plugin(factory)
+    created = (await client.post("/clients", json={"name": "Acme"})).json()
+    feed = (await client.post(f"/clients/{created['id']}/feed-sources",
+                              json={"name": "DE", "source_format": "wide_tsv"})).json()
+    first = (await client.put(f"/feed-sources/{feed['id']}/pipeline", json={
+        "instances": [{"plugin_id": "example_upper", "name": "Upper",
+                       "configuration": {"suffix": "!"}}]})).json()
+    first_id = first["instances"][0]["id"]
+
+    # Re-save: same instance (id passed back), reordered name edit, one new instance.
+    second = (await client.put(f"/feed-sources/{feed['id']}/pipeline", json={
+        "instances": [
+            {"id": first_id, "plugin_id": "example_upper", "name": "Upper v2",
+             "configuration": {"suffix": "?"}, "enabled": False},
+            {"plugin_id": "example_upper", "name": "Upper2",
+             "configuration": {"suffix": "!"}},
+        ]})).json()
+    ids = [i["id"] for i in second["instances"]]
+    assert ids[0] == first_id          # upsert preserved the row
+    assert ids[1] != first_id          # new row got a new id
+    assert second["instances"][0]["name"] == "Upper v2"
+    assert second["instances"][0]["enabled"] is False
+
+    # Save again dropping the second instance: row removed, first stays.
+    third = (await client.put(f"/feed-sources/{feed['id']}/pipeline", json={
+        "instances": [{"id": first_id, "plugin_id": "example_upper",
+                       "name": "Upper v2", "configuration": {"suffix": "?"}}] })).json()
+    assert [i["id"] for i in third["instances"]] == [first_id]
+    async with factory() as session:
+        count = (await session.execute(select(func.count()).select_from(ModuleInstance))).scalar_one()
+        assert count == 1
+
+
+async def test_put_pipeline_reorder_swaps_positions(app_factory):
+    # Regression guard for uq_module_instances_pipeline_position: naive
+    # in-place UPDATEs collide on any swap; the handler must two-pass.
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    await _register_plugin(factory)
+    created = (await client.post("/clients", json={"name": "Acme"})).json()
+    feed = (await client.post(f"/clients/{created['id']}/feed-sources",
+                              json={"name": "DE", "source_format": "wide_tsv"})).json()
+    put = (await client.put(f"/feed-sources/{feed['id']}/pipeline", json={
+        "instances": [
+            {"plugin_id": "example_upper", "name": "A", "configuration": {"suffix": "a"}},
+            {"plugin_id": "example_upper", "name": "B", "configuration": {"suffix": "b"}},
+        ]})).json()
+    id_a, id_b = put["instances"][0]["id"], put["instances"][1]["id"]
+
+    # Swap the two rows.
+    resp = await client.put(f"/feed-sources/{feed['id']}/pipeline", json={
+        "instances": [
+            {"id": id_b, "plugin_id": "example_upper", "name": "B", "configuration": {"suffix": "b"}},
+            {"id": id_a, "plugin_id": "example_upper", "name": "A", "configuration": {"suffix": "a"}},
+        ]})
+    assert resp.status_code == 200
+    assert [i["id"] for i in resp.json()["instances"]] == [id_b, id_a]
+    async with factory() as session:
+        fs = await session.get(FeedSource, feed["id"])
+        pipeline = await session.get(ModulePipeline, fs.active_pipeline_id)
+        assert pipeline.definition["instances"][0]["name"] == "B"
+        assert pipeline.definition["instances"][0]["plugin_id"] == "example_upper"
+
+
+async def test_put_pipeline_rejects_foreign_instance_id(app_factory):
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    await _register_plugin(factory)
+    created = (await client.post("/clients", json={"name": "Acme"})).json()
+    feed = (await client.post(f"/clients/{created['id']}/feed-sources",
+                              json={"name": "DE", "source_format": "wide_tsv"})).json()
+    first = (await client.put(f"/feed-sources/{feed['id']}/pipeline", json={
+        "instances": [{"plugin_id": "example_upper", "configuration": {"suffix": "!"}}]})).json()
+    # Instance id belonging to another pipeline would be rejected; simulate with a bogus id.
+    resp = await client.put(f"/feed-sources/{feed['id']}/pipeline", json={
+        "instances": [{"id": 999999, "plugin_id": "example_upper",
+                       "configuration": {"suffix": "!"}}]})
+    assert resp.status_code == 422
+    assert any("unknown instance" in e for e in resp.json()["errors"])

@@ -30,10 +30,10 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 - `POST /feed-sources/{id}/run` — manual pipeline trigger → returns `{run_id}` (202)
 
 ### Pipeline Configuration
-- `GET /feed-sources/{id}/pipeline` — get active pipeline definition
-- `PUT /feed-sources/{id}/pipeline` — save pipeline definition (UI builder)
+- `GET /feed-sources/{id}/pipeline` — get active pipeline definition: `{instances: [{id, position, plugin_id, name, configuration, enabled}]}`
+- `PUT /feed-sources/{id}/pipeline` — save pipeline definition (UI builder); upsert-by-id — instances carrying an `id` from a previous GET/PUT are updated in place (stable ids), instances without `id` are created, omitted instances are deleted. Input shape: `{instances: [{id?, plugin_id, name?, configuration, enabled?}]}`; `id` values not belonging to this pipeline are rejected (422 `{"errors": [...]}`). Reordering is safe against the `(pipeline_id, position)` unique constraint (two-pass positioning)
   ```
-  {name, version, instances: [{plugin_id, position, name, configuration}]}
+  {instances: [{id, plugin_id, position, name, configuration, enabled}]}
   ```
 
 ### Field Mapping
