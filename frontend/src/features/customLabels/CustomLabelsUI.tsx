@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   ActionIcon, Anchor, Badge, Button, Card, Drawer, Group,
-  SegmentedControl, Select, SimpleGrid, Stack, Switch, Tabs, Text, TextInput,
+  SegmentedControl, Select, Stack, Switch, Tabs, Text, TextInput,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconHelp } from '@tabler/icons-react';
@@ -304,7 +304,7 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
                   {tCommon('actions.save')}
                 </Button>
               </Group>
-              <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md" data-testid="slot-grid">
+              <Stack gap="md" data-testid="slot-grid">
                 {populatedSlots.map((slot) => {
                   const slotRules = activeRules.filter((r) => r.targetSlot === slot);
                   const slotDirty = dirtyIds
@@ -338,7 +338,7 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
                     />
                   );
                 })}
-              </SimpleGrid>
+              </Stack>
               {emptySlots.length > 0 && (
                 <Group gap="xs" wrap="wrap" data-testid="slot-grid-empty">
                   <Text size="sm" c="dimmed">{t('emptySlots')}</Text>

@@ -67,7 +67,7 @@ export function SlotGroup({
             <Progress value={Math.min(100, Math.max(0, stats?.coverage ?? 0))} size="sm" />
           </Stack>
         )}
-        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" verticalSpacing="sm">
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 5 }} spacing="md" verticalSpacing="sm">
           {rules.map((rule) => {
             const allMode = rule.matchMode === 'all';
             const raw = values[rule.id] ?? '';

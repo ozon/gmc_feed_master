@@ -226,11 +226,12 @@ const menuItems = plugins
   shadowed "never applied" rules). Distinct "no staged products yet" and
   preview-error states; client/global pages render no stats and send no
   request. Sample product deep-links were removed.
-- **Grouped by slot:** the bulk tab renders slot cards in a responsive
-  2-column grid (one per `custom_label_0..4` with active rules, registry
+- **Grouped by slot:** the bulk tab renders full-width slot cards stacked
+  vertically (one per `custom_label_0..4` with active rules, registry
   order). Each card header carries the slot badge (orange dot while the slot
   has unsaved value edits), slot explanation, active-rule count, and live
-  stats; the slot's rule editors sit side-by-side in a 2-column inner grid —
+  stats; the slot's rule editors sit side-by-side in a responsive inner grid
+  (1 column on mobile, 2 from `sm`, 5 per row from `lg`) —
   400px-capped monospace value-list textareas with inline ID counters and
   per-rule clear buttons. Slots without active rules collapse into a single
   summary row of badges.
