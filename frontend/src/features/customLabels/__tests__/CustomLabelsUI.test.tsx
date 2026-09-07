@@ -126,7 +126,17 @@ describe('CustomLabelsUI operational page', () => {
     expect(Array.from(groups).map((g) => g.getAttribute('data-testid'))).toEqual([
       'slot-group-custom_label_1', 'slot-group-custom_label_2',
     ]);
-    expect(screen.getByTestId('slot-empty-custom_label_0')).toBeInTheDocument();
+    const empty = screen.getByTestId('slot-grid-empty');
+    expect(within(empty).getByText('No rules yet for:')).toBeInTheDocument();
+    expect(within(empty).getByText('custom_label_0')).toBeInTheDocument();
+  });
+
+  it('shows the unsaved indicator on a slot badge only while its values differ from the server', async () => {
+    renderUI({ feedSourceId: 1 });
+    await screen.findByText('Mid Funnel');
+    expect(document.querySelectorAll('.mantine-Indicator-indicator').length).toBe(0);
+    await userEvent.type(screen.getByLabelText('Product IDs — Mid Funnel'), ',d');
+    expect(document.querySelectorAll('.mantine-Indicator-indicator').length).toBe(1);
   });
 
   it('info boxes show slot explanation and active rule count', async () => {

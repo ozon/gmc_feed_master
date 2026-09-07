@@ -7,7 +7,6 @@
   "rulesReadOnly": "Slot rules are read-only here — they live at Global or Client level.",
   "idsPlaceholder": "One ID per line, or comma-separated",
   "idCount": "{{count}} unique IDs",
-  "noRulesYet": "no rules yet",
   "activeRulesCount_one": "{{count}} active rule",
   "activeRulesCount_other": "{{count}} active rules",
   "previewUnavailable": "Live preview unavailable.",

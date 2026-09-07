@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   ActionIcon, Anchor, Badge, Button, Card, Drawer, Group,
-  SegmentedControl, Select, Stack, Switch, Tabs, Text, TextInput,
+  SegmentedControl, Select, SimpleGrid, Stack, Switch, Tabs, Text, TextInput,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconHelp } from '@tabler/icons-react';
@@ -240,6 +240,12 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
   const idsUnavailable = dataChain.length === 0;
   const initialTab = idsUnavailable ? 'rules' : 'ids';
   const ruleEditable = (rule: ScopedSlotRule) => !rulesReadOnly && rule.origin === editableTier;
+  const populatedSlots = TARGET_SLOTS.filter(
+    (slot) => activeRules.some((r) => r.targetSlot === slot),
+  );
+  const emptySlots = TARGET_SLOTS.filter(
+    (slot) => !activeRules.some((r) => r.targetSlot === slot),
+  );
 
   return (
     <Stack gap="sm">
@@ -298,23 +304,20 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
                   {tCommon('actions.save')}
                 </Button>
               </Group>
-              <Stack gap="md" data-testid="slot-grid">
-                {TARGET_SLOTS.map((slot) => {
+              <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md" data-testid="slot-grid">
+                {populatedSlots.map((slot) => {
                   const slotRules = activeRules.filter((r) => r.targetSlot === slot);
-                  if (slotRules.length === 0) {
-                    return (
-                      <Group key={slot} gap="xs" data-testid={`slot-empty-${slot}`}>
-                        <Badge size="xs" variant="light">{slot}</Badge>
-                        <Text size="sm" c="dimmed">{t('noRulesYet')}</Text>
-                      </Group>
+                  const slotDirty = dirtyIds
+                    && slotRules.some(
+                      (r) => (effectiveIds[r.id] ?? '') !== (serverIds[r.id]?.value ?? ''),
                     );
-                  }
                   return (
                     <SlotGroup
                       key={slot}
                       slot={slot}
                       rules={slotRules}
                       values={effectiveIds}
+                      dirty={slotDirty}
                       inheritedFor={(id) =>
                         serverIds[id]?.inherited === true
                           && (effectiveIds[id] ?? '') === serverIds[id].value
@@ -335,7 +338,15 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
                     />
                   );
                 })}
-              </Stack>
+              </SimpleGrid>
+              {emptySlots.length > 0 && (
+                <Group gap="xs" wrap="wrap" data-testid="slot-grid-empty">
+                  <Text size="sm" c="dimmed">{t('emptySlots')}</Text>
+                  {emptySlots.map((slot) => (
+                    <Badge key={slot} size="xs" variant="light">{slot}</Badge>
+                  ))}
+                </Group>
+              )}
             </Stack>
           )}
         </Tabs.Panel>

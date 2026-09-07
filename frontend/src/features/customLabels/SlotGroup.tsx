@@ -1,5 +1,5 @@
 import {
-  Badge, Button, Card, CloseButton, Collapse, Group, Loader, Paper, Progress,
+  Badge, Button, Card, CloseButton, Collapse, Group, Indicator, Loader, Paper, Progress,
   SimpleGrid, Stack, Text, Textarea, Tooltip,
 } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,7 @@ export type SlotGroupProps = {
   inheritedFor: (id: string) => Tier | null;
   isRuleEditable: (rule: ScopedSlotRule) => boolean;
   editableTier: Tier | null;
+  dirty: boolean;
   onSetSlotIds: (next: Record<string, string>) => void;
   onPatchRule: (id: string, patch: Partial<SlotRule>) => void;
   showLive: boolean;
@@ -26,7 +27,7 @@ export type SlotGroupProps = {
 };
 
 export function SlotGroup({
-  slot, rules, values, inheritedFor, isRuleEditable, editableTier, onSetSlotIds, onPatchRule,
+  slot, rules, values, inheritedFor, isRuleEditable, editableTier, dirty, onSetSlotIds, onPatchRule,
   showLive, stats, ruleStats, total, previewPending, previewErrors, previewUnavailable,
 }: SlotGroupProps) {
   const { t } = useTranslation('customLabels');
@@ -36,7 +37,9 @@ export function SlotGroup({
       <Stack gap="xs">
         <Group gap="xs" justify="space-between" wrap="wrap">
           <Group gap="xs" wrap="nowrap">
-            <Badge variant="light" color="teal">{slot}</Badge>
+            <Indicator color="orange" size={8} offset={-4} position="top-end" disabled={!dirty}>
+              <Badge variant="light" color="teal">{slot}</Badge>
+            </Indicator>
             <Text size="xs" c="dimmed">{t(`slotExplanations.${slot}` as 'slotExplanations.custom_label_0')}</Text>
           </Group>
           <Text size="xs" c="dimmed">{t('activeRulesCount', { count: rules.length })}</Text>
