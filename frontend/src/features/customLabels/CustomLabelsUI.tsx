@@ -170,6 +170,12 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
     closeDelete();
   }
 
+  function overrideSelected() {
+    if (!selected) return;
+    setRules(effectiveRules.map((r) =>
+      r.id === selected.id ? { ...r, origin: 'client' } : r));
+  }
+
   useBlocker(({ currentLocation, nextLocation }) => {
     if (!dirty) return false;
     if (currentLocation.pathname === nextLocation.pathname) return false;
@@ -407,11 +413,16 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
                 <Card withBorder style={{ flex: 1 }}>
                   <Stack gap="sm">
                     {!ruleEditable(selected) && (
-                      <Group gap="xs">
+                      <Group gap="xs" wrap="nowrap">
                         <ScopeBadge tier={selected.origin} />
                         <Text size="xs" c="dimmed">
                           {t('ruleInherited', { tier: tCommon(`scope.${selected.origin}`) })}
                         </Text>
+                        {editableTier === 'client' && (
+                          <Button size="xs" variant="light" onClick={overrideSelected}>
+                            {t('overrideAtClient')}
+                          </Button>
+                        )}
                       </Group>
                     )}
                     {ruleEditable(selected) && (

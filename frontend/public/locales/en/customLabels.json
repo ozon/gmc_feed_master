@@ -1,7 +1,10 @@
 {
-  "tabs": { "bulkIds": "Bulk IDs", "slotRules": "Slot rules" },
+  "tabs": {
+    "bulkIds": "Bulk IDs",
+    "slotRules": "Slot rules"
+  },
   "idsUnavailable": "Bulk ID lists live at client or feed-source scope. Open this plugin from a client or feed source to manage them.",
-  "rulesReadOnly": "Slot rules are shared templates managed at global or client scope. Open this plugin at the global or client level to edit them; this view is read-only.",
+  "rulesReadOnly": "Slot rules are read-only here — they live at Global or Client level.",
   "idsPlaceholder": "One ID per line, or comma-separated",
   "idCount": "{{count}} unique IDs",
   "noRulesYet": "no rules yet",
@@ -88,5 +91,6 @@
     "title": "Labelizer user guide",
     "gettingStarted": "Getting started",
     "gettingStartedBody": "1. Add a rule under Slot rules and pick a target slot. 2. Choose a match mode — paste bulk IDs or let all products match. 3. Write a value template. 4. Save, then run the pipeline to see the labels in the export."
-  }
+  },
+  "overrideAtClient": "Override at client level"
 }

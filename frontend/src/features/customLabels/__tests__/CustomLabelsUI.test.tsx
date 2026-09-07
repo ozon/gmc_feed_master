@@ -625,3 +625,48 @@ describe('CustomLabelsUI rule actions', () => {
     expect(screen.getByText(/inherited by every client/i)).toBeInTheDocument();
   });
 });
+
+describe('CustomLabelsUI tier override', () => {
+  it('feed page shows the short read-only hint with the client-level link', async () => {
+    renderUI({ feedSourceId: 1 });
+    await screen.findByText('Mid Funnel');
+    await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    const hint = screen.getByTestId('rules-readonly-hint');
+    expect(hint).toHaveTextContent(/read-only here — they live at global or client level/i);
+    expect(screen.queryByText(/shared templates/i)).not.toBeInTheDocument();
+  });
+
+  it('override at client level flips an inherited rule editable and saves it to the client tier', async () => {
+    const puts: { body: unknown }[] = [];
+    const putHandler = (url: string, init?: RequestInit) => {
+      if (url.includes('/config?client_id=1') && init?.method === 'PUT') {
+        puts.push({ body: JSON.parse(String(init.body)) });
+        return jsonResponse(CLIENT_CONFIG);
+      }
+      return jsonResponseFor(url);
+    };
+    renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels', putHandler);
+    await screen.findByText('Mid Funnel');
+    await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    await userEvent.click(screen.getByText('Mid Funnel'));
+    // inherited rule is read-only, but offers the override
+    expect(screen.getByLabelText(/name/i, { selector: 'input' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: /override at client level/i }));
+    expect(screen.getByLabelText(/name/i, { selector: 'input' })).toBeEnabled();
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    await screen.findByText(/saved/i);
+    const payload = puts[0].body as { slotRules: { id: string }[] };
+    // the overridden global rule (id r1) now saves to the client tier
+    expect(payload.slotRules.map((r) => r.id)).toEqual(['r1', 'r3']);
+  });
+
+  it('no override action on the feed page (config read-only there)', async () => {
+    renderUI({ feedSourceId: 1 });
+    await screen.findByText('Mid Funnel');
+    await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    await userEvent.click(screen.getByText('Mid Funnel'));
+    expect(
+      screen.queryByRole('button', { name: /override at client level/i }),
+    ).not.toBeInTheDocument();
+  });
+});
