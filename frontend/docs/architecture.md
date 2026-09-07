@@ -152,13 +152,14 @@ export function useSavePipeline(feedSourceId) {
   - Schema from `plugin.manifest.config_schema`
   - Auto-rendered via `JsonSchemaForm` (RJSF-style custom impl)
   - Custom component via `manifest.frontend.component` (build-time import)
-  - Registry map in `src/features/plugin/customComponents.ts` — keyed by plugin id (currently `rules` → `RulesUI`, `filter` → `FilterUI`)
+  - Registry map in `src/features/plugin/customComponents.ts` — keyed by plugin id (currently `rules` → `RulesUI`, `filter` → `FilterUI`, `custom_labels` → `CustomLabelsUI`)
   - Fallback: if plugin id has no registry entry, renders schema form
 - **Feed-scoped plugin routes**: `clients/:clientId/feeds/:feedSourceId/plugins/:pluginId` — Feed-priority nav links appear in AppShell only within feed context; hidden outside
 - **Plugin UIs with custom components**:
   - `rules` → `RulesUI` (`src/features/rules/`) — ordered rule list with dnd reordering, master pinning, i18n (`rules` namespace)
   - `filter` → `FilterUI` (`src/features/filter/`) — conjunctive scalar condition editor with live preview, dirty-guard + useBlocker, i18n (`filter` namespace)
-- Both custom components use the same save flow: `lastConfigRef` identity-guard rehydration, `configsEqual` dirty check, `useBlocker` navigation guard, `useSavePluginConfig` mutation
+  - `custom_labels` → `CustomLabelsUI` (`src/features/customLabels/`, UI name "Labelizer") — merged Global/Client/Feed tier view (union-by-id mirroring the runtime `config_merge`), slot-grouped bulk tab with live match stats (debounced draft preview via `POST /plugins/custom_labels/preview`), rule duplicate/delete, override-at-client-level, clickable tier navigation, help drawer, i18n (`customLabels` namespace)
+- All three custom components share the pattern: dirty-guard + `useBlocker` navigation guard, `useSavePluginConfig` mutation for editable-tier writes
 
 ### Quality Dashboard (`src/features/monitoring/`)
 - `MonitoringRunsPage` — `IngestionRunsTable` with polling

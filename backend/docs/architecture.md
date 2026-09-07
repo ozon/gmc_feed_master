@@ -92,18 +92,18 @@ class PipelineModulePlugin(Protocol):
 |--------|----------------|---------|-------------|
 | **Filter** | `pipeline_module` | Conjunctive scalar condition evaluator; drops non-matching products | `{isActive, conditions[{field, op, arg?, caseSensitive?}]}` — 6 ops: `equals`, `not_equals`, `contains`, `not_contains`, `exists`, `empty` |
 | **Rules** | `pipeline_module` | Ordered rule engine with IF/THEN AST actions | `{isActive, rules[{when, then[], isMasterRule}]}` — all/and/or conditions, 6 action ops |
-| Labelizer | `pipeline_module` | Per-market product labeling | `["global", "client"]` scopes only |
-| Category | `pipeline_module` | Per-market product categorization | `["global", "client"]` scopes only |
+| **Labelizer** (`custom_labels`) | `pipeline_module` | Product labeling for Google Shopping `custom_label_0..4` — slot rules shared across markets (config), bulk value lists per market (data) | config `{slotRules[{id, name, isActive, targetSlot, matchField, matchMode(values\|all), valueTemplate, fallbackTemplate?}]}` @ `["global", "client"]`; data `{slotIds{ruleId: text list}}` @ `["client", "feed_source"]` |
+| Category (planned, not yet implemented) | `pipeline_module` | Per-market product categorization | `["global", "client"]` scopes only |
 
-Filter and Rules register optional custom routes (`POST /plugins/filter/preview` for live preview counts; Rules uses standard config/data endpoints only). Full config shapes and operator details in `docs/plugins.md`.
+Filter, Rules, and Labelizer register optional custom routes (`POST /plugins/filter/preview` for live pass/fail counts; `POST /plugins/custom_labels/preview` for live match statistics — both evaluate a DRAFT payload against staged products; Rules uses standard config/data endpoints only). Full config shapes and operator details in `docs/plugins.md`.
 
 ### Three-Tier Scope Merge (`app/staging/config_resolver.py:merge_scopes`)
 ```
 global → client → feed_source  (per-key dict merge, deeper wins)
 ```
 - Applies to any plugin declaring multiple scopes in manifest (`config_scope`, `data_scope`)
-- Labelizer & Category: `["global", "client"]` only (deliberate, per-market labeling/categorization out of MVP)
-- Generic merge replaces non-dict values per key; plugins needing finer-grained list merging implement custom logic (Labelizer dimensions)
+- Labelizer: rules shared at `["global", "client"]`, bulk values per market at `["client", "feed_source"]`
+- Generic merge replaces non-dict values per key
 
 Lists are replaced wholesale by default. A manifest may declare
 `config_merge` per config key to switch a list to `union_by_key` semantics
