@@ -110,7 +110,7 @@ export function SlotGroup({
                     <Text size="sm" fw={600}>{rule.name}</Text>
                     {inheritedFrom !== null && (
                       <Badge size="xs" variant="light" color="teal">
-                        {t('inheritedFrom', { tier: tCommon(`scope.${inheritedFrom}`) }) }
+                        {t('inheritedFrom', { tier: tCommon(`scope.${inheritedFrom}`) })}
                       </Badge>
                     )}
                   </Group>
