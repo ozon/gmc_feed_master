@@ -20,6 +20,7 @@ const RULES: SlotRule[] = [
 ];
 const RESULT: PreviewResult = {
   total: 10,
+  labeledAny: 7,
   rules: { r1: { matched: 5, labeled: 4, sample: ['a1'] } },
   slots: { custom_label_0: { labeled: 4, coverage: 40, rules: ['r1'] } },
 };
@@ -37,6 +38,7 @@ function Probe(props: { rules: SlotRule[]; slotIds?: Record<string, string>; ena
       <span data-testid="errors">{state.errors?.join('|') ?? ''}</span>
       <span data-testid="unavailable">{String(state.unavailable)}</span>
       <span data-testid="total">{state.result?.total ?? ''}</span>
+      <span data-testid="labeledany">{state.result?.labeledAny ?? ''}</span>
     </div>
   );
 }
@@ -82,6 +84,9 @@ describe('useLabelizerPreview', () => {
       { timeout: 5000 },
     )).toBeTruthy();
     expect(calls).toBe(1);
+    expect(
+      document.querySelector('[data-testid="labeledany"]')?.textContent,
+    ).toBe('7');
   });
 
   it('sends no request when disabled', async () => {

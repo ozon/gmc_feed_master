@@ -6,6 +6,7 @@ export type PreviewRuleStats = { matched: number; labeled: number; sample: strin
 
 export type PreviewResult = {
   total: number;
+  labeledAny?: number;
   rules: Record<string, PreviewRuleStats>;
   slots: Record<string, { labeled: number; coverage: number; rules: string[] }>;
 };
