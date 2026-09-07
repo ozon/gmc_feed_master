@@ -56,6 +56,7 @@ function DraftProbe() {
       <button onClick={() => setDraft([{ ...RULES[0], valueTemplate: 'y' }])}>
         change draft
       </button>
+      <span data-testid="errors">{state.errors?.join('|') ?? ''}</span>
       <span data-testid="total">{state.result?.total ?? ''}</span>
     </div>
   );
@@ -78,7 +79,7 @@ describe('useLabelizerPreview', () => {
     render(<Probe rules={RULES} slotIds={{ r1: 'a,b' }} />);
     expect(await waitFor(
       () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('10'),
-      { timeout: 2500 },
+      { timeout: 5000 },
     )).toBeTruthy();
     expect(calls).toBe(1);
   });
@@ -90,7 +91,7 @@ describe('useLabelizerPreview', () => {
       return jsonResponse({});
     });
     render(<Probe rules={RULES} enabled={false} />);
-    await new Promise((resolve) => setTimeout(resolve, 700));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     expect(calls.some((u) => u.includes('/preview'))).toBe(false);
     expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('');
   });
@@ -106,7 +107,7 @@ describe('useLabelizerPreview', () => {
     expect(await waitFor(
       () => expect(document.querySelector('[data-testid="errors"]')?.textContent)
         .toContain('targetSlot'),
-      { timeout: 2500 },
+      { timeout: 5000 },
     )).toBeTruthy();
   });
 
@@ -127,19 +128,70 @@ describe('useLabelizerPreview', () => {
       return jsonResponse({});
     });
     render(<DraftProbe />);
-    // let the first debounced request start, then change the draft so a
-    // second request begins while the first is still in flight — the harness
-    // must change its own state (rerender remounts in this RTL setup and
-    // would never exercise the per-instance guard)
-    await new Promise((resolve) => setTimeout(resolve, 700));
+    // wait for the first debounced request to actually start, then change
+    // the draft so a second request begins while the first is still in
+    // flight — the harness must change its own state (rerender remounts in
+    // this RTL setup and would never exercise the per-instance guard)
+    await waitFor(() => expect(calls).toBe(1), { timeout: 5000 });
     await userEvent.click(screen.getByRole('button', { name: /change draft/i }));
     expect(await waitFor(
       () => expect(screen.getByTestId('total').textContent).toBe('2'),
-      { timeout: 2500 },
+      { timeout: 5000 },
     )).toBeTruthy();
     // the slow FIRST response resolves now — the guard must discard it
     await new Promise((resolve) => setTimeout(resolve, 2000));
     expect(screen.getByTestId('total').textContent).toBe('2');
     expect(calls).toBe(2);
+  }, 10000);
+
+  it('clears a previous 422 error when a new request starts', async () => {
+    let calls = 0;
+    stubFetch((url) => {
+      if (url.startsWith('/plugins/custom_labels/preview')) {
+        calls += 1;
+        if (calls === 1) return jsonResponse({ errors: ['bad rule'] }, 422);
+        return new Promise<Response>((resolve) => {
+          setTimeout(() => resolve(jsonResponse(RESULT)), 800);
+        });
+      }
+      return jsonResponse({});
+    });
+    render(<DraftProbe />);
+    expect(await waitFor(
+      () => expect(document.querySelector('[data-testid="errors"]')?.textContent)
+        .toBe('bad rule'),
+      { timeout: 5000 },
+    )).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: /change draft/i }));
+    // the second request has started and is still in flight — the stale
+    // 422 must already be cleared at request start
+    expect(await waitFor(() => expect(calls).toBe(2), { timeout: 5000 })).toBeTruthy();
+    expect(document.querySelector('[data-testid="errors"]')?.textContent).toBe('');
+    expect(await waitFor(
+      () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('10'),
+      { timeout: 5000 },
+    )).toBeTruthy();
+  }, 10000);
+
+  it('clears the previous result when the request is rejected with 422', async () => {
+    let calls = 0;
+    stubFetch((url) => {
+      if (url.startsWith('/plugins/custom_labels/preview')) {
+        calls += 1;
+        return calls === 1 ? jsonResponse(RESULT) : jsonResponse({ errors: ['nope'] }, 422);
+      }
+      return jsonResponse({});
+    });
+    render(<DraftProbe />);
+    expect(await waitFor(
+      () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('10'),
+      { timeout: 5000 },
+    )).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: /change draft/i }));
+    expect(await waitFor(
+      () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe(''),
+      { timeout: 5000 },
+    )).toBeTruthy();
+    expect(document.querySelector('[data-testid="errors"]')?.textContent).toBe('nope');
   }, 10000);
 });

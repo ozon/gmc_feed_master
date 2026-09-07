@@ -56,6 +56,7 @@ export function useLabelizerPreview(input: {
     if (!enabled || tick === 0) return;
     const mySeq = ++seq.current;
     setIsPending(true);
+    setErrors(null);
     void apiPost<PreviewResult>('/plugins/custom_labels/preview', {
       feed_source_id: feedSourceId,
       rules,
@@ -73,6 +74,7 @@ export function useLabelizerPreview(input: {
         if (mySeq !== seq.current) return;
         if (err instanceof ApiError && err.status === 422) {
           setErrors(err.errors ?? [err.detail ?? 'Invalid rules']);
+          setResult(null);
           setUnavailable(false);
         } else {
           setUnavailable(true);
