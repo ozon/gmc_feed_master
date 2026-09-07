@@ -16,6 +16,15 @@ from app.models.session import Session
 from app.models.staging import StagingProduct
 from app.models.user import User
 from app.persistence.users import seed_initial_user
+from registry.model import (
+    AttributeKind,
+    ExportStatus,
+    FeedDomain,
+    RegistryAttribute,
+    RegistryDocument,
+    RequirementStatus,
+    SubField,
+)
 from tests.labels_plugin_module import labels_plugin as _labels_module
 
 CustomLabelsPlugin = _labels_module.CustomLabelsPlugin
@@ -283,17 +292,6 @@ class TestPreviewRoute:
         body = resp.json()
         assert body["total"] > 0
         assert body["rules"]["r1"]["matched"] > 0
-
-
-from registry.model import (
-    AttributeKind,
-    ExportStatus,
-    FeedDomain,
-    RegistryAttribute,
-    RegistryDocument,
-    RequirementStatus,
-    SubField,
-)
 
 
 def _registry():
