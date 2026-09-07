@@ -75,6 +75,18 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
     : scope.clientId !== undefined
       ? 'client'
       : 'global';
+  const tierHrefs: Partial<Record<Tier, string>> = {
+    global: `/plugins/${pluginId}`,
+    ...(routeContext.clientId
+      ? { client: `/clients/${routeContext.clientId}/plugins/${pluginId}` }
+      : {}),
+    ...(routeContext.clientId && routeContext.feedSourceId
+      ? {
+        feed_source:
+          `/clients/${routeContext.clientId}/feeds/${routeContext.feedSourceId}/plugins/${pluginId}`,
+      }
+      : {}),
+  };
 
   const clientConfigScope = configChain.find((c) => c.tier === 'client')?.scope;
   const clientDataScope = dataChain.find((c) => c.tier === 'client')?.scope;
@@ -234,6 +246,7 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
         dataTiers={dataChain.map((c) => c.tier)}
         configLabel={t('tabs.slotRules')}
         dataLabel={t('tabs.bulkIds')}
+        hrefs={tierHrefs}
       />
       <Group justify="space-between" align="flex-start" wrap="nowrap">
         <Text size="sm" c="dimmed" data-testid="labelizer-description">

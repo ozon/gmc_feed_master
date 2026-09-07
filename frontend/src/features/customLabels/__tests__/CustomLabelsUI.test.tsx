@@ -670,3 +670,28 @@ describe('CustomLabelsUI tier override', () => {
     ).not.toBeInTheDocument();
   });
 });
+
+describe('CustomLabelsUI tier navigation', () => {
+  it('tier badges navigate: feed page links to global and client pages', async () => {
+    renderUI({ feedSourceId: 1 });
+    await screen.findByText('Mid Funnel');
+    expect(screen.getByTestId('scope-link-global')).toHaveAttribute(
+      'href', '/plugins/custom_labels',
+    );
+    // client appears in both config and data groups — both link to the client page
+    const clientLinks = screen.getAllByTestId('scope-link-client');
+    expect(clientLinks.length).toBe(2);
+    for (const link of clientLinks) {
+      expect(link).toHaveAttribute('href', '/clients/1/plugins/custom_labels');
+    }
+  });
+
+  it('client page links to the global page only', async () => {
+    renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels');
+    await screen.findByText('Client Only');
+    expect(screen.getByTestId('scope-link-global')).toHaveAttribute(
+      'href', '/plugins/custom_labels',
+    );
+    expect(screen.queryByTestId('scope-link-client')).not.toBeInTheDocument();
+  });
+});
