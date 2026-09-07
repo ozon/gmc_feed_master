@@ -1,5 +1,6 @@
 """Shared slot-rules equivalence fixture — keep in lockstep with
-frontend/src/features/customLabels/scopeMerge.test.ts (spec §1.2 gate)."""
+frontend/src/features/customLabels/scopeMerge.test.ts (spec §1.2 gate).
+Read-only: consumers must not mutate these dicts in place."""
 
 GLOBAL_SLOT_RULES = [
     {"id": "g1", "name": "Global Mid", "isActive": True,
