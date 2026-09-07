@@ -213,7 +213,7 @@ export function AppShell() {
       (Array.isArray(plugins) ? plugins : [])
         .filter((p) => p.enabled && p.manifest?.frontend?.component)
         .map((p) => ({
-          to: feedBase ? `${feedBase}/plugins/${p.id}` : null,
+          to: `${feedBase}/plugins/${p.id}`,
           label: t(`pluginNames.${p.id}`, { defaultValue: p.name }),
           icon: getPluginIcon(p.manifest?.frontend?.icon),
         })),

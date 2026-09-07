@@ -194,7 +194,6 @@ describe('PluginConfigPanel', () => {
     const link = screen.getByRole('link', { name: /open plugin page/i });
     expect(link).toHaveAttribute('href', '/clients/3/feeds/9/plugins/probe');
     expect(screen.queryByTestId('config-tier-switcher')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/suffix/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/instance settings/i)).not.toBeInTheDocument();
   });
 

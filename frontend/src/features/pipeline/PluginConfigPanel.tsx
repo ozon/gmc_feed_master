@@ -128,19 +128,17 @@ export function PluginConfigPanel({
           <Divider />
         </>
       ) : null}
-      {pageOnly && plugin ? (
+      {pageOnly && plugin && clientId && feedSourceId ? (
         <Group justify="space-between" wrap="nowrap" data-testid="config-plugin-page-hint">
           <Text size="sm" c="dimmed">{t('configOnPluginPage')}</Text>
-          {clientId && feedSourceId ? (
-            <Button
-              size="xs"
-              variant="light"
-              component={Link}
-              to={`/clients/${clientId}/feeds/${feedSourceId}/plugins/${plugin.id}`}
-            >
-              {t('configOpenPluginPage')}
-            </Button>
-          ) : null}
+          <Button
+            size="xs"
+            variant="light"
+            component={Link}
+            to={`/clients/${clientId}/feeds/${feedSourceId}/plugins/${plugin.id}`}
+          >
+            {t('configOpenPluginPage')}
+          </Button>
         </Group>
       ) : null}
       {!pageOnly ? (

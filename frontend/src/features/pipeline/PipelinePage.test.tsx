@@ -19,6 +19,14 @@ vi.mock('../plugin/customComponents', () => ({
   },
 }));
 
+vi.mock('../plugin/configComponents', () => ({
+  CONFIG_COMPONENTS: {
+    setup: ({ scope }: { pluginId: string; scope: unknown }) => (
+      <div data-testid="setup-component" data-scope={JSON.stringify(scope)} />
+    ),
+  },
+}));
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status, headers: { 'Content-Type': 'application/json' },
@@ -264,5 +272,37 @@ describe('PipelinePage', () => {
     renderAt();
     const link = await screen.findByRole('link', { name: /open plugin page/i });
     expect(link).toHaveAttribute('href', '/clients/1/feeds/1/plugins/probe');
+  });
+
+  it('CONFIG-registry plugin in the panel embeds at feed scope with route ids', async () => {
+    stubFetch((url) => {
+      if (url === '/plugins') {
+        return jsonResponse([
+          {
+            ...plugin,
+            id: 'setup',
+            name: 'Setup Probe',
+            manifest: {
+              extension_point: 'pipeline_module',
+              frontend: { component: 'component.tsx' },
+              config_scope: ['global', 'client'],
+              data_scope: ['client', 'feed_source'],
+            },
+          },
+        ]);
+      }
+      if (url === '/feed-sources/1/pipeline') {
+        return jsonResponse({
+          instances: [
+            { id: 22, position: 0, plugin_id: 'setup', name: 'Setup Probe',
+              configuration: {}, enabled: true },
+          ],
+        });
+      }
+      return jsonResponse({});
+    });
+    renderAt();
+    const setup = await screen.findByTestId('setup-component');
+    expect(setup).toHaveAttribute('data-scope', JSON.stringify({ feedSourceId: 1 }));
   });
 });
