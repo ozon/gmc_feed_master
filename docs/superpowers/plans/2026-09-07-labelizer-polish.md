@@ -24,17 +24,18 @@
 
 ---
 
-### Task 1: Delete `merge_scopes` + redundant preview annotations; hoist mid-file import
+### Task 1: Delete `merge_scopes`; hoist mid-file import
 
 **Files:**
 - Modify: `backend/app/staging/config_resolver.py:47-57` (delete `merge_scopes`)
 - Modify: `backend/tests/test_config_merge.py` (rewrite `TestMergeScopes`, hoist import at line 33)
 - Modify: `backend/tests/test_custom_labels_delta.py:1-18` (rewrite the two `merge_scopes` tests)
-- Modify: `plugins/core/custom_labels/plugin.py:348-349` (delete the two `__annotations__` lines)
 
 **Interfaces:**
 - Consumes: `_resolve_declared(scopes: list[str], maps: dict[str, dict[str, Any]], merge_hints: dict[str, Any] | None) -> dict[str, Any]` (existing, `config_resolver.py:71`) — the internal function production calls at `config_resolver.py:143,148`.
 - Produces: nothing consumed by later tasks. `merge_scopes` is REMOVED from the module surface.
+
+**Operator amendment (2026-09-07):** the original Step 6 (delete the `preview.__annotations__` lines in `plugins/core/custom_labels/plugin.py`) was **refuted by experiment** — removing the lines breaks route registration (`PydanticUserError`; 4 preview tests fail). Under `from __future__ import annotations` the def-signature annotations are unresolved string ForwardRefs (`PreviewRequest` is class-local to `register_routes`), and the runtime assignments replace them with real objects. The lines are load-bearing and stay; the cycle-2 "dead `__annotations__` line" minor was a mis-review. Task 8 records this in `docs/decisions.md`.
 
 - [ ] **Step 1: Rewrite `TestMergeScopes` to use `_resolve_declared` (test-first)**
 
@@ -154,38 +155,27 @@ Keep `_merge_dicts` and `_merge_list` — `_resolve_declared` uses them.
 Run: `rg -n "merge_scopes" backend/ plugins/`
 Expected: matches ONLY in docs (`docs/`, `backend/docs/`) if any — zero in `backend/app/`, `backend/tests/`, `plugins/`. If a test still references it, fix that test to use `_resolve_declared` as in Steps 1/3.
 
-- [ ] **Step 6: Delete the redundant `preview.__annotations__` lines**
-
-In `plugins/core/custom_labels/plugin.py`, delete lines 348-349:
-
-```python
-        preview.__annotations__["payload"] = PreviewRequest
-        preview.__annotations__["return"] = dict[str, Any] | JSONResponse
-```
-
-The `def preview(payload: PreviewRequest, ...) -> dict[str, Any] | JSONResponse:` signature (line 320) already sets the identical annotations at definition time; FastAPI reads them through `inspect.signature` at `router.post(...)` registration. Nothing else changes.
-
-- [ ] **Step 7: Run the preview route tests — they must stay green (deletion safety proof)**
+- [ ] **Step 6: Run the focused backend tests for all touched areas**
 
 Run: `cd backend && TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest tests/test_custom_labels_preview.py tests/test_config_merge.py tests/test_custom_labels_delta.py -v`
-Expected: PASS — request-body parsing through the real FastAPI route still works without the annotation lines.
+Expected: PASS — the preview route is untouched but stays green (config resolver change must not affect it).
 
-- [ ] **Step 8: Full backend gate + lint**
+- [ ] **Step 7: Full backend gate + lint**
 
 Run: `cd backend && TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/postgres uv run pytest -n auto`
 Expected: 882 passed (the pre-cycle baseline; no tests removed or added in this task).
 
-Run: `uvx ruff check app/staging/config_resolver.py tests/test_config_merge.py tests/test_custom_labels_delta.py ../plugins/core/custom_labels/plugin.py` (from `backend/`)
+Run: `uvx ruff check app/staging/config_resolver.py tests/test_config_merge.py tests/test_custom_labels_delta.py`
 Expected: exit 0.
 
 Run: `uvx mypy app/staging/config_resolver.py`
 Expected: zero new errors vs. baseline.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add backend/app/staging/config_resolver.py backend/tests/test_config_merge.py backend/tests/test_custom_labels_delta.py plugins/core/custom_labels/plugin.py
-git commit -m "refactor(custom_labels): drop test-only merge_scopes and redundant preview annotations"
+git add backend/app/staging/config_resolver.py backend/tests/test_config_merge.py backend/tests/test_custom_labels_delta.py
+git commit -m "refactor(custom_labels): drop test-only merge_scopes"
 ```
 
 ---
@@ -1026,7 +1016,7 @@ Append to `docs/decisions.md`:
   - `merge_scopes` deleted from `config_resolver.py` — zero production callers (production resolves via `resolve_config_bundle`/`_resolve_declared`); its test consumers now exercise `_resolve_declared` directly.
   - `scopeMerge.ts` stays local to `features/customLabels` — promotion to a shared manifest-aware utility deferred until a second scoped plugin adopts the pattern (YAGNI; closes the final-review recommendation).
   - `useLabelizerPreview` behavior change: a new request clears any previous error at request start; a 422 clears the previous match-result panel (the UI never shows results contradicted by just-rejected input).
-  - Redundant `preview.__annotations__` lines in `plugins/core/custom_labels/plugin.py` deleted — the `def preview(...)` signature already carries the annotations FastAPI reads at route registration.
+  - Redundant `preview.__annotations__` claim REFUTED: the two lines in `plugins/core/custom_labels/plugin.py` are load-bearing (future-annotations ForwardRefs resolved only by the runtime assignments — removal breaks route registration, proven by experiment); the cycle-2 "dead `__annotations__` line" minor was a mis-review and the lines stay.
   - Dead `isinstance(key, str)` dict-key check deleted from `_parse_config_merge` — manifests arrive via `json.loads`, whose object keys are always strings; the empty-`{}` and non-string `key`-value branches gained tests.
   - `mergeSlotIds` now tracks `sourceTier`; the inherited-value badge derives its tier label from it instead of hardcoding `scope.client`.
   - Slot-rules equivalence fixture deduplicated into `backend/tests/labels_equivalence.py` (was hand-synced across three backend suites); custom_labels plugin module now loads once per test process via `backend/tests/labels_plugin_module.py`.

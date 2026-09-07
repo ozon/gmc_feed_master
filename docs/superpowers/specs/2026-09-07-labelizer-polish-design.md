@@ -25,9 +25,14 @@ still-open item so the labelizer area carries no known debt.
   `resolve_config_bundle`; only `backend/tests/test_config_merge.py` and
   `backend/tests/test_custom_labels_delta.py` call it.
 - `preview.__annotations__` lines
-  (`plugins/core/custom_labels/plugin.py:348-349`) re-assign annotations the
-  `def preview(...)` signature already carries (`payload: PreviewRequest`,
-  return type included).
+  (`plugins/core/custom_labels/plugin.py:348-349`) — **refuted during
+  execution (2026-09-07, operator-approved):** they are load-bearing. Under
+  `from __future__ import annotations` the def-signature annotations are
+  unresolved string ForwardRefs (`PreviewRequest` is class-local to
+  `register_routes`); the runtime assignments replace them with real objects
+  and removing them breaks route registration (4 preview tests fail). The
+  lines stay; the cycle-2 "dead `__annotations__` line" minor was a
+  mis-review. Recorded in `docs/decisions.md` instead of being deleted.
 - `noActiveRules` dead i18n key: already gone (verified by grep) — no task.
 - `frontend/docs/plugin-uis.md` trailing newline: already fixed — no task.
 - Spec §197 doc-tension: closed post-cycle by `a134ffe` — no task.
@@ -37,12 +42,11 @@ still-open item so the labelizer area carries no known debt.
 ### T1 — Backend dead-code removal
 
 - Delete `merge_scopes` from `config_resolver.py`. Rewrite its two test
-  consumers to exercise `resolve_config_bundle` (the manifest-driven path
-  production actually uses) so the same merge semantics stay covered.
-- Delete the redundant `preview.__annotations__` lines in
-  `plugins/core/custom_labels/plugin.py:348-349`. RED proof: the preview route
-  tests (which exercise request-body parsing through FastAPI) stay green
-  after removal.
+  consumers to exercise `resolve_config_bundle`/`_resolve_declared` (the
+  manifest-driven path production actually uses) so the same merge semantics
+  stay covered.
+- ~~Delete the redundant `preview.__annotations__` lines~~ — refuted, see
+  the verified-state section above; the lines stay.
 - Adjudicate the "dead non-string-key check" claim
   (`backend/app/plugins/manifest.py:70-71`): probe a non-string
   `config_merge.<key>.key` through the real manifest loader. If unreachable,
