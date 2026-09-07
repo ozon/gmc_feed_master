@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  ActionIcon, Anchor, Badge, Button, Card, Drawer, Group,
+  ActionIcon, Badge, Button, Card, Drawer, Group,
   SegmentedControl, Select, Stack, Switch, Tabs, Text, TextInput,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -9,7 +9,7 @@ import {
   DndContext, PointerSensor, closestCenter, useSensor, useSensors,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Link, useBlocker, useParams } from 'react-router';
+import { useBlocker, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
   usePluginConfig, usePluginData, useRegistryAttributes, useSavePluginConfig,
@@ -61,7 +61,15 @@ function slotIdsOf(payload: unknown): Record<string, string> {
   return (payload as { slotIds?: Record<string, string> } | undefined)?.slotIds ?? {};
 }
 
-export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: PluginScope }) {
+export function CustomLabelsUI({
+  pluginId,
+  scope,
+  onlyTab,
+}: {
+  pluginId: string;
+  scope: PluginScope;
+  onlyTab?: 'ids' | 'rules';
+}) {
   const { t } = useTranslation('customLabels');
   const { t: tCommon } = useTranslation('common');
   const routeContext = useParams();
@@ -247,6 +255,220 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
     (slot) => !activeRules.some((r) => r.targetSlot === slot),
   );
 
+  const idsPanel = idsUnavailable ? (
+    <Text c="dimmed">{t('idsUnavailable')}</Text>
+  ) : (
+    <Stack gap="sm">
+      <Group justify="flex-end">
+        <Button variant="default" onClick={() => setSlotIds(null)} disabled={!dirtyIds}>
+          {tCommon('actions.cancel')}
+        </Button>
+        <Button onClick={() => void saveIds()} loading={saveData.isPending} disabled={!dirtyIds}>
+          {tCommon('actions.save')}
+        </Button>
+      </Group>
+      <Stack gap="md" data-testid="slot-grid">
+        {populatedSlots.map((slot) => {
+          const slotRules = activeRules.filter((r) => r.targetSlot === slot);
+          const slotDirty = dirtyIds
+            && slotRules.some(
+              (r) => (effectiveIds[r.id] ?? '') !== (serverIds[r.id]?.value ?? ''),
+            );
+          return (
+            <SlotGroup
+              key={slot}
+              slot={slot}
+              rules={slotRules}
+              values={effectiveIds}
+              dirty={slotDirty}
+              inheritedFor={(id) =>
+                serverIds[id]?.inherited === true
+                  && (effectiveIds[id] ?? '') === serverIds[id].value
+                  ? serverIds[id].sourceTier
+                  : null
+              }
+              isRuleEditable={ruleEditable}
+              editableTier={editableTier}
+              onSetSlotIds={setSlotIds}
+              onPatchRule={patchRule}
+              showLive={atFeed}
+              stats={preview.result?.slots[slot]}
+              ruleStats={preview.result?.rules}
+              total={preview.result?.total}
+              previewPending={preview.isPending}
+              previewErrors={preview.errors}
+              previewUnavailable={preview.unavailable}
+            />
+          );
+        })}
+      </Stack>
+      {emptySlots.length > 0 && (
+        <Group gap="xs" wrap="wrap" data-testid="slot-grid-empty">
+          <Text size="sm" c="dimmed">{t('emptySlots')}</Text>
+          {emptySlots.map((slot) => (
+            <Badge key={slot} size="xs" variant="light">{slot}</Badge>
+          ))}
+        </Group>
+      )}
+    </Stack>
+  );
+
+  const rulesPanel = (
+    <Stack gap="sm">
+      <Group justify="space-between">
+        {!rulesReadOnly && (
+          <Group>
+            <Button variant="default" onClick={() => setRules(null)} disabled={!dirtyRules}>
+              {tCommon('actions.cancel')}
+            </Button>
+            <Button
+              onClick={() => void saveRules()}
+              loading={saveConfig.isPending}
+              disabled={!dirtyRules}
+            >
+              {tCommon('actions.save')}
+            </Button>
+          </Group>
+        )}
+        {!rulesReadOnly && (
+          <Button
+            variant="light"
+            onClick={() => {
+              const rule = newRule(t('newRuleName'), editableTier!);
+              setRules([...effectiveRules, rule]);
+              setSelectedId(rule.id);
+            }}
+          >
+            {t('addRule')}
+          </Button>
+        )}
+      </Group>
+      <Group align="flex-start" gap="md" wrap="nowrap">
+        <Card withBorder miw={320} w={320}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={({ active, over }) => {
+              if (rulesReadOnly) return;
+              if (!over || active.id === over.id) return;
+              const from = effectiveRules.findIndex((r) => r.id === active.id);
+              const to = effectiveRules.findIndex((r) => r.id === over.id);
+              const next = [...effectiveRules];
+              const [moved] = next.splice(from, 1);
+              next.splice(to, 0, moved);
+              setRules(next);
+            }}
+          >
+            <SortableContext
+              items={effectiveRules.map((r) => r.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <Stack gap={4}>
+                {effectiveRules.map((rule) => (
+                  <SortableRuleRow
+                    key={rule.id}
+                    rule={rule}
+                    selected={rule.id === selectedId}
+                    disabled={!ruleEditable(rule)}
+                    badge={rule.origin !== editableTier
+                      ? <ScopeBadge tier={rule.origin} />
+                      : undefined}
+                    onSelect={() => setSelectedId(rule.id)}
+                    onToggleActive={(isActive) =>
+                      setRules(
+                        effectiveRules.map((r) =>
+                          r.id === rule.id ? { ...r, isActive } : r,
+                        ),
+                      )}
+                  />
+                ))}
+              </Stack>
+            </SortableContext>
+          </DndContext>
+        </Card>
+        {selected && (
+          <Card withBorder style={{ flex: 1 }}>
+            <Stack gap="sm">
+              {!ruleEditable(selected) && (
+                <Group gap="xs" wrap="nowrap">
+                  <ScopeBadge tier={selected.origin} />
+                  <Text size="xs" c="dimmed">
+                    {t('ruleInherited', { tier: tCommon(`scope.${selected.origin}`) })}
+                  </Text>
+                  {editableTier === 'client' && (
+                    <Button size="xs" variant="light" onClick={overrideSelected}>
+                      {t('overrideAtClient')}
+                    </Button>
+                  )}
+                </Group>
+              )}
+              {ruleEditable(selected) && (
+                <Group gap="xs">
+                  <Button size="xs" variant="light" onClick={duplicateSelected}>
+                    {t('duplicateRule')}
+                  </Button>
+                  <Button size="xs" variant="light" color="red" onClick={openDelete}>
+                    {t('deleteRule')}
+                  </Button>
+                </Group>
+              )}
+              <TextInput
+                label={t('fields.name')}
+                value={selected.name}
+                disabled={!ruleEditable(selected)}
+                onChange={(e) => patchSelected({ name: e.currentTarget.value })}
+              />
+              <Switch
+                label={t('fields.isActive')}
+                description={t('fields.isActiveHint')}
+                checked={selected.isActive}
+                disabled={!ruleEditable(selected)}
+                onChange={(e) => patchSelected({ isActive: e.currentTarget.checked })}
+              />
+              <Select
+                label={t('fields.targetSlot')}
+                data={TARGET_SLOTS}
+                value={selected.targetSlot}
+                disabled={!ruleEditable(selected)}
+                onChange={(v) => patchSelected({ targetSlot: v ?? 'custom_label_0' })}
+              />
+              <SegmentedControl
+                aria-label={t('matchMode.label')}
+                value={selected.matchMode ?? 'values'}
+                onChange={(mode) => patchSelected({ matchMode: mode as 'values' | 'all' })}
+                disabled={!ruleEditable(selected)}
+                data={[
+                  { value: 'values', label: t('matchMode.values') },
+                  { value: 'all', label: t('matchMode.all') },
+                ]}
+              />
+              <MatchFieldCombobox
+                value={selected.matchField}
+                onChange={(matchField) => patchSelected({ matchField })}
+                attributes={attributes.data ?? []}
+                disabled={!ruleEditable(selected)}
+              />
+              <TextInput
+                label={t('fields.valueTemplate')}
+                description={t('fields.valueTemplateHint')}
+                value={selected.valueTemplate}
+                disabled={!ruleEditable(selected)}
+                onChange={(e) => patchSelected({ valueTemplate: e.currentTarget.value })}
+              />
+              <TextInput
+                label={t('fields.fallbackTemplate')}
+                description={t('fields.fallbackHint')}
+                value={selected.fallbackTemplate}
+                disabled={!ruleEditable(selected)}
+                onChange={(e) => patchSelected({ fallbackTemplate: e.currentTarget.value })}
+              />
+            </Stack>
+          </Card>
+        )}
+      </Group>
+    </Stack>
+  );
+
   return (
     <Stack gap="sm">
       <ScopeContextBar
@@ -285,241 +507,20 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
           </Stack>
         </Stack>
       </Drawer>
-      <Tabs defaultValue={initialTab} keepMounted={false}>
-        <Tabs.List>
-          <Tabs.Tab value="ids" disabled={idsUnavailable}>{t('tabs.bulkIds')}</Tabs.Tab>
-          <Tabs.Tab value="rules">{t('tabs.slotRules')}</Tabs.Tab>
-        </Tabs.List>
-
-        <Tabs.Panel value="ids" pt="sm">
-          {idsUnavailable ? (
-            <Text c="dimmed">{t('idsUnavailable')}</Text>
-          ) : (
-            <Stack gap="sm">
-              <Group justify="flex-end">
-                <Button variant="default" onClick={() => setSlotIds(null)} disabled={!dirtyIds}>
-                  {tCommon('actions.cancel')}
-                </Button>
-                <Button onClick={() => void saveIds()} loading={saveData.isPending} disabled={!dirtyIds}>
-                  {tCommon('actions.save')}
-                </Button>
-              </Group>
-              <Stack gap="md" data-testid="slot-grid">
-                {populatedSlots.map((slot) => {
-                  const slotRules = activeRules.filter((r) => r.targetSlot === slot);
-                  const slotDirty = dirtyIds
-                    && slotRules.some(
-                      (r) => (effectiveIds[r.id] ?? '') !== (serverIds[r.id]?.value ?? ''),
-                    );
-                  return (
-                    <SlotGroup
-                      key={slot}
-                      slot={slot}
-                      rules={slotRules}
-                      values={effectiveIds}
-                      dirty={slotDirty}
-                      inheritedFor={(id) =>
-                        serverIds[id]?.inherited === true
-                          && (effectiveIds[id] ?? '') === serverIds[id].value
-                          ? serverIds[id].sourceTier
-                          : null
-                      }
-                      isRuleEditable={ruleEditable}
-                      editableTier={editableTier}
-                      onSetSlotIds={setSlotIds}
-                      onPatchRule={patchRule}
-                      showLive={atFeed}
-                      stats={preview.result?.slots[slot]}
-                      ruleStats={preview.result?.rules}
-                      total={preview.result?.total}
-                      previewPending={preview.isPending}
-                      previewErrors={preview.errors}
-                      previewUnavailable={preview.unavailable}
-                    />
-                  );
-                })}
-              </Stack>
-              {emptySlots.length > 0 && (
-                <Group gap="xs" wrap="wrap" data-testid="slot-grid-empty">
-                  <Text size="sm" c="dimmed">{t('emptySlots')}</Text>
-                  {emptySlots.map((slot) => (
-                    <Badge key={slot} size="xs" variant="light">{slot}</Badge>
-                  ))}
-                </Group>
-              )}
-            </Stack>
-          )}
-        </Tabs.Panel>
-
-        <Tabs.Panel value="rules" pt="sm">
-          <Stack gap="sm">
-            {rulesReadOnly && (
-              <Text data-testid="rules-readonly-hint" size="sm" c="dimmed">
-                {t('rulesReadOnly')}{' '}
-                {routeContext.clientId && (
-                  <Anchor
-                    component={Link}
-                    to={`/clients/${routeContext.clientId}/plugins/${pluginId}`}
-                  >
-                    {t('manageAtClient')}
-                  </Anchor>
-                )}
-              </Text>
-            )}
-            <Group justify="space-between">
-              {!rulesReadOnly && (
-                <Group>
-                  <Button variant="default" onClick={() => setRules(null)} disabled={!dirtyRules}>
-                    {tCommon('actions.cancel')}
-                  </Button>
-                  <Button
-                    onClick={() => void saveRules()}
-                    loading={saveConfig.isPending}
-                    disabled={!dirtyRules}
-                  >
-                    {tCommon('actions.save')}
-                  </Button>
-                </Group>
-              )}
-              {!rulesReadOnly && (
-                <Button
-                  variant="light"
-                  onClick={() => {
-                    const rule = newRule(t('newRuleName'), editableTier!);
-                    setRules([...effectiveRules, rule]);
-                    setSelectedId(rule.id);
-                  }}
-                >
-                  {t('addRule')}
-                </Button>
-              )}
-            </Group>
-            <Group align="flex-start" gap="md" wrap="nowrap">
-              <Card withBorder miw={320} w={320}>
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={({ active, over }) => {
-                    if (rulesReadOnly) return;
-                    if (!over || active.id === over.id) return;
-                    const from = effectiveRules.findIndex((r) => r.id === active.id);
-                    const to = effectiveRules.findIndex((r) => r.id === over.id);
-                    const next = [...effectiveRules];
-                    const [moved] = next.splice(from, 1);
-                    next.splice(to, 0, moved);
-                    setRules(next);
-                  }}
-                >
-                  <SortableContext
-                    items={effectiveRules.map((r) => r.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <Stack gap={4}>
-                      {effectiveRules.map((rule) => (
-                        <SortableRuleRow
-                          key={rule.id}
-                          rule={rule}
-                          selected={rule.id === selectedId}
-                          disabled={!ruleEditable(rule)}
-                          badge={rule.origin !== editableTier
-                            ? <ScopeBadge tier={rule.origin} />
-                            : undefined}
-                          onSelect={() => setSelectedId(rule.id)}
-                          onToggleActive={(isActive) =>
-                            setRules(
-                              effectiveRules.map((r) =>
-                                r.id === rule.id ? { ...r, isActive } : r,
-                              ),
-                            )}
-                        />
-                      ))}
-                    </Stack>
-                  </SortableContext>
-                </DndContext>
-              </Card>
-              {selected && (
-                <Card withBorder style={{ flex: 1 }}>
-                  <Stack gap="sm">
-                    {!ruleEditable(selected) && (
-                      <Group gap="xs" wrap="nowrap">
-                        <ScopeBadge tier={selected.origin} />
-                        <Text size="xs" c="dimmed">
-                          {t('ruleInherited', { tier: tCommon(`scope.${selected.origin}`) })}
-                        </Text>
-                        {editableTier === 'client' && (
-                          <Button size="xs" variant="light" onClick={overrideSelected}>
-                            {t('overrideAtClient')}
-                          </Button>
-                        )}
-                      </Group>
-                    )}
-                    {ruleEditable(selected) && (
-                      <Group gap="xs">
-                        <Button size="xs" variant="light" onClick={duplicateSelected}>
-                          {t('duplicateRule')}
-                        </Button>
-                        <Button size="xs" variant="light" color="red" onClick={openDelete}>
-                          {t('deleteRule')}
-                        </Button>
-                      </Group>
-                    )}
-                    <TextInput
-                      label={t('fields.name')}
-                      value={selected.name}
-                      disabled={!ruleEditable(selected)}
-                      onChange={(e) => patchSelected({ name: e.currentTarget.value })}
-                    />
-                    <Switch
-                      label={t('fields.isActive')}
-                      description={t('fields.isActiveHint')}
-                      checked={selected.isActive}
-                      disabled={!ruleEditable(selected)}
-                      onChange={(e) => patchSelected({ isActive: e.currentTarget.checked })}
-                    />
-                    <Select
-                      label={t('fields.targetSlot')}
-                      data={TARGET_SLOTS}
-                      value={selected.targetSlot}
-                      disabled={!ruleEditable(selected)}
-                      onChange={(v) => patchSelected({ targetSlot: v ?? 'custom_label_0' })}
-                    />
-                    <SegmentedControl
-                      aria-label={t('matchMode.label')}
-                      value={selected.matchMode ?? 'values'}
-                      onChange={(mode) => patchSelected({ matchMode: mode as 'values' | 'all' })}
-                      disabled={!ruleEditable(selected)}
-                      data={[
-                        { value: 'values', label: t('matchMode.values') },
-                        { value: 'all', label: t('matchMode.all') },
-                      ]}
-                    />
-                    <MatchFieldCombobox
-                      value={selected.matchField}
-                      onChange={(matchField) => patchSelected({ matchField })}
-                      attributes={attributes.data ?? []}
-                      disabled={!ruleEditable(selected)}
-                    />
-                    <TextInput
-                      label={t('fields.valueTemplate')}
-                      description={t('fields.valueTemplateHint')}
-                      value={selected.valueTemplate}
-                      disabled={!ruleEditable(selected)}
-                      onChange={(e) => patchSelected({ valueTemplate: e.currentTarget.value })}
-                    />
-                    <TextInput
-                      label={t('fields.fallbackTemplate')}
-                      description={t('fields.fallbackHint')}
-                      value={selected.fallbackTemplate}
-                      disabled={!ruleEditable(selected)}
-                      onChange={(e) => patchSelected({ fallbackTemplate: e.currentTarget.value })}
-                    />
-                  </Stack>
-                </Card>
-              )}
-            </Group>
-          </Stack>
-        </Tabs.Panel>
-      </Tabs>
+      {onlyTab === 'ids' ? (
+        idsPanel
+      ) : onlyTab === 'rules' ? (
+        rulesPanel
+      ) : (
+        <Tabs defaultValue={initialTab} keepMounted={false}>
+          <Tabs.List>
+            <Tabs.Tab value="ids" disabled={idsUnavailable}>{t('tabs.bulkIds')}</Tabs.Tab>
+            <Tabs.Tab value="rules">{t('tabs.slotRules')}</Tabs.Tab>
+          </Tabs.List>
+          <Tabs.Panel value="ids" pt="sm">{idsPanel}</Tabs.Panel>
+          <Tabs.Panel value="rules" pt="sm">{rulesPanel}</Tabs.Panel>
+        </Tabs>
+      )}
       <ConfirmModal
         opened={deleteOpen}
         onClose={closeDelete}

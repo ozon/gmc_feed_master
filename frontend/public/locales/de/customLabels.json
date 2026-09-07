@@ -4,7 +4,6 @@
     "slotRules": "Slot-Regeln"
   },
   "idsUnavailable": "Bulk-ID-Listen leben auf Client- oder Feed-Source-Ebene. Öffne dieses Plugin über einen Client oder eine Feed-Source, um sie zu verwalten.",
-  "rulesReadOnly": "Slot-Regeln sind hier schreibgeschützt — sie liegen auf Global- oder Client-Ebene.",
   "idsPlaceholder": "Eine ID pro Zeile oder kommagetrennt",
   "idCount": "{{count}} eindeutige IDs",
   "activeRulesCount_one": "{{count}} aktive Regel",
@@ -36,7 +35,6 @@
   "idsSaved": "Bulk-IDs gespeichert",
   "unsavedChanges": "Du hast ungespeicherte Änderungen. Trotzdem verlassen?",
   "dragHandle": "Zum Neusortieren ziehen",
-  "manageAtClient": "Slot-Regeln auf Client-Ebene verwalten",
   "ruleInherited": "Wird auf {{tier}}-Ebene verwaltet — hier schreibgeschützt.",
   "inheritedFrom": "Geerbt von {{tier}}",
   "inactive": "inaktiv",

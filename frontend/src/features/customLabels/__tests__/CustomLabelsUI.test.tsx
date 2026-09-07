@@ -66,9 +66,10 @@ function renderUI(
   scope: { clientId?: number; feedSourceId?: number },
   url = '/clients/1/feeds/1/plugins/custom_labels',
   fetchHandler?: (url: string, init?: RequestInit) => Response | Promise<Response>,
+  onlyTab?: 'ids' | 'rules',
 ) {
   stubFetch(fetchHandler ?? jsonResponseFor);
-  const element = <CustomLabelsUI pluginId="custom_labels" scope={scope} />;
+  const element = <CustomLabelsUI pluginId="custom_labels" scope={scope} onlyTab={onlyTab} />;
   const router = createMemoryRouter(
     [
       { path: '/clients/:clientId/feeds/:feedSourceId/plugins/:pluginId', element },
@@ -307,6 +308,21 @@ describe('CustomLabelsUI operational page', () => {
     expect(screen.getByRole('button', { name: /add rule/i })).toBeInTheDocument();
   });
 
+  it('onlyTab="ids" renders the bulk grid without any rules tab or rules UI', async () => {
+    renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', undefined, 'ids');
+    expect(await screen.findByTestId('slot-grid')).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /slot rules/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /bulk ids/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('rules-readonly-hint')).not.toBeInTheDocument();
+  });
+
+  it('onlyTab="rules" renders the rules list without the bulk grid', async () => {
+    renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels', undefined, 'rules');
+    expect(await screen.findByText('Client Only')).toBeInTheDocument();
+    expect(screen.queryByTestId('slot-grid')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /slot rules/i })).not.toBeInTheDocument();
+  });
+
   it('at feed-source tier the slot-rules tab is read-only (config edits belong to client/global tier)', async () => {
     stubFetch((url) => jsonResponseFor(url));
     const router = createMemoryRouter(
@@ -328,7 +344,6 @@ describe('CustomLabelsUI operational page', () => {
     await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
     // Read-only: no Add rule, no Save for rules; inputs disabled.
     expect(screen.queryByRole('button', { name: /add rule/i })).not.toBeInTheDocument();
-    expect(screen.getByTestId('rules-readonly-hint')).toBeInTheDocument();
   });
 
   it('at client tier shows global rules with a Global badge and keeps them read-only', async () => {
@@ -387,14 +402,6 @@ describe('CustomLabelsUI operational page', () => {
     await screen.findByText(/saved/i);
     const payload = puts[0].body as { slotRules: { id: string }[] };
     expect(payload.slotRules.map((r) => r.id)).toEqual(['r3']);
-  });
-
-  it('at feed tier the read-only hint links to the client-level page', async () => {
-    renderUI({ feedSourceId: 1 });
-    await screen.findByText('Mid Funnel');
-    await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
-    const link = screen.getByRole('link', { name: /manage slot rules at client level/i });
-    expect(link).toHaveAttribute('href', '/clients/1/plugins/custom_labels');
   });
 
   it('match field is a searchable combobox offering registry fields and custom entry', async () => {
@@ -692,15 +699,6 @@ describe('CustomLabelsUI rule actions', () => {
 });
 
 describe('CustomLabelsUI tier override', () => {
-  it('feed page shows the short read-only hint with the client-level link', async () => {
-    renderUI({ feedSourceId: 1 });
-    await screen.findByText('Mid Funnel');
-    await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
-    const hint = screen.getByTestId('rules-readonly-hint');
-    expect(hint).toHaveTextContent(/read-only here — they live at global or client level/i);
-    expect(screen.queryByText(/shared templates/i)).not.toBeInTheDocument();
-  });
-
   it('override at client level flips an inherited rule editable and saves it to the client tier', async () => {
     const puts: { body: unknown }[] = [];
     const putHandler = (url: string, init?: RequestInit) => {
