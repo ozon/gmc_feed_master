@@ -220,15 +220,20 @@ const menuItems = plugins
 
 - **Preview:** the feed-page bulk tab debounce-posts the current DRAFT
   (rules + values, unsaved edits included) to the plugin-local
-  `POST /plugins/custom_labels/preview` and renders per-slot live stats in the
-  info boxes: labeled products, coverage %, per-rule match counts, sample
-  product links (deep-link `?q=` into the Products page), a "never applied"
-  marker for shadowed rules, and a distinct "no staged products yet" state.
-  Client/global pages show a dimmed hint instead (no request).
-- **Grouped by slot:** the bulk tab renders one group per `custom_label_0..4`
-  (registry order) — info box header (slot explanation, active-rule count,
-  live stats) with the slot's rule editors nested inside. Slots without active
-  rules show slim "no rules yet" rows.
+  `POST /plugins/custom_labels/preview` and renders a compact stats header per
+  slot: "X of N staged products labeled" with a coverage progress bar, plus an
+  "N matched" badge on each rule input block (the badge tooltip explains
+  shadowed "never applied" rules). Distinct "no staged products yet" and
+  preview-error states; client/global pages render no stats and send no
+  request. Sample product deep-links were removed.
+- **Grouped by slot:** the bulk tab renders slot cards in a responsive
+  2-column grid (one per `custom_label_0..4` with active rules, registry
+  order). Each card header carries the slot badge (orange dot while the slot
+  has unsaved value edits), slot explanation, active-rule count, and live
+  stats; the slot's rule editors sit side-by-side in a 2-column inner grid —
+  400px-capped monospace value-list textareas with inline ID counters and
+  per-rule clear buttons. Slots without active rules collapse into a single
+  summary row of badges.
 - **Rule actions:** the rule editor offers Duplicate (fresh id, "(copy)" name)
   and Delete (ConfirmModal; global-origin deletes warn about the inheritance
   blast radius) — editable-origin rules only.
