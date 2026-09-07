@@ -31,8 +31,8 @@ Import in PluginPage → render via dynamic import
 ```
 | Property | Required | Description |
 |----------|----------|-------------|
-| `menu_item` | Yes | Sidebar label |
-| `icon` | Yes | Tabler icon name (e.g., `tag`, `category`, `filter`) |
+| `menu_item` | No | Legacy display name; no longer rendered (sidebar Plugins section removed, ADR-0006) |
+| `icon` | No | Tabler icon name (e.g., `tag`, `category`, `filter`); unused since the sidebar removal |
 | `component` | No | Relative path to TSX default export |
 | `uischema` | No | Layout hints for RJSF (field order, custom widgets) |
 
@@ -209,11 +209,9 @@ badges and bookmarks.
   action icon) per plugin page.
 - **Deep links for multi-scope plugins:** sidebar plugin entries have been
   removed (ADR-0006); each tier's page is reached by direct URL — feed-scoped
-  `` ${feedBase}/plugins/{id} ``, client-scoped `/clients/:c/plugins/{id}`,
-  otherwise `/plugins/{id}` — and via ScopeContextBar tier badges. The label
-  resolves through `pluginNames.*` i18n with the manifest
-  `frontend.menu_item` as fallback (display name "Labelizer" for
-  `custom_labels`).
+  `` ${feedBase}/plugins/{id} ``, client-scoped `/clients/:c/plugins/:id}`,
+  otherwise `/plugins/{id}` — and via ScopeContextBar tier badges. Page titles
+  resolve through `pluginNames.*` i18n with `plugin.name` as fallback.
 ### Live matching and slot-grouped bulk values
 
 - **Preview:** the feed-page bulk tab debounce-posts the current DRAFT
