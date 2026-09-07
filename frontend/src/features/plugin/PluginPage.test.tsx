@@ -272,8 +272,9 @@ describe('PluginPage', () => {
       return jsonResponse({});
     });
     renderWithDataRouter('/clients/1/feeds/1/plugins/custom_labels');
-    // The component renders (its own config fetch resolves at client tier).
-    expect(await screen.findByRole('tab', { name: /bulk ids/i })).toBeInTheDocument();
+    // custom_labels now renders its ids-only surface (no Tabs wrapper, ADR-0007).
+    expect(await screen.findByTestId('slot-grid')).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /bulk ids/i })).not.toBeInTheDocument();
     // PluginPage never issued the feed-scoped generic config request.
     expect(captured).not.toContain('/plugins/custom_labels/config?feed_source_id=1');
   });
