@@ -68,7 +68,8 @@ slot card:
   (two columns on wide screens).
 - Slots without rules collapse into a single summary row below the grid:
   dimmed text + one small badge per empty slot (instead of five separate
-  full-width rows). Existing "no rules yet" copy is reused.
+  full-width rows). Uses a new `emptySlots` lead-in key; the per-slot
+  `noRulesYet` key is removed.
 
 ### 4. Per-textarea clear button + unsaved-changes indicator
 
@@ -85,7 +86,7 @@ slot card:
   `freshnessHint`.
 - Rework/add: `slotLabeledOf` ("{{count}} of {{total}} staged products
   labeled"), `matchedCount` becomes "{{count}} matched" (badge).
-- Keep: `previewUnavailable`, `noStagedProducts`, `idCount`, `noRulesYet`,
+- Keep: `previewUnavailable`, `noStagedProducts`, `idCount`,
   `neverApplied`, `neverAppliedHint`.
 - Add: `clearValues` (clear-button aria label), `emptySlots` (summary row
   lead-in) in both locales.
