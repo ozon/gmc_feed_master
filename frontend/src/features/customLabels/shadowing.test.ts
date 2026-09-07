@@ -72,4 +72,26 @@ describe('computeShadowing', () => {
     const result = computeShadowing(rules, {});
     expect(result.a).toEqual({ shadowed: new Set(), shadowedBy: new Map() });
   });
+
+  it('same-named rules still shadow: claims are keyed by id, not name', () => {
+    const rules = [
+      rule({ id: 'a', name: 'X', targetSlot: 'custom_label_0' }),
+      rule({ id: 'b', name: 'X', targetSlot: 'custom_label_0' }),
+    ];
+    const result = computeShadowing(rules, { a: '1', b: '1,2' });
+    expect([...result.b.shadowed]).toEqual(['1']);
+    expect(result.b.shadowedBy.get('1')).toBe('X');
+    expect(result.a.shadowed.size).toBe(0);
+  });
+
+  it('a second all-mode rule is shadowed by the first all-mode rule', () => {
+    const rules = [
+      rule({ id: 'm1', name: 'Catch', targetSlot: 'custom_label_0', matchMode: 'all' }),
+      rule({ id: 'm2', name: 'Catch', targetSlot: 'custom_label_0', matchMode: 'all' }),
+      rule({ id: 'b', name: 'Later', targetSlot: 'custom_label_0' }),
+    ];
+    const result = computeShadowing(rules, { m2: '9', b: '9' });
+    expect(result.m2.shadowedBy.get('9')).toBe('Catch');
+    expect(result.b.shadowedBy.get('9')).toBe('Catch');
+  });
 });

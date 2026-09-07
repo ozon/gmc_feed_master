@@ -186,6 +186,7 @@ function rule(
   over: Partial<ScopedSlotRule> & { id: string; name: string; targetSlot: string },
 ): ScopedSlotRule {
   return {
+    origin: 'global',
     isActive: true,
     matchField: 'id',
     matchMode: 'values',
@@ -296,21 +297,23 @@ export function computeShadowing(
     bySlot.set(rule.targetSlot, list);
   }
   for (const slotRules of bySlot.values()) {
-    const claimedBy = new Map<string, string>();
-    let firstAllName: string | undefined;
+    // Claims are keyed by rule ID (names may duplicate across rules);
+    // only the rule NAME is emitted into the public shadowedBy map.
+    const claimedBy = new Map<string, { id: string; name: string }>();
+    let firstAll: { id: string; name: string } | undefined;
     for (const rule of slotRules) {
       const info = result[rule.id];
-      const allOwner = firstAllName;
+      const allOwner = firstAll;
       if (rule.matchMode === 'all') {
-        firstAllName ??= rule.name;
+        firstAll ??= { id: rule.id, name: rule.name };
       }
       for (const value of parseIdList(values[rule.id] ?? '')) {
         const owner = claimedBy.get(value) ?? allOwner;
-        if (owner !== undefined && owner !== rule.name) {
+        if (owner !== undefined && owner.id !== rule.id) {
           info.shadowed.add(value);
-          info.shadowedBy.set(value, owner);
+          info.shadowedBy.set(value, owner.name);
         } else if (rule.matchMode !== 'all') {
-          claimedBy.set(value, rule.name);
+          claimedBy.set(value, { id: rule.id, name: rule.name });
         }
       }
     }
