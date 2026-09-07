@@ -108,6 +108,16 @@ describe('CustomLabelsUI operational page', () => {
     expect(screen.getByText('3 unique IDs')).toBeInTheDocument();
   });
 
+  it('marks client-tier bulk values as inherited at feed tier with a Client badge', async () => {
+    const handler = (url: string) => {
+      if (url.includes('/plugins/custom_labels/data?feed_source_id=')) return jsonResponse({});
+      return jsonResponseFor(url);
+    };
+    renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', handler);
+    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
+    expect(screen.getAllByText('Inherited from Client').length).toBe(2);
+  });
+
   it('groups the bulk tab by target slot in registry order', async () => {
     renderUI({ feedSourceId: 1 });
     expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();

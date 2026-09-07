@@ -314,7 +314,9 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
                       values={effectiveIds}
                       inheritedFor={(id) =>
                         serverIds[id]?.inherited === true
-                        && (effectiveIds[id] ?? '') === serverIds[id].value
+                          && (effectiveIds[id] ?? '') === serverIds[id].value
+                          ? serverIds[id].sourceTier
+                          : null
                       }
                       isRuleEditable={ruleEditable}
                       editableTier={editableTier}

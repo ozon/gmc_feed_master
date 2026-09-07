@@ -9,7 +9,7 @@ export type SlotGroupProps = {
   slot: string;
   rules: ScopedSlotRule[];
   values: Record<string, string>;
-  inheritedFor: (id: string) => boolean;
+  inheritedFor: (id: string) => Tier | null;
   isRuleEditable: (rule: ScopedSlotRule) => boolean;
   editableTier: Tier | null;
   onSetSlotIds: (next: Record<string, string>) => void;
@@ -102,15 +102,15 @@ export function SlotGroup({
             const allMode = rule.matchMode === 'all';
             const raw = values[rule.id] ?? '';
             const count = parseIdList(raw).size;
-            const inherited = inheritedFor(rule.id);
+            const inheritedFrom = inheritedFor(rule.id);
             return (
               <Stack key={rule.id} gap={4}>
                 <Group gap="xs" justify="space-between" wrap="nowrap">
                   <Group gap="xs" wrap="nowrap">
                     <Text size="sm" fw={600}>{rule.name}</Text>
-                    {inherited && (
+                    {inheritedFrom !== null && (
                       <Badge size="xs" variant="light" color="teal">
-                        {t('inheritedFrom', { tier: tCommon('scope.client') })}
+                        {t('inheritedFrom', { tier: tCommon(`scope.${inheritedFrom}`) }) }
                       </Badge>
                     )}
                   </Group>

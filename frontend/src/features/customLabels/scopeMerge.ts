@@ -51,16 +51,17 @@ export function groupBySlot(rules: ReadonlyArray<ScopedSlotRule>): Record<string
  */
 export function mergeSlotIds(
   tiers: ReadonlyArray<{ tier: Tier; ids: Readonly<Record<string, string>> }>,
-): Record<string, { value: string; inherited: boolean }> {
-  const current = tiers[tiers.length - 1]?.ids ?? {};
-  const merged: Record<string, { value: string; inherited: boolean }> = {};
-  for (const { ids } of tiers) {
+): Record<string, { value: string; inherited: boolean; sourceTier: Tier }> {
+  const current = tiers[tiers.length - 1];
+  const merged: Record<string, { value: string; inherited: boolean; sourceTier: Tier }> = {};
+  for (const { tier, ids } of tiers) {
     for (const [id, value] of Object.entries(ids)) {
-      merged[id] = { value, inherited: !(id in current) };
+      merged[id] = {
+        value,
+        inherited: current === undefined || !(id in current.ids),
+        sourceTier: tier,
+      };
     }
-  }
-  for (const [id, value] of Object.entries(current)) {
-    merged[id] = { value, inherited: false };
   }
   return merged;
 }

@@ -65,14 +65,16 @@ describe('mergeSlotIds', () => {
       { tier: 'feed_source', ids: { r2: 'y' } },
     ]);
     expect(merged).toEqual({
-      r1: { value: 'a', inherited: true },
-      r2: { value: 'y', inherited: false },
+      r1: { value: 'a', inherited: true, sourceTier: 'client' },
+      r2: { value: 'y', inherited: false, sourceTier: 'feed_source' },
     });
   });
 
   it('single-tier chain has no inherited values', () => {
     const merged = mergeSlotIds([{ tier: 'client', ids: { r1: 'a' } }]);
-    expect(merged).toEqual({ r1: { value: 'a', inherited: false } });
+    expect(merged).toEqual({
+      r1: { value: 'a', inherited: false, sourceTier: 'client' },
+    });
   });
 });
 
