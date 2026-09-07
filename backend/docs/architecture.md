@@ -97,7 +97,7 @@ class PipelineModulePlugin(Protocol):
 
 Filter, Rules, and Labelizer register optional custom routes (`POST /plugins/filter/preview` for live pass/fail counts; `POST /plugins/custom_labels/preview` for live match statistics — both evaluate a DRAFT payload against staged products; Rules uses standard config/data endpoints only). Full config shapes and operator details in `docs/plugins.md`.
 
-### Three-Tier Scope Merge (`app/staging/config_resolver.py:merge_scopes`)
+### Three-Tier Scope Merge (`app/staging/config_resolver.py`)
 ```
 global → client → feed_source  (per-key dict merge, deeper wins)
 ```

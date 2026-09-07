@@ -71,26 +71,33 @@ global → client → feed_source  (per-key dict merge)
 
 ### Algorithm
 ```python
-def merge_scopes(global_payload, client_payload, feed_source_payload):
-    resolved = dict(global_payload)
-    if client_payload:     resolved = _merge_dicts(resolved, client_payload)
-    if feed_source_payload: resolved = _merge_dicts(resolved, feed_source_payload)
+def _resolve_declared(scopes, maps, merge_hints):
+    resolved = {}
+    for scope in ("global", "client", "feed_source"):   # _SCOPE_ORDER
+        if scope not in scopes:
+            continue
+        resolved = _merge_dicts(resolved, maps.get(scope) or {}, merge_hints)
     return resolved
 
-def _merge_dicts(base, overlay):
+def _merge_dicts(base, overlay, merge_hints):
     merged = dict(base)
     for key, value in overlay.items():
         if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
             merged[key] = _merge_dicts(merged[key], value)
+        elif (merge_hints and key in merge_hints
+              and isinstance(merged.get(key), list) and isinstance(value, list)):
+            merged[key] = _merge_list(merged[key], value, merge_hints[key])
         else:
             merged[key] = value  # overlay wins wholesale
     return merged
 ```
+`resolve_config_bundle` applies `_resolve_declared` per pipeline instance: once over the
+plugin's declared `config_scope` rows (with the manifest's `config_merge` hints) and once
+over its declared `data_scope` rows.
 
 ### Per-Plugin Scope Declaration
 | Plugin | `config_scope` | `data_scope` | Rationale |
 |--------|----------------|--------------|-----------|
-| Labelizer | `["global", "client"]` | `["client"]` | Dimensions shared across markets; per-market out of MVP |
 | Category | `["global", "client"]` | `["client"]` | Taxonomy shared; per-market out of MVP |
 | Rules | `["global", "client", "feed_source"]` | `["global", "client", "feed_source"]` | Full flexibility |
 | Filter | `["global", "client", "feed_source"]` | `["global", "client", "feed_source"]` | Full flexibility |
@@ -175,7 +182,6 @@ Checks:
 
 | Plugin | Manifest ID | Scope | MVP Scope |
 |--------|-------------|-------|-----------|
-| Labelizer | `labelizer` | `config: [global, client]`, `data: [client]` | `id_in_list` condition only |
 | Rules | `rules` | `config: [global, client, feed_source]`, `data: [global, client, feed_source]` | Ordered rule list (IF/THEN AST): text/numeric/regex conditions; set/replace/append/prepend/remove/clear actions; master flag = UI pinning; `plugins/core/rules/` |
 | Category | `category` | `config: [global, client]`, `data: [client]` | Rules + manual assignments + taxonomy autocomplete |
 | Filter | `filter` | `config: [global, client, feed_source]`, `data: [global, client, feed_source]` | Single conjunctive condition set (6 scalar ops); drops non-matching products; live preview endpoint; `plugins/core/filter/` |
@@ -279,5 +285,5 @@ class UpperPlugin:
 - `app/plugins/loader.py` — `load_plugin_class()` dynamic import
 - `app/plugins/runtime.py` — `RunContext` dataclass
 - `app/plugins/contract.py` — `contract_violations()` checker
-- `app/staging/config_resolver.py` — `merge_scopes()`, `resolve_config_bundle()`
+- `app/staging/config_resolver.py` — `_resolve_declared()`, `resolve_config_bundle()`
 - `backend/tests/test_plugin_contract.py` — Contract test suite
