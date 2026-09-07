@@ -31,7 +31,7 @@ Import in PluginPage → render via dynamic import
 ```
 | Property | Required | Description |
 |----------|----------|-------------|
-| `menu_item` | No | Legacy display name; no longer rendered (sidebar Plugins section removed, ADR-0006) |
+| `menu_item` | No | Legacy display name; not rendered (nav labels use `pluginNames.*` i18n with `plugin.name` as fallback) |
 | `icon` | No | Tabler icon name (e.g., `tag`, `category`, `filter`); rendered in the Pipeline Editor plugin list |
 | `component` | No | Relative path to TSX default export |
 | `uischema` | No | Layout hints for RJSF (field order, custom widgets) |
@@ -95,13 +95,13 @@ the request (the backend's `_resolve_target` answers undeclared scopes with
 
 ### Pipeline Editor embedding
 
-`PluginConfigPanel` (Pipeline Editor) renders a registered custom component
-inside a tier switcher (Feed / Client / Global) driven by the manifest's
-`config_scope`/`data_scope` ∩ route context. Switching tiers re-renders the
-component with the matching `PluginScope`; the component itself is
-unchanged. When the manifest's `config_scope` excludes `feed_source`
-(e.g. `custom_labels`), the panel shows an actionable alert that switches to
-the highest editable tier.
+`PluginConfigPanel` (Pipeline Editor) selects the panel surface in this order:
+
+1. **Setup embed**: if the plugin has an entry in the static registry `CONFIG_COMPONENTS` (`src/features/plugin/configComponents.ts`), the panel embeds its Setup component with a tier switcher (Feed / Client / Global) driven by the manifest's `config_scope`/`data_scope` ∩ route context. Switching tiers re-renders the component with the matching `PluginScope` (remounted via a `plugin_id`-tier key); the component itself is unchanged. When the manifest's `config_scope` excludes `feed_source` (e.g. `custom_labels`), the panel shows an actionable alert that switches to the highest editable tier. Setup embeds are wrapped in `PluginErrorBoundary`.
+2. **Plugin-page link**: if the plugin has no Setup component but does have a custom page component (`manifest.frontend.component`, resolved via `CUSTOM_COMPONENTS`), the panel shows a hint plus an "Open plugin page" link to the feed-tier plugin page, and no raw JSON-schema instance form.
+3. **Instance form**: otherwise the panel renders generic JSON-schema instance settings (`JsonSchemaForm`).
+
+For `custom_labels`, `CustomLabelsUI` splits its two surfaces via the additive `onlyTab` prop: `LabelizerSetup` (`onlyTab="rules"`) renders rules-only in the panel, while `LabelizerPage` (`onlyTab="ids"`) renders the bulk-IDs dashboard only on the plugin page. The plugin page is therefore data-only (bulk IDs) at every tier — it no longer hosts the slot-rules editor.
 
 ### First-Party Reference: Rules (`plugins/core/rules/frontend/component.tsx`)
 
@@ -152,11 +152,8 @@ CI verifies:
 
 ## Plugin Routes and Deep Links
 
-### Sidebar Removal (ADR-0006)
-The sidebar "Plugins" menu has been removed; the Pipeline Editor is the hub for
-plugin configuration. `PluginConfigPanel` embeds a registered custom component
-inside a tier switcher (Feed / Client / Global), so users configure plugins
-without leaving the pipeline. Plugin routes remain as deep links:
+### Sidebar plugin entries and the two-surface model (ADR-0007)
+Each plugin has two user-facing surfaces. Its **Setup surface** lives in the Pipeline Editor: `PluginConfigPanel` embeds the plugin's registered Setup component from `CONFIG_COMPONENTS` inside a tier switcher (Feed / Client / Global), so users configure plugins without leaving the pipeline. Its **Plugin Page** (the working dashboard/tool) is reached from the sidebar: in feed context, enabled plugins with `manifest.frontend.component` get a nav entry between Setup and Products, labelled via `pluginNames.*` i18n with `plugin.name` as fallback. Plugin routes remain as deep links:
 `/plugins/:id`, `/clients/:c/plugins/:id`,
 `/clients/:c/feeds/:f/plugins/:id` — reachable via ScopeContextBar tier
 badges and bookmarks.
@@ -207,8 +204,9 @@ badges and bookmarks.
   "controlled by rule" summary).
 - **Help UI:** inline description and a user-guide drawer (opened via the "?"
   action icon) per plugin page.
-- **Deep links for multi-scope plugins:** sidebar plugin entries have been
-  removed (ADR-0006); each tier's page is reached by direct URL — feed-scoped
+- **Deep links for multi-scope plugins:** sidebar plugin entries exist in feed
+  context for enabled custom-UI plugins (ADR-0007); each tier's page is
+  reached from the sidebar entry, by direct URL — feed-scoped
   `` ${feedBase}/plugins/{id} ``, client-scoped `/clients/:c/plugins/:id`,
   otherwise `/plugins/{id}` — and via ScopeContextBar tier badges. Page titles
   resolve through `pluginNames.*` i18n with `plugin.name` as fallback.
@@ -241,5 +239,3 @@ badges and bookmarks.
 - **Tier navigation:** ScopeContextBar badges for non-current tiers link to
   their pages (Global → `/plugins/{id}`, Client → `/clients/:c/plugins/{id}`),
   making the global page reachable from client/feed contexts.
-- **Read-only hint:** "Slot rules are read-only here — they live at Global or
-  Client level." plus the manage-at-client link.

@@ -35,3 +35,6 @@ resolved-view endpoint as fallback if they diverge.
 - The `config_merge` manifest key is a new, opt-in extension point validated by
   `parse_manifest`.
 - Other plugins are unaffected (default semantics unchanged).
+- Since ADR-0007 the Labelizer Plugin Page is data-only (bulk IDs); slot
+  rules are edited in Pipeline Editor → Labelizer Setup at the tier chosen
+  by the panel's switcher.

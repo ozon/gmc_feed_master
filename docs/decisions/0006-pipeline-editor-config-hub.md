@@ -1,7 +1,8 @@
 # ADR-0006: Pipeline Editor as Plugin Config Hub
 
 ## Status
-Accepted
+Accepted; navigation consequence superseded by ADR-0007 (plugin entries
+returned to the sidebar between Setup and Products)
 
 ## Context
 Plugin configuration lived on two surfaces: per-instance settings in the
