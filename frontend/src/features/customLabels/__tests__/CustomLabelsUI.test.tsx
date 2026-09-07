@@ -324,10 +324,19 @@ describe('CustomLabelsUI operational page', () => {
   it('at client tier shows global rules with a Global badge and keeps them read-only', async () => {
     renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels');
     expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
-    expect(screen.getAllByTestId('scope-badge-global').length).toBe(1);
-    const clientRow = screen.getByText('Client Only').closest('div');
-    expect(clientRow?.querySelector('[data-testid="scope-badge-global"]')).toBeNull();
     await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    expect(
+      screen.getByText('Mid Funnel').closest('div')
+        ?.querySelector('[data-testid="scope-badge-global"]'),
+    ).not.toBeNull();
+    expect(
+      screen.getByText('Off').closest('div')
+        ?.querySelector('[data-testid="scope-badge-global"]'),
+    ).not.toBeNull();
+    expect(
+      screen.getByText('Client Only').closest('div')
+        ?.querySelector('[data-testid="scope-badge-global"]'),
+    ).toBeNull();
     await userEvent.click(screen.getByText('Mid Funnel'));
     expect(screen.getByLabelText(/name/i, { selector: 'input' })).toBeDisabled();
     // Client rule stays editable.
