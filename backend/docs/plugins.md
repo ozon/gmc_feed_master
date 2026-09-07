@@ -102,7 +102,7 @@ over its declared `data_scope` rows.
 | Rules | `["global", "client", "feed_source"]` | `["global", "client", "feed_source"]` | Full flexibility |
 | Filter | `["global", "client", "feed_source"]` | `["global", "client", "feed_source"]` | Full flexibility |
 
-**Key behavior**: Generic merge replaces non-dict values per key. Plugins needing finer-grained list merging (e.g., Labelizer dimension ordering) implement custom logic in their `process()` or config resolution.
+**Key behavior**: Generic merge replaces non-dict values per key. A plugin needing finer-grained list merging declares a `config_merge` hint per config key (`{"strategy": "union_by_key", "key": "id"}`) in its manifest — the resolver then unions the lists by that key, preserving ancestor order (e.g., Custom Labels slot rules).
 
 ## Runtime Contract (`app/plugins/runtime.py`)
 
