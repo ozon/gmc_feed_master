@@ -1,5 +1,6 @@
 import {
-  Badge, Button, Card, Collapse, Group, Loader, Paper, Progress, Stack, Text, Textarea, Tooltip,
+  Badge, Button, Card, CloseButton, Collapse, Group, Loader, Paper, Progress,
+  SimpleGrid, Stack, Text, Textarea, Tooltip,
 } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { parseIdList, renderPreview } from './ids';
@@ -63,7 +64,7 @@ export function SlotGroup({
             <Progress value={Math.min(100, Math.max(0, stats?.coverage ?? 0))} size="sm" />
           </Stack>
         )}
-        <Stack gap="md">
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" verticalSpacing="sm">
           {rules.map((rule) => {
             const allMode = rule.matchMode === 'all';
             const raw = values[rule.id] ?? '';
@@ -99,26 +100,40 @@ export function SlotGroup({
                       )
                     ) : null}
                   </Group>
-                  <Text size="xs" c="dimmed">{rule.matchField}</Text>
+                  <Group gap={6} wrap="nowrap">
+                    <Text size="xs" c="dimmed">{rule.matchField}</Text>
+                    {!allMode && raw !== '' && (
+                      <CloseButton
+                        size="xs"
+                        aria-label={`${t('clearValues')} — ${rule.name}`}
+                        onClick={() => onSetSlotIds({ ...values, [rule.id]: '' })}
+                      />
+                    )}
+                  </Group>
                 </Group>
                 <Text size="xs" c="dimmed">{renderPreview(rule.valueTemplate)}</Text>
                 <Collapse expanded={!allMode} keepMounted={false}>
-                  <Stack gap={4}>
-                    <Textarea
-                      label={rule.matchField === 'id'
-                        ? t('bulk.productIds')
-                        : t('bulk.valuesFor', { field: rule.matchField })}
-                      aria-label={rule.matchField === 'id'
-                        ? `${t('bulk.productIds')} — ${rule.name}`
-                        : `${t('bulk.valuesFor', { field: rule.matchField })} — ${rule.name}`}
-                      minRows={5}
-                      autosize
-                      value={raw}
-                      onChange={(e) => onSetSlotIds({ ...values, [rule.id]: e.currentTarget.value })}
-                      placeholder={t('idsPlaceholder')}
-                    />
-                    <Text size="xs" c="dimmed">{t('idCount', { count })}</Text>
-                  </Stack>
+                  <Textarea
+                    label={rule.matchField === 'id'
+                      ? t('bulk.productIds')
+                      : t('bulk.valuesFor', { field: rule.matchField })}
+                    aria-label={rule.matchField === 'id'
+                      ? `${t('bulk.productIds')} — ${rule.name}`
+                      : `${t('bulk.valuesFor', { field: rule.matchField })} — ${rule.name}`}
+                    minRows={5}
+                    autosize
+                    styles={{
+                      input: {
+                        maxHeight: 400,
+                        overflowY: 'auto',
+                        fontFamily: 'var(--mantine-font-family-monospace)',
+                      },
+                    }}
+                    bottomSection={<Text size="xs" c="dimmed">{t('idCount', { count })}</Text>}
+                    value={raw}
+                    onChange={(e) => onSetSlotIds({ ...values, [rule.id]: e.currentTarget.value })}
+                    placeholder={t('idsPlaceholder')}
+                  />
                 </Collapse>
                 <Collapse expanded={allMode} keepMounted={false}>
                   <Paper withBorder p="xs" data-testid={`all-mode-${rule.id}`}>
@@ -142,7 +157,7 @@ export function SlotGroup({
               </Stack>
             );
           })}
-        </Stack>
+        </SimpleGrid>
       </Stack>
     </Card>
   );

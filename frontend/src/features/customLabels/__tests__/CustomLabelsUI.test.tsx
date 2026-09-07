@@ -483,6 +483,14 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
     expect(await screen.findByLabelText(/values for brand/i)).toBeInTheDocument();
   });
 
+  it("clear button empties that rule's value list and zeroes the counter", async () => {
+    renderUI({ feedSourceId: 1 });
+    await screen.findByText('Mid Funnel');
+    await userEvent.click(screen.getByRole('button', { name: 'Clear value list — Mid Funnel' }));
+    expect(screen.getByLabelText('Product IDs — Mid Funnel')).toHaveValue('');
+    expect(screen.getByText('0 unique IDs')).toBeInTheDocument();
+  });
+
   it('at client tier an all-mode rule offers the switch-to-value-list override', async () => {
     stubFetch((url) => {
       if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse({
