@@ -1,20 +1,30 @@
 """Scope merge + config_hash sensitivity for custom_labels config/data edits."""
 
-from app.staging.config_resolver import merge_scopes
+from app.staging.config_resolver import _resolve_declared
 from app.staging.hashing import content_hash
 
 
 class TestSlotIdsPerKeyMerge:
     def test_feed_source_overrides_only_its_rule(self):
-        client = {"slotIds": {"r1": "a\nb", "r2": "x\ny"}}
-        feed = {"slotIds": {"r2": "z"}}
-        resolved = merge_scopes({}, client, feed)
+        resolved = _resolve_declared(
+            ["global", "client", "feed_source"],
+            {
+                "client": {"slotIds": {"r1": "a\nb", "r2": "x\ny"}},
+                "feed_source": {"slotIds": {"r2": "z"}},
+            },
+            None,
+        )
         assert resolved["slotIds"] == {"r1": "a\nb", "r2": "z"}
 
     def test_client_overrides_global_only_its_rule(self):
-        global_cfg = {"slotIds": {"r1": "a", "r2": "x"}}
-        client = {"slotIds": {"r1": "b"}}
-        resolved = merge_scopes(global_cfg, client, None)
+        resolved = _resolve_declared(
+            ["global", "client"],
+            {
+                "global": {"slotIds": {"r1": "a", "r2": "x"}},
+                "client": {"slotIds": {"r1": "b"}},
+            },
+            None,
+        )
         assert resolved["slotIds"] == {"r1": "b", "r2": "x"}
 
 

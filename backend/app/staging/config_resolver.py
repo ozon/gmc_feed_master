@@ -44,19 +44,6 @@ def _merge_list(base: list[Any], overlay: list[Any], hint: Any) -> list[Any]:
     return merged
 
 
-def merge_scopes(
-    global_payload: dict[str, Any],
-    client_payload: dict[str, Any] | None,
-    feed_source_payload: dict[str, Any] | None,
-) -> dict[str, Any]:
-    resolved = dict(global_payload)
-    if client_payload is not None:
-        resolved = _merge_dicts(resolved, client_payload)
-    if feed_source_payload is not None:
-        resolved = _merge_dicts(resolved, feed_source_payload)
-    return resolved
-
-
 _SCOPE_ORDER = ("global", "client", "feed_source")
 
 
