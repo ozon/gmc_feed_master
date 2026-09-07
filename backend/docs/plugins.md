@@ -235,9 +235,10 @@ Config document: `{"slotRules": [{id, name, isActive, targetSlot, matchField, va
   token paths, duplicate ids, duplicate fallback per slot raise `ValueError`).
 - `POST /plugins/custom_labels/preview` — live preview of draft rules against
   staged products. Body: `{feed_source_id, rules, slotIds, sample_size (1–50,
-  default 5)}`. Response `{total, rules: {id: {matched, labeled, sample}},
-  slots: {slot: {labeled, coverage, rules}}}` against active, non-excluded
-  staged products (raw_data as mapped state). Evaluation mirrors the plugin's
+  default 5)}`. Response `{total, labeledAny, rules: {id: {matched, labeled,
+  sample}}, slots: {slot: {labeled, coverage, rules}}}` against active,
+  non-excluded staged products (raw_data as mapped state); `labeledAny` counts
+  products labeled in at least one slot. Evaluation mirrors the plugin's
   run-time `process()` exactly: a rule matches when a candidate value of its
   matchField is in the rule's id list (`matchAll` rules match every product);
   first-match-wins per slot with token skip; the first rule's fallback credits

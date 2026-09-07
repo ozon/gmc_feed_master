@@ -139,6 +139,30 @@ class TestPreviewRoute:
             "labeled": 1, "coverage": 33.3, "rules": ["r1"],
         }
 
+    async def test_labeled_any_counts_products_labeled_in_any_slot(self, app_factory):
+        client = await logged_in_client(app_factory)
+        _app, factory = app_factory
+        feed = await _setup_feed(factory, client, ROWS)
+        rules = [
+            _rule("r1", "custom_label_0", matchField="brand"),
+            _rule("r2", "custom_label_1", matchField="id", valueTemplate="fixed"),
+        ]
+        resp = await client.post("/plugins/custom_labels/preview", json={
+            "feed_source_id": feed["id"],
+            "rules": rules,
+            "slotIds": {"r1": "Acme", "r2": "nobrand"},
+        })
+        assert resp.status_code == 200
+        body = resp.json()
+        # active, non-excluded rows: a1 (brand Acme), a2 (brand Beta), nobrand (brand "")
+        # a1 labeled in slot 0 (brand match, "{brand} - r1" renders);
+        # nobrand labeled in slot 1 (id match, token-free template);
+        # a2 labeled nowhere -> labeledAny counts the UNION, not the sum.
+        assert body["total"] == 3
+        assert body["labeledAny"] == 2
+        assert body["slots"]["custom_label_0"]["labeled"] == 1
+        assert body["slots"]["custom_label_1"]["labeled"] == 1
+
     async def test_first_match_wins_and_token_skip(self, app_factory):
         client = await logged_in_client(app_factory)
         _app, factory = app_factory

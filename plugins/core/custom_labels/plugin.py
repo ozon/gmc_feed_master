@@ -204,6 +204,8 @@ def evaluate_rules(
     fallback. Per rule: matched counts every matching product (no short-circuit),
     labeled counts products whose final slot value came from that rule's
     template (fallback wins credit no rule), sample lists up to sample_size ids.
+    Response also carries labeledAny: products labeled in at least one slot
+    (fallback wins included).
     """
     state = _build_state(
         {"slotRules": rules} if rules else {}, {"slotIds": slot_ids or {}}
@@ -222,8 +224,10 @@ def evaluate_rules(
         for slot, slot_rules in by_slot.items()
     }
 
+    labeled_any = 0
     for product_id, product in rows:
         product = product or {}
+        product_labeled = False
         for slot, slot_rules in by_slot.items():
             winner: str | None = None
             any_matched = False
@@ -248,11 +252,19 @@ def evaluate_rules(
                     winner = slot
             if winner is not None:
                 slots[slot]["labeled"] += 1
+                product_labeled = True
+        if product_labeled:
+            labeled_any += 1
 
     if total:
         for entry in slots.values():
             entry["coverage"] = round(entry["labeled"] / total * 100, 1)
-    return {"total": total, "rules": per_rule, "slots": slots}
+    return {
+        "total": total,
+        "labeledAny": labeled_any,
+        "rules": per_rule,
+        "slots": slots,
+    }
 
 
 class CustomLabelsPlugin:
