@@ -244,3 +244,19 @@ class TestConfigMergeValidation:
         with pytest.raises(ManifestError, match="key"):
             parse_manifest(doc)
 
+    def test_rejects_empty_config_merge(self):
+        doc = {
+            **minimal_manifest(),
+            "config_merge": {},
+        }
+        with pytest.raises(ManifestError, match="non-empty object"):
+            parse_manifest(doc)
+
+    def test_rejects_non_string_merge_key_value(self):
+        doc = {
+            **minimal_manifest(),
+            "config_merge": {"slotRules": {"strategy": "union_by_key", "key": 123}},
+        }
+        with pytest.raises(ManifestError, match="non-empty string"):
+            parse_manifest(doc)
+
