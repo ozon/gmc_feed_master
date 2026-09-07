@@ -68,8 +68,14 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
 
   const editableTier = editableConfigTier(scope);
   const rulesReadOnly = editableTier === null;
-  const configChain = configTierChain(scope, routeContext);
-  const dataChain = dataTierChain(scope, routeContext);
+  const configChain = useMemo(
+    () => configTierChain(scope, routeContext),
+    [scope.clientId, scope.feedSourceId, routeContext.clientId, routeContext.feedSourceId],
+  );
+  const dataChain = useMemo(
+    () => dataTierChain(scope, routeContext),
+    [scope.clientId, scope.feedSourceId, routeContext.clientId, routeContext.feedSourceId],
+  );
   const viewingTier: Tier = scope.feedSourceId !== undefined
     ? 'feed_source'
     : scope.clientId !== undefined
@@ -248,7 +254,7 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
         dataLabel={t('tabs.bulkIds')}
         hrefs={tierHrefs}
       />
-      <Group justify="space-between" align="flex-start" wrap="nowrap">
+      <Group justify="space-between" align="flex-start" wrap="wrap">
         <Text size="sm" c="dimmed" data-testid="labelizer-description">
           {t('description')}
         </Text>

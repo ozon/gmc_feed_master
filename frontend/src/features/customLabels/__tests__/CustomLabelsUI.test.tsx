@@ -136,7 +136,31 @@ describe('CustomLabelsUI operational page', () => {
       screen.getByText(/mid-funnel segmentation/i),
     ).toBeInTheDocument();
     // both groups have exactly one active rule
-    expect(screen.getAllByText('1 active rules').length).toBe(2);
+    expect(screen.getAllByText('1 active rule').length).toBe(2);
+  });
+
+  it('active rule count pluralizes for more than one rule', async () => {
+    const twoInOneSlot = {
+      slotRules: [
+        GLOBAL_CONFIG.slotRules[0],
+        { id: 'r4', name: 'Second', isActive: true, targetSlot: 'custom_label_1',
+          matchField: 'id', valueTemplate: 'X', fallbackTemplate: '' },
+      ],
+    };
+    const handler = (url: string) => {
+      if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse(twoInOneSlot);
+      return jsonResponseFor(url);
+    };
+    renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', handler);
+    expect(await screen.findByText('2 active rules')).toBeInTheDocument();
+  });
+
+  it('values textarea accessible name matches the localized label plus rule name', async () => {
+    renderUI({ feedSourceId: 1 });
+    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
+    expect(
+      screen.getByRole('textbox', { name: 'Product IDs — Mid Funnel' }),
+    ).toBeInTheDocument();
   });
 
   it('at feed tier fetches config at global AND client scope, data at feed scope', async () => {
@@ -477,7 +501,7 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
     );
     const override = await screen.findByRole('button', { name: /switch to value list/i });
     await userEvent.click(override);
-    expect(await screen.findByLabelText(/all products ids/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/product ids — all products/i)).toBeInTheDocument();
   });
 
   it('at client tier a GLOBAL-origin all-mode rule does NOT offer the switch-to-value-list override (save would silently drop it)', async () => {

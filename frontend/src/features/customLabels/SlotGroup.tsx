@@ -33,7 +33,7 @@ export function SlotGroup({
   return (
     <Card withBorder p="sm" data-testid={`slot-group-${slot}`}>
       <Stack gap="xs">
-        <Group gap="xs" justify="space-between" wrap="nowrap">
+        <Group gap="xs" justify="space-between" wrap="wrap">
           <Group gap="xs" wrap="nowrap">
             <Badge variant="light" color="teal">{slot}</Badge>
             <Text size="xs" c="dimmed">{t(`slotExplanations.${slot}` as 'slotExplanations.custom_label_0')}</Text>
@@ -124,8 +124,8 @@ export function SlotGroup({
                         ? t('bulk.productIds')
                         : t('bulk.valuesFor', { field: rule.matchField })}
                       aria-label={rule.matchField === 'id'
-                        ? `${rule.name} ids`
-                        : `${rule.name} values`}
+                        ? `${t('bulk.productIds')} — ${rule.name}`
+                        : `${t('bulk.valuesFor', { field: rule.matchField })} — ${rule.name}`}
                       minRows={5}
                       autosize
                       value={raw}
