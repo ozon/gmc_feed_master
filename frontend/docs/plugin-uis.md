@@ -216,3 +216,28 @@ const menuItems = plugins
   `/plugins/{id}`. The label resolves through `pluginNames.*` i18n with the
   manifest `frontend.menu_item` as fallback (display name "Labelizer" for
   `custom_labels`).
+### Live matching and slot-grouped bulk values
+
+- **Preview:** the feed-page bulk tab debounce-posts the current DRAFT
+  (rules + values, unsaved edits included) to the plugin-local
+  `POST /plugins/custom_labels/preview` and renders per-slot live stats in the
+  info boxes: labeled products, coverage %, per-rule match counts, sample
+  product links (deep-link `?q=` into the Products page), a "never applied"
+  marker for shadowed rules, and a distinct "no staged products yet" state.
+  Client/global pages show a dimmed hint instead (no request).
+- **Grouped by slot:** the bulk tab renders one group per `custom_label_0..4`
+  (registry order) — info box header (slot explanation, active-rule count,
+  live stats) with the slot's rule editors nested inside. Slots without active
+  rules show slim "no rules yet" rows.
+- **Rule actions:** the rule editor offers Duplicate (fresh id, "(copy)" name)
+  and Delete (ConfirmModal; global-origin deletes warn about the inheritance
+  blast radius) — editable-origin rules only.
+- **Override at client level:** on the client page, an inherited global rule
+  offers "Override at client level" — flips the rule to client-origin with the
+  SAME id (union-by-id makes client content win at run time), editable
+  immediately, saved to the client tier on Save.
+- **Tier navigation:** ScopeContextBar badges for non-current tiers link to
+  their pages (Global → `/plugins/{id}`, Client → `/clients/:c/plugins/{id}`),
+  making the global page reachable from client/feed contexts.
+- **Read-only hint:** "Slot rules are read-only here — they live at Global or
+  Client level." plus the manage-at-client link.
