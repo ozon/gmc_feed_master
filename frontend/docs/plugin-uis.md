@@ -185,7 +185,7 @@ badges and bookmarks.
 ## Key Files
 - `src/features/plugin/PluginPage.tsx` — Schema form page (config/data)
 - `src/components/JsonSchemaForm.tsx` — Recursive Mantine form renderer
-- `src/app/AppShell.tsx` — App shell with navigation (Dashboard + feed-scoped areas); plugin routes accessed via deep links
+- `src/app/AppShell.tsx` — App shell with navigation (Dashboard, Setup, plugin entries, Products, Pipeline, Monitoring, Export); plugin routes are both nav entries (feed context) and deep links
 - `src/api/hooks.ts` — `usePluginConfig`, `useSavePluginConfig`, `usePluginData`, `useSavePluginData`
 - `vite.config.ts` — Build config (vendor chunking, HTTPS proxy)
 - `backend/tests/test_plugin_contract.py` — Contract test (includes reserved route check)
