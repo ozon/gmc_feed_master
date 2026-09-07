@@ -25,5 +25,9 @@
   "configSelectPlugin": "Wählen Sie ein Plugin aus der Liste, um es zu konfigurieren.",
   "configDisabledInfo": "Diese Instanz ist deaktiviert und wird nicht ausgeführt.",
   "configNoSchema": "Dieses Plugin hat keine Konfigurationsoptionen.",
+  "configPluginSection": "Plugin-Konfiguration",
+  "configInstanceSection": "Instanz-Einstellungen",
+  "configReadOnlyBody": "Die Konfiguration dieses Plugins wird auf {{tier}}-Ebene verwaltet.",
+  "configSwitchTier": "Zur {{tier}}-Ebene wechseln",
   "configRemove": "Entfernen"
 }

@@ -39,7 +39,7 @@ function toServer(instances: LocalInstance[]): PipelineDoc {
 export function PipelinePage() {
   const { t } = useTranslation('pipeline');
   const { t: tCommon } = useTranslation('common');
-  const { feedSourceId } = useParams();
+  const { clientId, feedSourceId } = useParams();
   const id = feedSourceId ?? '';
   const pipeline = useFeedSourcePipeline(id);
   const savePipeline = useSavePipeline(id);
@@ -159,6 +159,8 @@ export function PipelinePage() {
           <PluginConfigPanel
             key={selected?.clientId ?? 'none'}
             instance={selected}
+            clientId={clientId}
+            feedSourceId={feedSourceId}
             plugin={plugins?.find((p) => p.id === selected?.plugin_id)}
             onChange={(next) =>
               selected && setLocal((prev) => prev.map((i) =>

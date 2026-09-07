@@ -11,6 +11,14 @@ import { stubFetch } from '../../test/fetch';
 import { PipelinePage } from './PipelinePage';
 import { queryClient } from '../../api/queryClient';
 
+vi.mock('../plugin/customComponents', () => ({
+  CUSTOM_COMPONENTS: {
+    probe: ({ scope }: { pluginId: string; scope: unknown }) => (
+      <div data-testid="probe-component" data-scope={JSON.stringify(scope)} />
+    ),
+  },
+}));
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status, headers: { 'Content-Type': 'application/json' },
@@ -224,5 +232,37 @@ describe('PipelinePage', () => {
     await user.type(input, '?');
     await user.click(screen.getByRole('link', { name: /go to products/i }));
     await waitFor(() => expect(confirmSpy).toHaveBeenCalled());
+  });
+
+  it('embeds a custom-component plugin at feed scope with route ids', async () => {
+    stubFetch((url) => {
+      if (url === '/plugins') {
+        return jsonResponse([
+          {
+            ...plugin,
+            id: 'probe',
+            name: 'Probe',
+            manifest: {
+              extension_point: 'pipeline_module',
+              frontend: { component: 'component.tsx' },
+              config_scope: ['global', 'client'],
+              data_scope: ['client', 'feed_source'],
+            },
+          },
+        ]);
+      }
+      if (url === '/feed-sources/1/pipeline') {
+        return jsonResponse({
+          instances: [
+            { id: 21, position: 0, plugin_id: 'probe', name: 'Probe',
+              configuration: {}, enabled: true },
+          ],
+        });
+      }
+      return jsonResponse({});
+    });
+    renderAt();
+    const probe = await screen.findByTestId('probe-component');
+    expect(probe).toHaveAttribute('data-scope', JSON.stringify({ feedSourceId: 1 }));
   });
 });

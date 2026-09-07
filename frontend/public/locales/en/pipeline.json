@@ -25,5 +25,9 @@
   "configSelectPlugin": "Select a plugin from the list to configure it.",
   "configDisabledInfo": "This instance is disabled and does not run.",
   "configNoSchema": "This plugin has no configuration options.",
+  "configPluginSection": "Plugin configuration",
+  "configInstanceSection": "Instance settings",
+  "configReadOnlyBody": "This plugin's configuration is managed at {{tier}} level.",
+  "configSwitchTier": "Switch to {{tier}} tier",
   "configRemove": "Remove"
 }
