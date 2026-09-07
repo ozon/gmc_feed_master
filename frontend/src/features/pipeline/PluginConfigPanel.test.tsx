@@ -1,6 +1,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { PluginConfigPanel } from './PluginConfigPanel';
@@ -11,6 +12,11 @@ import { ProbeComponent, resetProbe, setCrashOnRender } from '../../test/probeCo
 vi.mock('../plugin/customComponents', async () => {
   const { ProbeComponent: Probe } = await import('../../test/probeComponent');
   return { CUSTOM_COMPONENTS: { probe: Probe } };
+});
+
+vi.mock('../plugin/configComponents', async () => {
+  const { ProbeComponent: Probe } = await import('../../test/probeComponent');
+  return { CONFIG_COMPONENTS: { setup: Probe } };
 });
 
 beforeAll(async () => {
@@ -47,10 +53,24 @@ const labelizerPlugin: PluginInfo = {
   },
   used_by_feed_sources: 0,
 };
-const feedEditablePlugin: PluginInfo = {
-  ...labelizerPlugin,
+const setupInstance: LocalInstance = {
+  id: 3, position: 0, plugin_id: 'setup', name: 'Setup Probe',
+  configuration: {}, enabled: true, clientId: 'setup-0',
+};
+const setupPlugin: PluginInfo = {
+  id: 'setup', name: 'Setup Probe', version: '1.0.0', enabled: true,
   manifest: {
-    ...labelizerPlugin.manifest,
+    extension_point: 'pipeline_module',
+    frontend: { component: 'component.tsx' },
+    config_scope: ['global', 'client'],
+    data_scope: ['client', 'feed_source'],
+  },
+  used_by_feed_sources: 0,
+};
+const feedEditablePlugin: PluginInfo = {
+  ...setupPlugin,
+  manifest: {
+    ...setupPlugin.manifest,
     config_scope: ['global', 'client', 'feed_source'],
   },
 };
@@ -89,13 +109,13 @@ describe('PluginConfigPanel', () => {
   it('renders the plugin-config section with a tier switcher defaulting to Feed scope', () => {
     render(
       <PluginConfigPanel
-        instance={labelizerInstance} plugin={labelizerPlugin}
+        instance={setupInstance} plugin={setupPlugin}
         clientId="3" feedSourceId="9"
         onChange={vi.fn()} onRemove={vi.fn()}
       />,
     );
     const probe = screen.getByTestId('probe-component');
-    expect(probe).toHaveAttribute('data-plugin-id', 'probe');
+    expect(probe).toHaveAttribute('data-plugin-id', 'setup');
     expect(probe).toHaveAttribute('data-scope', JSON.stringify({ feedSourceId: 9 }));
   });
 
@@ -103,7 +123,7 @@ describe('PluginConfigPanel', () => {
     const user = userEvent.setup();
     render(
       <PluginConfigPanel
-        instance={labelizerInstance} plugin={labelizerPlugin}
+        instance={setupInstance} plugin={setupPlugin}
         clientId="3" feedSourceId="9"
         onChange={vi.fn()} onRemove={vi.fn()}
       />,
@@ -117,7 +137,7 @@ describe('PluginConfigPanel', () => {
     const user = userEvent.setup();
     render(
       <PluginConfigPanel
-        instance={labelizerInstance} plugin={labelizerPlugin}
+        instance={setupInstance} plugin={setupPlugin}
         clientId="3" feedSourceId="9"
         onChange={vi.fn()} onRemove={vi.fn()}
       />,
@@ -132,7 +152,7 @@ describe('PluginConfigPanel', () => {
   it('shows no read-only alert for a plugin editable at feed tier', () => {
     render(
       <PluginConfigPanel
-        instance={labelizerInstance} plugin={feedEditablePlugin}
+        instance={setupInstance} plugin={feedEditablePlugin}
         clientId="3" feedSourceId="9"
         onChange={vi.fn()} onRemove={vi.fn()}
       />,
@@ -146,12 +166,35 @@ describe('PluginConfigPanel', () => {
     expect(screen.queryByTestId('probe-component')).not.toBeInTheDocument();
   });
 
+  it('CUSTOM-only plugin shows the plugin-page hint and link, no instance form', () => {
+    render(
+      <PluginConfigPanel
+        instance={labelizerInstance} plugin={labelizerPlugin}
+        clientId="3" feedSourceId="9"
+        onChange={vi.fn()} onRemove={vi.fn()}
+      />,
+      { wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter> },
+    );
+    expect(screen.getByText(/configured on its plugin page/i)).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /open plugin page/i });
+    expect(link).toHaveAttribute('href', '/clients/3/feeds/9/plugins/probe');
+    expect(screen.queryByTestId('config-tier-switcher')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/suffix/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/instance settings/i)).not.toBeInTheDocument();
+  });
+
+  it('schema-only plugin still renders the instance settings form', () => {
+    render(<PluginConfigPanel instance={instance} plugin={plugin} onChange={vi.fn()} onRemove={vi.fn()} />);
+    expect(screen.getByLabelText(/suffix/i)).toBeInTheDocument();
+    expect(screen.queryByText(/configured on its plugin page/i)).not.toBeInTheDocument();
+  });
+
   it('isolates a crashing embedded component; instance settings survive', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     setCrashOnRender(true);
     render(
       <PluginConfigPanel
-        instance={labelizerInstance} plugin={labelizerPlugin}
+        instance={setupInstance} plugin={setupPlugin}
         clientId="3" feedSourceId="9"
         onChange={vi.fn()} onRemove={vi.fn()}
       />,

@@ -234,7 +234,7 @@ describe('PipelinePage', () => {
     await waitFor(() => expect(confirmSpy).toHaveBeenCalled());
   });
 
-  it('embeds a custom-component plugin at feed scope with route ids', async () => {
+  it('CUSTOM-only plugin in the panel links to its feed-tier plugin page', async () => {
     stubFetch((url) => {
       if (url === '/plugins') {
         return jsonResponse([
@@ -262,7 +262,7 @@ describe('PipelinePage', () => {
       return jsonResponse({});
     });
     renderAt();
-    const probe = await screen.findByTestId('probe-component');
-    expect(probe).toHaveAttribute('data-scope', JSON.stringify({ feedSourceId: 1 }));
+    const link = await screen.findByRole('link', { name: /open plugin page/i });
+    expect(link).toHaveAttribute('href', '/clients/1/feeds/1/plugins/probe');
   });
 });

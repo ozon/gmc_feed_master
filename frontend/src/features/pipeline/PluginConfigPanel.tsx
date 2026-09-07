@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert, Badge, Button, Divider, Group, SegmentedControl, Stack, Text, Title,
+  Alert, Anchor, Badge, Button, Divider, Group, SegmentedControl, Stack, Text, Title,
 } from '@mantine/core';
 import { IconTrash } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 import { JsonSchemaForm, type JsonSchema } from '../../components/JsonSchemaForm';
 import type { PluginInfo } from '../../api/types';
 import { CUSTOM_COMPONENTS } from '../plugin/customComponents';
+import { CONFIG_COMPONENTS } from '../plugin/configComponents';
 import { PluginErrorBoundary } from '../plugin/PluginErrorBoundary';
 import {
   configEditableAtFeed, highestEditableConfigTier, scopeForTier, tierOptions,
@@ -49,10 +51,13 @@ export function PluginConfigPanel({
   }
 
   const schema = (plugin?.manifest?.config_schema as JsonSchema | undefined) ?? null;
-  const CustomComponent = plugin?.manifest?.frontend?.component
+  const SetupComponent = plugin
+    ? CONFIG_COMPONENTS[plugin.id] ?? null
+    : null;
+  const PageComponent = plugin?.manifest?.frontend?.component
     ? CUSTOM_COMPONENTS[plugin.id] ?? null
     : null;
-  const declaredTiers = CustomComponent && plugin
+  const declaredTiers = SetupComponent && plugin
     ? tierOptions(plugin.manifest, {
         hasFeedSource: Boolean(feedSourceId),
         hasClient: Boolean(clientId),
@@ -60,7 +65,7 @@ export function PluginConfigPanel({
     : [];
   const tiers: ConfigTier[] = declaredTiers.length > 0 ? declaredTiers : ['global'];
   const tier = tiers.includes(selectedTier) ? selectedTier : tiers[0];
-  const readOnlyTarget = CustomComponent && plugin && tier === 'feed_source'
+  const readOnlyTarget = SetupComponent && plugin && tier === 'feed_source'
     && !configEditableAtFeed(plugin.manifest)
     ? highestEditableConfigTier(plugin.manifest)
     : null;
@@ -84,7 +89,7 @@ export function PluginConfigPanel({
       {!instance.enabled ? (
         <Alert color="yellow">{t('configDisabledInfo')}</Alert>
       ) : null}
-      {CustomComponent && plugin ? (
+      {SetupComponent && plugin ? (
         <>
           <Group justify="space-between" wrap="nowrap">
             <Title order={5}>{t('configPluginSection')}</Title>
@@ -113,7 +118,7 @@ export function PluginConfigPanel({
             </Alert>
           ) : null}
           <PluginErrorBoundary pluginName={plugin.name}>
-            <CustomComponent
+            <SetupComponent
               key={`${instance.plugin_id}-${tier}`}
               pluginId={instance.plugin_id}
               scope={scopeForTier(tier, { clientId, feedSourceId })}
@@ -122,20 +127,38 @@ export function PluginConfigPanel({
           <Divider />
         </>
       ) : null}
-      <Title order={5}>{t('configInstanceSection')}</Title>
-      {schema ? (
-        <JsonSchemaForm
-          schema={schema}
-          value={draft}
-          onChange={(next) => {
-            const merged = (next ?? {}) as Record<string, unknown>;
-            setDraft(merged);
-            onChange(merged);
-          }}
-        />
-      ) : (
-        <Text c="dimmed" size="sm">{t('configNoSchema')}</Text>
-      )}
+      {PageComponent && plugin ? (
+        <Group justify="space-between" wrap="nowrap" data-testid="config-plugin-page-hint">
+          <Text size="sm" c="dimmed">{t('configOnPluginPage')}</Text>
+          {clientId && feedSourceId ? (
+            <Anchor
+              component={Link}
+              to={`/clients/${clientId}/feeds/${feedSourceId}/plugins/${plugin.id}`}
+              underline="never"
+            >
+              <Button size="xs" variant="light">{t('configOpenPluginPage')}</Button>
+            </Anchor>
+          ) : null}
+        </Group>
+      ) : null}
+      {!PageComponent ? (
+        <>
+          <Title order={5}>{t('configInstanceSection')}</Title>
+          {schema ? (
+            <JsonSchemaForm
+              schema={schema}
+              value={draft}
+              onChange={(next) => {
+                const merged = (next ?? {}) as Record<string, unknown>;
+                setDraft(merged);
+                onChange(merged);
+              }}
+            />
+          ) : (
+            <Text c="dimmed" size="sm">{t('configNoSchema')}</Text>
+          )}
+        </>
+      ) : null}
     </Stack>
   );
 }

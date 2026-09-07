@@ -29,5 +29,7 @@
   "configInstanceSection": "Instanz-Einstellungen",
   "configReadOnlyBody": "Die Konfiguration dieses Plugins wird auf {{tier}}-Ebene verwaltet.",
   "configSwitchTier": "Zur {{tier}}-Ebene wechseln",
+  "configOnPluginPage": "Dieses Plugin wird auf seiner Plugin-Seite konfiguriert.",
+  "configOpenPluginPage": "Plugin-Seite öffnen",
   "configRemove": "Entfernen"
 }
