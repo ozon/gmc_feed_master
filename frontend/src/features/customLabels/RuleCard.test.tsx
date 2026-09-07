@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -15,23 +16,31 @@ const RULE: ScopedSlotRule = {
 
 function renderCard(over: Partial<Parameters<typeof RuleCard>[0]> = {}) {
   const onSetIds = vi.fn();
-  render(
-    <Accordion multiple>
-      <RuleCard
-        rule={RULE}
-        priority={1}
-        value=""
-        dirty={false}
-        inheritedFrom={null}
-        editable={false}
-        showLive={false}
-        shadowedBy={new Map()}
-        onSetIds={onSetIds}
-        onPatchRule={() => {}}
-        {...over}
-      />
-    </Accordion>,
-  );
+  const initialValue = over.value ?? '';
+  function Harness() {
+    const [value, setValue] = useState(initialValue);
+    return (
+      <Accordion multiple>
+        <RuleCard
+          rule={RULE}
+          priority={1}
+          dirty={false}
+          inheritedFrom={null}
+          editable={false}
+          showLive={false}
+          shadowedBy={new Map()}
+          onSetIds={(next) => {
+            onSetIds(next);
+            setValue(next);
+          }}
+          onPatchRule={() => {}}
+          {...over}
+          value={value}
+        />
+      </Accordion>
+    );
+  }
+  render(<Harness />);
   return { onSetIds };
 }
 
@@ -92,7 +101,7 @@ describe('RuleCard', () => {
     await userEvent.click(screen.getByText('Mid Funnel'));
     expect(await screen.findByText(/every product gets: brand - all/i)).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /switch to value list/i }),
+      await screen.findByRole('button', { name: /switch to value list/i }),
     ).toBeInTheDocument();
   });
 
