@@ -57,6 +57,7 @@ export function PluginConfigPanel({
   const PageComponent = plugin?.manifest?.frontend?.component
     ? CUSTOM_COMPONENTS[plugin.id] ?? null
     : null;
+  const pageOnly = PageComponent !== null && SetupComponent === null;
   const declaredTiers = SetupComponent && plugin
     ? tierOptions(plugin.manifest, {
         hasFeedSource: Boolean(feedSourceId),
@@ -127,7 +128,7 @@ export function PluginConfigPanel({
           <Divider />
         </>
       ) : null}
-      {PageComponent && plugin ? (
+      {pageOnly && plugin ? (
         <Group justify="space-between" wrap="nowrap" data-testid="config-plugin-page-hint">
           <Text size="sm" c="dimmed">{t('configOnPluginPage')}</Text>
           {clientId && feedSourceId ? (
@@ -141,7 +142,7 @@ export function PluginConfigPanel({
           ) : null}
         </Group>
       ) : null}
-      {!PageComponent ? (
+      {!pageOnly ? (
         <>
           <Title order={5}>{t('configInstanceSection')}</Title>
           {schema ? (

@@ -11,12 +11,12 @@ import { ProbeComponent, resetProbe, setCrashOnRender } from '../../test/probeCo
 
 vi.mock('../plugin/customComponents', async () => {
   const { ProbeComponent: Probe } = await import('../../test/probeComponent');
-  return { CUSTOM_COMPONENTS: { probe: Probe } };
+  return { CUSTOM_COMPONENTS: { probe: Probe, both: Probe } };
 });
 
 vi.mock('../plugin/configComponents', async () => {
   const { ProbeComponent: Probe } = await import('../../test/probeComponent');
-  return { CONFIG_COMPONENTS: { setup: Probe } };
+  return { CONFIG_COMPONENTS: { setup: Probe, both: Probe } };
 });
 
 beforeAll(async () => {
@@ -73,6 +73,21 @@ const feedEditablePlugin: PluginInfo = {
     ...setupPlugin.manifest,
     config_scope: ['global', 'client', 'feed_source'],
   },
+};
+const bothInstance: LocalInstance = {
+  id: 4, position: 0, plugin_id: 'both', name: 'Both Probe',
+  configuration: { suffix: '!' }, enabled: true, clientId: 'both-0',
+};
+const bothPlugin: PluginInfo = {
+  id: 'both', name: 'Both Probe', version: '1.0.0', enabled: true,
+  manifest: {
+    extension_point: 'pipeline_module',
+    frontend: { component: 'component.tsx' },
+    config_schema: { type: 'object', properties: { suffix: { type: 'string', title: 'Suffix' } } },
+    config_scope: ['global', 'client'],
+    data_scope: ['client', 'feed_source'],
+  },
+  used_by_feed_sources: 0,
 };
 
 describe('PluginConfigPanel', () => {
@@ -181,6 +196,21 @@ describe('PluginConfigPanel', () => {
     expect(screen.queryByTestId('config-tier-switcher')).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/suffix/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/instance settings/i)).not.toBeInTheDocument();
+  });
+
+  it('dual-registry plugin renders the setup embed and instance settings, no page hint', () => {
+    render(
+      <PluginConfigPanel
+        instance={bothInstance} plugin={bothPlugin}
+        clientId="3" feedSourceId="9"
+        onChange={vi.fn()} onRemove={vi.fn()}
+      />,
+      { wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter> },
+    );
+    expect(screen.getByTestId('probe-component')).toBeInTheDocument();
+    expect(screen.getByText(/instance settings/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/suffix/i)).toBeInTheDocument();
+    expect(screen.queryByText(/configured on its plugin page/i)).not.toBeInTheDocument();
   });
 
   it('schema-only plugin still renders the instance settings form', () => {
