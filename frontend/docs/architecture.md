@@ -144,7 +144,7 @@ export function useSavePipeline(feedSourceId) {
   - **Per-instance enable is immediate-persist**: the Switch PATCHes `enabled` for saved instances (optimistic; on failure rolls back the whole local array snapshot and invalidates the pipeline query to refetch); unsaved instances (no `id` yet) flip locally and persist with Save
 - `PipelineOverviewStrip` — total/enabled/disabled counters + dirty badge
 - `PluginList` — master list; owns the dnd-kit `DndContext`/`SortableContext` (row reorder via drag handles), per-instance enable switches (`plugin-toggle-*`), add-from-registry (`add-plugin-*`), global registry toggles (registry section, `registry-toggle-*` → `useUpdatePluginEnabled`)
-- `PluginConfigPanel` — detail panel; JSON-schema config form for the selected instance (internal draft, keyed remount on selection change), remove button
+- `PluginConfigPanel` — detail panel; embeds the plugin's registered custom UI inside a tier switcher (Feed / Client / Global) when the plugin has a custom component, plus the JSON-schema instance-settings form for the selected instance (internal draft, keyed remount on selection change), remove button
 - `dndUtils` — pure helpers: `addInstance` / `reorderInstances` / `applyDragEnd` / `removeInstance` / `isInstancesEqual`
 
 ### Plugin System (`src/features/plugin/`)
@@ -154,7 +154,7 @@ export function useSavePipeline(feedSourceId) {
   - Custom component via `manifest.frontend.component` (build-time import)
   - Registry map in `src/features/plugin/customComponents.ts` — keyed by plugin id (currently `rules` → `RulesUI`, `filter` → `FilterUI`, `custom_labels` → `CustomLabelsUI`)
   - Fallback: if plugin id has no registry entry, renders schema form
-- **Feed-scoped plugin routes**: `clients/:clientId/feeds/:feedSourceId/plugins/:pluginId` — Feed-priority nav links appear in AppShell only within feed context; hidden outside
+- **Navigation**: The sidebar shows Dashboard plus the feed-scoped areas (Setup, Products, Pipeline, Monitoring, Export). Plugin configuration is reached through the Pipeline Editor: `PluginConfigPanel` embeds the plugin's custom UI with a tier switcher (Feed / Client / Global, derived from manifest scopes). Plugin routes (`/plugins/:id`, `/clients/:c/plugins/:id`, `/clients/:c/feeds/:f/plugins/:id`) remain as deep links (ScopeContextBar tier hrefs, bookmarks).
 - **Plugin UIs with custom components**:
   - `rules` → `RulesUI` (`src/features/rules/`) — ordered rule list with dnd reordering, master pinning, i18n (`rules` namespace)
   - `filter` → `FilterUI` (`src/features/filter/`) — conjunctive scalar condition editor with live preview, dirty-guard + useBlocker, i18n (`filter` namespace)

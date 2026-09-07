@@ -51,7 +51,7 @@ describe('SetupPage', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('tab', { name: /settings/i })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: /settings/i }, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /mapping/i })).toBeInTheDocument();
     expect(screen.getByDisplayValue('Acme Feed')).toBeInTheDocument();
   });

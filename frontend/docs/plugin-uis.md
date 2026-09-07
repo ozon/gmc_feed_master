@@ -93,6 +93,16 @@ the request (the backend's `_resolve_target` answers undeclared scopes with
 
 `frontend/src/features/plugin/customComponents.ts` maps plugin IDs to statically imported components (`rules` → RulesUI, `filter` → FilterUI, `custom_labels` → CustomLabelsUI); `PluginPage` resolves `CUSTOM_COMPONENTS[plugin.id]` when `manifest.frontend.component` is set. Add new custom components to that map until build-time discovery lands.
 
+### Pipeline Editor embedding
+
+`PluginConfigPanel` (Pipeline Editor) renders a registered custom component
+inside a tier switcher (Feed / Client / Global) driven by the manifest's
+`config_scope`/`data_scope` ∩ route context. Switching tiers re-renders the
+component with the matching `PluginScope`; the component itself is
+unchanged. When the manifest's `config_scope` excludes `feed_source`
+(e.g. `custom_labels`), the panel shows an actionable alert that switches to
+the highest editable tier.
+
 ### First-Party Reference: Rules (`plugins/core/rules/frontend/component.tsx`)
 
 The Rules module is the first core plugin with a custom UI. MVP wiring:
@@ -109,8 +119,7 @@ RulesUI owns its own save state (dirty check + `useBlocker`); it fetches and
 saves via the scope-aware plugin config hooks.
 
 The rules UI is reachable at the feed-scoped route
-`/clients/:clientId/feeds/:feedSourceId/plugins/:pluginId` (the nav shows
-feed-scoped plugin links only inside a feed context), and `PluginPage` derives
+`/clients/:clientId/feeds/:feedSourceId/plugins/:pluginId`, and `PluginPage` derives
 the scope tier from route params (most-specific wins).
 
 ### First-Party Reference: Filter (`plugins/core/filter/frontend/component.tsx`)
@@ -123,22 +132,16 @@ not_contains, exists, empty) and shows pass/fail counts against staged products.
 The stub re-exports `frontend/src/features/filter/FilterUI`. FilterUI owns its
 own save state and uses the scope-aware plugin config hooks.
 
-Follow-ups: full build-time discovery (Vite scan of `plugins/*/frontend/`
+Follow-up: full build-time discovery (Vite scan of `plugins/*/frontend/`
 generating `pluginComponents.ts`, per ADR 0002 — third-party plugins currently
-use schema-rendered forms) and error isolation via `PluginErrorBoundary`
-(per ADR 0004, not yet implemented).
+use schema-rendered forms). Error isolation via `PluginErrorBoundary` is now
+implemented (see below).
 
 ### Error Isolation (ADR-0004)
-Planned follow-up — `PluginErrorBoundary` does not exist yet. When implemented,
-every plugin component will render inside it:
-```tsx
-<PluginErrorBoundary pluginName={plugin.name} fallback={<PluginErrorFallback />}>
-  <CustomComponent />
-</PluginErrorBoundary>
-```
-- Will catch render errors, show fallback with "Reload plugin" button
-- Will log error to console with plugin context
-- Prevents dashboard crash
+Error isolation via `PluginErrorBoundary` (`src/features/plugin/PluginErrorBoundary.tsx`):
+custom plugin components are wrapped with it in both `PluginPage` and the
+Pipeline Editor's `PluginConfigPanel`, so a crashing plugin UI shows a retry
+fallback instead of taking the page down (ADR 0004).
 
 ### Build-Time Contract Test
 CI verifies:
@@ -147,21 +150,16 @@ CI verifies:
 3. TypeScript compiles without errors
 4. No restricted imports (e.g., direct DOM manipulation)
 
-## Plugin Menu Integration
+## Plugin Routes and Deep Links
 
-### Dynamic Menu (`src/app/AppShell.tsx`)
-```typescript
-const { data: plugins } = usePlugins();
-const menuItems = plugins
-  .filter(p => p.enabled)
-  .map(p => ({
-    label: p.manifest?.frontend?.menu_item ?? p.name,
-    icon: p.manifest?.frontend?.icon ?? 'settings',
-    href: p.manifest?.frontend?.component
-      ? `/plugins/${p.id}`           // Custom component route
-      : `/clients/${clientId}/plugins/${p.id}`,  // Schema form route
-  }));
-```
+### Sidebar Removal (ADR-0006)
+The sidebar "Plugins" menu has been removed; the Pipeline Editor is the hub for
+plugin configuration. `PluginConfigPanel` embeds a registered custom component
+inside a tier switcher (Feed / Client / Global), so users configure plugins
+without leaving the pipeline. Plugin routes remain as deep links:
+`/plugins/:id`, `/clients/:c/plugins/:id`,
+`/clients/:c/feeds/:f/plugins/:id` — reachable via ScopeContextBar tier
+badges and bookmarks.
 
 ### Route Mapping
 | Manifest | Route | Rendered By |
@@ -190,7 +188,7 @@ const menuItems = plugins
 ## Key Files
 - `src/features/plugin/PluginPage.tsx` — Schema form page (config/data)
 - `src/components/JsonSchemaForm.tsx` — Recursive Mantine form renderer
-- `src/app/AppShell.tsx` — Dynamic plugin menu construction
+- `src/app/AppShell.tsx` — App shell with navigation (Dashboard + feed-scoped areas); plugin routes accessed via deep links
 - `src/api/hooks.ts` — `usePluginConfig`, `useSavePluginConfig`, `usePluginData`, `useSavePluginData`
 - `vite.config.ts` — Build config (vendor chunking, HTTPS proxy)
 - `backend/tests/test_plugin_contract.py` — Contract test (includes reserved route check)
@@ -209,12 +207,12 @@ const menuItems = plugins
   "controlled by rule" summary).
 - **Help UI:** inline description and a user-guide drawer (opened via the "?"
   action icon) per plugin page.
-- **Nav entries for multi-scope plugins:** `AppShell` derives the target from
-  the manifest scopes — feed-scoped plugins link to
-  `` ${feedBase}/plugins/{id} `` (nav item hidden without a feed selected),
-  client-scoped plugins to `/clients/:c/plugins/{id}`, otherwise
-  `/plugins/{id}`. The label resolves through `pluginNames.*` i18n with the
-  manifest `frontend.menu_item` as fallback (display name "Labelizer" for
+- **Deep links for multi-scope plugins:** sidebar plugin entries have been
+  removed (ADR-0006); each tier's page is reached by direct URL — feed-scoped
+  `` ${feedBase}/plugins/{id} ``, client-scoped `/clients/:c/plugins/{id}`,
+  otherwise `/plugins/{id}` — and via ScopeContextBar tier badges. The label
+  resolves through `pluginNames.*` i18n with the manifest
+  `frontend.menu_item` as fallback (display name "Labelizer" for
   `custom_labels`).
 ### Live matching and slot-grouped bulk values
 
