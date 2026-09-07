@@ -618,12 +618,6 @@ describe('CustomLabelsUI rule actions', () => {
   });
 
   it('global-origin delete confirm mentions the inheritance blast radius', async () => {
-    stubFetch((url) => {
-      if (url.startsWith('/plugins/custom_labels/config') && url.includes('client_id=')) {
-        return jsonResponse({ slotRules: [] });
-      }
-      return jsonResponseFor(url);
-    });
     renderUI({}, '/plugins/custom_labels');
     await screen.findByText('Mid Funnel');
     await userEvent.click(screen.getByText('Mid Funnel'));
