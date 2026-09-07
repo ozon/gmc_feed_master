@@ -55,7 +55,7 @@ const plugins = [
     name: 'Example Upper',
     version: '1.0.0',
     enabled: true,
-    manifest: { frontend: { menu_item: 'Example Upper', icon: 'letter-e' } },
+    manifest: { frontend: { menu_item: 'Example Upper', icon: 'letter-e', component: 'component.tsx' } },
     used_by_feed_sources: 0,
   },
   {
@@ -106,7 +106,7 @@ const plugins = [
     version: '1.0.0',
     enabled: true,
     manifest: {
-      frontend: { menu_item: 'Feed Rules' },
+      frontend: { menu_item: 'Feed Rules', component: 'component.tsx' },
       config_scope: ['global', 'client', 'feed_source'],
       data_scope: ['global', 'client', 'feed_source'],
     },
@@ -131,17 +131,33 @@ beforeEach(() => {
 });
 
 describe('AppShell', () => {
-  it('renders the fixed navigation without a plugins section', async () => {
+  it('renders navigation with plugin entries after Setup in feed context', async () => {
+    window.history.replaceState({}, '', '/clients/1/feeds/2/products');
     render(<App />);
-    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
-    expect(screen.getByText('Setup')).toBeInTheDocument();
-    expect(screen.getByText('Products')).toBeInTheDocument();
-    expect(screen.getByText('Pipeline Editor')).toBeInTheDocument();
-    expect(screen.getByText('Monitoring')).toBeInTheDocument();
-    expect(screen.getByText('Export')).toBeInTheDocument();
-    expect(screen.queryByText('Plugins')).not.toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /example upper/i }))
+      .toHaveAttribute('href', '/clients/1/feeds/2/plugins/example_upper');
+    const labels = screen.getAllByRole('link').map((a) => a.textContent ?? '');
+    const setupIdx = labels.findIndex((l) => l === 'Setup');
+    const pluginIdx = labels.findIndex((l) => l.includes('Example Upper'));
+    const productsIdx = labels.findIndex((l) => l === 'Products');
+    expect(setupIdx).toBeGreaterThan(-1);
+    expect(pluginIdx).toBeGreaterThan(setupIdx);
+    expect(productsIdx).toBeGreaterThan(pluginIdx);
+  });
+
+  it('shows no plugin entries outside a feed context', async () => {
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Dashboard' });
     expect(screen.queryByText('Example Upper')).not.toBeInTheDocument();
+    expect(screen.queryByText('Feed Rules')).not.toBeInTheDocument();
+  });
+
+  it('lists only custom-UI plugins in the nav', async () => {
+    window.history.replaceState({}, '', '/clients/1/feeds/2/products');
+    render(<App />);
+    expect(await screen.findByRole('link', { name: /example upper/i })).toBeInTheDocument();
     expect(screen.queryByText('Global Tool')).not.toBeInTheDocument();
+    expect(screen.queryByText('Client Widget')).not.toBeInTheDocument();
   });
 
   it('disables feed-scoped nav items until a feed source is selected', async () => {

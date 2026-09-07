@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type ComponentType, type FormEvent } from 'react';
 import {
   ActionIcon,
   Anchor,
@@ -32,7 +32,8 @@ import {
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
-import { useChangePassword, useDashboardSummary, useLogout, useSession } from '../api/hooks';
+import { useChangePassword, useDashboardSummary, useLogout, usePlugins, useSession } from '../api/hooks';
+import { getPluginIcon } from '../components/PluginIconMap';
 import { LanguageSwitcher } from '../i18n/LanguageSwitcher';
 import { notifyError, notifyMutationError, notifySuccess } from './notifications';
 
@@ -205,14 +206,29 @@ export function AppShell() {
 
   const feedBase = clientId && feedSourceId ? `/clients/${clientId}/feeds/${feedSourceId}` : null;
 
+  const { data: plugins } = usePlugins();
+
+  const pluginNavItems = useMemo(
+    () =>
+      (Array.isArray(plugins) ? plugins : [])
+        .filter((p) => p.enabled && p.manifest?.frontend?.component)
+        .map((p) => ({
+          to: feedBase ? `${feedBase}/plugins/${p.id}` : null,
+          label: t(`pluginNames.${p.id}`, { defaultValue: p.name }),
+          icon: getPluginIcon(p.manifest?.frontend?.icon),
+        })),
+    [plugins, feedBase, t],
+  );
+
   function isActive(to: string | null): boolean {
     if (!to) return false;
     if (to === '/') return location.pathname === '/';
     return location.pathname.startsWith(to);
   }
 
-  const feedScoped = [
+  const feedScoped: Array<{ to: string | null; label: string; icon: ComponentType<{ size?: number }> }> = [
     { to: feedBase ? `${feedBase}/setup` : null, label: t('nav.setup'), icon: IconSettings },
+    ...(feedBase ? pluginNavItems : []),
     { to: feedBase ? `${feedBase}/products` : null, label: t('nav.products'), icon: IconBox },
     { to: feedBase ? `${feedBase}/pipeline` : null, label: t('nav.pipeline'), icon: IconGitBranch },
     { to: feedBase ? `${feedBase}/monitoring` : null, label: t('nav.monitoring'), icon: IconActivity },
