@@ -191,7 +191,10 @@ describe('CustomLabelsUI operational page', () => {
       '/plugins/custom_labels/config?client_id=1',
     ]);
     const dataUrls = captured.filter((u) => u.includes('/data'));
-    expect(dataUrls).toContain('/plugins/custom_labels/data?feed_source_id=1');
+    expect(dataUrls).toEqual([
+      '/plugins/custom_labels/data?client_id=1',
+      '/plugins/custom_labels/data?feed_source_id=1',
+    ]);
   });
 
   it('at global tier the bulk-IDs tab is unavailable (data_scope lacks global) and the rules tab opens by default (near-duplicate: one config URL)', async () => {
@@ -321,7 +324,9 @@ describe('CustomLabelsUI operational page', () => {
   it('at client tier shows global rules with a Global badge and keeps them read-only', async () => {
     renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels');
     expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
-    expect(screen.getAllByTestId('scope-badge-global').length).toBeGreaterThan(0);
+    expect(screen.getAllByTestId('scope-badge-global').length).toBe(1);
+    const clientRow = screen.getByText('Client Only').closest('div');
+    expect(clientRow?.querySelector('[data-testid="scope-badge-global"]')).toBeNull();
     await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
     await userEvent.click(screen.getByText('Mid Funnel'));
     expect(screen.getByLabelText(/name/i, { selector: 'input' })).toBeDisabled();

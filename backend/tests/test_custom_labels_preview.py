@@ -266,6 +266,24 @@ class TestPreviewRoute:
         resp = await client.post("/plugins/custom_labels/preview", json={})
         assert resp.status_code in (401, 422)  # not logged in
 
+    async def test_preview_accepts_frontend_scoped_rules_with_origin_key(self, app_factory):
+        client = await logged_in_client(app_factory)
+        _app, factory = app_factory
+        feed = await _setup_feed(factory, client, ROWS)
+        rules = [
+            {**_rule("r1", "custom_label_0", matchMode="all"), "origin": "global"},
+        ]
+        resp = await client.post("/plugins/custom_labels/preview", json={
+            "feed_source_id": feed["id"],
+            "rules": rules,
+            "slotIds": {},
+            "sample_size": 5,
+        })
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total"] > 0
+        assert body["rules"]["r1"]["matched"] > 0
+
 
 from registry.model import (
     AttributeKind,
