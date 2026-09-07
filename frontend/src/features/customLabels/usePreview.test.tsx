@@ -166,7 +166,10 @@ describe('useLabelizerPreview', () => {
     // the second request has started and is still in flight — the stale
     // 422 must already be cleared at request start
     expect(await waitFor(() => expect(calls).toBe(2), { timeout: 5000 })).toBeTruthy();
-    expect(document.querySelector('[data-testid="errors"]')?.textContent).toBe('');
+    expect(await waitFor(
+      () => expect(document.querySelector('[data-testid="errors"]')?.textContent).toBe(''),
+      { timeout: 5000 },
+    )).toBeTruthy();
     expect(await waitFor(
       () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('10'),
       { timeout: 5000 },
