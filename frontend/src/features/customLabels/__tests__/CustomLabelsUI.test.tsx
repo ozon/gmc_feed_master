@@ -451,7 +451,7 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
       ],
     });
     expect(await screen.findByText(/every product gets: brand - all/i)).toBeInTheDocument();
-    expect(screen.queryByLabelText(/all products ids/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/product ids — all products/i)).not.toBeInTheDocument();
     // feed tier: config is read-only -> no override button
     expect(
       screen.queryByRole('button', { name: /switch to value list/i }),
