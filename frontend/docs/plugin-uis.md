@@ -97,9 +97,9 @@ the request (the backend's `_resolve_target` answers undeclared scopes with
 
 `PluginConfigPanel` (Pipeline Editor) selects the panel surface in this order:
 
-1. **Setup embed**: if the plugin has an entry in the static registry `CONFIG_COMPONENTS` (`src/features/plugin/configComponents.ts`), the panel embeds its Setup component with a tier switcher (Feed / Client / Global) driven by the manifest's `config_scope`/`data_scope` ∩ route context. Switching tiers re-renders the component with the matching `PluginScope` (remounted via a `plugin_id`-tier key); the component itself is unchanged. When the manifest's `config_scope` excludes `feed_source` (e.g. `custom_labels`), the panel shows an actionable alert that switches to the highest editable tier. Setup embeds are wrapped in `PluginErrorBoundary`.
+1. **Setup embed**: if the plugin has an entry in the static registry `CONFIG_COMPONENTS` (`src/features/plugin/configComponents.ts`), the panel embeds its Setup component with a tier switcher (Feed / Client / Global) driven by the manifest's `config_scope`/`data_scope` ∩ route context. Switching tiers re-renders the component with the matching `PluginScope` (remounted via a `plugin_id`-tier key); the component itself is unchanged. When the manifest's `config_scope` excludes `feed_source` (e.g. `custom_labels`), the panel shows an actionable alert that switches to the highest editable tier. Setup embeds are wrapped in `PluginErrorBoundary`. Instance settings render alongside the embed.
 2. **Plugin-page link**: if the plugin has no Setup component but does have a custom page component (`manifest.frontend.component`, resolved via `CUSTOM_COMPONENTS`), the panel shows a hint plus an "Open plugin page" link to the feed-tier plugin page, and no raw JSON-schema instance form.
-3. **Instance form**: otherwise the panel renders generic JSON-schema instance settings (`JsonSchemaForm`).
+3. **Instance form**: otherwise the panel renders generic JSON-schema instance settings (`JsonSchemaForm`) only.
 
 For `custom_labels`, `CustomLabelsUI` splits its two surfaces via the additive `onlyTab` prop: `LabelizerSetup` (`onlyTab="rules"`) renders rules-only in the panel, while `LabelizerPage` (`onlyTab="ids"`) renders the bulk-IDs dashboard only on the plugin page. The plugin page is therefore data-only (bulk IDs) at every tier — it no longer hosts the slot-rules editor.
 
@@ -210,6 +210,7 @@ badges and bookmarks.
   `` ${feedBase}/plugins/{id} ``, client-scoped `/clients/:c/plugins/:id`,
   otherwise `/plugins/{id}` — and via ScopeContextBar tier badges. Page titles
   resolve through `pluginNames.*` i18n with `plugin.name` as fallback.
+
 ### Live matching and slot-grouped bulk values
 
 - **Preview:** the feed-page bulk tab debounce-posts the current DRAFT
