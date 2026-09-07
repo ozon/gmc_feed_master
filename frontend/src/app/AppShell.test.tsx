@@ -131,7 +131,7 @@ beforeEach(() => {
 });
 
 describe('AppShell', () => {
-  it('renders the fixed navigation and only enabled plugin menu items', async () => {
+  it('renders the fixed navigation without a plugins section', async () => {
     render(<App />);
     expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
     expect(screen.getByText('Setup')).toBeInTheDocument();
@@ -139,8 +139,9 @@ describe('AppShell', () => {
     expect(screen.getByText('Pipeline Editor')).toBeInTheDocument();
     expect(screen.getByText('Monitoring')).toBeInTheDocument();
     expect(screen.getByText('Export')).toBeInTheDocument();
-    expect(await screen.findByText('Example Upper')).toBeInTheDocument();
-    expect(screen.queryByText('Hidden')).not.toBeInTheDocument();
+    expect(screen.queryByText('Plugins')).not.toBeInTheDocument();
+    expect(screen.queryByText('Example Upper')).not.toBeInTheDocument();
+    expect(screen.queryByText('Global Tool')).not.toBeInTheDocument();
   });
 
   it('disables feed-scoped nav items until a feed source is selected', async () => {
@@ -221,71 +222,4 @@ describe('AppShell', () => {
     expect(queryClient.getQueryData(queryKeys.session)).toBeUndefined();
   });
 
-  it('links a global-scoped plugin to the global plugin route', async () => {
-    render(<App />);
-    expect(await screen.findByText('Global Tool')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Global Tool' })).toHaveAttribute(
-      'href',
-      '/plugins/global_tool',
-    );
-  });
-
-  it('links a client-scoped plugin to the client route while on a client page', async () => {
-    window.history.replaceState({}, '', '/clients/1/feeds/2/products');
-    render(<App />);
-    expect(await screen.findByText('Client Widget')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Client Widget' })).toHaveAttribute(
-      'href',
-      '/clients/1/plugins/client_widget',
-    );
-  });
-
-  it('hides a client-scoped plugin from the nav when no client is selected', async () => {
-    render(<App />);
-    expect(await screen.findByText('Global Tool')).toBeInTheDocument();
-    expect(screen.queryByText('Client Widget')).not.toBeInTheDocument();
-  });
-
-  it('treats a plugin with client data_scope as client-scoped', async () => {
-    window.history.replaceState({}, '', '/clients/1/feeds/2/products');
-    render(<App />);
-    expect(await screen.findByText('Data Widget')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Data Widget' })).toHaveAttribute(
-      'href',
-      '/clients/1/plugins/data_scoped_widget',
-    );
-  });
-
-  it('defaults a manifest without scope fields to the global route on a client page', async () => {
-    window.history.replaceState({}, '', '/clients/1/feeds/2/products');
-    render(<App />);
-    expect(await screen.findByText('Example Upper')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Example Upper' })).toHaveAttribute(
-      'href',
-      '/plugins/example_upper',
-    );
-  });
-
-  it('links a feed-scoped plugin to the feed route while inside a feed context', async () => {
-    window.history.replaceState({}, '', '/clients/1/feeds/2/products');
-    render(<App />);
-    expect(await screen.findByText('Feed Rules')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Feed Rules' })).toHaveAttribute(
-      'href',
-      '/clients/1/feeds/2/plugins/feed_rules',
-    );
-  });
-
-  it('hides a feed-scoped plugin from the nav outside a feed context', async () => {
-    window.history.replaceState({}, '', '/clients/1/plugins/client_widget');
-    render(<App />);
-    expect(await screen.findByText('Client Widget')).toBeInTheDocument();
-    expect(screen.queryByText('Feed Rules')).not.toBeInTheDocument();
-  });
-
-  it('hides a feed-scoped plugin from the nav on the dashboard', async () => {
-    render(<App />);
-    expect(await screen.findByText('Global Tool')).toBeInTheDocument();
-    expect(screen.queryByText('Feed Rules')).not.toBeInTheDocument();
-  });
 });

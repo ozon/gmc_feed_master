@@ -6,8 +6,7 @@
     "products": "Products",
     "pipeline": "Pipeline Editor",
     "monitoring": "Monitoring",
-    "export": "Export",
-    "plugins": "Plugins"
+    "export": "Export"
   },
   "actions": {
     "confirm": "Confirm",

@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import {
   ActionIcon,
   Anchor,
@@ -27,39 +27,14 @@ import {
   IconGitBranch,
   IconLogout,
   IconMoon,
-  IconPuzzle,
   IconSettings,
   IconSun,
-  type Icon,
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
-import { useChangePassword, useDashboardSummary, useLogout, usePlugins, useSession } from '../api/hooks';
-import type { PluginInfo } from '../api/types';
+import { useChangePassword, useDashboardSummary, useLogout, useSession } from '../api/hooks';
 import { LanguageSwitcher } from '../i18n/LanguageSwitcher';
-import { manifestScopes } from '../features/pipeline/tierUtils';
 import { notifyError, notifyMutationError, notifySuccess } from './notifications';
-
-const PLUGIN_ICONS: Record<string, Icon> = {};
-
-function pluginIcon(name: string | undefined) {
-  if (name && name in PLUGIN_ICONS) return PLUGIN_ICONS[name];
-  return IconPuzzle;
-}
-
-function isClientScoped(manifest: PluginInfo['manifest']): boolean {
-  return (
-    manifestScopes(manifest, 'config_scope').includes('client') ||
-    manifestScopes(manifest, 'data_scope').includes('client')
-  );
-}
-
-function isFeedScoped(manifest: PluginInfo['manifest']): boolean {
-  return (
-    manifestScopes(manifest, 'config_scope').includes('feed_source') ||
-    manifestScopes(manifest, 'data_scope').includes('feed_source')
-  );
-}
 
 function ColorSchemeToggle() {
   const { t } = useTranslation();
@@ -227,7 +202,6 @@ export function AppShell() {
   const [opened, { toggle, close }] = useDisclosure();
   const location = useLocation();
   const { clientId, feedSourceId } = useParams();
-  const { data: plugins } = usePlugins();
 
   const feedBase = clientId && feedSourceId ? `/clients/${clientId}/feeds/${feedSourceId}` : null;
 
@@ -236,14 +210,6 @@ export function AppShell() {
     if (to === '/') return location.pathname === '/';
     return location.pathname.startsWith(to);
   }
-
-  const pluginItems = useMemo(
-    () =>
-      (Array.isArray(plugins) ? plugins : []).filter(
-        (plugin) => plugin.enabled && plugin.manifest?.frontend?.menu_item,
-      ),
-    [plugins],
-  );
 
   const feedScoped = [
     { to: feedBase ? `${feedBase}/setup` : null, label: t('nav.setup'), icon: IconSettings },
@@ -308,41 +274,6 @@ export function AppShell() {
               />
             ),
           )}
-          {pluginItems.length > 0 ? (
-            <>
-              <Text size="xs" c="dimmed" tt="uppercase" mt="md">
-                {t('nav.plugins')}
-              </Text>
-              {pluginItems.map((plugin) => {
-                const PluginIcon = pluginIcon(plugin.manifest?.frontend?.icon);
-                const scope = plugin.manifest?.frontend;
-                const clientScoped = isClientScoped(plugin.manifest);
-                const feedScopedPlugin = isFeedScoped(plugin.manifest);
-                if (feedScopedPlugin && !feedBase) return null;
-                if (!feedScopedPlugin && clientScoped && !clientId) return null;
-                const to = feedScopedPlugin
-                  ? `${feedBase}/plugins/${plugin.id}`
-                  : clientScoped
-                    ? `/clients/${clientId}/plugins/${plugin.id}`
-                    : `/plugins/${plugin.id}`;
-                return (
-                  <NavLink
-                    key={plugin.id}
-                    component={Link}
-                    to={to}
-                    label={t(`pluginNames.${plugin.id}`, {
-                      defaultValue: scope?.menu_item ?? plugin.name,
-                    })}
-                    leftSection={<PluginIcon size={16} />}
-                    active={isActive(to)}
-                    variant={isActive(to) ? 'light' : undefined}
-                    color={isActive(to) ? 'blue' : undefined}
-                    onClick={close}
-                  />
-                );
-              })}
-            </>
-          ) : null}
         </Stack>
       </MantineAppShell.Navbar>
 

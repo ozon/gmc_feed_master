@@ -6,8 +6,7 @@
     "products": "Produkte",
     "pipeline": "Pipeline-Editor",
     "monitoring": "Überwachung",
-    "export": "Export",
-    "plugins": "Plugins"
+    "export": "Export"
   },
   "actions": {
     "confirm": "Bestätigen",
