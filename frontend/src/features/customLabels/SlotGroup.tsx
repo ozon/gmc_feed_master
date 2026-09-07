@@ -1,6 +1,7 @@
-import { Anchor, Badge, Button, Card, Collapse, Group, Loader, Paper, Stack, Text, Textarea, Tooltip } from '@mantine/core';
+import {
+  Badge, Button, Card, Collapse, Group, Loader, Paper, Progress, Stack, Text, Textarea, Tooltip,
+} from '@mantine/core';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
 import { parseIdList, renderPreview } from './ids';
 import type { ScopedSlotRule, SlotRule, Tier } from './scopeMerge';
 import type { PreviewRuleStats } from './usePreview';
@@ -21,12 +22,11 @@ export type SlotGroupProps = {
   previewPending: boolean;
   previewErrors: string[] | null;
   previewUnavailable: boolean;
-  productsHref: string | null;
 };
 
 export function SlotGroup({
   slot, rules, values, inheritedFor, isRuleEditable, editableTier, onSetSlotIds, onPatchRule,
-  showLive, stats, ruleStats, total, previewPending, previewErrors, previewUnavailable, productsHref,
+  showLive, stats, ruleStats, total, previewPending, previewErrors, previewUnavailable,
 }: SlotGroupProps) {
   const { t } = useTranslation('customLabels');
   const { t: tCommon } = useTranslation('common');
@@ -40,9 +40,7 @@ export function SlotGroup({
           </Group>
           <Text size="xs" c="dimmed">{t('activeRulesCount', { count: rules.length })}</Text>
         </Group>
-        {!showLive ? (
-          <Text size="xs" c="dimmed">{t('openFromFeed')}</Text>
-        ) : previewUnavailable ? (
+        {!showLive ? null : previewUnavailable ? (
           <Text size="xs" c="dimmed">{t('previewUnavailable')}</Text>
         ) : previewErrors ? (
           <Stack gap={2}>
@@ -59,42 +57,10 @@ export function SlotGroup({
             <Group gap="xs" wrap="nowrap">
               {previewPending && <Loader size="xs" />}
               <Text size="xs" c="dimmed">
-                {t('slotLabeled', { count: stats?.labeled ?? 0 })}
+                {t('slotLabeledOf', { count: stats?.labeled ?? 0, total })}
               </Text>
-              <Text size="xs" c="dimmed">
-                {t('coveragePct', { coverage: stats?.coverage ?? 0 })}
-              </Text>
-              <Text size="xs" c="dimmed">{t('freshnessHint', { count: total })}</Text>
             </Group>
-            {rules.map((rule) => {
-              const rs = ruleStats?.[rule.id];
-              const neverApplied = (rs?.matched ?? 0) > 0 && (rs?.labeled ?? 0) === 0;
-              return (
-                <Group key={rule.id} gap="xs" wrap="nowrap">
-                  <Text size="xs" fw={500}>{rule.name}</Text>
-                  <Text size="xs" c="dimmed">
-                    {t('matchedCount', { count: rs?.matched ?? 0 })}
-                  </Text>
-                  {neverApplied && (
-                    <Tooltip label={t('neverAppliedHint')} withArrow position="top">
-                      <Badge size="xs" variant="light" color="gray">
-                        {t('neverApplied')}
-                      </Badge>
-                    </Tooltip>
-                  )}
-                  {(rs?.sample ?? []).map((pid) => (
-                    <Anchor
-                      key={pid}
-                      component={Link}
-                      to={`${productsHref}?q=${encodeURIComponent(pid)}`}
-                      size="xs"
-                    >
-                      {pid}
-                    </Anchor>
-                  ))}
-                </Group>
-              );
-            })}
+            <Progress value={Math.min(100, Math.max(0, stats?.coverage ?? 0))} size="sm" />
           </Stack>
         )}
         <Stack gap="md">
@@ -103,6 +69,8 @@ export function SlotGroup({
             const raw = values[rule.id] ?? '';
             const count = parseIdList(raw).size;
             const inheritedFrom = inheritedFor(rule.id);
+            const rs = ruleStats?.[rule.id];
+            const neverApplied = showLive && rs !== undefined && rs.matched > 0 && rs.labeled === 0;
             return (
               <Stack key={rule.id} gap={4}>
                 <Group gap="xs" justify="space-between" wrap="nowrap">
@@ -113,6 +81,23 @@ export function SlotGroup({
                         {t('inheritedFrom', { tier: tCommon(`scope.${inheritedFrom}`) })}
                       </Badge>
                     )}
+                    {showLive && rs ? (
+                      neverApplied ? (
+                        <Tooltip
+                          label={`${t('neverApplied')} — ${t('neverAppliedHint')}`}
+                          withArrow
+                          position="top"
+                        >
+                          <Badge size="xs" variant="light" color="gray">
+                            {t('matchedCount', { count: rs.matched })}
+                          </Badge>
+                        </Tooltip>
+                      ) : (
+                        <Badge size="xs" variant="light">
+                          {t('matchedCount', { count: rs.matched })}
+                        </Badge>
+                      )
+                    ) : null}
                   </Group>
                   <Text size="xs" c="dimmed">{rule.matchField}</Text>
                 </Group>

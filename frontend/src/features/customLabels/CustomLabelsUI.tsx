@@ -152,9 +152,6 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
     rules: effectiveRules,
     slotIds: effectiveIds,
   });
-  const productsHref = atFeed && routeContext.clientId && routeContext.feedSourceId
-    ? `/clients/${routeContext.clientId}/feeds/${routeContext.feedSourceId}/products`
-    : null;
   const [helpOpened, { open: openHelp, close: closeHelp }] = useDisclosure(false);
   const [deleteOpen, { open: openDelete, close: closeDelete }] = useDisclosure(false);
 
@@ -335,7 +332,6 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
                       previewPending={preview.isPending}
                       previewErrors={preview.errors}
                       previewUnavailable={preview.unavailable}
-                      productsHref={productsHref}
                     />
                   );
                 })}

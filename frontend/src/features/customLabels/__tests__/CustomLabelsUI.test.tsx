@@ -571,22 +571,21 @@ describe('CustomLabelsUI live preview stats', () => {
     },
   };
 
-  it('renders live stats, sample links, and the shadowed marker on the feed page', async () => {
+  it('renders the labeled/total header, coverage bar, and per-rule match badges', async () => {
     renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', (url) => {
       if (url.startsWith('/plugins/custom_labels/preview')) return jsonResponse(PREVIEW);
       return jsonResponseFor(url);
     });
     expect(await waitFor(() =>
-      expect(screen.getByText(/2 products get this label/i)).toBeInTheDocument(),
+      expect(screen.getByText(/2 of 3 staged products labeled/i)).toBeInTheDocument(),
       { timeout: 2500 })).toBeTruthy();
-    expect(screen.getByText(/66\.7% coverage/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/based on the last run's 3 staged products/i).length).toBeGreaterThan(0);
-    const sample = screen.getByRole('link', { name: 'a1' });
-    expect(sample).toHaveAttribute(
-      'href', '/clients/1/feeds/1/products?q=a1',
-    );
-    // r3 matched but never labeled -> shadowed marker
-    expect(screen.getByText(/never applied/i)).toBeInTheDocument();
+    expect(screen.getByText(/0 of 3 staged products labeled/i)).toBeInTheDocument();
+    expect(document.querySelectorAll('.mantine-Progress-root').length).toBe(2);
+    expect(screen.getByText('2 matched')).toBeInTheDocument();
+    expect(screen.getByText('1 matched')).toBeInTheDocument();
+    // sample product deep-links are gone
+    expect(screen.queryByRole('link', { name: 'a1' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'z1' })).not.toBeInTheDocument();
   });
 
   it('total=0 shows the never-run hint instead of zero stats', async () => {
@@ -601,7 +600,7 @@ describe('CustomLabelsUI live preview stats', () => {
       { timeout: 2500 })).toBeTruthy();
   });
 
-  it('client page sends no preview request and shows the open-from-feed hint', async () => {
+  it('client page sends no preview request and shows no stats header', async () => {
     const calls: string[] = [];
     renderUI(
       { clientId: 1 },
@@ -612,8 +611,8 @@ describe('CustomLabelsUI live preview stats', () => {
       },
     );
     await screen.findByText('Client Only');
-    expect(screen.getAllByText(/open this plugin from a feed/i).length).toBeGreaterThan(0);
     expect(calls.some((u) => u.includes('/preview'))).toBe(false);
+    expect(screen.queryByText(/staged products labeled/i)).not.toBeInTheDocument();
   });
 });
 
