@@ -6,5 +6,9 @@
   "configSaved": "Konfiguration gespeichert.",
   "saveFailed": "Plugin-Konfiguration konnte nicht gespeichert werden.",
   "saveFailedWithErrors": "Speichern fehlgeschlagen: {{count}} Validierungsfehler.",
-  "save": "Speichern"
+  "save": "Speichern",
+  "errorBoundary": {
+    "title": "Die Oberfläche dieses Plugins ist abgestürzt",
+    "retry": "Erneut versuchen"
+  }
 }

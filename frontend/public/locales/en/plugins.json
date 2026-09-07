@@ -6,5 +6,9 @@
   "configSaved": "Configuration saved.",
   "saveFailed": "Could not save plugin configuration.",
   "saveFailedWithErrors": "Could not save: {{count}} validation error(s).",
-  "save": "Save"
+  "save": "Save",
+  "errorBoundary": {
+    "title": "This plugin's interface crashed",
+    "retry": "Try again"
+  }
 }

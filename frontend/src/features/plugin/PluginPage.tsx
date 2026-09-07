@@ -8,6 +8,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/StateView
 import { notifySuccess, mapFieldErrors, notifyApiError } from '../../app/notifications';
 import { ApiError } from '../../api/client';
 import { CUSTOM_COMPONENTS } from './customComponents';
+import { PluginErrorBoundary } from './PluginErrorBoundary';
 
 export function PluginPage() {
   const { t } = useTranslation('plugins');
@@ -88,7 +89,9 @@ export function PluginPage() {
       ) : configFetchEnabled && config.isError ? (
         <ErrorState onRetry={() => void config.refetch()} />
       ) : CustomComponent ? (
-        <CustomComponent pluginId={plugin.id} scope={scope} />
+        <PluginErrorBoundary pluginName={plugin.name}>
+          <CustomComponent pluginId={plugin.id} scope={scope} />
+        </PluginErrorBoundary>
       ) : (
         <JsonSchemaForm
           schema={schema!}
