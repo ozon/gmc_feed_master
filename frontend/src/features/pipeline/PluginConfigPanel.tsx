@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert, Anchor, Badge, Button, Divider, Group, SegmentedControl, Stack, Text, Title,
+  Alert, Badge, Button, Divider, Group, SegmentedControl, Stack, Text, Title,
 } from '@mantine/core';
 import { IconTrash } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
@@ -132,13 +132,14 @@ export function PluginConfigPanel({
         <Group justify="space-between" wrap="nowrap" data-testid="config-plugin-page-hint">
           <Text size="sm" c="dimmed">{t('configOnPluginPage')}</Text>
           {clientId && feedSourceId ? (
-            <Anchor
+            <Button
+              size="xs"
+              variant="light"
               component={Link}
               to={`/clients/${clientId}/feeds/${feedSourceId}/plugins/${plugin.id}`}
-              underline="never"
             >
-              <Button size="xs" variant="light">{t('configOpenPluginPage')}</Button>
-            </Anchor>
+              {t('configOpenPluginPage')}
+            </Button>
           ) : null}
         </Group>
       ) : null}
