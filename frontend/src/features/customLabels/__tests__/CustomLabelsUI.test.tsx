@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { notifications, Notifications } from '@mantine/notifications';
 import { createMemoryRouter, RouterProvider } from 'react-router';
@@ -566,5 +566,68 @@ describe('CustomLabelsUI live preview stats', () => {
     await screen.findByText('Client Only');
     expect(screen.getAllByText(/open this plugin from a feed/i).length).toBeGreaterThan(0);
     expect(calls.some((u) => u.includes('/preview'))).toBe(false);
+  });
+});
+
+describe('CustomLabelsUI rule actions', () => {
+  it('duplicates the selected rule with a fresh id and localized copy name', async () => {
+    const puts: { body: unknown }[] = [];
+    const putHandler = (url: string, init?: RequestInit) => {
+      if (url.includes('/config?client_id=1') && init?.method === 'PUT') {
+        puts.push({ body: JSON.parse(String(init.body)) });
+        return jsonResponse(CLIENT_CONFIG);
+      }
+      return jsonResponseFor(url);
+    };
+    renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels', putHandler);
+    await screen.findByText('Client Only');
+    await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    await userEvent.click(screen.getByText('Client Only'));
+    await userEvent.click(screen.getByRole('button', { name: /duplicate/i }));
+    expect(screen.getByText('Client Only (copy)')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+    await screen.findByText(/saved/i);
+    const payload = puts[0].body as { slotRules: { id: string; name: string }[] };
+    const names = payload.slotRules.map((r) => r.name);
+    expect(names).toContain('Client Only');
+    expect(names).toContain('Client Only (copy)');
+    expect(new Set(payload.slotRules.map((r) => r.id)).size).toBe(payload.slotRules.length);
+  });
+
+  it('delete asks for confirmation and removes the rule from the editable tier', async () => {
+    renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels');
+    await screen.findByText('Client Only');
+    await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    await userEvent.click(screen.getByText('Client Only'));
+    await userEvent.click(screen.getByRole('button', { name: /delete/i }));
+    expect(screen.getByText(/delete rule "client only"/i)).toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: /delete/i }));
+    // the only remaining rule is the inherited global one — still listed
+    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
+    expect(screen.queryByText('Client Only')).not.toBeInTheDocument();
+  });
+
+  it('rule actions are hidden for inherited rules', async () => {
+    renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels');
+    await screen.findByText('Mid Funnel');
+    await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    await userEvent.click(screen.getByText('Mid Funnel'));
+    expect(screen.queryByRole('button', { name: /duplicate/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument();
+  });
+
+  it('global-origin delete confirm mentions the inheritance blast radius', async () => {
+    stubFetch((url) => {
+      if (url.startsWith('/plugins/custom_labels/config') && url.includes('client_id=')) {
+        return jsonResponse({ slotRules: [] });
+      }
+      return jsonResponseFor(url);
+    });
+    renderUI({}, '/plugins/custom_labels');
+    await screen.findByText('Mid Funnel');
+    await userEvent.click(screen.getByText('Mid Funnel'));
+    await userEvent.click(screen.getByRole('button', { name: /delete/i }));
+    expect(screen.getByText(/inherited by every client/i)).toBeInTheDocument();
   });
 });

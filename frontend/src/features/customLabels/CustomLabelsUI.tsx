@@ -16,6 +16,7 @@ import {
   useSavePluginData, type PluginScope,
 } from '../../api/hooks';
 import { ErrorState, LoadingState } from '../../components/StateViews';
+import { ConfirmModal } from '../../components/ConfirmModal';
 import { ScopeBadge } from '../../components/ScopeBadge';
 import { ScopeContextBar } from '../../components/ScopeContextBar';
 import { notifySuccess } from '../../app/notifications';
@@ -32,11 +33,15 @@ const TARGET_SLOTS = [
   'custom_label_0', 'custom_label_1', 'custom_label_2', 'custom_label_3', 'custom_label_4',
 ];
 
+function newRuleId(): string {
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `r_${Math.random().toString(36).slice(2)}`;
+}
+
 function newRule(name: string, origin: Tier): ScopedSlotRule {
   return {
-    id: typeof crypto !== 'undefined' && 'randomUUID' in crypto
-      ? crypto.randomUUID()
-      : `r_${Math.random().toString(36).slice(2)}`,
+    id: newRuleId(),
     name,
     isActive: true,
     targetSlot: 'custom_label_0',
@@ -133,6 +138,7 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
     ? `/clients/${routeContext.clientId}/feeds/${routeContext.feedSourceId}/products`
     : null;
   const [helpOpened, { open: openHelp, close: closeHelp }] = useDisclosure(false);
+  const [deleteOpen, { open: openDelete, close: closeDelete }] = useDisclosure(false);
 
   function patchSelected(patch: Partial<SlotRule>) {
     if (!selected) return;
@@ -141,6 +147,27 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
 
   function patchRule(id: string, patch: Partial<SlotRule>) {
     setRules(effectiveRules.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  }
+
+  function duplicateSelected() {
+    if (!selected) return;
+    const copy: ScopedSlotRule = {
+      ...selected,
+      id: newRuleId(),
+      name: `${selected.name} ${t('duplicateSuffix')}`,
+    };
+    const index = effectiveRules.findIndex((r) => r.id === selected.id);
+    const next = [...effectiveRules];
+    next.splice(index + 1, 0, copy);
+    setRules(next);
+    setSelectedId(copy.id);
+  }
+
+  function deleteSelected() {
+    if (!selected) return;
+    setRules(effectiveRules.filter((r) => r.id !== selected.id));
+    setSelectedId(null);
+    closeDelete();
   }
 
   useBlocker(({ currentLocation, nextLocation }) => {
@@ -387,6 +414,16 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
                         </Text>
                       </Group>
                     )}
+                    {ruleEditable(selected) && (
+                      <Group gap="xs">
+                        <Button size="xs" variant="light" onClick={duplicateSelected}>
+                          {t('duplicateRule')}
+                        </Button>
+                        <Button size="xs" variant="light" color="red" onClick={openDelete}>
+                          {t('deleteRule')}
+                        </Button>
+                      </Group>
+                    )}
                     <TextInput
                       label={t('fields.name')}
                       value={selected.name}
@@ -444,6 +481,17 @@ export function CustomLabelsUI({ pluginId, scope }: { pluginId: string; scope: P
           </Stack>
         </Tabs.Panel>
       </Tabs>
+      <ConfirmModal
+        opened={deleteOpen}
+        onClose={closeDelete}
+        onConfirm={deleteSelected}
+        danger
+        title={t('deleteConfirmTitle')}
+        message={selected?.origin === 'global'
+          ? t('deleteGlobalWarning', { name: selected.name })
+          : t('deleteConfirmBody', { name: selected?.name ?? '' })}
+        confirmLabel={t('deleteRule')}
+      />
     </Stack>
   );
 }
