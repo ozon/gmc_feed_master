@@ -6,6 +6,12 @@ from app.models.feed_source import FeedSource
 from app.models.pipeline import ModuleInstance, ModulePipeline
 from app.models.plugin import Plugin, PluginConfig, PluginData
 from app.staging.config_resolver import resolve_config_bundle
+from tests.labels_equivalence import (
+    CLIENT_SLOT_RULES,
+    EXPECTED_MERGED_IDS,
+    EXPECTED_MERGED_NAMES,
+    GLOBAL_SLOT_RULES,
+)
 
 pytestmark = pytest.mark.asyncio
 
@@ -205,27 +211,6 @@ async def test_bundle_excludes_disabled_instances(isolated_database_url):
 async def test_bundle_slotrules_union_by_id_matches_frontend(
     isolated_database_url,
 ):
-    # Keep in lockstep with test_config_merge.py and
-    # frontend scopeMerge.test.ts (spec §1.2 gate).
-    global_rules = [
-        {"id": "g1", "name": "Global Mid", "isActive": True,
-         "targetSlot": "custom_label_1", "matchField": "id",
-         "valueTemplate": "{brand} - Mid"},
-        {"id": "g2", "name": "Global Top", "isActive": True,
-         "targetSlot": "custom_label_0", "matchField": "id",
-         "valueTemplate": "{brand} - Top"},
-    ]
-    client_rules = [
-        {"id": "g1", "name": "Client Mid", "isActive": True,
-         "targetSlot": "custom_label_1", "matchField": "brand",
-         "valueTemplate": "{brand} - Client"},
-        {"id": "c2", "name": "Client Only", "isActive": True,
-         "targetSlot": "custom_label_0", "matchField": "id",
-         "valueTemplate": "{brand} - ClientOnly"},
-        {"id": "c3", "name": "Same Slot As G1", "isActive": True,
-         "targetSlot": "custom_label_1", "matchField": "id",
-         "valueTemplate": "{brand} - C3"},
-    ]
     engine, factory = _make(isolated_database_url)
     async with factory() as session:
         async with session.begin():
@@ -263,17 +248,15 @@ async def test_bundle_slotrules_union_by_id_matches_frontend(
             ))
             session.add(PluginConfig(
                 plugin_id=plugin.id, scope="global", key="default",
-                config={"slotRules": global_rules},
+                config={"slotRules": GLOBAL_SLOT_RULES},
             ))
             session.add(PluginConfig(
                 plugin_id=plugin.id, scope="client", client_id=client.id,
-                key="default", config={"slotRules": client_rules},
+                key="default", config={"slotRules": CLIENT_SLOT_RULES},
             ))
         bundle = await resolve_config_bundle(session, feed_source)
 
     rules = bundle["instances"][0]["resolved_config"]["slotRules"]
-    assert [r["id"] for r in rules] == ["g1", "g2", "c2", "c3"]
-    assert [r["name"] for r in rules] == [
-        "Client Mid", "Global Top", "Client Only", "Same Slot As G1",
-    ]
+    assert [r["id"] for r in rules] == EXPECTED_MERGED_IDS
+    assert [r["name"] for r in rules] == EXPECTED_MERGED_NAMES
     await engine.dispose()

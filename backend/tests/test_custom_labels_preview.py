@@ -1,9 +1,6 @@
 """Custom Labels preview endpoint tests: auth, 404, 422, live match counts."""
 
-import importlib.util
-import sys
 from datetime import datetime, timezone
-from pathlib import Path
 
 import pytest
 import pytest_asyncio
@@ -19,15 +16,7 @@ from app.models.session import Session
 from app.models.staging import StagingProduct
 from app.models.user import User
 from app.persistence.users import seed_initial_user
-
-_spec = importlib.util.spec_from_file_location(
-    "custom_labels_plugin_preview",
-    Path(__file__).resolve().parents[2] / "plugins/core/custom_labels/plugin.py",
-)
-assert _spec is not None and _spec.loader is not None
-_labels_module = importlib.util.module_from_spec(_spec)
-sys.modules["custom_labels_plugin_preview"] = _labels_module
-_spec.loader.exec_module(_labels_module)
+from tests.labels_plugin_module import labels_plugin as _labels_module
 
 CustomLabelsPlugin = _labels_module.CustomLabelsPlugin
 evaluate_rules = _labels_module.evaluate_rules

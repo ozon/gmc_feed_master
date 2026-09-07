@@ -1,4 +1,12 @@
 from app.staging.config_resolver import _resolve_declared
+from tests.labels_equivalence import (
+    CLIENT_SLOT_RULES,
+    EXPECTED_BY_SLOT,
+    EXPECTED_MERGED_IDS,
+    EXPECTED_MERGED_NAMES,
+    GLOBAL_SLOT_RULES,
+    UNION_HINTS,
+)
 
 ALL_SCOPES = ["global", "client", "feed_source"]
 
@@ -45,29 +53,6 @@ class TestScopeMerge:
             "global": {"a": {"nested": 1}}, "client": {"a": "flat"},
         }) == {"a": "flat"}
 
-# Shared equivalence fixture — keep in lockstep with
-# frontend/src/features/customLabels/scopeMerge.test.ts (spec §1.2 gate).
-GLOBAL_SLOT_RULES = [
-    {"id": "g1", "name": "Global Mid", "isActive": True,
-     "targetSlot": "custom_label_1", "matchField": "id",
-     "valueTemplate": "{brand} - Mid"},
-    {"id": "g2", "name": "Global Top", "isActive": True,
-     "targetSlot": "custom_label_0", "matchField": "id",
-     "valueTemplate": "{brand} - Top"},
-]
-CLIENT_SLOT_RULES = [
-    {"id": "g1", "name": "Client Mid", "isActive": True,
-     "targetSlot": "custom_label_1", "matchField": "brand",
-     "valueTemplate": "{brand} - Client"},
-    {"id": "c2", "name": "Client Only", "isActive": True,
-     "targetSlot": "custom_label_0", "matchField": "id",
-     "valueTemplate": "{brand} - ClientOnly"},
-    {"id": "c3", "name": "Same Slot As G1", "isActive": True,
-     "targetSlot": "custom_label_1", "matchField": "id",
-     "valueTemplate": "{brand} - C3"},
-]
-UNION_HINTS = {"slotRules": {"strategy": "union_by_key", "key": "id"}}
-
 
 class TestUnionByKey:
     def test_hinted_list_unions_by_id_in_ancestor_order(self):
@@ -78,20 +63,12 @@ class TestUnionByKey:
             UNION_HINTS,
         )
         rules = merged["slotRules"]
-        # Same ids in the same order as the frontend merge (spec §1.2):
-        assert [r["id"] for r in rules] == ["g1", "g2", "c2", "c3"]
-        # Content of the more specific tier wins for the overridden id...
-        assert [r["name"] for r in rules] == [
-            "Client Mid", "Global Top", "Client Only", "Same Slot As G1",
-        ]
-        # ...and per-slot winning order (first match wins) is identical:
+        assert [r["id"] for r in rules] == EXPECTED_MERGED_IDS
+        assert [r["name"] for r in rules] == EXPECTED_MERGED_NAMES
         by_slot: dict[str, list[str]] = {}
         for rule in rules:
             by_slot.setdefault(rule["targetSlot"], []).append(rule["id"])
-        assert by_slot == {
-            "custom_label_1": ["g1", "c3"],
-            "custom_label_0": ["g2", "c2"],
-        }
+        assert by_slot == EXPECTED_BY_SLOT
 
     def test_client_only_config_extends_global(self):
         merged = _resolve_declared(

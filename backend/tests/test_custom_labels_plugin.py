@@ -1,21 +1,12 @@
 """Tests for the custom_labels plugin (primitives, validation, process semantics)."""
 
-import importlib.util
 import logging
-import sys
 from pathlib import Path
-from typing import ClassVar
 
 import pytest
 
-_spec = importlib.util.spec_from_file_location(
-    "custom_labels_plugin",
-    Path(__file__).resolve().parents[2] / "plugins/core/custom_labels/plugin.py",
-)
-assert _spec is not None and _spec.loader is not None
-_plugin = importlib.util.module_from_spec(_spec)
-sys.modules["custom_labels_plugin"] = _plugin
-_spec.loader.exec_module(_plugin)
+from tests.labels_equivalence import EXPECTED_BY_SLOT, MERGED_SLOT_RULES
+from tests.labels_plugin_module import labels_plugin as _plugin
 
 compile_template = _plugin.compile_template
 matches = _plugin.matches
@@ -382,7 +373,6 @@ class TestContentHashImmutable:
             feed_source_id = feed_source.id
 
         import tempfile
-        from pathlib import Path
 
         from app.pipeline import LockRegistry, default_steps
         from app.pipeline.runner import PipelineRunner
@@ -479,34 +469,14 @@ class TestContentHashImmutable:
 
 class TestMergedStateWinningOrder:
     """Spec §1.2 gate: state built from the union-merged config must preserve
-    the fixture order of test_config_merge.py / frontend scopeMerge.test.ts."""
-
-    MERGED_CONFIG: ClassVar[dict] = {
-        "slotRules": [
-            {"id": "g1", "name": "Client Mid", "isActive": True,
-             "targetSlot": "custom_label_1", "matchField": "brand",
-             "valueTemplate": "{brand} - Client"},
-            {"id": "g2", "name": "Global Top", "isActive": True,
-             "targetSlot": "custom_label_0", "matchField": "id",
-             "valueTemplate": "{brand} - Top"},
-            {"id": "c2", "name": "Client Only", "isActive": True,
-             "targetSlot": "custom_label_0", "matchField": "id",
-             "valueTemplate": "{brand} - ClientOnly"},
-            {"id": "c3", "name": "Same Slot As G1", "isActive": True,
-             "targetSlot": "custom_label_1", "matchField": "id",
-             "valueTemplate": "{brand} - C3"},
-        ]
-    }
+    the fixture order of labels_equivalence / frontend scopeMerge.test.ts."""
 
     def test_state_per_slot_order_matches_merged_list(self, plugin):
-        state = plugin.prepare_run(self.MERGED_CONFIG, {"slotIds": {}}, _ctx())
+        state = plugin.prepare_run({"slotRules": MERGED_SLOT_RULES}, {"slotIds": {}}, _ctx())
         by_slot: dict[str, list[str]] = {}
         for rule in state["rules"]:
             by_slot.setdefault(rule["targetSlot"], []).append(rule["id"])
-        assert by_slot == {
-            "custom_label_1": ["g1", "c3"],
-            "custom_label_0": ["g2", "c2"],
-        }
+        assert by_slot == EXPECTED_BY_SLOT
 
 
 class TestMatchMode:
@@ -525,7 +495,7 @@ class TestMatchMode:
         assert out["custom_label_0"] == "B - All"
 
     def test_match_all_beats_later_same_slot_rule(self, plugin):
-        # g2 wins custom_label_0 because it comes first in the list —
+        # all1 wins custom_label_0 because it comes first in the list —
         # the values-mode rule never gets a turn.
         rules = [
             {"id": "all1", "name": "All", "isActive": True,
