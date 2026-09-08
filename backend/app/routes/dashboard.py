@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..auth import require_user
+from ..access import CurrentUser, get_current_user
 from ..db.engine import get_db_session
 from ..models.client import Client
 from ..models.export import ExportRun
@@ -32,23 +32,36 @@ async def _latest_runs(session, model):
 
 @router.get("/dashboard/summary")
 async def dashboard_summary(
-    _user: str = Depends(require_user),
+    user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict:
     session = _require_db(db_session)
     async with session.begin():
         clients = list((await session.execute(select(Client).order_by(Client.name))).scalars())
         feeds = list((await session.execute(select(FeedSource).order_by(FeedSource.name))).scalars())
+        if user.client_ids is not None:
+            allowed = user.client_ids
+            clients = [c for c in clients if c.id in allowed]
+            feeds = [f for f in feeds if f.client_id in allowed]
+        feed_ids = [f.id for f in feeds]
         item_counts = dict(
             (await session.execute(
                 select(StagingProduct.feed_source_id, func.count())
-                .where(StagingProduct.status == "active", StagingProduct.excluded.is_(False))
+                .where(
+                    StagingProduct.status == "active",
+                    StagingProduct.excluded.is_(False),
+                    StagingProduct.feed_source_id.in_(feed_ids),
+                )
                 .group_by(StagingProduct.feed_source_id)
             )).all()
         )
         total_active = (await session.execute(
             select(func.count()).select_from(StagingProduct)
-            .where(StagingProduct.status == "active", StagingProduct.excluded.is_(False))
+            .where(
+                StagingProduct.status == "active",
+                StagingProduct.excluded.is_(False),
+                StagingProduct.feed_source_id.in_(feed_ids),
+            )
         )).scalar_one()
         latest_exports = await _latest_runs(session, ExportRun)
         latest_runs = await _latest_runs(session, IngestionRun)

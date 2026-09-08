@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..access import CurrentUser, get_current_user, require_admin
 from ..auth import require_user
 from ..config import Settings, get_settings
 from ..db.engine import get_db_session
@@ -70,7 +71,7 @@ def _feed_source_out(feed_source: FeedSource, settings: Settings) -> dict:
 async def create_client(
     payload: ClientCreate,
     request: Request,
-    _user: str = Depends(require_user),
+    _admin: CurrentUser = Depends(require_admin),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> Client:
     session = _require_db(db_session)
@@ -89,19 +90,22 @@ async def create_client(
 
 @router.get("/clients", response_model=list[ClientOut])
 async def list_clients(
-    _user: str = Depends(require_user),
+    user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> list[Client]:
     session = _require_db(db_session)
     result = await session.execute(select(Client).order_by(Client.name))
-    return list(result.scalars())
+    clients = list(result.scalars())
+    if user.client_ids is not None:
+        clients = [c for c in clients if c.id in user.client_ids]
+    return clients
 
 
 @router.put("/clients/{client_id}", response_model=ClientOut)
 async def update_client(
     client_id: int,
     payload: ClientUpdate,
-    _user: str = Depends(require_user),
+    _admin: CurrentUser = Depends(require_admin),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> Client:
     session = _require_db(db_session)
@@ -250,7 +254,7 @@ async def delete_feed_source(
 async def delete_client(
     client_id: int,
     request: Request,
-    _user: str = Depends(require_user),
+    _admin: CurrentUser = Depends(require_admin),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> None:
     session = _require_db(db_session)

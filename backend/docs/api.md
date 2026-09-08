@@ -5,7 +5,7 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 - `POST /auth/login` — `{username, password}` → sets `HttpOnly; Secure; SameSite=Lax` cookie
 - `POST /auth/logout` — clears session
 - `POST /auth/password` — change password (requires PostgreSQL session store)
-- `GET /auth/me` — returns `{username}`
+- `GET /auth/me` — returns `{"username": str, "role": "admin"|"user", "client_ids": list[int] | null}` (`null` = admin/unrestricted; a sorted list of assigned client ids for users)
 - `POST /auth/interaction` — refreshes session idle timer
 
 ## Health

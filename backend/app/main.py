@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from pydantic import ValidationError
 
-from .access import CurrentUser, get_current_user
+from .access import CurrentUser, enforce_scope_access, get_current_user
 from .auth import (
     Credentials,
     PasswordChange,
@@ -188,16 +188,16 @@ def create_app(
             await application.state.db_engine.dispose()
 
     app = FastAPI(lifespan=lifespan)
-    app.include_router(clients_router)
+    app.include_router(clients_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(dashboard_router)
-    app.include_router(dry_run_router)
-    app.include_router(export_history_router)
+    app.include_router(dry_run_router, dependencies=[Depends(enforce_scope_access)])
+    app.include_router(export_history_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(export_public_router)
-    app.include_router(field_mapping_router)
-    app.include_router(pipeline_router)
-    app.include_router(plugins_router)
-    app.include_router(products_router)
-    app.include_router(quality_router)
+    app.include_router(field_mapping_router, dependencies=[Depends(enforce_scope_access)])
+    app.include_router(pipeline_router, dependencies=[Depends(enforce_scope_access)])
+    app.include_router(plugins_router, dependencies=[Depends(enforce_scope_access)])
+    app.include_router(products_router, dependencies=[Depends(enforce_scope_access)])
+    app.include_router(quality_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(registry_router)
     app.state.settings = settings
     app.state.session_store = session_store

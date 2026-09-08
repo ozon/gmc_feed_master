@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -65,10 +65,45 @@ async def get_current_user(
     request_user: str = Depends(require_user),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> CurrentUser:
-    return await _load_user(db_session, request_user)
+    user = await _load_user(db_session, request_user)
+    if db_session is not None:
+        # Close the implicitly-begun read transaction so handlers can start
+        # their own `session.begin()` without InvalidRequestError.
+        await db_session.rollback()
+    return user
 
 
 def require_admin(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
     if user.role != "admin":
         raise _forbidden()
     return user
+
+
+async def enforce_scope_access(
+    request: Request,
+    user: CurrentUser = Depends(get_current_user),
+    db_session: AsyncSession | None = Depends(get_db_session),
+) -> None:
+    if user.client_ids is None:
+        return
+    client_id = request.path_params.get("client_id") or request.query_params.get("client_id")
+    feed_source_id = (
+        request.path_params.get("feed_source_id")
+        or request.query_params.get("feed_source_id")
+    )
+    if client_id is not None:
+        if int(client_id) not in user.client_ids:
+            raise HTTPException(status_code=404, detail="client not found")
+        return
+    if feed_source_id is not None:
+        if db_session is None:
+            return  # handler will raise 503 (database unavailable)
+        from .models.feed_source import FeedSource
+
+        feed_source = await db_session.get(FeedSource, int(feed_source_id))
+        feed_client_id = feed_source.client_id if feed_source is not None else None
+        # Close the implicitly-begun read transaction so handlers can start
+        # their own `session.begin()` without InvalidRequestError.
+        await db_session.rollback()
+        if feed_client_id is None or feed_client_id not in user.client_ids:
+            raise HTTPException(status_code=404, detail="feed source not found")
