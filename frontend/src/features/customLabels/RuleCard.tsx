@@ -1,9 +1,10 @@
 import {
-  Accordion, Badge, Button, CloseButton, Group, Indicator, Paper, Stack, Text, Textarea, Tooltip,
+  Accordion, Badge, Button, Group, Indicator, Paper, Stack, Text, Tooltip,
 } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
-import { parseIdList, renderPreview } from './ids';
+import { renderPreview } from './ids';
 import { ShadowList } from './ShadowList';
+import { RuleValuesEditor } from './RuleValuesEditor';
 import type { ScopedSlotRule, SlotRule, Tier } from './scopeMerge';
 import type { PreviewRuleStats } from './usePreview';
 
@@ -18,18 +19,21 @@ export type RuleCardProps = {
   matchedStats?: PreviewRuleStats;
   showLive: boolean;
   shadowedBy: ReadonlyMap<string, string>;
+  feedSourceId?: number;
+  extraFields: string[];
+  onExtraFieldsChange: (fields: string[]) => void;
   onSetIds: (value: string) => void;
   onPatchRule: (id: string, patch: Partial<SlotRule>) => void;
 };
 
 export function RuleCard({
   rule, priority, value, dirty, inheritedFrom, editable, matchedStats,
-  showLive, shadowedBy, onSetIds, onPatchRule,
+  showLive, shadowedBy, feedSourceId, extraFields, onExtraFieldsChange,
+  onSetIds, onPatchRule,
 }: RuleCardProps) {
   const { t } = useTranslation('customLabels');
   const { t: tCommon } = useTranslation('common');
   const allMode = rule.matchMode === 'all';
-  const count = parseIdList(value).size;
   const neverApplied = showLive
     && matchedStats !== undefined
     && matchedStats.matched > 0
@@ -96,43 +100,14 @@ export function RuleCard({
               </Stack>
             </Paper>
           ) : (
-            <Stack gap={4}>
-              <Textarea
-                label={rule.matchField === 'id'
-                  ? t('bulk.productIds')
-                  : t('bulk.valuesFor', { field: rule.matchField })}
-                aria-label={rule.matchField === 'id'
-                  ? `${t('bulk.productIds')} — ${rule.name}`
-                  : `${t('bulk.valuesFor', { field: rule.matchField })} — ${rule.name}`}
-                minRows={5}
-                autosize
-                styles={{
-                  input: {
-                    maxHeight: 400,
-                    overflowY: 'auto',
-                    fontFamily: 'var(--mantine-font-family-monospace)',
-                  },
-                }}
-                value={value}
-                onChange={(e) => onSetIds(e.currentTarget.value)}
-                placeholder={t('idsPlaceholder')}
-              />
-              <Group gap="xs" justify="space-between" wrap="nowrap">
-                <Text size="xs" c="dimmed" data-testid={`id-count-${rule.id}`}>
-                  {t('idCount', { count })}
-                </Text>
-                <Group gap={6} wrap="nowrap">
-                  <Text size="xs" c="dimmed">{rule.matchField}</Text>
-                  {value !== '' && (
-                    <CloseButton
-                      size="xs"
-                      aria-label={`${t('clearValues')} — ${rule.name}`}
-                      onClick={() => onSetIds('')}
-                    />
-                  )}
-                </Group>
-              </Group>
-            </Stack>
+            <RuleValuesEditor
+              rule={rule}
+              value={value}
+              feedSourceId={feedSourceId}
+              extraFields={extraFields}
+              onExtraFieldsChange={onExtraFieldsChange}
+              onSetIds={onSetIds}
+            />
           )}
           <ShadowList shadowedBy={shadowedBy} />
         </Stack>

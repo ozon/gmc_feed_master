@@ -1,12 +1,21 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Accordion } from '@mantine/core';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
+import { stubFetch } from '../../test/fetch';
 import { RuleCard } from './RuleCard';
 import type { ScopedSlotRule } from './scopeMerge';
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
 
 const RULE: ScopedSlotRule = {
   id: 'r1', name: 'Mid Funnel', isActive: true, targetSlot: 'custom_label_1',
@@ -17,27 +26,33 @@ const RULE: ScopedSlotRule = {
 function renderCard(over: Partial<Parameters<typeof RuleCard>[0]> = {}) {
   const onSetIds = vi.fn();
   const initialValue = over.value ?? '';
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   function Harness() {
     const [value, setValue] = useState(initialValue);
     return (
-      <Accordion multiple>
-        <RuleCard
-          rule={RULE}
-          priority={1}
-          dirty={false}
-          inheritedFrom={null}
-          editable={false}
-          showLive={false}
-          shadowedBy={new Map()}
-          onSetIds={(next) => {
-            onSetIds(next);
-            setValue(next);
-          }}
-          onPatchRule={() => {}}
-          {...over}
-          value={value}
-        />
-      </Accordion>
+      <QueryClientProvider client={client}>
+        <Accordion multiple>
+          <RuleCard
+            rule={RULE}
+            priority={1}
+            dirty={false}
+            inheritedFrom={null}
+            editable={false}
+            showLive={false}
+            shadowedBy={new Map()}
+            feedSourceId={undefined}
+            extraFields={[]}
+            onExtraFieldsChange={() => {}}
+            onSetIds={(next) => {
+              onSetIds(next);
+              setValue(next);
+            }}
+            onPatchRule={() => {}}
+            {...over}
+            value={value}
+          />
+        </Accordion>
+      </QueryClientProvider>
     );
   }
   render(<Harness />);
@@ -108,5 +123,42 @@ describe('RuleCard', () => {
   it('inherited rules show the tier badge', () => {
     renderCard({ inheritedFrom: 'client' });
     expect(screen.getByText('Inherited from Client')).toBeInTheDocument();
+  });
+
+  it('header shows the compact #N before the rule name', () => {
+    renderCard();
+    const badge = screen.getByTestId('priority-badge');
+    expect(badge).toHaveTextContent('#1');
+    // #N precedes the name in DOM order
+    expect(badge.compareDocumentPosition(screen.getByText('Mid Funnel')))
+      .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it('with a feed source renders the split editor and preview rows', async () => {
+    stubFetch((url) => {
+      if (url.includes('/products/lookup')) {
+        return jsonResponse({
+          matches: {
+            a1: {
+              count: 1,
+              sample: {
+                product_id: 'a1', status: 'active', excluded: false,
+                title: 'Alpha', brand: 'Acme', availability: 'in_stock',
+              },
+            },
+          },
+        });
+      }
+      return jsonResponse({});
+    });
+    renderCard({
+      feedSourceId: 5,
+      value: 'a1,zz',
+    });
+    await userEvent.click(screen.getByText('Mid Funnel'));
+    const viewport = await screen.findByTestId('product-preview-viewport');
+    expect(viewport).toBeInTheDocument();
+    expect(await screen.findByText('Alpha')).toBeInTheDocument();
+    expect(await screen.findByText('ID not found in feed')).toBeInTheDocument();
   });
 });

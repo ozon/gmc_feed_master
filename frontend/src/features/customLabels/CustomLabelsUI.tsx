@@ -170,6 +170,7 @@ export function CustomLabelsUI({
   const [deleteOpen, { open: openDelete, close: closeDelete }] = useDisclosure(false);
   const [selectedSlot, setSelectedSlot] = useState<string>(TARGET_SLOTS[0]);
   const [slotTouched, setSlotTouched] = useState(false);
+  const [previewFields, setPreviewFields] = useState<Record<string, string[]>>({});
   const populatedSlots = useMemo(
     () => TARGET_SLOTS.filter(
       (slot) => effectiveRules.some((r) => r.isActive && r.targetSlot === slot),
@@ -333,6 +334,11 @@ export function CustomLabelsUI({
             matchedStats={preview.result?.rules[rule.id]}
             showLive={atFeed}
             shadowedBy={shadow[rule.id]?.shadowedBy ?? new Map()}
+            feedSourceId={scope.feedSourceId}
+            extraFields={previewFields[rule.id] ?? []}
+            onExtraFieldsChange={(fields) =>
+              setPreviewFields((prev) => ({ ...prev, [rule.id]: fields }))
+            }
             onSetIds={(next) => onSetSlotIds(rule.id, next)}
             onPatchRule={patchRule}
           />
