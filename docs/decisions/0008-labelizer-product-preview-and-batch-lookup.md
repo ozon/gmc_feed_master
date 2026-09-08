@@ -21,16 +21,28 @@ for performance, but a preview column can be windowed to a fixed row height.
    participate) and counts every matching staged product, with `sample` = the lowest-
    `product_id` match projected to `product_id, status, excluded, title, brand, availability`
    + requested extra fields. Two SQL queries total (full feed + sample fetch).
-2. **Synchronized, windowed preview column** — at feed tier each expanded rule card splits
-   its editor 35/65 (Grid columns=20, spans 7/13): a fixed 10-row, no-soft-wrap, 34px-line
-   monospace textarea beside a preview column whose row *i* mirrors parsed entry *i*
-   (order + duplicates preserved). Fixed-row windowing is custom (~30 lines: scrollTop →
-   slice) — **no new dependency**; `@tanstack/react-virtual` was rejected for a 1-D
-   fixed-row list where textarea↔list scroll sync is custom code either way. Scroll sync is
-   bidirectional `scrollTop` copying with a rAF-released guard flag and a rebind key so
-   listeners re-attach when the synced elements remount. Lookups are 300 ms-debounced,
-   TanStack-Query-cached (keyed by sorted value set + fields; `keepPreviousData`), skeleton
-   rows shown while fetching so newly typed values never flash as dead.
+2. **Synchronized, windowed, toggleable preview column** — at feed tier each expanded
+   rule card renders a compact toolbar (clear, format & dedupe, preview toggle,
+   extra fields) above a fixed-width flex row: the value textarea is bounded to
+   380px (`flex: 0 0 380px`) in both states, and the preview column (`flex: 1`)
+   is **collapsed by default** — one shared toggle lifted to `CustomLabelsUI`
+   flips it for every card. Preview row *i* mirrors textarea **line** *i*
+   (split on `\n` only; blank lines render blank rows so alignment never breaks;
+   a multi-ID line shows its first ID's match plus a `+N more` badge, and the
+   Format toolbar action normalizes commas to one ID per line). Rows are 44px
+   (`ROW_HEIGHT` in `productPreview.ts`); the textarea input uses zero vertical
+   padding with `line-height: 44px`, so line *i*'s top is exactly `i × 44` —
+   flush with the absolutely-positioned preview rows and free of the constant
+   top offset the first iteration carried. Fixed-row windowing is custom
+   (~30 lines: scrollTop → slice) — **no new dependency**;
+   `@tanstack/react-virtual` was re-rejected for a 1-D fixed-row list where
+   textarea↔list scroll sync is custom code either way. Scroll sync is
+   bidirectional `scrollTop` copying with a rAF-released guard flag and a
+   rebind key (feed source + preview visibility) so listeners re-attach when
+   the synced elements remount. Lookups are 300 ms-debounced,
+   TanStack-Query-cached (keyed by sorted value set + fields;
+   `keepPreviousData`), skeleton rows shown while fetching so newly typed
+   values never flash as dead.
 3. **Found semantics** — dead values render a red `ID not found in feed` (field `id`) /
    `No match in feed` badge; removed/excluded products render normally with dimmed status
    badges (so users see WHY a rule won't label them); values matching several products show
@@ -40,16 +52,29 @@ for performance, but a preview column can be windowed to a fixed row height.
 4. **Priority display moved** — slot selector items are numbered `#1 CUSTOM_LABEL_0` …
    `#5 CUSTOM_LABEL_4`; rule card headers show a compact dimmed `#N` before the rule name;
    the old `#N Priority` badge and its `priority` i18n key are retired.
+5. **Shadow attribution moved inline (2026-09-08 rule-card refactor)** — the
+   card-footer "Overridden IDs" struck-through list is removed; shadowing is
+   communicated by the header `N overridden` badge plus an inline orange
+   `OVERRIDDEN BY #N` badge on the affected preview row (tooltip: claiming
+   rule name). `computeShadowing` now emits the claiming rule's id, name, and
+   1-based slot priority.
+6. **Coverage dashboard rule breakdown (2026-09-08 rule-card refactor)** —
+   beneath the dashboard progress bar, a wrapping group of `#N name: Mx`
+   badges shows each active rule of the selected slot with its **net**
+   assigned product count — the preview endpoint's per-rule `labeled` stat
+   (winners only, post-shadowing; `matched` remains the pre-shadowing count
+   shown in card headers).
 
 ## Consequences
 - One more O(feed-size) read endpoint, the same per-request budget as the existing
   `custom_labels` preview endpoint; acceptable at current feed sizes. If feeds grow large,
   revisit SQL-side matching (`jsonb_array_elements_text`) for the value set.
-- Row alignment is by parsed-entry index, not physical line: comma-separated one-liner
-  lists align by index (the textarea uses `wrap="off"` so newline lists align 1:1).
+- Row alignment is by textarea line index: row *i* = line *i*; comma-separated
+  one-liners stay on one row (first-ID match + `+N more`), and the Format
+  toolbar action normalizes to one ID per line.
 - The endpoint is general-purpose (reusable for future bulk-edit features), not
   `custom_labels`-specific; `resolve_path` is duplicated as
   `_product_field_candidates` in the route with an equivalence test as the drift guard.
 - Frontend types `ProductLookupSample`/`ProductLookupMatch` in `frontend/src/api/types.ts`
-  are consumed by the preview column; the row height (34px) is a shared constant
+  are consumed by the preview column; the row height (44px) is a shared constant
   (`productPreview.ts`) coupling textarea line-height and preview rows.
