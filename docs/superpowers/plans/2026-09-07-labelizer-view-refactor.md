@@ -1417,6 +1417,7 @@ Replace the two bullets "**Preview:**" and "**Grouped by slot:**" (lines 216-232
 Run (from `frontend/`): `npm run typecheck && npm run test -- --run && npm run build`
 Run (from `backend/`): `uv run pytest -n auto && uv run ruff check . && uv run mypy .`
 Expected: all PASS.
+Execution note: ruff/mypy gates could not run clean repo-wide — pre-existing repo debt (no ruff config; mypy absent from backend dev deps), verified not caused by this branch.
 
 - [ ] **Step 4: Commit**
 

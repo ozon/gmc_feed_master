@@ -147,8 +147,11 @@ export function CustomLabelsUI({
   );
 
   const effectiveRules = rules ?? serverRules;
-  const effectiveIds = slotIds
-    ?? Object.fromEntries(Object.entries(serverIds).map(([id, v]) => [id, v.value]));
+  const plainIds = useMemo(
+    () => Object.fromEntries(Object.entries(serverIds).map(([id, v]) => [id, v.value])),
+    [serverIds],
+  );
+  const effectiveIds = slotIds ?? plainIds;
   const dirtyRules = rules !== null;
   const dirtyIds = slotIds !== null;
   const dirty = dirtyRules || dirtyIds;
@@ -167,8 +170,11 @@ export function CustomLabelsUI({
   const [deleteOpen, { open: openDelete, close: closeDelete }] = useDisclosure(false);
   const [selectedSlot, setSelectedSlot] = useState<string>(TARGET_SLOTS[0]);
   const [slotTouched, setSlotTouched] = useState(false);
-  const populatedSlots = TARGET_SLOTS.filter(
-    (slot) => activeRules.some((r) => r.targetSlot === slot),
+  const populatedSlots = useMemo(
+    () => TARGET_SLOTS.filter(
+      (slot) => effectiveRules.some((r) => r.isActive && r.targetSlot === slot),
+    ),
+    [effectiveRules],
   );
   useEffect(() => {
     if (!slotTouched && populatedSlots.length > 0 && !populatedSlots.includes(selectedSlot)) {

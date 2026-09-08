@@ -10,9 +10,7 @@
   "activeRulesCount_other": "{{count}} active rules",
   "previewUnavailable": "Live preview unavailable.",
   "noStagedProducts": "No staged products yet — run the pipeline first.",
-  "slotLabeledOf": "{{count}} of {{total}} staged products labeled",
   "clearValues": "Clear value list",
-  "emptySlots": "No rules yet for:",
   "slotSelectorLabel": "Custom label slot",
   "priority": "#{{index}} Priority",
   "coverage": {
