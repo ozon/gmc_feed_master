@@ -27,7 +27,7 @@ export function RuleValuesEditor({
   const previewRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const onScrollTopChange = useCallback((top: number) => setScrollTop(top), []);
-  useSyncedScroll(textareaRef, previewRef, onScrollTopChange);
+  useSyncedScroll(textareaRef, previewRef, onScrollTopChange, feedSourceId);
 
   const entries = useMemo(() => parseIdEntries(value), [value]);
   const uniqueValues = useMemo(() => Array.from(new Set(entries)), [entries]);

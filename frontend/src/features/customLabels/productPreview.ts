@@ -23,12 +23,16 @@ export function availabilityColor(
 /**
  * Bidirectional scrollTop sync between the values textarea and the preview
  * viewport. A guard flag (released on the next animation frame) stops the
- * programmatic set on the target from re-triggering the handler.
+ * programmatic set on the target from re-triggering the handler. `rebindKey`
+ * re-runs the binding when the synced elements remount (e.g. the feed scope
+ * changes while the editor stays mounted) — without it the listeners would
+ * stay attached to the replaced DOM nodes.
  */
 export function useSyncedScroll(
   textareaRef: RefObject<HTMLTextAreaElement | null>,
   previewRef: RefObject<HTMLDivElement | null>,
   onScrollTopChange: (top: number) => void,
+  rebindKey: unknown = undefined,
 ): void {
   const callbackRef = useRef(onScrollTopChange);
   callbackRef.current = onScrollTopChange;
@@ -58,5 +62,5 @@ export function useSyncedScroll(
       textarea.removeEventListener('scroll', onTextareaScroll);
       preview.removeEventListener('scroll', onPreviewScroll);
     };
-  }, [textareaRef, previewRef]);
+  }, [textareaRef, previewRef, rebindKey]);
 }
