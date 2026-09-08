@@ -52,7 +52,7 @@ describe('RuleCard', () => {
   it('collapsed header shows name and priority badge, hides the editor', () => {
     renderCard();
     expect(screen.getByText('Mid Funnel')).toBeInTheDocument();
-    expect(screen.getByText('#1 Priority')).toBeInTheDocument();
+    expect(screen.getByText('#1')).toBeInTheDocument();
     expect(
       screen.queryByRole('textbox', { name: /product ids — mid funnel/i }),
     ).not.toBeInTheDocument();

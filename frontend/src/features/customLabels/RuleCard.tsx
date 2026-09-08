@@ -39,12 +39,12 @@ export function RuleCard({
     <Accordion.Item value={rule.id} data-testid={`rule-card-${rule.id}`}>
       <Accordion.Control>
         <Group gap="xs" wrap="nowrap">
+          <Text size="xs" c="dimmed" component="span" data-testid="priority-badge">
+            {`#${priority}`}
+          </Text>
           <Indicator color="orange" size={8} offset={-4} position="top-end" disabled={!dirty}>
             <Text size="sm" fw={600} component="span">{rule.name}</Text>
           </Indicator>
-          <Badge size="xs" variant="light" color="blue" data-testid="priority-badge">
-            {t('priority', { index: priority })}
-          </Badge>
           {inheritedFrom !== null && (
             <Badge size="xs" variant="light" color="teal">
               {t('inheritedFrom', { tier: tCommon(`scope.${inheritedFrom}`) })}
