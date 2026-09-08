@@ -16,7 +16,10 @@ export function SlotSelector({
       <Indicator color="orange" size={8} offset={-2} position="top-end" disabled={!dirty}>
         <SegmentedControl
           aria-label={t('slotSelectorLabel')}
-          data={slots.map((slot) => ({ value: slot, label: slot.toUpperCase() }))}
+          data={slots.map((slot, index) => ({
+            value: slot,
+            label: `#${index + 1} ${slot.toUpperCase()}`,
+          }))}
           value={value}
           onChange={onChange}
           data-testid="slot-selector"

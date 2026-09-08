@@ -97,11 +97,11 @@ describe('CustomLabelsUI operational page', () => {
     renderUI({ feedSourceId: 1 });
     const selector = await screen.findByTestId('slot-selector');
     // default = first slot with active rules (custom_label_1: Mid Funnel)
-    expect(within(selector).getByText('CUSTOM_LABEL_1')).toBeInTheDocument();
+    expect(within(selector).getByText('#2 CUSTOM_LABEL_1')).toBeInTheDocument();
     expect(screen.getByText('Mid Funnel')).toBeInTheDocument();
     expect(screen.queryByText('Client Only')).not.toBeInTheDocument();
     // switch to custom_label_2 (Client Only)
-    await userEvent.click(within(selector).getByText('CUSTOM_LABEL_2'));
+    await userEvent.click(within(selector).getByText('#3 CUSTOM_LABEL_2'));
     expect(screen.getByText('Client Only')).toBeInTheDocument();
     expect(screen.queryByText('Mid Funnel')).not.toBeInTheDocument();
   });
@@ -123,7 +123,7 @@ describe('CustomLabelsUI operational page', () => {
     // only the selected slot's rules are rendered
     expect(screen.getAllByText('Inherited from Client').length).toBe(1);
     const selector = screen.getByTestId('slot-selector');
-    await userEvent.click(within(selector).getByText('CUSTOM_LABEL_2'));
+    await userEvent.click(within(selector).getByText('#3 CUSTOM_LABEL_2'));
     expect(screen.getAllByText('Inherited from Client').length).toBe(1);
   });
 
@@ -131,7 +131,7 @@ describe('CustomLabelsUI operational page', () => {
     renderUI({ feedSourceId: 1 });
     await screen.findByText('Mid Funnel');
     const selector = screen.getByTestId('slot-selector');
-    await userEvent.click(within(selector).getByText('CUSTOM_LABEL_0'));
+    await userEvent.click(within(selector).getByText('#1 CUSTOM_LABEL_0'));
     expect(screen.getByTestId('empty-slot-notice')).toBeInTheDocument();
     expect(screen.queryByText('Mid Funnel')).not.toBeInTheDocument();
   });
@@ -635,7 +635,7 @@ describe('CustomLabelsUI live preview stats', () => {
     expect(screen.queryByRole('link', { name: 'a1' })).not.toBeInTheDocument();
     // switch to custom_label_2: r3 is matched-but-never-labeled
     const selector = screen.getByTestId('slot-selector');
-    await userEvent.click(within(selector).getByText('CUSTOM_LABEL_2'));
+    await userEvent.click(within(selector).getByText('#3 CUSTOM_LABEL_2'));
     expect(screen.getByText('1 matched')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'z1' })).not.toBeInTheDocument();
   });
@@ -665,6 +665,33 @@ describe('CustomLabelsUI live preview stats', () => {
     await screen.findByText('Mid Funnel');
     expect(calls.some((u) => u.includes('/preview'))).toBe(false);
     expect(screen.queryByTestId('coverage-dashboard')).not.toBeInTheDocument();
+  });
+
+  it('at feed tier renders the split editor with preview rows from the lookup endpoint', async () => {
+    renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', (url) => {
+      if (url.includes('/products/lookup')) return jsonResponse({
+        matches: {
+          a: { count: 1, sample: { product_id: 'a', status: 'active', excluded: false, title: 'Alpha', brand: 'Acme', availability: 'in_stock' } },
+          b: { count: 1, sample: { product_id: 'b', status: 'active', excluded: false, title: 'Bravo', brand: 'Beta', availability: 'out_of_stock' } },
+        },
+      });
+      return jsonResponseFor(url);
+    });
+    await screen.findByText('Mid Funnel');
+    await userEvent.click(screen.getByText('Mid Funnel')); // expand
+    expect(await screen.findByText('Matched products')).toBeInTheDocument();
+    expect(await screen.findByText('Alpha')).toBeInTheDocument();
+    expect(await screen.findByText('Bravo')).toBeInTheDocument();
+  });
+
+  it('at client tier the preview column is absent (no feed context)', async () => {
+    renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels');
+    await screen.findByText('Mid Funnel');
+    await userEvent.click(screen.getByText('Mid Funnel')); // expand
+    expect(
+      await screen.findByRole('textbox', { name: 'Product IDs — Mid Funnel' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('product-preview-viewport')).not.toBeInTheDocument();
   });
 });
 
