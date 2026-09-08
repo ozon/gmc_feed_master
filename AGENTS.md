@@ -62,6 +62,9 @@ npm run typecheck                             # tsc -b
 - `docs/decisions/0003-rolldown-optional-evaluation.md` — ADR: Rolldown as optional bundler evaluation
 - `docs/decisions/0004-plugin-frontend-error-isolation.md` — ADR: Plugin frontend error isolation
 - `docs/decisions/0005-labelizer-scope-merge-and-value-pinning.md` — ADR: Labelizer scope merge + bulk-value pinning
+- `docs/decisions/0006-pipeline-editor-config-hub.md` — ADR: Pipeline Editor as Plugin Config Hub
+- `docs/decisions/0007-plugin-setup-and-page-two-surface.md` — ADR: Plugin Setup + Plugin Page Two-Surface Model
+- `docs/decisions/0008-labelizer-product-preview-and-batch-lookup.md` — ADR: Labelizer product preview + batch value lookup
 - `backend/docs/architecture.md` — Pipeline stages, delta mechanics, plugin system
 - `backend/docs/data-model.md` — Entities, contenthash/confighash, retention rules
 - `backend/docs/api.md` — Endpoint reference, reserved plugin routes
