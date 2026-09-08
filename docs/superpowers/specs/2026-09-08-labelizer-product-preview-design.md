@@ -28,7 +28,7 @@ Two gaps on the Labelizer Plugin Page:
 
 Located in `backend/app/routes/products.py`, auth like the other product routes.
 
-- Request: `{field: string = "id" (registry attribute path), values: string[] (2–10 000 after dedupe), extraFields: string[] (0–20, optional)}`.
+- Request: `{field: string = "id" (registry attribute path), values: string[] (1–10 000 after dedupe), extraFields: string[] (0–20, optional)}`.
 - Matching mirrors the plugin's `matches()`: a value matches a staged product when any candidate value of `raw_data[field]` equals it. Scalar fields: JSONB `raw_data->field->>text` equality. Repeated/array fields: match any element (`jsonb_array_elements_text`). Subfield paths (`attr.sub`) resolve like `resolve_path`. Status-agnostic: `removed` and `excluded` rows participate.
 - Response, keyed by value:
   `{"matches": {"<value>": {"count": <int>, "sample": {product_id, status, excluded, title, availability, <extraFields…>} | null}}}`

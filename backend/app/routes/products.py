@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -184,3 +185,104 @@ async def feed_source_fields(
         )).scalars().all()
     all_fields = sorted(set(rows) | set(_BASELINE_FIELDS))
     return {"fields": all_fields}
+
+
+class _LookupRequest(BaseModel):
+    field: str = "id"
+    values: list[str] = Field(min_length=1, max_length=10_000)
+    extraFields: list[str] = Field(default_factory=list, max_length=20)
+
+
+def _product_field_candidates(raw: dict, path: str) -> list[str]:
+    """Candidate values of a registry path in raw_data — mirrors the
+    custom_labels plugin's resolve_path() semantics (scalar / repeated /
+    attr.sub). Keep in sync with plugins/core/custom_labels/plugin.py."""
+    head, _, sub = path.partition(".")
+    value = raw.get(head)
+    if value is None:
+        return []
+    if sub:
+        if isinstance(value, dict):
+            item = value.get(sub)
+            return [str(item)] if item not in (None, "") else []
+        if isinstance(value, list):
+            if len(value) != 1 or not isinstance(value[0], dict):
+                return []
+            item = value[0].get(sub)
+            return [str(item)] if item not in (None, "") else []
+        return []
+    if isinstance(value, str):
+        return [value] if value != "" else []
+    if isinstance(value, list):
+        return [str(item) for item in value if item not in (None, "")]
+    return [str(value)]
+
+
+def _lookup_sample(row: StagingProduct, extra_fields: list[str]) -> dict:
+    raw = row.raw_data or {}
+    sample = {
+        "product_id": row.product_id,
+        "status": row.status,
+        "excluded": row.excluded,
+        "title": raw.get("title"),
+        "brand": raw.get("brand"),
+        "availability": raw.get("availability"),
+    }
+    for field in extra_fields:
+        sample[field] = raw.get(field)
+    return sample
+
+
+@router.post("/feed-sources/{feed_source_id}/products/lookup")
+async def lookup_products(
+    feed_source_id: int,
+    payload: _LookupRequest,
+    _user: str = Depends(require_user),
+    db_session: AsyncSession | None = Depends(get_db_session),
+) -> dict:
+    session = _require_db(db_session)
+    async with session.begin():
+        await _require_feed_source(session, feed_source_id)
+        rows = (await session.execute(
+            select(StagingProduct.product_id, StagingProduct.status,
+                   StagingProduct.excluded, StagingProduct.raw_data)
+            .where(StagingProduct.feed_source_id == feed_source_id)
+        )).all()
+        matches: dict[str, dict] = {
+            value: {"count": 0, "sample_id": None}
+            for value in dict.fromkeys(payload.values)
+        }
+        for product_id, _status, _excluded, raw in rows:
+            for candidate in set(_product_field_candidates(raw or {}, payload.field)):
+                entry = matches.get(candidate)
+                if entry is None:
+                    continue
+                entry["count"] += 1
+                if entry["sample_id"] is None or product_id < entry["sample_id"]:
+                    entry["sample_id"] = product_id
+        sample_ids = sorted(
+            {entry["sample_id"] for entry in matches.values() if entry["sample_id"] is not None}
+        )
+        sample_rows: dict[str, StagingProduct] = {}
+        if sample_ids:
+            sample_rows = {
+                row.product_id: row
+                for row in (await session.execute(
+                    select(StagingProduct).where(
+                        StagingProduct.feed_source_id == feed_source_id,
+                        StagingProduct.product_id.in_(sample_ids),
+                    )
+                )).scalars()
+            }
+    return {
+        "matches": {
+            value: {
+                "count": entry["count"],
+                "sample": (
+                    _lookup_sample(sample_rows[entry["sample_id"]], payload.extraFields)
+                    if entry["sample_id"] is not None else None
+                ),
+            }
+            for value, entry in matches.items()
+        }
+    }

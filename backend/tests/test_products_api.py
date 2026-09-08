@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
 from app.main import create_app
+from app.routes.products import _product_field_candidates
 from app.models import Client, ExportRun, ExportVersion, FeedSource, IngestionRun
 from app.models.session import Session
 from app.models.staging import StagingProduct
@@ -247,3 +248,114 @@ async def test_product_detail_returns_full_raw_data(app_factory):
     assert body["status"] == "active"
     assert body["raw_data"]["shipping"] == [{"country": "DE", "price": "1 EUR"}]
     assert (await client.get(f"/feed-sources/{feed_id}/products/missing")).status_code == 404
+
+
+LOOKUP_ROWS = [
+    ("a1", {"id": "a1", **_BASE, "title": "Alpha", "brand": "Acme"}, "active"),
+    ("a2", {"id": "a2", **_BASE, "title": "Beta", "brand": "Beta"}, "active"),
+    ("arr1", {"id": "arr1", **_BASE, "title": "Array", "brand": ["Acme", "Beta"]}, "active"),
+    ("b1", {"id": "b1", **_BASE, "title": "Clone", "brand": "Acme"}, "removed"),
+    ("x1", {"id": "x1", **_BASE, "title": "Excl", "brand": "Acme"}, "active"),
+    ("sub1", {"id": "sub1", **_BASE, "title": "Sub", "price": {"value": "10", "currency": "EUR"}}, "active"),
+]
+
+
+async def test_lookup_matches_by_field_counts_and_lowest_sample(app_factory):
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    feed_id = await _setup_feed(factory, client, LOOKUP_ROWS)
+    resp = await client.post(f"/feed-sources/{feed_id}/products/lookup", json={
+        "field": "brand", "values": ["Acme", "Beta", "Gamma"],
+        "extraFields": ["price"],
+    })
+    assert resp.status_code == 200
+    matches = resp.json()["matches"]
+    # Acme: a1 + arr1 (array element) + b1 (removed) + x1 (excluded) -> 4
+    assert matches["Acme"] == {
+        "count": 4,
+        "sample": {
+            "product_id": "a1", "status": "active", "excluded": False,
+            "title": "Alpha", "brand": "Acme", "availability": "in_stock",
+            "price": "1.00 EUR",
+        },
+    }
+    # Beta: a2 + arr1 -> 2, lowest product_id a2
+    assert matches["Beta"]["count"] == 2
+    assert matches["Beta"]["sample"]["product_id"] == "a2"
+    assert matches["Gamma"] == {"count": 0, "sample": None}
+
+
+async def test_lookup_default_field_is_id_and_dedupes_values(app_factory):
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    feed_id = await _setup_feed(factory, client, LOOKUP_ROWS)
+    resp = await client.post(f"/feed-sources/{feed_id}/products/lookup", json={
+        "values": ["a1", "a1", "missing"],
+    })
+    assert resp.status_code == 200
+    matches = resp.json()["matches"]
+    assert set(matches) == {"a1", "missing"}
+    assert matches["a1"]["sample"]["title"] == "Alpha"
+    assert matches["missing"] == {"count": 0, "sample": None}
+
+
+async def test_lookup_removed_sample_carries_status_and_excluded_flag(app_factory):
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    feed_id = await _setup_feed(factory, client, [
+        ("z9", {"id": "z9", **_BASE, "title": "Only", "brand": "Solo"}, "removed"),
+        ("z10", {"id": "z10", **_BASE, "title": "Ex", "brand": "Solo2"}, "active", None, True),
+    ])
+    resp = await client.post(f"/feed-sources/{feed_id}/products/lookup", json={
+        "field": "brand", "values": ["Solo", "Solo2"],
+    })
+    matches = resp.json()["matches"]
+    assert matches["Solo"]["sample"]["status"] == "removed"
+    assert matches["Solo"]["sample"]["excluded"] is False
+    assert matches["Solo2"]["sample"]["excluded"] is True
+
+
+async def test_lookup_subfield_path(app_factory):
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    feed_id = await _setup_feed(factory, client, LOOKUP_ROWS)
+    resp = await client.post(f"/feed-sources/{feed_id}/products/lookup", json={
+        "field": "price.value", "values": ["10"],
+    })
+    assert resp.json()["matches"]["10"]["count"] == 1
+
+
+async def test_lookup_requires_auth_404_and_422(app_factory):
+    app, _ = app_factory
+    anon = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    assert (await anon.post("/feed-sources/1/products/lookup", json={"values": ["a"]})).status_code == 401
+    client = await logged_in_client(app_factory)
+    assert (await client.post("/feed-sources/99999/products/lookup", json={"values": ["a"]})).status_code == 404
+    assert (await client.post("/feed-sources/1/products/lookup", json={"values": []})).status_code == 422
+    assert (await client.post("/feed-sources/1/products/lookup", json={
+        "values": ["a"] * 10001,
+    })).status_code == 422
+    assert (await client.post("/feed-sources/1/products/lookup", json={
+        "values": ["a"], "extraFields": [f"f{i}" for i in range(21)],
+    })).status_code == 422
+
+
+from tests.labels_plugin_module import labels_plugin as _labels_module
+
+
+def test_lookup_candidates_mirror_plugin_resolve_path():
+    resolve_path = _labels_module.resolve_path
+    cases = [
+        ({"a": "v"}, "a"),
+        ({"a": ""}, "a"),
+        ({"a": ["x", "", None, "y"]}, "a"),
+        ({"a": {"s": "v"}}, "a.s"),
+        ({"a": [{"s": "v"}]}, "a.s"),
+        ({"a": [{"s": "v"}, {"s": "w"}]}, "a.s"),
+        ({"a": {"s": ""}}, "a.s"),
+        ({"a": 5}, "a"),
+        ({}, "a"),
+        ({"a": {"s": 1}}, "a.s"),
+    ]
+    for raw, path in cases:
+        assert _product_field_candidates(raw, path) == resolve_path(raw, path), (raw, path)
