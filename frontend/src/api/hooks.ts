@@ -106,10 +106,11 @@ export function useClients() {
   });
 }
 
-export function useFeedSource(id: number | string) {
+export function useFeedSource(id: number | string | undefined) {
   return useQuery({
-    queryKey: queryKeys.feedSource(id).detail,
+    queryKey: queryKeys.feedSource(id ?? 0).detail,
     queryFn: () => apiGet<FeedSourceRow>(`/feed-sources/${id}`),
+    enabled: Boolean(id),
   });
 }
 

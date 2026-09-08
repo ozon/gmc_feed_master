@@ -13,12 +13,11 @@ export function SetupPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { feedSourceId } = useParams<{ feedSourceId: string }>();
   const tab = searchParams.get('tab') === 'mapping' ? 'mapping' : 'settings';
+  const feedSource = useFeedSource(feedSourceId);
 
   if (!feedSourceId) {
     return <ErrorState onRetry={() => {}} />;
   }
-
-  const feedSource = useFeedSource(feedSourceId);
 
   if (feedSource.isPending) return <LoadingState />;
   if (feedSource.isError) {
