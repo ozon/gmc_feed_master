@@ -13,7 +13,7 @@ DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed \
 uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1
 uv run pytest -n auto                    # needs TEST_DATABASE_URL
 uv run ruff check .
-uv run mypy .
+uv run mypy .                            # known baseline: docs/mypy-baseline.md (42 errors, no new errors allowed)
 ```
 
 ## Key conventions
