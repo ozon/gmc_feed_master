@@ -87,25 +87,18 @@ describe('RuleCard', () => {
     expect(screen.getByText('3 unique IDs')).toBeInTheDocument();
   });
 
-  it('shows a shadowed count badge and lists shadowed values with attribution tooltip', async () => {
+  it('shows a shadowed count badge; the footer overridden list is gone', async () => {
     renderCard({
       value: '2,3,5',
-      shadowedBy: new Map([['2', 'Bleeder'], ['3', 'Bleeder']]),
+      shadowedBy: new Map([
+        ['2', { id: 'r0', name: 'Bleeder', priority: 1 }],
+        ['3', { id: 'r0', name: 'Bleeder', priority: 1 }],
+      ]),
     });
     expect(screen.getByText('2 overridden')).toBeInTheDocument();
     await userEvent.click(screen.getByText('Mid Funnel'));
-    expect(await screen.findByText(/overridden IDs/i)).toBeInTheDocument();
-    const value2 = await screen.findByText('2', { exact: true });
-    expect(value2).toHaveStyle({ textDecoration: 'line-through' });
-    expect(screen.getByText('3', { exact: true })).toHaveStyle({
-      textDecoration: 'line-through',
-    });
-    // unshadowed values are NOT struck through (they live in the textarea only)
-    expect(screen.queryByText('5', { exact: true })).not.toBeInTheDocument();
-    await userEvent.hover(value2);
-    expect(await waitFor(() =>
-      screen.getByText(/already matched by higher priority rule: bleeder/i),
-      { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.queryByText(/overridden IDs/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('shadow-list')).not.toBeInTheDocument();
   });
 
   it('all-mode rules show the controlled-by summary instead of a textarea', async () => {

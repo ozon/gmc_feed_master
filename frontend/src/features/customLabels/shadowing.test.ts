@@ -24,7 +24,7 @@ describe('computeShadowing', () => {
     ];
     const result = computeShadowing(rules, { a: '1,2', b: '2,3' });
     expect([...result.b.shadowed]).toEqual(['2']);
-    expect(result.b.shadowedBy.get('2')).toBe('Bleeder');
+    expect(result.b.shadowedBy.get('2')).toEqual({ id: 'a', name: 'Bleeder', priority: 1 });
     expect(result.a.shadowed.size).toBe(0);
   });
 
@@ -53,7 +53,7 @@ describe('computeShadowing', () => {
     ];
     const result = computeShadowing(rules, { b: '9,8' });
     expect([...result.b.shadowed].sort()).toEqual(['8', '9']);
-    expect(result.b.shadowedBy.get('9')).toBe('Catch All');
+    expect(result.b.shadowedBy.get('9')).toEqual({ id: 'a', name: 'Catch All', priority: 1 });
   });
 
   it('values claimed before an all-mode rule stay attributed to their claimer', () => {
@@ -63,8 +63,8 @@ describe('computeShadowing', () => {
       rule({ id: 'b', name: 'Last', targetSlot: 'custom_label_0' }),
     ];
     const result = computeShadowing(rules, { a: '7', b: '7,8' });
-    expect(result.b.shadowedBy.get('7')).toBe('First');
-    expect(result.b.shadowedBy.get('8')).toBe('Catch All');
+    expect(result.b.shadowedBy.get('7')).toEqual({ id: 'a', name: 'First', priority: 1 });
+    expect(result.b.shadowedBy.get('8')).toEqual({ id: 'm', name: 'Catch All', priority: 2 });
   });
 
   it('returns empty entries for rules without values', () => {
@@ -80,7 +80,7 @@ describe('computeShadowing', () => {
     ];
     const result = computeShadowing(rules, { a: '1', b: '1,2' });
     expect([...result.b.shadowed]).toEqual(['1']);
-    expect(result.b.shadowedBy.get('1')).toBe('X');
+    expect(result.b.shadowedBy.get('1')).toEqual({ id: 'a', name: 'X', priority: 1 });
     expect(result.a.shadowed.size).toBe(0);
   });
 
@@ -91,7 +91,17 @@ describe('computeShadowing', () => {
       rule({ id: 'b', name: 'Later', targetSlot: 'custom_label_0' }),
     ];
     const result = computeShadowing(rules, { m2: '9', b: '9' });
-    expect(result.m2.shadowedBy.get('9')).toBe('Catch');
-    expect(result.b.shadowedBy.get('9')).toBe('Catch');
+    expect(result.m2.shadowedBy.get('9')).toEqual({ id: 'm1', name: 'Catch', priority: 1 });
+    expect(result.b.shadowedBy.get('9')).toEqual({ id: 'm1', name: 'Catch', priority: 1 });
+  });
+
+  it('carries the claiming rule id and its 1-based priority among the slot active rules', () => {
+    const rules = [
+      rule({ id: 'a', name: 'Bleeder', targetSlot: 'custom_label_0' }),
+      rule({ id: 'x', name: 'Inactive', targetSlot: 'custom_label_0', isActive: false }),
+      rule({ id: 'b', name: 'Later', targetSlot: 'custom_label_0' }),
+    ];
+    const result = computeShadowing(rules, { a: '5', b: '5' });
+    expect(result.b.shadowedBy.get('5')).toEqual({ id: 'a', name: 'Bleeder', priority: 1 });
   });
 });

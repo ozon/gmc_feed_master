@@ -20,7 +20,6 @@
     "activeRules": "Aktive Regeln"
   },
   "shadowedCount": "{{count}} überschrieben",
-  "shadowListTitle": "Überschriebene IDs (bereits durch eine Regel mit höherer Priorität abgedeckt)",
   "shadowedBy": "Bereits abgedeckt durch Regel mit höherer Priorität: {{name}}",
   "idNotFoundInFeed": "ID nicht im Feed gefunden",
   "noMatchInFeed": "Kein Treffer im Feed",

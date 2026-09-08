@@ -839,8 +839,7 @@ describe('CustomLabelsUI shadowing', () => {
     expect(await screen.findByText('Later')).toBeInTheDocument();
     expect(screen.getByText('1 overridden')).toBeInTheDocument();
     await userEvent.click(screen.getByText('Later')); // expand
-    expect(await screen.findByText(/overridden IDs/i)).toBeInTheDocument();
-    const value2 = await screen.findByText('2', { exact: true });
-    expect(value2).toHaveStyle({ textDecoration: 'line-through' });
+    // footer overridden list is gone; the header badge carries the summary
+    expect(screen.queryByText(/overridden IDs/i)).not.toBeInTheDocument();
   });
 });

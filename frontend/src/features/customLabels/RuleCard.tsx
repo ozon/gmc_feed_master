@@ -3,8 +3,8 @@ import {
 } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { renderPreview } from './ids';
-import { ShadowList } from './ShadowList';
 import { RuleValuesEditor } from './RuleValuesEditor';
+import type { ShadowOwnerInfo } from './shadowing';
 import type { ScopedSlotRule, SlotRule, Tier } from './scopeMerge';
 import type { PreviewRuleStats } from './usePreview';
 
@@ -18,7 +18,7 @@ export type RuleCardProps = {
   editable: boolean;
   matchedStats?: PreviewRuleStats;
   showLive: boolean;
-  shadowedBy: ReadonlyMap<string, string>;
+  shadowedBy: ReadonlyMap<string, ShadowOwnerInfo>;
   feedSourceId?: number;
   extraFields: string[];
   onExtraFieldsChange: (fields: string[]) => void;
@@ -109,7 +109,6 @@ export function RuleCard({
               onSetIds={onSetIds}
             />
           )}
-          <ShadowList shadowedBy={shadowedBy} />
         </Stack>
       </Accordion.Panel>
     </Accordion.Item>

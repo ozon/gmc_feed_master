@@ -20,7 +20,6 @@
     "activeRules": "Active rules"
   },
   "shadowedCount": "{{count}} overridden",
-  "shadowListTitle": "Overridden IDs (already matched by a higher-priority rule)",
   "shadowedBy": "Already matched by higher priority rule: {{name}}",
   "idNotFoundInFeed": "ID not found in feed",
   "noMatchInFeed": "No match in feed",
