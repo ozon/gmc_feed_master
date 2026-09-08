@@ -1,13 +1,22 @@
+import os
 from logging.config import fileConfig
+
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-from alembic import context
 
-from app.db.base import Base
+from alembic import context
 from app import models  # noqa: F401
+from app.db.base import Base
 
 config = context.config
+_database_url = os.environ.get("DATABASE_URL")
+if _database_url:
+    from app.config import Settings
+
+    config.set_main_option(
+        "sqlalchemy.url", Settings(database_url=_database_url).async_database_url
+    )
 if config.config_file_name is not None:
     fileConfig(config.config_file_name, disable_existing_loggers=False)
 target_metadata = Base.metadata

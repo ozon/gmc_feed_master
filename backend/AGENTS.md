@@ -6,7 +6,7 @@ FastAPI + SQLAlchemy 2.0 async + PostgreSQL. Core modules: `app/` (routes, model
 ## HOW
 ```bash
 # From backend/
-cp .env.example .env
+cp ../.env.example ../.env
 docker compose up -d postgres
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed \
   uv run alembic upgrade head

@@ -105,7 +105,7 @@ frontend-typecheck: ## Type-check frontend with tsc
 
 .PHONY: plugin-test
 plugin-test: ## Run plugin contract tests
-	uv run pytest backend/tests/test_plugin_contract.py
+	cd $(BACKEND_DIR) && uv run pytest tests/test_plugin_contract.py
 
 # ==============================================================================
 #  Registry
