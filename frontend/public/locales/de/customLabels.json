@@ -11,6 +11,7 @@
   "previewUnavailable": "Live-Vorschau nicht verfügbar.",
   "noStagedProducts": "Noch keine gestagten Produkte — zuerst die Pipeline ausführen.",
   "clearValues": "Werteliste leeren",
+  "formatDedupe": "Formatieren & Duplikate entfernen",
   "slotSelectorLabel": "Custom-Label-Slot",
   "coverage": {
     "labeledOf": "{{count}} / {{total}} gestagte Produkte gelabelt",
@@ -28,7 +29,6 @@
   "nMoreIds": "+{{more}} weitere",
   "nProducts_one": "{{count}} Produkt",
   "nProducts_other": "{{count}} Produkte",
-  "previewTitle": "Passende Produkte",
   "previewFieldsLabel": "Zusätzliche Felder",
   "previewEmpty": "Noch keine Werte — die Vorschau folgt der Liste links.",
   "previewError": "Produkt-Suche fehlgeschlagen.",

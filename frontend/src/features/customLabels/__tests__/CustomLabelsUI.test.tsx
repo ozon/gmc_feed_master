@@ -686,7 +686,6 @@ describe('CustomLabelsUI live preview stats', () => {
     });
     await screen.findByText('Mid Funnel');
     await userEvent.click(screen.getByText('Mid Funnel')); // expand
-    expect(await screen.findByText('Matched products')).toBeInTheDocument();
     expect(await screen.findByText('Alpha')).toBeInTheDocument();
     expect(await screen.findByText('Bravo')).toBeInTheDocument();
   });

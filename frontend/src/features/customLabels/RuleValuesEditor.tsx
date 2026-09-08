@@ -1,13 +1,18 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { CloseButton, Grid, Group, MultiSelect, Stack, Text, Textarea } from '@mantine/core';
+import {
+  ActionIcon, Grid, Group, MultiSelect, Stack, Text, Textarea, Tooltip,
+} from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useTranslation } from 'react-i18next';
+import { IconTrash, IconWand } from '@tabler/icons-react';
 import { useFeedSourceFields, useProductLookup } from '../../api/hooks';
-import { parseIdList, parsePreviewLines } from './ids';
+import { formatIdList, parseIdList, parsePreviewLines } from './ids';
 import { ProductPreviewColumn } from './ProductPreviewColumn';
 import { ROW_HEIGHT, useSyncedScroll } from './productPreview';
 import type { ShadowOwnerInfo } from './shadowing';
 import type { ScopedSlotRule } from './scopeMerge';
+
+const PREVIEW_DEFAULT_FIELDS = new Set(['title', 'brand', 'availability']);
 
 export type RuleValuesEditorProps = {
   rule: ScopedSlotRule;
@@ -18,8 +23,6 @@ export type RuleValuesEditorProps = {
   onSetIds: (value: string) => void;
   shadowedBy: ReadonlyMap<string, ShadowOwnerInfo>;
 };
-
-const PREVIEW_DEFAULT_FIELDS = new Set(['title', 'brand', 'availability']);
 
 export function RuleValuesEditor({
   rule, value, feedSourceId, extraFields, onExtraFieldsChange, onSetIds, shadowedBy,
@@ -76,40 +79,38 @@ export function RuleValuesEditor({
     />
   );
 
-  const footer = (
-    <Group gap="xs" justify="space-between" wrap="nowrap">
-      <Text size="xs" c="dimmed" data-testid={`id-count-${rule.id}`}>
-        {t('idCount', { count })}
-      </Text>
-      <Group gap={6} wrap="nowrap">
-        <Text size="xs" c="dimmed">{rule.matchField}</Text>
-        {value !== '' && (
-          <CloseButton
-            size="xs"
+  const toolbar = (
+    <Group justify="space-between" wrap="nowrap" gap="xs">
+      <Group gap={4} wrap="nowrap">
+        <Tooltip label={t('clearValues')} withArrow position="top" openDelay={300}>
+          <ActionIcon
+            variant="default"
+            size="sm"
             aria-label={`${t('clearValues')} — ${rule.name}`}
+            disabled={value === ''}
             onClick={() => onSetIds('')}
-          />
-        )}
+            data-testid={`clear-ids-${rule.id}`}
+          >
+            <IconTrash size={16} />
+          </ActionIcon>
+        </Tooltip>
+        <Tooltip label={t('formatDedupe')} withArrow position="top" openDelay={300}>
+          <ActionIcon
+            variant="default"
+            size="sm"
+            aria-label={`${t('formatDedupe')} — ${rule.name}`}
+            disabled={value === ''}
+            onClick={() => onSetIds(formatIdList(value))}
+            data-testid={`format-ids-${rule.id}`}
+          >
+            <IconWand size={16} />
+          </ActionIcon>
+        </Tooltip>
       </Group>
-    </Group>
-  );
-
-  if (feedSourceId === undefined) {
-    return (
-      <Stack gap={4}>
-        {textarea}
-        {footer}
-      </Stack>
-    );
-  }
-
-  return (
-    <Stack gap="xs">
-      <Group justify="space-between" wrap="wrap">
-        <Text size="sm" fw={600}>{t('previewTitle')}</Text>
+      {feedSourceId !== undefined && (
         <MultiSelect
           size="xs"
-          w={260}
+          w={220}
           clearable
           searchable
           aria-label={t('previewFieldsLabel')}
@@ -119,7 +120,32 @@ export function RuleValuesEditor({
           placeholder={t('previewFieldsLabel')}
           data-testid={`preview-fields-${rule.id}`}
         />
-      </Group>
+      )}
+    </Group>
+  );
+
+  const footer = (
+    <Group gap="xs" justify="space-between" wrap="nowrap">
+      <Text size="xs" c="dimmed" data-testid={`id-count-${rule.id}`}>
+        {t('idCount', { count })}
+      </Text>
+      <Text size="xs" c="dimmed">{rule.matchField}</Text>
+    </Group>
+  );
+
+  if (feedSourceId === undefined) {
+    return (
+      <Stack gap={4}>
+        {toolbar}
+        {textarea}
+        {footer}
+      </Stack>
+    );
+  }
+
+  return (
+    <Stack gap="xs">
+      {toolbar}
       <Grid columns={20} gap="xs">
         <Grid.Col span={7}>{textarea}</Grid.Col>
         <Grid.Col span={13}>

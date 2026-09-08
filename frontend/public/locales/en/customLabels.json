@@ -11,6 +11,7 @@
   "previewUnavailable": "Live preview unavailable.",
   "noStagedProducts": "No staged products yet — run the pipeline first.",
   "clearValues": "Clear value list",
+  "formatDedupe": "Format & remove duplicates",
   "slotSelectorLabel": "Custom label slot",
   "coverage": {
     "labeledOf": "{{count}} / {{total}} staged products labeled",
@@ -28,7 +29,6 @@
   "nMoreIds": "+{{more}} more",
   "nProducts_one": "{{count}} product",
   "nProducts_other": "{{count}} products",
-  "previewTitle": "Matched products",
   "previewFieldsLabel": "Additional fields",
   "previewEmpty": "No values yet — the preview follows the list on the left.",
   "previewError": "Product lookup failed.",

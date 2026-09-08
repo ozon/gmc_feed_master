@@ -87,6 +87,27 @@ describe('RuleCard', () => {
     expect(screen.getByText('3 unique IDs')).toBeInTheDocument();
   });
 
+  it('toolbar clears and formats the value list; both disable when empty', async () => {
+    const { onSetIds } = renderCard({ value: 'b, a\n\n a \nc,\n' });
+    await userEvent.click(screen.getByText('Mid Funnel'));
+    const textarea = await screen.findByRole('textbox', { name: /product ids — mid funnel/i });
+    expect(textarea).toHaveValue('b, a\n\n a \nc,\n');
+    await userEvent.click(
+      screen.getByRole('button', { name: /format & remove duplicates — mid funnel/i }),
+    );
+    expect(onSetIds).toHaveBeenLastCalledWith('b\na\nc');
+    expect(textarea).toHaveValue('b\na\nc');
+    await userEvent.click(screen.getByRole('button', { name: /clear value list — mid funnel/i }));
+    expect(onSetIds).toHaveBeenLastCalledWith('');
+    expect(textarea).toHaveValue('');
+    expect(
+      screen.getByRole('button', { name: /format & remove duplicates — mid funnel/i }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: /clear value list — mid funnel/i }),
+    ).toBeDisabled();
+  });
+
   it('shows a shadowed count badge; the footer overridden list is gone', async () => {
     renderCard({
       value: '2,3,5',
