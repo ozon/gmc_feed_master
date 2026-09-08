@@ -313,6 +313,8 @@ export function CustomLabelsUI({
           pending={preview.isPending}
           errors={preview.errors}
           unavailable={preview.unavailable}
+          slotRules={slotRules.map(({ id, name }) => ({ id, name }))}
+          ruleStats={preview.result?.rules}
         />
       )}
       <Accordion multiple data-testid={`rules-${selectedSlot}`}>

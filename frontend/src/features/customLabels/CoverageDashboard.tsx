@@ -1,5 +1,6 @@
-import { Card, Group, Loader, Progress, Stack, Text } from '@mantine/core';
+import { Badge, Card, Group, Loader, Progress, Stack, Text } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
+import type { PreviewRuleStats } from './usePreview';
 
 export type CoverageDashboardProps = {
   total: number | undefined;
@@ -8,10 +9,12 @@ export type CoverageDashboardProps = {
   pending: boolean;
   errors: string[] | null;
   unavailable: boolean;
+  slotRules: ReadonlyArray<{ id: string; name: string }>;
+  ruleStats: Readonly<Record<string, PreviewRuleStats>> | undefined;
 };
 
 export function CoverageDashboard({
-  total, labeledAny, activeRules, pending, errors, unavailable,
+  total, labeledAny, activeRules, pending, errors, unavailable, slotRules, ruleStats,
 }: CoverageDashboardProps) {
   const { t } = useTranslation('customLabels');
   if (unavailable) {
@@ -45,6 +48,24 @@ export function CoverageDashboard({
         <Progress.Root size="sm" data-testid="coverage-progress">
           <Progress.Section value={pct} color="green" />
         </Progress.Root>
+        {ruleStats !== undefined && slotRules.length > 0 && (
+          <Group gap="xs" wrap="wrap" data-testid="coverage-rule-hits">
+            {slotRules.map((rule, index) => (
+              <Badge
+                key={rule.id}
+                size="xs"
+                variant="light"
+                data-testid={`coverage-rule-hit-${rule.id}`}
+              >
+                {t('coverage.ruleHits', {
+                  priority: index + 1,
+                  name: rule.name,
+                  hits: ruleStats[rule.id]?.labeled ?? 0,
+                })}
+              </Badge>
+            ))}
+          </Group>
+        )}
         <Group gap="lg" wrap="wrap">
           {([
             ['totalProducts', total, 'coverage-stat-total'],

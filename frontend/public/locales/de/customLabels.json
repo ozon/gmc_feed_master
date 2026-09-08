@@ -17,7 +17,8 @@
     "totalProducts": "Produkte insgesamt",
     "labeled": "Gelabelt",
     "unlabeled": "Nicht gelabelt",
-    "activeRules": "Aktive Regeln"
+    "activeRules": "Aktive Regeln",
+    "ruleHits": "#{{priority}} {{name}}: {{hits}}x"
   },
   "shadowedCount": "{{count}} überschrieben",
   "shadowedBy": "Bereits abgedeckt durch Regel mit höherer Priorität: {{name}}",

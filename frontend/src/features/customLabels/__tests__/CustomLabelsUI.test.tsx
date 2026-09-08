@@ -629,6 +629,9 @@ describe('CustomLabelsUI live preview stats', () => {
     expect(screen.getByTestId('coverage-stat-labeled')).toHaveTextContent('2');
     expect(screen.getByTestId('coverage-stat-unlabeled')).toHaveTextContent('1');
     expect(screen.getByTestId('coverage-stat-active-rules')).toHaveTextContent('2');
+    // per-rule net-hit badges beneath the progress bar (default slot custom_label_1)
+    expect(screen.getByTestId('coverage-rule-hit-r1')).toHaveTextContent('#1 Mid Funnel: 2x');
+    expect(screen.getByTestId('coverage-rule-hits')).toBeInTheDocument();
     // default slot custom_label_1: r1 badge visible in the collapsed header
     expect(screen.getByText('2 matched')).toBeInTheDocument();
     // sample product deep-links are gone
@@ -637,6 +640,7 @@ describe('CustomLabelsUI live preview stats', () => {
     const selector = screen.getByTestId('slot-selector');
     await userEvent.click(within(selector).getByText('#3 CUSTOM_LABEL_2'));
     expect(screen.getByText('1 matched')).toBeInTheDocument();
+    expect(screen.getByTestId('coverage-rule-hit-r3')).toHaveTextContent('#1 Client Only: 0x');
     expect(screen.queryByRole('link', { name: 'z1' })).not.toBeInTheDocument();
   });
 
