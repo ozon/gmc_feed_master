@@ -12,6 +12,7 @@
   "noStagedProducts": "Noch keine gestagten Produkte — zuerst die Pipeline ausführen.",
   "clearValues": "Werteliste leeren",
   "formatDedupe": "Formatieren & Duplikate entfernen",
+  "togglePreview": "Produktvorschau ein-/ausblenden",
   "slotSelectorLabel": "Custom-Label-Slot",
   "coverage": {
     "labeledOf": "{{count}} / {{total}} gestagte Produkte gelabelt",

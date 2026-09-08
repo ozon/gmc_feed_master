@@ -24,12 +24,14 @@ export type RuleCardProps = {
   onExtraFieldsChange: (fields: string[]) => void;
   onSetIds: (value: string) => void;
   onPatchRule: (id: string, patch: Partial<SlotRule>) => void;
+  previewOpen: boolean;
+  onTogglePreview: () => void;
 };
 
 export function RuleCard({
   rule, priority, value, dirty, inheritedFrom, editable, matchedStats,
   showLive, shadowedBy, feedSourceId, extraFields, onExtraFieldsChange,
-  onSetIds, onPatchRule,
+  onSetIds, onPatchRule, previewOpen, onTogglePreview,
 }: RuleCardProps) {
   const { t } = useTranslation('customLabels');
   const { t: tCommon } = useTranslation('common');
@@ -108,6 +110,8 @@ export function RuleCard({
               onExtraFieldsChange={onExtraFieldsChange}
               onSetIds={onSetIds}
               shadowedBy={shadowedBy}
+              previewOpen={previewOpen}
+              onTogglePreview={onTogglePreview}
             />
           )}
         </Stack>

@@ -12,6 +12,7 @@
   "noStagedProducts": "No staged products yet — run the pipeline first.",
   "clearValues": "Clear value list",
   "formatDedupe": "Format & remove duplicates",
+  "togglePreview": "Show/hide product preview",
   "slotSelectorLabel": "Custom label slot",
   "coverage": {
     "labeledOf": "{{count}} / {{total}} staged products labeled",

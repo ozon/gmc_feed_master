@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  ActionIcon, Grid, Group, MultiSelect, Stack, Text, Textarea, Tooltip,
+  ActionIcon, Box, Group, MultiSelect, Stack, Text, Textarea, Tooltip,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useTranslation } from 'react-i18next';
-import { IconTrash, IconWand } from '@tabler/icons-react';
+import { IconEye, IconEyeOff, IconTrash, IconWand } from '@tabler/icons-react';
 import { useFeedSourceFields, useProductLookup } from '../../api/hooks';
 import { formatIdList, parseIdList, parsePreviewLines } from './ids';
 import { ProductPreviewColumn } from './ProductPreviewColumn';
@@ -22,17 +22,22 @@ export type RuleValuesEditorProps = {
   onExtraFieldsChange: (fields: string[]) => void;
   onSetIds: (value: string) => void;
   shadowedBy: ReadonlyMap<string, ShadowOwnerInfo>;
+  previewOpen: boolean;
+  onTogglePreview: () => void;
 };
 
 export function RuleValuesEditor({
   rule, value, feedSourceId, extraFields, onExtraFieldsChange, onSetIds, shadowedBy,
+  previewOpen, onTogglePreview,
 }: RuleValuesEditorProps) {
   const { t } = useTranslation('customLabels');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const onScrollTopChange = useCallback((top: number) => setScrollTop(top), []);
-  useSyncedScroll(textareaRef, previewRef, onScrollTopChange, feedSourceId);
+  useSyncedScroll(
+    textareaRef, previewRef, onScrollTopChange, `${feedSourceId}-${previewOpen}`,
+  );
 
   const lines = useMemo(() => parsePreviewLines(value), [value]);
   const lookupValues = useMemo(() => Array.from(new Set(lines.flat())), [lines]);
@@ -57,9 +62,10 @@ export function RuleValuesEditor({
     ? `${t('bulk.productIds')} — ${rule.name}`
     : `${t('bulk.valuesFor', { field: rule.matchField })} — ${rule.name}`;
 
+  const atFeed = feedSourceId !== undefined;
+
   const textarea = (
     <Textarea
-      label={label}
       aria-label={ariaLabel}
       ref={textareaRef}
       minRows={10}
@@ -71,6 +77,8 @@ export function RuleValuesEditor({
           lineHeight: `${ROW_HEIGHT}px`,
           fontFamily: 'var(--mantine-font-family-monospace)',
           overflowX: 'auto',
+          paddingTop: 0,
+          paddingBottom: 0,
         },
       }}
       value={value}
@@ -81,33 +89,49 @@ export function RuleValuesEditor({
 
   const toolbar = (
     <Group justify="space-between" wrap="nowrap" gap="xs">
-      <Group gap={4} wrap="nowrap">
-        <Tooltip label={t('clearValues')} withArrow position="top" openDelay={300}>
-          <ActionIcon
-            variant="default"
-            size="sm"
-            aria-label={`${t('clearValues')} — ${rule.name}`}
-            disabled={value === ''}
-            onClick={() => onSetIds('')}
-            data-testid={`clear-ids-${rule.id}`}
-          >
-            <IconTrash size={16} />
-          </ActionIcon>
-        </Tooltip>
-        <Tooltip label={t('formatDedupe')} withArrow position="top" openDelay={300}>
-          <ActionIcon
-            variant="default"
-            size="sm"
-            aria-label={`${t('formatDedupe')} — ${rule.name}`}
-            disabled={value === ''}
-            onClick={() => onSetIds(formatIdList(value))}
-            data-testid={`format-ids-${rule.id}`}
-          >
-            <IconWand size={16} />
-          </ActionIcon>
-        </Tooltip>
+      <Group gap="xs" wrap="nowrap">
+        <Text size="xs" c="dimmed">{label}</Text>
+        <Group gap={4} wrap="nowrap">
+          <Tooltip label={t('clearValues')} withArrow position="top" openDelay={300}>
+            <ActionIcon
+              variant="default"
+              size="sm"
+              aria-label={`${t('clearValues')} — ${rule.name}`}
+              disabled={value === ''}
+              onClick={() => onSetIds('')}
+              data-testid={`clear-ids-${rule.id}`}
+            >
+              <IconTrash size={16} />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label={t('formatDedupe')} withArrow position="top" openDelay={300}>
+            <ActionIcon
+              variant="default"
+              size="sm"
+              aria-label={`${t('formatDedupe')} — ${rule.name}`}
+              disabled={value === ''}
+              onClick={() => onSetIds(formatIdList(value))}
+              data-testid={`format-ids-${rule.id}`}
+            >
+              <IconWand size={16} />
+            </ActionIcon>
+          </Tooltip>
+          {atFeed && (
+            <Tooltip label={t('togglePreview')} withArrow position="top" openDelay={300}>
+              <ActionIcon
+                variant={previewOpen ? 'filled' : 'default'}
+                size="sm"
+                aria-label={`${t('togglePreview')} — ${rule.name}`}
+                onClick={onTogglePreview}
+                data-testid={`toggle-preview-${rule.id}`}
+              >
+                {previewOpen ? <IconEyeOff size={16} /> : <IconEye size={16} />}
+              </ActionIcon>
+            </Tooltip>
+          )}
+        </Group>
       </Group>
-      {feedSourceId !== undefined && (
+      {atFeed && previewOpen && (
         <MultiSelect
           size="xs"
           w={220}
@@ -133,7 +157,7 @@ export function RuleValuesEditor({
     </Group>
   );
 
-  if (feedSourceId === undefined) {
+  if (!atFeed) {
     return (
       <Stack gap={4}>
         {toolbar}
@@ -146,22 +170,30 @@ export function RuleValuesEditor({
   return (
     <Stack gap="xs">
       {toolbar}
-      <Grid columns={20} gap="xs">
-        <Grid.Col span={7}>{textarea}</Grid.Col>
-        <Grid.Col span={13}>
-          <ProductPreviewColumn
-            field={rule.matchField}
-            lines={lines}
-            matches={matches}
-            isFetching={lookup.isFetching}
-            isError={lookup.isError}
-            extraFields={extraFields}
-            shadowedBy={shadowedBy}
-            scrollTop={scrollTop}
-            viewportRef={previewRef}
-          />
-        </Grid.Col>
-      </Grid>
+      <Box
+        style={{
+          display: 'flex',
+          gap: 'var(--mantine-spacing-xs)',
+          alignItems: 'stretch',
+        }}
+      >
+        <Box w={380} style={{ flex: '0 0 380px' }}>{textarea}</Box>
+        {previewOpen && (
+          <Box style={{ flex: '1 1 auto', minWidth: 0 }}>
+            <ProductPreviewColumn
+              field={rule.matchField}
+              lines={lines}
+              matches={matches}
+              isFetching={lookup.isFetching}
+              isError={lookup.isError}
+              extraFields={extraFields}
+              shadowedBy={shadowedBy}
+              scrollTop={scrollTop}
+              viewportRef={previewRef}
+            />
+          </Box>
+        )}
+      </Box>
       {footer}
     </Stack>
   );

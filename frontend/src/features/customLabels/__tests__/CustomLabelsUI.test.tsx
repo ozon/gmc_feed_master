@@ -671,7 +671,7 @@ describe('CustomLabelsUI live preview stats', () => {
     expect(screen.queryByTestId('coverage-dashboard')).not.toBeInTheDocument();
   });
 
-  it('at feed tier renders the split editor with preview rows from the lookup endpoint', async () => {
+  it('at feed tier the preview is collapsed by default and opens via the shared toolbar toggle', async () => {
     renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', (url) => {
       if (url.includes('/products/lookup')) return jsonResponse({
         matches: {
@@ -686,8 +686,42 @@ describe('CustomLabelsUI live preview stats', () => {
     });
     await screen.findByText('Mid Funnel');
     await userEvent.click(screen.getByText('Mid Funnel')); // expand
+    expect(screen.queryByTestId('product-preview-viewport')).not.toBeInTheDocument();
+    await userEvent.click(
+      await screen.findByRole('button', { name: /show\/hide product preview — mid funnel/i }),
+    );
+    expect(await screen.findByTestId('product-preview-viewport')).toBeInTheDocument();
     expect(await screen.findByText('Alpha')).toBeInTheDocument();
-    expect(await screen.findByText('Bravo')).toBeInTheDocument();
+    expect(screen.getByText('Bravo')).toBeInTheDocument();
+  });
+
+  it('the preview toggle is shared across rule cards', async () => {
+    const twoInOneSlot = {
+      slotRules: [
+        { id: 'r1', name: 'Mid Funnel', isActive: true, targetSlot: 'custom_label_1',
+          matchField: 'id', valueTemplate: 'x', fallbackTemplate: '' },
+        { id: 'r4', name: 'Second', isActive: true, targetSlot: 'custom_label_1',
+          matchField: 'id', valueTemplate: 'y', fallbackTemplate: '' },
+      ],
+    };
+    const handler = (url: string) => {
+      if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse(twoInOneSlot);
+      if (url.startsWith('/plugins/custom_labels/data')) {
+        return jsonResponse({ slotIds: { r1: 'a', r4: 'b' } });
+      }
+      if (url.includes('/products/lookup')) return jsonResponse({ matches: {} });
+      return jsonResponseFor(url);
+    };
+    renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', handler);
+    await screen.findByText('Mid Funnel');
+    await screen.findByText('Second');
+    await userEvent.click(screen.getByText('Mid Funnel'));
+    await userEvent.click(screen.getByText('Second'));
+    expect(screen.queryAllByTestId('product-preview-viewport')).toHaveLength(0);
+    await userEvent.click(
+      await screen.findByRole('button', { name: /show\/hide product preview — mid funnel/i }),
+    );
+    expect(await screen.findAllByTestId('product-preview-viewport')).toHaveLength(2);
   });
 
   it('at client tier the preview column is absent (no feed context)', async () => {
@@ -698,6 +732,8 @@ describe('CustomLabelsUI live preview stats', () => {
       await screen.findByRole('textbox', { name: 'Product IDs — Mid Funnel' }),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('product-preview-viewport')).not.toBeInTheDocument();
+    // no preview toggle without feed context
+    expect(screen.queryByRole('button', { name: /product preview/i })).not.toBeInTheDocument();
   });
 });
 
@@ -848,6 +884,7 @@ describe('CustomLabelsUI shadowing', () => {
     // footer overridden list is gone; the header badge carries the summary
     expect(screen.queryByText(/overridden IDs/i)).not.toBeInTheDocument();
     // inline badge in the preview: line "2,3"'s first ID (2) is claimed by #1
+    await userEvent.click(await screen.findByRole('button', { name: /show\/hide product preview — later/i }));
     expect(await screen.findByText('Overridden by #1')).toBeInTheDocument();
   });
 });

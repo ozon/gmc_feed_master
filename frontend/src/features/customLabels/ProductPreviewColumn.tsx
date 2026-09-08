@@ -28,9 +28,6 @@ export function ProductPreviewColumn({
 
   return (
     <Stack gap={4} data-testid="product-preview-column">
-      {isError ? (
-        <Text size="xs" c="red" data-testid="preview-error">{t('previewError')}</Text>
-      ) : null}
       <Box
         ref={viewportRef}
         data-testid="product-preview-viewport"
@@ -41,7 +38,9 @@ export function ProductPreviewColumn({
           borderRadius: 'var(--mantine-radius-sm)',
         }}
       >
-        {total === 0 ? (
+        {isError ? (
+          <Text size="xs" c="red" px="xs" data-testid="preview-error">{t('previewError')}</Text>
+        ) : total === 0 ? (
           <Text size="xs" c="dimmed" px="xs" data-testid="preview-empty">{t('previewEmpty')}</Text>
         ) : (
           <div style={{ height: total * ROW_HEIGHT, position: 'relative' }}>

@@ -29,6 +29,7 @@ function renderCard(over: Partial<Parameters<typeof RuleCard>[0]> = {}) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   function Harness() {
     const [value, setValue] = useState(initialValue);
+    const [previewOpen, setPreviewOpen] = useState(false);
     return (
       <QueryClientProvider client={client}>
         <Accordion multiple>
@@ -50,6 +51,8 @@ function renderCard(over: Partial<Parameters<typeof RuleCard>[0]> = {}) {
             onPatchRule={() => {}}
             {...over}
             value={value}
+            previewOpen={previewOpen}
+            onTogglePreview={() => setPreviewOpen((o) => !o)}
           />
         </Accordion>
       </QueryClientProvider>
@@ -85,6 +88,8 @@ describe('RuleCard', () => {
     await userEvent.type(textarea, 'a,b, c');
     expect(onSetIds).toHaveBeenLastCalledWith('a,b, c');
     expect(screen.getByText('3 unique IDs')).toBeInTheDocument();
+    // no preview toggle without feed context
+    expect(screen.queryByRole('button', { name: /product preview/i })).not.toBeInTheDocument();
   });
 
   it('toolbar clears and formats the value list; both disable when empty', async () => {
@@ -148,7 +153,7 @@ describe('RuleCard', () => {
       .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
-  it('with a feed source renders the split editor and preview rows', async () => {
+  it('with a feed source the preview is collapsed by default and opens via the toolbar toggle', async () => {
     stubFetch((url) => {
       if (url.includes('/products/lookup')) {
         return jsonResponse({
@@ -170,6 +175,11 @@ describe('RuleCard', () => {
       value: 'a1\nzz',
     });
     await userEvent.click(screen.getByText('Mid Funnel'));
+    // collapsed by default
+    expect(screen.queryByTestId('product-preview-viewport')).not.toBeInTheDocument();
+    await userEvent.click(
+      await screen.findByRole('button', { name: /show\/hide product preview — mid funnel/i }),
+    );
     const viewport = await screen.findByTestId('product-preview-viewport');
     expect(viewport).toBeInTheDocument();
     expect(await screen.findByText('Alpha')).toBeInTheDocument();
