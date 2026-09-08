@@ -29,9 +29,9 @@ Two gaps on the Labelizer Plugin Page:
 Located in `backend/app/routes/products.py`, auth like the other product routes.
 
 - Request: `{field: string = "id" (registry attribute path), values: string[] (1–10 000 after dedupe), extraFields: string[] (0–20, optional)}`.
-- Matching mirrors the plugin's `matches()`: a value matches a staged product when any candidate value of `raw_data[field]` equals it. Scalar fields: JSONB `raw_data->field->>text` equality. Repeated/array fields: match any element (`jsonb_array_elements_text`). Subfield paths (`attr.sub`) resolve like `resolve_path`. Status-agnostic: `removed` and `excluded` rows participate.
+- Matching mirrors the plugin's `matches()`: a value matches a staged product when any candidate value of `raw_data[field]` equals it; matching happens in Python over one full-feed fetch of the staged products (subfield paths `attr.sub` resolve like the plugin's `resolve_path`), and per-value counts plus lowest-`product_id` samples are resolved in two SQL queries. Status-agnostic: `removed` and `excluded` rows participate.
 - Response, keyed by value:
-  `{"matches": {"<value>": {"count": <int>, "sample": {product_id, status, excluded, title, availability, <extraFields…>} | null}}}`
+  `{"matches": {"<value>": {"count": <int>, "sample": {product_id, status, excluded, title, brand, availability, <extraFields…>} | null}}}`
   - `count` = number of staged products matching the value (any status).
   - `sample` = the matching product with the lowest `product_id` (deterministic), projected to `product_id, status, excluded, title, brand, availability` (title/brand/availability from `raw_data`, missing → `null`) plus requested `extraFields` from `raw_data` (missing → `null`). `null` when `count === 0`.
 - SQL: one grouped pass (per-value `count` + `min(product_id)` over the value set) plus one fetch of the sample rows by id; two queries total, no N+1.

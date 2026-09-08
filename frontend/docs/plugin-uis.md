@@ -235,6 +235,23 @@ badges and bookmarks.
   button, and a shadow list rendering each overridden value struck
   through with a tooltip naming the claiming rule. Empty slots show a
   notice when selected.
+- **Synchronized product preview:** at feed tier each expanded rule card
+  splits its value editor 35/65: the monospace value textarea (fixed
+  10-row height, no soft-wrap) beside a windowed preview column whose row
+  i mirrors parsed entry i. Scrolling either side drives the other
+  (bidirectional scrollTop sync). Rows come from
+  `POST /feed-sources/{id}/products/lookup` (300 ms debounced, TanStack
+  Query cached per value-set): per value it shows the sample product's
+  title (truncated + tooltip), brand, availability badge
+  (in_stock/out_of_stock), a gray "N products" badge when a value matches
+  several products, dimmed removed/excluded badges, and a red
+  "ID not found in feed" / "No match in feed" badge for dead values. A
+  per-card MultiSelect adds extra raw-data fields inline (options from
+  the feed's field list minus title/brand/availability; selection is
+  session-local and survives collapse). Lookups are status-agnostic and
+  match by the rule's match field, mirroring run-time semantics. Slot
+  selector items are numbered `#1..#5`, and rule card headers show a
+  compact `#N` before the rule name (evaluation order).
 - **Rule actions:** the rule editor offers Duplicate (fresh id, "(copy)" name)
   and Delete (ConfirmModal; global-origin deletes warn about the inheritance
   blast radius) — editable-origin rules only.
