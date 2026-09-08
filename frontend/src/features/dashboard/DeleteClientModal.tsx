@@ -20,7 +20,7 @@ export function DeleteClientModal({
     if (!client) return;
     deleteClient.mutate(client.id, {
       onSuccess: () => {
-        notifySuccess(t('saved'));
+        notifySuccess(t('deleted'));
         onClose();
       },
       onError: (error) => notifyMutationError(error, t('deleteFailed')),

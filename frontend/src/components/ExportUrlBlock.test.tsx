@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { Notifications } from '@mantine/notifications';
+import { Notifications, notifications } from '@mantine/notifications';
 import i18n from '../i18n';
 import { render } from '../test/render';
 import { stubFetch } from '../test/fetch';
@@ -26,6 +26,7 @@ function postCalls(url: string): number {
 
 beforeEach(async () => {
   queryClient.clear();
+  notifications.clean();
   window.history.replaceState({}, '', '/');
   await i18n.loadNamespaces('export');
 });
@@ -79,5 +80,23 @@ describe('ExportUrlBlock', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
     await waitFor(() => expect(postCalls('/feed-sources/1/export-token/rotate')).toBe(0));
+  });
+
+  it('toasts rotateFailed when rotation fails without a server detail', async () => {
+    const user = userEvent.setup();
+    fetchMock = stubFetch((url) => {
+      if (url === '/feed-sources/1/export-token/rotate') {
+        return new Response(null, { status: 500 });
+      }
+      return jsonResponse({});
+    });
+
+    renderWithQuery(<ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/1/abc" />);
+
+    await user.click(screen.getByRole('button', { name: /rotate/i }));
+    const confirm = await screen.findByRole('button', { name: 'Confirm' });
+    await user.click(confirm);
+
+    expect(await screen.findByText('Could not rotate the export token.')).toBeInTheDocument();
   });
 });

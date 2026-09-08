@@ -63,7 +63,7 @@ export function FeedSourceCard({
   function confirmDelete() {
     deleteFeedSource.mutate(feed.id, {
       onSuccess: () => {
-        notifySuccess(t('saved'));
+        notifySuccess(t('deleted'));
         setDeleteOpened(false);
         if (location.pathname.startsWith(`/clients/${clientId}/feeds/${feed.id}`)) {
           navigate('/');

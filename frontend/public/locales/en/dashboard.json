@@ -46,6 +46,7 @@
     "nameRequired": "Name is required."
   },
   "saved": "Saved",
+  "deleted": "Deleted",
   "saveFailed": "Could not be saved.",
   "deleteFailed": "Could not be deleted.",
   "duplicateName": "A client with this name already exists.",

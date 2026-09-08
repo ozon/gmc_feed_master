@@ -30,11 +30,7 @@ export function ExportUrlBlock({
         onRotated?.();
       },
       onError: (error) => {
-        if (error instanceof ApiError) {
-          notifyMutationError(error, t('rotated'));
-        } else {
-          notifyMutationError(error, t('rotated'));
-        }
+        notifyMutationError(error, t('rotateFailed'));
       },
     });
   }

@@ -46,6 +46,7 @@
     "nameRequired": "Der Name ist erforderlich."
   },
   "saved": "Gespeichert",
+  "deleted": "Gelöscht",
   "saveFailed": "Konnte nicht gespeichert werden.",
   "deleteFailed": "Konnte nicht gelöscht werden.",
   "duplicateName": "Ein Mandant mit diesem Namen existiert bereits.",

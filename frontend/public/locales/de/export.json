@@ -5,6 +5,7 @@
   "rotate": "Rotieren",
   "rotateWarning": "Das Rotieren des Export-Tokens macht die aktuelle URL sofort ungültig. Alle Systeme, die die alte URL verwenden, funktionieren nicht mehr.",
   "rotated": "Export-Token erfolgreich rotiert",
+  "rotateFailed": "Export-Token konnte nicht rotiert werden.",
   "columns": {
     "version": "Version",
     "createdAt": "Erstellt",
