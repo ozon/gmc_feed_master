@@ -32,6 +32,20 @@ jobs:
       - name: Run alembic migrations
         working-directory: backend
         run: uv run alembic upgrade head
+      - name: Ruff baseline gate (no new lint errors)
+        working-directory: backend
+        run: |
+          COUNT=$(uv run ruff check . --output-format=concise 2>/dev/null | wc -l)
+          BASELINE=$(cat ruff-baseline.txt)
+          echo "ruff errors: $COUNT (baseline $BASELINE)"
+          if [ "$COUNT" -gt "$BASELINE" ]; then exit 1; fi
+      - name: Mypy baseline gate (no new type errors)
+        working-directory: backend
+        run: |
+          COUNT=$(uv run mypy . 2>/dev/null | grep -c ': error:')
+          BASELINE=$(cat mypy-baseline.txt)
+          echo "mypy errors: $COUNT (baseline $BASELINE)"
+          if [ "$COUNT" -gt "$BASELINE" ]; then exit 1; fi
       - name: Run backend tests and compile checks
         working-directory: backend
         run: uv run pytest -q && uv run python -m compileall app alembic registry

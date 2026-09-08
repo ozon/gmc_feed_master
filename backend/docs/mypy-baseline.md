@@ -1,5 +1,7 @@
 # mypy Baseline
 
+CI enforces the count via `backend/mypy-baseline.txt`; keep both in sync — each fix removes lines from both files in the same commit.
+
 `uv run mypy .` is configured in `pyproject.toml` (`[tool.mypy]`, target
 Python 3.10; `ignore_missing_imports` limited to the untyped third-party
 libs `jsonschema`, `apscheduler`, `asyncpg`). The command reports the
