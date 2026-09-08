@@ -12,6 +12,7 @@ def test_m1_table_set_is_complete():
         "module_instances", "ingestion_runs", "staging_products",
         "staging_history", "quality_findings", "export_runs",
         "export_versions", "image_dimensions",
+        "user_clients", "global_settings",
     }
 
 

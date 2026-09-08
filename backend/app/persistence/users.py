@@ -34,7 +34,8 @@ async def seed_initial_user(
             return existing_user
         await session.execute(
             insert(User)
-            .values(username=username, password_hash=hash_password(password))
+            .values(username=username, password_hash=hash_password(password),
+                    role="admin", is_active=True)
         )
         result = await session.execute(select(User).where(User.username == username))
         return result.scalar_one()

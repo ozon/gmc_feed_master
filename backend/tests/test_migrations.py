@@ -28,6 +28,8 @@ EXPECTED_TABLES = {
     "export_runs",
     "export_versions",
     "image_dimensions",
+    "user_clients",
+    "global_settings",
 }
 
 
