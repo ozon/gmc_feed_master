@@ -20,6 +20,31 @@ export function parseIdList(raw: string | undefined | null): Set<string> {
   return ids;
 }
 
+/** One preview row per textarea LINE: row i = line i (blank lines render
+ * blank rows, so line↔row alignment never breaks). A line's comma groups
+ * are its IDs; the line's first ID drives its preview-row match display. */
+export function parsePreviewLines(raw: string | undefined | null): string[][] {
+  if (!raw) return [];
+  return raw.split('\n').map((line) =>
+    line.split(',').map((part) => part.trim()).filter((part) => part !== ''),
+  );
+}
+
+/** Normalize a value list: trim, strip empty lines, split comma groups to
+ * one ID per line, dedupe preserving first-occurrence order. */
+export function formatIdList(raw: string): string {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const ids of parsePreviewLines(raw)) {
+    for (const id of ids) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push(id);
+    }
+  }
+  return out.join('\n');
+}
+
 export type TemplateSegment = { kind: 'lit'; text: string } | { kind: 'tok'; path: string };
 
 export function compileTemplate(template: string): TemplateSegment[] {

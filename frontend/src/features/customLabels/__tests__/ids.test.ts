@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { compileTemplate, parseIdEntries, parseIdList, renderPreview } from '../ids';
+import {
+  compileTemplate, formatIdList, parseIdEntries, parseIdList, parsePreviewLines, renderPreview,
+} from '../ids';
 
 describe('parseIdList', () => {
   it('splits, trims, drops empties, dedupes', () => {
@@ -22,6 +24,33 @@ describe('parseIdEntries', () => {
     expect(parseIdEntries('')).toEqual([]);
     expect(parseIdEntries(undefined)).toEqual([]);
     expect(parseIdEntries(null)).toEqual([]);
+  });
+});
+
+describe('parsePreviewLines', () => {
+  it('makes one row per line; blank lines stay blank rows', () => {
+    expect(parsePreviewLines('a\n\nb')).toEqual([['a'], [], ['b']]);
+  });
+
+  it('comma-splits each line into its IDs, trimmed, empty tokens dropped', () => {
+    expect(parsePreviewLines('a, b ,\nc')).toEqual([['a', 'b'], ['c']]);
+  });
+
+  it('returns [] for empty or missing input', () => {
+    expect(parsePreviewLines('')).toEqual([]);
+    expect(parsePreviewLines(undefined)).toEqual([]);
+    expect(parsePreviewLines(null)).toEqual([]);
+  });
+});
+
+describe('formatIdList', () => {
+  it('strips empties, splits commas to one per line, dedupes preserving order', () => {
+    expect(formatIdList('b, a\n\n a \nc,\n')).toBe('b\na\nc');
+  });
+
+  it('returns an empty string for empty input', () => {
+    expect(formatIdList('')).toBe('');
+    expect(formatIdList('  \n, \n')).toBe('');
   });
 });
 
