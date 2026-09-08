@@ -73,4 +73,22 @@ describe('api client', () => {
     await changePassword('wrong', 'new').catch(() => undefined);
     expect(handler).not.toHaveBeenCalled();
   });
+
+  it('throws ApiError for a 2xx response with a non-JSON content type', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response('<!doctype html>', {
+        status: 200,
+        headers: { 'Content-Type': 'text/html' },
+      }),
+    );
+    const error: unknown = await apiGet('/admin/users').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).status).toBe(200);
+    expect((error as ApiError).detail).toContain('text/html');
+  });
+
+  it('still resolves undefined for 204 responses', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    await expect(apiGet('/clients/3')).resolves.toBeUndefined();
+  });
 });

@@ -42,6 +42,10 @@ export default defineConfig(({ mode }) => {
           }
         : {}),
       proxy: {
+        '/admin': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        },
         '/auth': {
           target: 'http://127.0.0.1:8000',
           changeOrigin: true,

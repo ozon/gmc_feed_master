@@ -1,4 +1,9 @@
 {
+  "tabs": {
+    "users": "Benutzer",
+    "clients": "Kunden",
+    "settings": "Einstellungen"
+  },
   "users": {
     "title": "Benutzerverwaltung",
     "add": "Benutzer hinzufügen",

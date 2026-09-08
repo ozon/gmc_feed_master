@@ -113,10 +113,11 @@ export function useSavePipeline(feedSourceId) {
     ├── /clients/:clientId/feeds/:feedSourceId/plugins/:pluginId  → PluginPage (feed scope)
     ├── /clients/:clientId/plugins/:pluginId                  → PluginPage (client scope)
     ├── /plugins/:pluginId                                    → PluginPage (global scope)
-    └── (RequireAdmin)
-        ├── /admin/users                     → AdminUsersPage
-        ├── /admin/clients                   → AdminClientsPage
-        └── /admin/settings                  → AdminSettingsPage
+    └── (RequireAdmin) — all four routes render AdminPage (URL-driven tabs, Users default)
+        ├── /admin                           → AdminPage (Users tab)
+        ├── /admin/users                     → AdminPage (Users tab)
+        ├── /admin/clients                   → AdminPage (Clients tab)
+        └── /admin/settings                  → AdminPage (Settings tab)
 ```
 
 - **Lazy loading** for all feature pages (`React.lazy` + `Suspense`)
@@ -127,10 +128,10 @@ export function useSavePipeline(feedSourceId) {
 ## Admin Area & Role-aware UI
 
 - Session shape (`GET /auth/me`): `{username, role: 'admin' | 'user', client_ids: number[] | null}` (`null` = admin/unrestricted). Server state via `useSession` only (ADR-0001).
-- "Administration" nav group in `AppShell` (Users, Clients, Settings) renders only for admins; dashboard shows a "Manage clients" link for admins instead of inline client CRUD.
-- Client CRUD moved from the dashboard (now read-only listing for everyone) to `AdminClientsPage`; the dashboard's `ClientModal`/`DeleteClientModal` components are reused there.
-- `AdminUsersPage` — user table (role badge, assigned-client count, active switch), create/edit modal with role select + client multi-select, reset-password modal.
-- `AdminSettingsPage` — editable retention days (`/admin/settings`), scheduler job overview (`/admin/scheduler`), plugin enable/disable toggles (reuses `useUpdatePluginEnabled`).
+- Single "Admin" NavLink in `AppShell` renders only for admins and links to `/admin`; `AdminPage` is one page with URL-driven Mantine tabs (Users, Clients, Settings; `keepMounted={false}`, so only the active tab's queries fire). The sub-paths `/admin/users|clients|settings` preselect the tab. Dashboard shows a "Manage clients" link for admins instead of inline client CRUD.
+- `AdminClientsPage` — Clients tab panel: client CRUD moved here from the dashboard (now read-only listing for everyone); the dashboard's `ClientModal`/`DeleteClientModal` components are reused there.
+- `AdminUsersPage` — Users tab panel: user table (role badge, assigned-client count, active switch), create/edit modal with role select + client multi-select, reset-password modal.
+- `AdminSettingsPage` — Settings tab panel: editable retention days (`/admin/settings`), scheduler job overview (`/admin/scheduler`), plugin enable/disable toggles (reuses `useUpdatePluginEnabled`).
 - Backend enforces the same rules (404 for unassigned client/feed-source access, 403 for admin-only operations, `/admin/*` admin-only) — the frontend guard is UX only.
 
 ## State Boundaries
@@ -207,7 +208,7 @@ cd frontend && npm run dev
 # Open https://localhost:5173
 ```
 
-- Vite proxies `/auth/*`, `/health`, `/clients`, `/feed-sources`, `/dashboard`, `/plugins`, `/registry`, `/export` to `http://127.0.0.1:8000`
+- Vite proxies `/auth/*`, `/health`, `/admin`, `/clients`, `/feed-sources`, `/dashboard`, `/plugins`, `/registry`, `/export` to `http://127.0.0.1:8000` (production Caddyfiles mirror this list, including `/admin/*`)
 - HTTPS required for `Secure` session cookie
 
 ## Key Files

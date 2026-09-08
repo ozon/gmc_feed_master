@@ -32,7 +32,7 @@ describe('AppShell admin nav', () => {
     queryClient.clear();
   });
 
-  it('shows administration links for admins', async () => {
+  it('shows a single Admin link for admins', async () => {
     queryClient.setQueryData(queryKeys.session, {
       username: 'op',
       role: 'admin',
@@ -40,12 +40,11 @@ describe('AppShell admin nav', () => {
     });
     stubFetch(handler);
     render(<App />);
-    expect(await screen.findByText('Users')).toBeDefined();
-    expect(screen.getByText('Clients')).toBeDefined();
-    expect(screen.getByText('Settings')).toBeDefined();
+    const admin = await screen.findByRole('link', { name: 'Admin' });
+    expect(admin).toHaveAttribute('href', '/admin');
   });
 
-  it('hides administration links for non-admins', async () => {
+  it('hides the Admin link for non-admins', async () => {
     queryClient.setQueryData(queryKeys.session, {
       username: 'bob',
       role: 'user',
@@ -54,7 +53,6 @@ describe('AppShell admin nav', () => {
     stubFetch(handler);
     render(<App />);
     expect(await screen.findByText('Dashboard')).toBeDefined();
-    expect(screen.queryByText('Administration')).toBeNull();
-    expect(screen.queryByText('Users')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Admin' })).toBeNull();
   });
 });

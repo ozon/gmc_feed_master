@@ -1,4 +1,7 @@
 {$DOMAIN:localhost} {
+	handle /admin/* {
+		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
+	}
 	handle /auth/* {
 		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
 	}

@@ -1,4 +1,9 @@
 {
+  "tabs": {
+    "users": "Users",
+    "clients": "Clients",
+    "settings": "Settings"
+  },
   "users": {
     "title": "User Management",
     "add": "Add User",

@@ -51,14 +51,8 @@ const ExportPage = lazy(() =>
 const PluginPage = lazy(() =>
   import('../features/plugin/PluginPage').then((m) => ({ default: m.PluginPage })),
 );
-const AdminUsersPage = lazy(() =>
-  import('../features/admin/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })),
-);
-const AdminClientsPage = lazy(() =>
-  import('../features/admin/AdminClientsPage').then((m) => ({ default: m.AdminClientsPage })),
-);
-const AdminSettingsPage = lazy(() =>
-  import('../features/admin/AdminSettingsPage').then((m) => ({ default: m.AdminSettingsPage })),
+const AdminPage = lazy(() =>
+  import('../features/admin/AdminPage').then((m) => ({ default: m.AdminPage })),
 );
 
 export function RequireSession() {
@@ -155,9 +149,10 @@ const routes = [
           {
             element: <RequireAdmin />,
             children: [
-              { path: 'admin/users', element: <AdminUsersPage /> },
-              { path: 'admin/clients', element: <AdminClientsPage /> },
-              { path: 'admin/settings', element: <AdminSettingsPage /> },
+              { path: 'admin', element: <AdminPage /> },
+              { path: 'admin/users', element: <AdminPage /> },
+              { path: 'admin/clients', element: <AdminPage /> },
+              { path: 'admin/settings', element: <AdminPage /> },
             ],
           },
         ],

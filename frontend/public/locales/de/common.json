@@ -8,9 +8,7 @@
     "monitoring": "Überwachung",
     "export": "Export",
     "adminSection": "Verwaltung",
-    "adminUsers": "Benutzer",
-    "adminClients": "Kunden",
-    "adminSettings": "Einstellungen"
+    "admin": "Verwaltung"
   },
   "actions": {
     "confirm": "Bestätigen",

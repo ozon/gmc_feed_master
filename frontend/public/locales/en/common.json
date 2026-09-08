@@ -8,9 +8,7 @@
     "monitoring": "Monitoring",
     "export": "Export",
     "adminSection": "Administration",
-    "adminUsers": "Users",
-    "adminClients": "Clients",
-    "adminSettings": "Settings"
+    "admin": "Admin"
   },
   "actions": {
     "confirm": "Confirm",
