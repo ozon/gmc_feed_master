@@ -155,4 +155,16 @@ describe('ExportPage', () => {
     expect(badge).toHaveTextContent('0');
     expect(badge).toHaveAttribute('title', '0 critical');
   });
+
+  it('shows the select-versions empty state before Compare, not a spinner', async () => {
+    stubFetch((url) => {
+      if (url === '/feed-sources/1') return jsonResponse(feed);
+      if (url === '/feed-sources/1/export-history') return jsonResponse(versions);
+      return jsonResponse({});
+    });
+    renderAt();
+    await waitFor(() => expect(screen.getByTestId('version-row-3')).toBeInTheDocument());
+    expect(screen.getByText(/select two versions above/i)).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+  });
 });

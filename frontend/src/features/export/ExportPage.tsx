@@ -91,7 +91,7 @@ export function ExportPage() {
           )}
           <ExportVersionDiff
             diff={diff.data}
-            isPending={diff.isPending}
+            isPending={diff.isPending && diff.isFetching}
             isError={diff.isError}
             onRetry={() => void diff.refetch()}
           />
