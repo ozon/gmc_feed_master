@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compileTemplate, parseIdList, renderPreview } from '../ids';
+import { compileTemplate, parseIdEntries, parseIdList, renderPreview } from '../ids';
 
 describe('parseIdList', () => {
   it('splits, trims, drops empties, dedupes', () => {
@@ -10,6 +10,18 @@ describe('parseIdList', () => {
   it('handles null/empty', () => {
     expect(parseIdList(null).size).toBe(0);
     expect(parseIdList('  \n,').size).toBe(0);
+  });
+});
+
+describe('parseIdEntries', () => {
+  it('preserves order and duplicates, drops empties', () => {
+    expect(parseIdEntries('b, a\n\n a \nc,\n')).toEqual(['b', 'a', 'a', 'c']);
+  });
+
+  it('returns an empty array for empty input', () => {
+    expect(parseIdEntries('')).toEqual([]);
+    expect(parseIdEntries(undefined)).toEqual([]);
+    expect(parseIdEntries(null)).toEqual([]);
   });
 });
 
