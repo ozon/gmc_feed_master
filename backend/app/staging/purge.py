@@ -12,9 +12,26 @@ from ..models.ingestion import IngestionRun
 from ..models.quality import QualityFinding
 from ..models.staging import StagingHistory, StagingProduct
 
-REMOVAL_RETENTION_DAYS = 90
-HISTORY_RETENTION_DAYS = 90
-INGESTION_RUN_RETENTION_DAYS = 90
+DEFAULT_REMOVAL_RETENTION_DAYS = 90
+DEFAULT_HISTORY_RETENTION_DAYS = 90
+DEFAULT_INGESTION_RUN_RETENTION_DAYS = 90
+
+
+async def _retention(session: AsyncSession) -> tuple[int, int, int]:
+    from ..models.global_setting import GlobalSetting
+
+    row = await session.get(GlobalSetting, 1)
+    if row is None:
+        return (
+            DEFAULT_REMOVAL_RETENTION_DAYS,
+            DEFAULT_HISTORY_RETENTION_DAYS,
+            DEFAULT_INGESTION_RUN_RETENTION_DAYS,
+        )
+    return (
+        row.staging_removal_retention_days,
+        row.staging_history_retention_days,
+        row.ingestion_run_retention_days,
+    )
 
 
 @dataclass(frozen=True)
@@ -34,11 +51,11 @@ async def purge_expired(
     session_factory: Callable[[], AsyncSession],
     now: datetime,
 ) -> PurgeCounts:
-    removal_cutoff = now - timedelta(days=REMOVAL_RETENTION_DAYS)
-    history_cutoff = now - timedelta(days=HISTORY_RETENTION_DAYS)
-
     async with session_factory() as session:
         async with session.begin():
+            removal_days, history_days, _ = await _retention(session)
+            removal_cutoff = now - timedelta(days=removal_days)
+            history_cutoff = now - timedelta(days=history_days)
             expiring = await session.execute(
                 select(StagingProduct.id).where(
                     StagingProduct.status == "removed",
@@ -69,10 +86,10 @@ async def purge_expired_ingestion_runs(
     session_factory: Callable[[], AsyncSession],
     now: datetime,
 ) -> IngestionRunPurgeCounts:
-    cutoff = now - timedelta(days=INGESTION_RUN_RETENTION_DAYS)
-
     async with session_factory() as session:
         async with session.begin():
+            _, _, ingestion_days = await _retention(session)
+            cutoff = now - timedelta(days=ingestion_days)
             candidates = await session.execute(
                 select(IngestionRun.id).where(IngestionRun.started_at < cutoff)
             )

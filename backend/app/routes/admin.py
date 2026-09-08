@@ -1,18 +1,21 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..access import CurrentUser, require_admin
 from ..db.engine import get_db_session
+from ..models.global_setting import GlobalSetting
 from ..models.user_client import UserClient
 from ..persistence import users as user_repo
 from ..schemas.admin import (
     AdminUserCreate,
     AdminUserOut,
     AdminUserUpdate,
+    GlobalSettingsOut,
+    GlobalSettingsUpdate,
     PasswordSet,
 )
 
@@ -103,3 +106,56 @@ async def set_password(
     session = _require_db(db_session)
     if not await user_repo.set_user_password(session, user_id, payload.new_password):
         raise HTTPException(status_code=404, detail="user not found")
+
+
+@router.get("/admin/settings", response_model=GlobalSettingsOut)
+async def get_settings_row(
+    _admin: CurrentUser = Depends(require_admin),
+    db_session: AsyncSession | None = Depends(get_db_session),
+) -> GlobalSetting:
+    session = _require_db(db_session)
+    async with session.begin():
+        row = await session.get(GlobalSetting, 1)
+        if row is None:
+            row = GlobalSetting(
+                id=1,
+                staging_removal_retention_days=90,
+                staging_history_retention_days=90,
+                ingestion_run_retention_days=90,
+            )
+            session.add(row)
+    return row
+
+
+@router.put("/admin/settings", response_model=GlobalSettingsOut)
+async def put_settings_row(
+    payload: GlobalSettingsUpdate,
+    _admin: CurrentUser = Depends(require_admin),
+    db_session: AsyncSession | None = Depends(get_db_session),
+) -> GlobalSetting:
+    session = _require_db(db_session)
+    async with session.begin():
+        row = await session.get(GlobalSetting, 1)
+        if row is None:
+            row = GlobalSetting(
+                id=1,
+                staging_removal_retention_days=90,
+                staging_history_retention_days=90,
+                ingestion_run_retention_days=90,
+            )
+            session.add(row)
+        row.staging_removal_retention_days = payload.staging_removal_retention_days
+        row.staging_history_retention_days = payload.staging_history_retention_days
+        row.ingestion_run_retention_days = payload.ingestion_run_retention_days
+    return row
+
+
+@router.get("/admin/scheduler")
+async def scheduler_jobs(
+    request: Request,
+    _admin: CurrentUser = Depends(require_admin),
+) -> list[dict[str, str]]:
+    scheduler = getattr(request.app.state, "scheduler_service", None)
+    if scheduler is None:
+        raise HTTPException(status_code=503, detail="scheduler unavailable")
+    return scheduler.list_jobs()

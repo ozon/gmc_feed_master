@@ -70,6 +70,12 @@ class SchedulerService:
     def has_job(self, feed_source_id: int) -> bool:
         return self._scheduler.get_job(job_id(feed_source_id)) is not None
 
+    def list_jobs(self) -> list[dict[str, str]]:
+        return [
+            {"id": str(job.id), "trigger": str(job.trigger)}
+            for job in self._scheduler.get_jobs()
+        ]
+
     def reschedule(self, feed_source: FeedSource) -> None:
         self.register(feed_source)
 
