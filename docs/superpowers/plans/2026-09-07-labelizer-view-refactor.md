@@ -1340,6 +1340,17 @@ describe('CustomLabelsUI shadowing', () => {
 });
 ```
 
+**l. Additional test adjustments (found during execution):** five more tests used
+`findByText('Client Only')` as a load sentinel on the ids tab, where only the
+selected slot's rules render now. 'at client tier save writes only
+client-origin rules', 'duplicates the selected rule', and 'delete asks for
+confirmation' wait for 'Mid Funnel', switch to the Slot rules tab, then wait
+for 'Client Only'. 'client page sends no preview request' and 'client page
+links to the global page only' use 'Mid Funnel' as the sentinel. The
+clear-button test uses a waiting `findByRole` for the Clear button (collapse
+rAF race). 'active rule count pluralizes' asserts 'Second' + '2 active rules'
+on the default slot.
+
 - [ ] **Step 6: Run the full frontend test suite**
 
 Run (from `frontend/`): `npm run test -- --run`

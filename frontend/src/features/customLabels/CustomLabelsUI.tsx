@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  ActionIcon, Badge, Button, Card, Drawer, Group,
+  Accordion, ActionIcon, Button, Card, Drawer, Group,
   SegmentedControl, Select, Stack, Switch, Tabs, Text, TextInput,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -20,7 +20,10 @@ import { ConfirmModal } from '../../components/ConfirmModal';
 import { ScopeBadge } from '../../components/ScopeBadge';
 import { ScopeContextBar } from '../../components/ScopeContextBar';
 import { notifySuccess } from '../../app/notifications';
-import { SlotGroup } from './SlotGroup';
+import { SlotSelector } from './SlotSelector';
+import { CoverageDashboard } from './CoverageDashboard';
+import { RuleCard } from './RuleCard';
+import { computeShadowing } from './shadowing';
 import { SortableRuleRow } from './SortableRuleRow';
 import { MatchFieldCombobox } from './MatchFieldCombobox';
 import { useLabelizerPreview } from './usePreview';
@@ -162,6 +165,20 @@ export function CustomLabelsUI({
   });
   const [helpOpened, { open: openHelp, close: closeHelp }] = useDisclosure(false);
   const [deleteOpen, { open: openDelete, close: closeDelete }] = useDisclosure(false);
+  const [selectedSlot, setSelectedSlot] = useState<string>(TARGET_SLOTS[0]);
+  const [slotTouched, setSlotTouched] = useState(false);
+  const populatedSlots = TARGET_SLOTS.filter(
+    (slot) => activeRules.some((r) => r.targetSlot === slot),
+  );
+  useEffect(() => {
+    if (!slotTouched && populatedSlots.length > 0 && !populatedSlots.includes(selectedSlot)) {
+      setSelectedSlot(populatedSlots[0]);
+    }
+  }, [slotTouched, populatedSlots, selectedSlot]);
+  const shadow = useMemo(
+    () => computeShadowing(effectiveRules, effectiveIds),
+    [effectiveRules, effectiveIds],
+  );
 
   function patchSelected(patch: Partial<SlotRule>) {
     if (!selected) return;
@@ -170,6 +187,10 @@ export function CustomLabelsUI({
 
   function patchRule(id: string, patch: Partial<SlotRule>) {
     setRules(effectiveRules.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  }
+
+  function onSetSlotIds(ruleId: string, next: string) {
+    setSlotIds({ ...effectiveIds, [ruleId]: next });
   }
 
   function duplicateSelected() {
@@ -248,12 +269,12 @@ export function CustomLabelsUI({
   const idsUnavailable = dataChain.length === 0;
   const initialTab = idsUnavailable ? 'rules' : 'ids';
   const ruleEditable = (rule: ScopedSlotRule) => !rulesReadOnly && rule.origin === editableTier;
-  const populatedSlots = TARGET_SLOTS.filter(
-    (slot) => activeRules.some((r) => r.targetSlot === slot),
-  );
-  const emptySlots = TARGET_SLOTS.filter(
-    (slot) => !activeRules.some((r) => r.targetSlot === slot),
-  );
+
+  const slotRules = activeRules.filter((r) => r.targetSlot === selectedSlot);
+  const slotDirty = dirtyIds
+    && slotRules.some(
+      (r) => (effectiveIds[r.id] ?? '') !== (serverIds[r.id]?.value ?? ''),
+    );
 
   const idsPanel = idsUnavailable ? (
     <Text c="dimmed">{t('idsUnavailable')}</Text>
@@ -267,48 +288,54 @@ export function CustomLabelsUI({
           {tCommon('actions.save')}
         </Button>
       </Group>
-      <Stack gap="md" data-testid="slot-grid">
-        {populatedSlots.map((slot) => {
-          const slotRules = activeRules.filter((r) => r.targetSlot === slot);
-          const slotDirty = dirtyIds
-            && slotRules.some(
-              (r) => (effectiveIds[r.id] ?? '') !== (serverIds[r.id]?.value ?? ''),
-            );
-          return (
-            <SlotGroup
-              key={slot}
-              slot={slot}
-              rules={slotRules}
-              values={effectiveIds}
-              dirty={slotDirty}
-              inheritedFor={(id) =>
-                serverIds[id]?.inherited === true
-                  && (effectiveIds[id] ?? '') === serverIds[id].value
-                  ? serverIds[id].sourceTier
-                  : null
-              }
-              isRuleEditable={ruleEditable}
-              editableTier={editableTier}
-              onSetSlotIds={setSlotIds}
-              onPatchRule={patchRule}
-              showLive={atFeed}
-              stats={preview.result?.slots[slot]}
-              ruleStats={preview.result?.rules}
-              total={preview.result?.total}
-              previewPending={preview.isPending}
-              previewErrors={preview.errors}
-              previewUnavailable={preview.unavailable}
-            />
-          );
-        })}
-      </Stack>
-      {emptySlots.length > 0 && (
-        <Group gap="xs" wrap="wrap" data-testid="slot-grid-empty">
-          <Text size="sm" c="dimmed">{t('emptySlots')}</Text>
-          {emptySlots.map((slot) => (
-            <Badge key={slot} size="xs" variant="light">{slot}</Badge>
-          ))}
-        </Group>
+      <SlotSelector
+        slots={TARGET_SLOTS}
+        value={selectedSlot}
+        onChange={(slot) => {
+          setSlotTouched(true);
+          setSelectedSlot(slot);
+        }}
+        dirty={slotDirty}
+        activeCount={slotRules.length}
+      />
+      {atFeed && (
+        <CoverageDashboard
+          total={preview.result?.total}
+          labeledAny={preview.result?.labeledAny}
+          activeRules={activeRules.length}
+          pending={preview.isPending}
+          errors={preview.errors}
+          unavailable={preview.unavailable}
+        />
+      )}
+      <Accordion multiple data-testid={`rules-${selectedSlot}`}>
+        {slotRules.map((rule, index) => (
+          <RuleCard
+            key={rule.id}
+            rule={rule}
+            priority={index + 1}
+            value={effectiveIds[rule.id] ?? ''}
+            dirty={dirtyIds
+              && (effectiveIds[rule.id] ?? '') !== (serverIds[rule.id]?.value ?? '')}
+            inheritedFrom={
+              serverIds[rule.id]?.inherited === true
+                && (effectiveIds[rule.id] ?? '') === serverIds[rule.id].value
+                ? serverIds[rule.id].sourceTier
+                : null
+            }
+            editable={ruleEditable(rule)}
+            matchedStats={preview.result?.rules[rule.id]}
+            showLive={atFeed}
+            shadowedBy={shadow[rule.id]?.shadowedBy ?? new Map()}
+            onSetIds={(next) => onSetSlotIds(rule.id, next)}
+            onPatchRule={patchRule}
+          />
+        ))}
+      </Accordion>
+      {slotRules.length === 0 && (
+        <Text size="sm" c="dimmed" data-testid="empty-slot-notice">
+          {t('noRulesForSlot')}
+        </Text>
       )}
     </Stack>
   );

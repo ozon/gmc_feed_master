@@ -93,20 +93,24 @@ function renderUI(
 }
 
 describe('CustomLabelsUI operational page', () => {
-  it('renders one column per active merged rule (global + client)', async () => {
+  it('selects the first populated slot by default; switching slots swaps the ruleset', async () => {
     renderUI({ feedSourceId: 1 });
-    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument(); // global rule
-    expect(screen.getByText('Client Only')).toBeInTheDocument(); // client rule
-    expect(screen.getByText('custom_label_1')).toBeInTheDocument();
-    expect(screen.getByText('custom_label_2')).toBeInTheDocument();
-    expect(screen.getByText('Brand - ClientOnly')).toBeInTheDocument();
-    expect(screen.queryByText('Off')).not.toBeInTheDocument(); // inactive hidden
+    const selector = await screen.findByTestId('slot-selector');
+    // default = first slot with active rules (custom_label_1: Mid Funnel)
+    expect(within(selector).getByText('CUSTOM_LABEL_1')).toBeInTheDocument();
+    expect(screen.getByText('Mid Funnel')).toBeInTheDocument();
+    expect(screen.queryByText('Client Only')).not.toBeInTheDocument();
+    // switch to custom_label_2 (Client Only)
+    await userEvent.click(within(selector).getByText('CUSTOM_LABEL_2'));
+    expect(screen.getByText('Client Only')).toBeInTheDocument();
+    expect(screen.queryByText('Mid Funnel')).not.toBeInTheDocument();
   });
 
-  it('shows the parsed/deduped ID count from prefilled data', async () => {
+  it('shows the parsed/deduped ID count inside the expanded card', async () => {
     renderUI({ feedSourceId: 1 });
     await screen.findByText('Mid Funnel');
-    expect(screen.getByText('3 unique IDs')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Mid Funnel')); // expand the accordion
+    expect(await screen.findByText('3 unique IDs')).toBeInTheDocument();
   });
 
   it('marks client-tier bulk values as inherited at feed tier with a Client badge', async () => {
@@ -116,38 +120,40 @@ describe('CustomLabelsUI operational page', () => {
     };
     renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', handler);
     expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
-    expect(screen.getAllByText('Inherited from Client').length).toBe(2);
+    // only the selected slot's rules are rendered
+    expect(screen.getAllByText('Inherited from Client').length).toBe(1);
+    const selector = screen.getByTestId('slot-selector');
+    await userEvent.click(within(selector).getByText('CUSTOM_LABEL_2'));
+    expect(screen.getAllByText('Inherited from Client').length).toBe(1);
   });
 
-  it('groups the bulk tab by target slot in registry order', async () => {
+  it('slots without active rules show the empty notice when selected', async () => {
     renderUI({ feedSourceId: 1 });
-    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
-    const grid = document.querySelector('[data-testid="slot-grid"]') as HTMLElement;
-    const groups = grid.querySelectorAll('[data-testid^="slot-group-"]');
-    expect(Array.from(groups).map((g) => g.getAttribute('data-testid'))).toEqual([
-      'slot-group-custom_label_1', 'slot-group-custom_label_2',
-    ]);
-    const empty = screen.getByTestId('slot-grid-empty');
-    expect(within(empty).getByText('No rules yet for:')).toBeInTheDocument();
-    expect(within(empty).getByText('custom_label_0')).toBeInTheDocument();
+    await screen.findByText('Mid Funnel');
+    const selector = screen.getByTestId('slot-selector');
+    await userEvent.click(within(selector).getByText('CUSTOM_LABEL_0'));
+    expect(screen.getByTestId('empty-slot-notice')).toBeInTheDocument();
+    expect(screen.queryByText('Mid Funnel')).not.toBeInTheDocument();
   });
 
-  it('shows the unsaved indicator on a slot badge only while its values differ from the server', async () => {
+  it('shows unsaved dots on the rule card and slot selector while values differ', async () => {
     renderUI({ feedSourceId: 1 });
     await screen.findByText('Mid Funnel');
     expect(document.querySelectorAll('.mantine-Indicator-indicator').length).toBe(0);
-    await userEvent.type(screen.getByLabelText('Product IDs — Mid Funnel'), ',d');
-    expect(document.querySelectorAll('.mantine-Indicator-indicator').length).toBe(1);
+    await userEvent.click(screen.getByText('Mid Funnel')); // expand
+    await userEvent.type(
+      await screen.findByLabelText('Product IDs — Mid Funnel'),
+      ',d',
+    );
+    // one dot on the rule card, one on the slot selector
+    expect(document.querySelectorAll('.mantine-Indicator-indicator').length).toBe(2);
   });
 
-  it('info boxes show slot explanation and active rule count', async () => {
+  it('shows the selected slot explanation and active rule count', async () => {
     renderUI({ feedSourceId: 1 });
     expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
-    expect(
-      screen.getByText(/mid-funnel segmentation/i),
-    ).toBeInTheDocument();
-    // both groups have exactly one active rule
-    expect(screen.getAllByText('1 active rule').length).toBe(2);
+    expect(screen.getByText(/mid-funnel segmentation/i)).toBeInTheDocument();
+    expect(screen.getAllByText('1 active rule').length).toBe(1);
   });
 
   it('active rule count pluralizes for more than one rule', async () => {
@@ -163,14 +169,17 @@ describe('CustomLabelsUI operational page', () => {
       return jsonResponseFor(url);
     };
     renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', handler);
-    expect(await screen.findByText('2 active rules')).toBeInTheDocument();
+    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
+    expect(screen.getByText('Second')).toBeInTheDocument();
+    expect(screen.getByText('2 active rules')).toBeInTheDocument();
   });
 
   it('values textarea accessible name matches the localized label plus rule name', async () => {
     renderUI({ feedSourceId: 1 });
-    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
+    await screen.findByText('Mid Funnel');
+    await userEvent.click(screen.getByText('Mid Funnel')); // expand
     expect(
-      screen.getByRole('textbox', { name: 'Product IDs — Mid Funnel' }),
+      await screen.findByRole('textbox', { name: 'Product IDs — Mid Funnel' }),
     ).toBeInTheDocument();
   });
 
@@ -272,7 +281,8 @@ describe('CustomLabelsUI operational page', () => {
     expect(dataUrl).toBe('/plugins/custom_labels/data?client_id=7');
     // Both tabs are usable at client tier; the bulk-IDs tab is active by default.
     expect(screen.getByRole('tab', { name: /bulk ids/i })).not.toBeDisabled();
-    expect(screen.getByText('3 unique IDs')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Mid Funnel')); // expand
+    expect(await screen.findByText('3 unique IDs')).toBeInTheDocument();
   });
 
   it('at global tier the bulk-IDs tab is unavailable (data_scope lacks global) and the rules tab opens by default', async () => {
@@ -310,7 +320,7 @@ describe('CustomLabelsUI operational page', () => {
 
   it('onlyTab="ids" renders the bulk grid without any rules tab or rules UI', async () => {
     renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', undefined, 'ids');
-    expect(await screen.findByTestId('slot-grid')).toBeInTheDocument();
+    expect(await screen.findByTestId('slot-selector')).toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /slot rules/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /bulk ids/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId('rules-readonly-hint')).not.toBeInTheDocument();
@@ -394,8 +404,9 @@ describe('CustomLabelsUI operational page', () => {
         <RouterProvider router={router} />
       </QueryClientProvider>,
     );
-    await screen.findByText('Client Only');
+    await screen.findByText('Mid Funnel'); // load sentinel (ids tab, default slot)
     await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    await screen.findByText('Client Only'); // rules list shows every merged rule
     await userEvent.click(screen.getByText('Client Only'));
     await userEvent.type(screen.getByLabelText(/name/i, { selector: 'input' }), '!');
     await userEvent.click(screen.getByRole('button', { name: /save/i }));
@@ -481,6 +492,8 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
           fallbackTemplate: '' },
       ],
     });
+    expect(await screen.findByText('All Products')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('All Products')); // expand the accordion
     expect(await screen.findByText(/every product gets: brand - all/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/product ids — all products/i)).not.toBeInTheDocument();
     // feed tier: config is read-only -> no override button
@@ -497,14 +510,19 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
           fallbackTemplate: '' },
       ],
     });
+    await userEvent.click(await screen.findByText('By Brand')); // expand
     expect(await screen.findByLabelText(/values for brand/i)).toBeInTheDocument();
   });
 
   it("clear button empties that rule's value list and zeroes the counter", async () => {
     renderUI({ feedSourceId: 1 });
     await screen.findByText('Mid Funnel');
-    await userEvent.click(screen.getByRole('button', { name: 'Clear value list — Mid Funnel' }));
-    expect(screen.getByLabelText('Product IDs — Mid Funnel')).toHaveValue('');
+    await userEvent.click(screen.getByText('Mid Funnel')); // expand
+    const textarea = await screen.findByLabelText('Product IDs — Mid Funnel');
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Clear value list — Mid Funnel' }),
+    );
+    expect(textarea).toHaveValue('');
     expect(screen.getByText('0 unique IDs')).toBeInTheDocument();
   });
 
@@ -538,6 +556,7 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
         <RouterProvider router={router} />
       </QueryClientProvider>,
     );
+    await userEvent.click(await screen.findByText('All Products')); // expand
     const override = await screen.findByRole('button', { name: /switch to value list/i });
     await userEvent.click(override);
     expect(await screen.findByLabelText(/product ids — all products/i)).toBeInTheDocument();
@@ -586,6 +605,7 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
 describe('CustomLabelsUI live preview stats', () => {
   const PREVIEW = {
     total: 3,
+    labeledAny: 2,
     rules: {
       r1: { matched: 2, labeled: 2, sample: ['a1', 'a2'] },
       r3: { matched: 1, labeled: 0, sample: ['z1'] },
@@ -596,20 +616,27 @@ describe('CustomLabelsUI live preview stats', () => {
     },
   };
 
-  it('renders the labeled/total header, coverage bar, and per-rule match badges', async () => {
+  it('renders the overall coverage dashboard and per-rule match badges', async () => {
     renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', (url) => {
       if (url.startsWith('/plugins/custom_labels/preview')) return jsonResponse(PREVIEW);
       return jsonResponseFor(url);
     });
     expect(await waitFor(() =>
-      expect(screen.getByText(/2 of 3 staged products labeled/i)).toBeInTheDocument(),
+      expect(screen.getByText(/2 \/ 3 staged products labeled/i)).toBeInTheDocument(),
       { timeout: 2500 })).toBeTruthy();
-    expect(screen.getByText(/0 of 3 staged products labeled/i)).toBeInTheDocument();
-    expect(document.querySelectorAll('.mantine-Progress-root').length).toBe(2);
+    expect(document.querySelectorAll('.mantine-Progress-root').length).toBe(1);
+    expect(screen.getByTestId('coverage-stat-total')).toHaveTextContent('3');
+    expect(screen.getByTestId('coverage-stat-labeled')).toHaveTextContent('2');
+    expect(screen.getByTestId('coverage-stat-unlabeled')).toHaveTextContent('1');
+    expect(screen.getByTestId('coverage-stat-active-rules')).toHaveTextContent('2');
+    // default slot custom_label_1: r1 badge visible in the collapsed header
     expect(screen.getByText('2 matched')).toBeInTheDocument();
-    expect(screen.getByText('1 matched')).toBeInTheDocument();
     // sample product deep-links are gone
     expect(screen.queryByRole('link', { name: 'a1' })).not.toBeInTheDocument();
+    // switch to custom_label_2: r3 is matched-but-never-labeled
+    const selector = screen.getByTestId('slot-selector');
+    await userEvent.click(within(selector).getByText('CUSTOM_LABEL_2'));
+    expect(screen.getByText('1 matched')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'z1' })).not.toBeInTheDocument();
   });
 
@@ -635,9 +662,9 @@ describe('CustomLabelsUI live preview stats', () => {
         return jsonResponseFor(url);
       },
     );
-    await screen.findByText('Client Only');
+    await screen.findByText('Mid Funnel');
     expect(calls.some((u) => u.includes('/preview'))).toBe(false);
-    expect(screen.queryByText(/staged products labeled/i)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('coverage-dashboard')).not.toBeInTheDocument();
   });
 });
 
@@ -652,8 +679,9 @@ describe('CustomLabelsUI rule actions', () => {
       return jsonResponseFor(url);
     };
     renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels', putHandler);
-    await screen.findByText('Client Only');
+    await screen.findByText('Mid Funnel'); // load sentinel (ids tab, default slot)
     await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    await screen.findByText('Client Only'); // rules list shows every merged rule
     await userEvent.click(screen.getByText('Client Only'));
     await userEvent.click(screen.getByRole('button', { name: /duplicate/i }));
     expect(screen.getByText('Client Only (copy)')).toBeInTheDocument();
@@ -668,8 +696,9 @@ describe('CustomLabelsUI rule actions', () => {
 
   it('delete asks for confirmation and removes the rule from the editable tier', async () => {
     renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels');
-    await screen.findByText('Client Only');
+    await screen.findByText('Mid Funnel'); // load sentinel (ids tab, default slot)
     await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
+    await screen.findByText('Client Only'); // rules list shows every merged rule
     await userEvent.click(screen.getByText('Client Only'));
     await userEvent.click(screen.getByRole('button', { name: /delete/i }));
     expect(screen.getByText(/delete rule "client only"/i)).toBeInTheDocument();
@@ -751,10 +780,40 @@ describe('CustomLabelsUI tier navigation', () => {
 
   it('client page links to the global page only', async () => {
     renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels');
-    await screen.findByText('Client Only');
+    await screen.findByText('Mid Funnel');
     expect(screen.getByTestId('scope-link-global')).toHaveAttribute(
       'href', '/plugins/custom_labels',
     );
     expect(screen.queryByTestId('scope-link-client')).not.toBeInTheDocument();
+  });
+});
+
+describe('CustomLabelsUI shadowing', () => {
+  it('flags values claimed by a higher-priority rule of the same slot', async () => {
+    const config = {
+      slotRules: [
+        { id: 'r1', name: 'Bleeder', isActive: true, targetSlot: 'custom_label_0',
+          matchField: 'id', valueTemplate: 'x', fallbackTemplate: '' },
+        { id: 'r2', name: 'Later', isActive: true, targetSlot: 'custom_label_0',
+          matchField: 'id', valueTemplate: 'y', fallbackTemplate: '' },
+      ],
+    };
+    const handler = (url: string) => {
+      if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse(config);
+      if (url.startsWith('/plugins/custom_labels/data')) {
+        return jsonResponse({ slotIds: { r1: '1,2', r2: '2,3' } });
+      }
+      if (url.startsWith('/registry/attributes')) return jsonResponse([
+        { name: 'id', kind: 'scalar', sub_fields: [] },
+      ]);
+      return jsonResponse({});
+    };
+    renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', handler);
+    expect(await screen.findByText('Later')).toBeInTheDocument();
+    expect(screen.getByText('1 overridden')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Later')); // expand
+    expect(await screen.findByText(/overridden IDs/i)).toBeInTheDocument();
+    const value2 = await screen.findByText('2', { exact: true });
+    expect(value2).toHaveStyle({ textDecoration: 'line-through' });
   });
 });
