@@ -4,6 +4,7 @@ import { createRef } from 'react';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { ProductPreviewColumn } from './ProductPreviewColumn';
+import { ROW_HEIGHT } from './productPreview';
 import type { ProductLookupMatch, ProductLookupSample } from '../../api/types';
 
 function match(count: number, sample: Partial<ProductLookupSample> | null): ProductLookupMatch {
@@ -91,7 +92,7 @@ describe('ProductPreviewColumn', () => {
 
   it('windows rows: renders only the slice for the given scrollTop', () => {
     const entries = Array.from({ length: 1000 }, (_, i) => `v${i}`);
-    renderColumn({ entries, matches: null, isFetching: false, scrollTop: 34 * 500 });
+    renderColumn({ entries, matches: null, isFetching: false, scrollTop: ROW_HEIGHT * 500 });
     expect(screen.getByTestId('preview-row-495')).toBeInTheDocument();
     expect(screen.queryByTestId('preview-row-0')).not.toBeInTheDocument();
     expect(screen.queryByTestId('preview-row-600')).not.toBeInTheDocument();

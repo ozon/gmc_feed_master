@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useFeedSourceFields, useProductLookup } from '../../api/hooks';
 import { parseIdEntries, parseIdList } from './ids';
 import { ProductPreviewColumn } from './ProductPreviewColumn';
-import { useSyncedScroll } from './productPreview';
+import { ROW_HEIGHT, useSyncedScroll } from './productPreview';
 import type { ScopedSlotRule } from './scopeMerge';
 
 export type RuleValuesEditorProps = {
@@ -63,7 +63,7 @@ export function RuleValuesEditor({
       wrap="off"
       styles={{
         input: {
-          lineHeight: '34px',
+          lineHeight: `${ROW_HEIGHT}px`,
           fontFamily: 'var(--mantine-font-family-monospace)',
           overflowX: 'auto',
         },

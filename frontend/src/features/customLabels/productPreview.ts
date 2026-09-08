@@ -1,6 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react';
 
-export const ROW_HEIGHT = 34;
+export const ROW_HEIGHT = 44;
 export const VIEWPORT_ROWS = 10;
 export const OVERSCAN = 5;
 
