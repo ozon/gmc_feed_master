@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 import jsonschema
 from fastapi import APIRouter, Depends, HTTPException
@@ -161,9 +161,9 @@ async def update_plugin_enabled(
 @router.get("/plugins/{plugin_id}/config", response_model=None)
 async def get_plugin_config(
     plugin_id: str,
+    user: Annotated[CurrentUser, Depends(get_current_user)],
     client_id: int | None = None,
     feed_source_id: int | None = None,
-    user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict[str, Any] | JSONResponse:
     return await _get_payload(
@@ -175,9 +175,9 @@ async def get_plugin_config(
 async def put_plugin_config(
     plugin_id: str,
     payload: dict[str, Any],
+    user: Annotated[CurrentUser, Depends(get_current_user)],
     client_id: int | None = None,
     feed_source_id: int | None = None,
-    user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict[str, str] | JSONResponse:
     return await _put_payload(
@@ -197,9 +197,9 @@ async def put_plugin_config(
 @router.get("/plugins/{plugin_id}/data", response_model=None)
 async def get_plugin_data(
     plugin_id: str,
+    user: Annotated[CurrentUser, Depends(get_current_user)],
     client_id: int | None = None,
     feed_source_id: int | None = None,
-    user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict[str, Any] | JSONResponse:
     return await _get_payload(
@@ -211,9 +211,9 @@ async def get_plugin_data(
 async def put_plugin_data(
     plugin_id: str,
     payload: dict[str, Any],
+    user: Annotated[CurrentUser, Depends(get_current_user)],
     client_id: int | None = None,
     feed_source_id: int | None = None,
-    user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict[str, str] | JSONResponse:
     return await _put_payload(
