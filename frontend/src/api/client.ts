@@ -1,4 +1,4 @@
-export type User = { username: string };
+export type User = { username: string; role: 'admin' | 'user'; client_ids: number[] | null };
 
 export class ApiError extends Error {
   readonly status: number;
@@ -89,7 +89,6 @@ export function login(username: string, password: string): Promise<User> {
 export function getCurrentUser(): Promise<User> {
   return apiGet<User>('/auth/me');
 }
-
 export function logout(): Promise<{ status: string }> {
   return apiPost<{ status: string }>('/auth/logout');
 }

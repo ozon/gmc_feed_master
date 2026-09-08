@@ -232,3 +232,19 @@ export type ProductLookupSample = {
 export type ProductLookupMatch = { count: number; sample: ProductLookupSample | null };
 
 export type ProductLookupResponse = { matches: Record<string, ProductLookupMatch> };
+
+export type AdminUser = {
+  id: number;
+  username: string;
+  role: string;
+  is_active: boolean;
+  client_ids: number[];
+};
+
+export type GlobalSettings = {
+  staging_removal_retention_days: number;
+  staging_history_retention_days: number;
+  ingestion_run_retention_days: number;
+};
+
+export type SchedulerJob = { id: string; trigger: string };

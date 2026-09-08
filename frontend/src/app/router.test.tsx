@@ -40,7 +40,7 @@ describe('auth route guard', () => {
 
   it('renders the dashboard for an authenticated user', async () => {
     stubFetch((url) => {
-      if (url === '/auth/me') return jsonResponse({ username: 'operator' });
+      if (url === '/auth/me') return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
       if (url === '/dashboard/summary') return jsonResponse(emptySummary);
       if (url === '/plugins') return jsonResponse([]);
       return jsonResponse({});
@@ -56,12 +56,12 @@ describe('auth route guard', () => {
     stubFetch((url) => {
       if (url === '/auth/me') {
         return authenticated
-          ? jsonResponse({ username: 'operator' })
+          ? jsonResponse({ username: 'operator', role: 'admin', client_ids: null })
           : jsonResponse({ detail: 'Not authenticated' }, 401);
       }
       if (url === '/auth/login') {
         authenticated = true;
-        return jsonResponse({ username: 'operator' });
+        return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
       }
       if (url === '/dashboard/summary') return jsonResponse(emptySummary);
       if (url === '/plugins') return jsonResponse([]);
@@ -105,7 +105,7 @@ beforeEach(() => {
 });
 
   it('removes the session query before navigating to /login', () => {
-    queryClient.setQueryData(queryKeys.session, { username: 'operator' });
+    queryClient.setQueryData(queryKeys.session, { username: 'operator', role: 'admin', client_ids: null });
     const removeSpy = vi.spyOn(queryClient, 'removeQueries');
     const router = stubRouter('/clients/1/feeds/2/products');
 
@@ -121,7 +121,7 @@ beforeEach(() => {
   });
 
   it('resets the session query even when already on /login', () => {
-    queryClient.setQueryData(queryKeys.session, { username: 'operator' });
+    queryClient.setQueryData(queryKeys.session, { username: 'operator', role: 'admin', client_ids: null });
     const removeSpy = vi.spyOn(queryClient, 'removeQueries');
     const router = stubRouter('/login');
 
@@ -137,7 +137,7 @@ beforeEach(() => {
     stubFetch((url) => {
       if (url === '/auth/me') {
         return jsonResponse(
-          authed ? { username: 'operator' } : { detail: 'Not authenticated' },
+          authed ? { username: 'operator', role: 'admin', client_ids: null } : { detail: 'Not authenticated' },
           authed ? 200 : 401,
         );
       }
@@ -152,7 +152,7 @@ beforeEach(() => {
 
     render(<App />);
     expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
-    expect(queryClient.getQueryData(queryKeys.session)).toEqual({ username: 'operator' });
+    expect(queryClient.getQueryData(queryKeys.session)).toEqual({ username: 'operator', role: 'admin', client_ids: null });
 
     authed = false;
     await queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary });
@@ -208,7 +208,7 @@ describe('RequireSession non-401 session errors', () => {
     stubFetch((url) => {
       if (url === '/auth/me') {
         return sessionAvailable
-          ? jsonResponse({ username: 'operator' })
+          ? jsonResponse({ username: 'operator', role: 'admin', client_ids: null })
           : jsonResponse({ detail: 'Service unavailable' }, 503);
       }
       if (url === '/dashboard/summary') return jsonResponse(emptySummary);
@@ -248,7 +248,7 @@ describe('feed-scoped plugin route', () => {
   it('renders PluginPage at /clients/:clientId/feeds/:feedSourceId/plugins/:pluginId', async () => {
     let captured: string | null = null;
     stubFetch((url) => {
-      if (url === '/auth/me') return jsonResponse({ username: 'operator' });
+      if (url === '/auth/me') return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
       if (url === '/dashboard/summary') return jsonResponse(emptySummary);
       if (url === '/plugins') return jsonResponse([schemaPlugin]);
       if (url.startsWith('/plugins/example_upper/config')) {

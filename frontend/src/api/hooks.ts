@@ -3,6 +3,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut, changePassword, getCurrentUser, logout } from './client';
 import { queryKeys } from './queryKeys';
 import type {
+  AdminUser,
   ClientRow,
   ClientSummary,
   DashboardSummary,
@@ -12,6 +13,7 @@ import type {
   FeedSourceRow,
   FeedSourceSummary,
   FieldMappingDoc,
+  GlobalSettings,
   IngestionRunRow,
   PipelineDoc,
   PluginConfigResponse,
@@ -21,9 +23,11 @@ import type {
   ProductsPageResponse,
   QualityFindingsResponse,
   RegistryAttribute,
+  SchedulerJob,
 } from './types';
 
 export type {
+  AdminUser,
   ClientRow,
   ClientSummary,
   DashboardSummary,
@@ -33,6 +37,7 @@ export type {
   FeedSourceRow,
   FeedSourceSummary,
   FieldMappingDoc,
+  GlobalSettings,
   IngestionRunRow,
   PipelineDoc,
   PluginConfigResponse,
@@ -41,6 +46,7 @@ export type {
   ProductsPageResponse,
   QualityFindingsResponse,
   RegistryAttribute,
+  SchedulerJob,
 } from './types';
 
 type ProductListParams = {
@@ -507,5 +513,74 @@ export function useProductLookup(
     enabled: feedSourceId !== undefined && values.length > 0,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
+  });
+}
+
+export function useAdminUsers() {
+  return useQuery({
+    queryKey: queryKeys.adminUsers,
+    queryFn: () => apiGet<AdminUser[]>('/admin/users'),
+  });
+}
+
+export function useCreateAdminUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: {
+      username: string;
+      password: string;
+      role: 'admin' | 'user';
+      client_ids: number[];
+    }) => apiPost<AdminUser>('/admin/users', payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers });
+    },
+  });
+}
+
+export function useUpdateAdminUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...payload }: {
+      id: number;
+      role?: 'admin' | 'user';
+      is_active?: boolean;
+      client_ids?: number[];
+    }) => apiPatch<AdminUser>(`/admin/users/${id}`, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers });
+    },
+  });
+}
+
+export function useResetUserPassword() {
+  return useMutation({
+    mutationFn: ({ id, newPassword }: { id: number; newPassword: string }) =>
+      apiPost<void>(`/admin/users/${id}/password`, { new_password: newPassword }),
+  });
+}
+
+export function useAdminSettings() {
+  return useQuery({
+    queryKey: queryKeys.adminSettings,
+    queryFn: () => apiGet<GlobalSettings>('/admin/settings'),
+  });
+}
+
+export function useSaveAdminSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: GlobalSettings) => apiPut<GlobalSettings>('/admin/settings', payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminSettings });
+    },
+  });
+}
+
+export function useSchedulerJobs() {
+  return useQuery({
+    queryKey: queryKeys.adminScheduler,
+    queryFn: () => apiGet<SchedulerJob[]>('/admin/scheduler'),
+    retry: false,
   });
 }
