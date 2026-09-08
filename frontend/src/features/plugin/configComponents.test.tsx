@@ -56,7 +56,7 @@ describe('plugin surface registries', () => {
   it('LabelizerPage renders the bulk grid without rules UI', async () => {
     const Page = CUSTOM_COMPONENTS.custom_labels;
     renderSurface(<Page pluginId="custom_labels" scope={{ feedSourceId: 1 }} />, { feedSourceId: 1 });
-    expect(await screen.findByTestId('slot-grid')).toBeInTheDocument();
+    expect(await screen.findByTestId('slot-selector')).toBeInTheDocument();
     expect(screen.queryByTestId('rules-readonly-hint')).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /slot rules/i })).not.toBeInTheDocument();
   });
