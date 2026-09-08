@@ -97,9 +97,11 @@ describe('ProductPreviewColumn', () => {
     expect(screen.queryByTestId('preview-row-600')).not.toBeInTheDocument();
   });
 
-  it('shows the empty hint for an empty list', () => {
+  it('shows the empty hint inside the always-mounted viewport for an empty list', () => {
     renderColumn({ entries: [] });
     expect(screen.getByTestId('preview-empty')).toBeInTheDocument();
+    // the viewport stays mounted when empty so the scroll-sync ref never detaches
+    expect(screen.getByTestId('product-preview-viewport')).toBeInTheDocument();
   });
 
   it('shows the error line when the lookup failed', () => {

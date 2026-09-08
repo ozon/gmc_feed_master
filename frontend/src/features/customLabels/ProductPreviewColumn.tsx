@@ -27,19 +27,19 @@ export function ProductPreviewColumn({
       {isError ? (
         <Text size="xs" c="red" data-testid="preview-error">{t('previewError')}</Text>
       ) : null}
-      {total === 0 ? (
-        <Text size="xs" c="dimmed" data-testid="preview-empty">{t('previewEmpty')}</Text>
-      ) : (
-        <Box
-          ref={viewportRef}
-          data-testid="product-preview-viewport"
-          style={{
-            height: VIEWPORT_ROWS * ROW_HEIGHT,
-            overflowY: 'auto',
-            border: 'calc(0.0625rem * var(--mantine-scale)) solid var(--mantine-color-default-border)',
-            borderRadius: 'var(--mantine-radius-sm)',
-          }}
-        >
+      <Box
+        ref={viewportRef}
+        data-testid="product-preview-viewport"
+        style={{
+          height: VIEWPORT_ROWS * ROW_HEIGHT,
+          overflowY: 'auto',
+          border: 'calc(0.0625rem * var(--mantine-scale)) solid var(--mantine-color-default-border)',
+          borderRadius: 'var(--mantine-radius-sm)',
+        }}
+      >
+        {total === 0 ? (
+          <Text size="xs" c="dimmed" px="xs" data-testid="preview-empty">{t('previewEmpty')}</Text>
+        ) : (
           <div style={{ height: total * ROW_HEIGHT, position: 'relative' }}>
             {entries.slice(start, end).map((value, offset) => {
               const index = start + offset;
@@ -65,8 +65,8 @@ export function ProductPreviewColumn({
               );
             })}
           </div>
-        </Box>
-      )}
+        )}
+      </Box>
     </Stack>
   );
 }
