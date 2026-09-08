@@ -146,7 +146,7 @@ describe('RuleCard', () => {
     });
     renderCard({
       feedSourceId: 5,
-      value: 'a1,zz',
+      value: 'a1\nzz',
     });
     await userEvent.click(screen.getByText('Mid Funnel'));
     const viewport = await screen.findByTestId('product-preview-viewport');

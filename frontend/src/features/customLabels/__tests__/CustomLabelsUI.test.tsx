@@ -679,6 +679,9 @@ describe('CustomLabelsUI live preview stats', () => {
           b: { count: 1, sample: { product_id: 'b', status: 'active', excluded: false, title: 'Bravo', brand: 'Beta', availability: 'out_of_stock' } },
         },
       });
+      if (url.startsWith('/plugins/custom_labels/data')) {
+        return jsonResponse({ slotIds: { r1: 'a\nb', r3: 'z' } });
+      }
       return jsonResponseFor(url);
     });
     await screen.findByText('Mid Funnel');
@@ -845,5 +848,7 @@ describe('CustomLabelsUI shadowing', () => {
     await userEvent.click(screen.getByText('Later')); // expand
     // footer overridden list is gone; the header badge carries the summary
     expect(screen.queryByText(/overridden IDs/i)).not.toBeInTheDocument();
+    // inline badge in the preview: line "2,3"'s first ID (2) is claimed by #1
+    expect(await screen.findByText('Overridden by #1')).toBeInTheDocument();
   });
 });

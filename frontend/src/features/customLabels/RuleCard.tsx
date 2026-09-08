@@ -107,6 +107,7 @@ export function RuleCard({
               extraFields={extraFields}
               onExtraFieldsChange={onExtraFieldsChange}
               onSetIds={onSetIds}
+              shadowedBy={shadowedBy}
             />
           )}
         </Stack>

@@ -3,9 +3,10 @@ import { CloseButton, Grid, Group, MultiSelect, Stack, Text, Textarea } from '@m
 import { useDebouncedValue } from '@mantine/hooks';
 import { useTranslation } from 'react-i18next';
 import { useFeedSourceFields, useProductLookup } from '../../api/hooks';
-import { parseIdEntries, parseIdList } from './ids';
+import { parseIdList, parsePreviewLines } from './ids';
 import { ProductPreviewColumn } from './ProductPreviewColumn';
 import { ROW_HEIGHT, useSyncedScroll } from './productPreview';
+import type { ShadowOwnerInfo } from './shadowing';
 import type { ScopedSlotRule } from './scopeMerge';
 
 export type RuleValuesEditorProps = {
@@ -15,12 +16,13 @@ export type RuleValuesEditorProps = {
   extraFields: string[];
   onExtraFieldsChange: (fields: string[]) => void;
   onSetIds: (value: string) => void;
+  shadowedBy: ReadonlyMap<string, ShadowOwnerInfo>;
 };
 
 const PREVIEW_DEFAULT_FIELDS = new Set(['title', 'brand', 'availability']);
 
 export function RuleValuesEditor({
-  rule, value, feedSourceId, extraFields, onExtraFieldsChange, onSetIds,
+  rule, value, feedSourceId, extraFields, onExtraFieldsChange, onSetIds, shadowedBy,
 }: RuleValuesEditorProps) {
   const { t } = useTranslation('customLabels');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -29,9 +31,9 @@ export function RuleValuesEditor({
   const onScrollTopChange = useCallback((top: number) => setScrollTop(top), []);
   useSyncedScroll(textareaRef, previewRef, onScrollTopChange, feedSourceId);
 
-  const entries = useMemo(() => parseIdEntries(value), [value]);
-  const uniqueValues = useMemo(() => Array.from(new Set(entries)), [entries]);
-  const [debouncedValues] = useDebouncedValue(uniqueValues, 300);
+  const lines = useMemo(() => parsePreviewLines(value), [value]);
+  const lookupValues = useMemo(() => Array.from(new Set(lines.flat())), [lines]);
+  const [debouncedValues] = useDebouncedValue(lookupValues, 300);
   const lookup = useProductLookup(feedSourceId, rule.matchField, debouncedValues, extraFields);
   const matches = useMemo(
     () => (lookup.data?.matches ? new Map(Object.entries(lookup.data.matches)) : null),
@@ -123,11 +125,12 @@ export function RuleValuesEditor({
         <Grid.Col span={13}>
           <ProductPreviewColumn
             field={rule.matchField}
-            entries={entries}
+            lines={lines}
             matches={matches}
             isFetching={lookup.isFetching}
             isError={lookup.isError}
             extraFields={extraFields}
+            shadowedBy={shadowedBy}
             scrollTop={scrollTop}
             viewportRef={previewRef}
           />

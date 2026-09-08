@@ -24,6 +24,8 @@
   "shadowedBy": "Already matched by higher priority rule: {{name}}",
   "idNotFoundInFeed": "ID not found in feed",
   "noMatchInFeed": "No match in feed",
+  "overriddenBy": "Overridden by #{{priority}}",
+  "nMoreIds": "+{{more}} more",
   "nProducts_one": "{{count}} product",
   "nProducts_other": "{{count}} products",
   "previewTitle": "Matched products",

@@ -1,15 +1,3 @@
-/** Ordered, trimmed, empty-dropped entries WITHOUT dedupe — row i of the
- * product preview aligns with entry i. */
-export function parseIdEntries(raw: string | undefined | null): string[] {
-  if (!raw) return [];
-  const entries: string[] = [];
-  for (const part of raw.split(/[\n,]+/)) {
-    const trimmed = part.trim();
-    if (trimmed) entries.push(trimmed);
-  }
-  return entries;
-}
-
 export function parseIdList(raw: string | undefined | null): Set<string> {
   if (!raw) return new Set();
   const ids = new Set<string>();

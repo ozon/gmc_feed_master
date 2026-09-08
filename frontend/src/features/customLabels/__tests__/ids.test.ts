@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  compileTemplate, formatIdList, parseIdEntries, parseIdList, parsePreviewLines, renderPreview,
+  compileTemplate, formatIdList, parseIdList, parsePreviewLines, renderPreview,
 } from '../ids';
 
 describe('parseIdList', () => {
@@ -12,18 +12,6 @@ describe('parseIdList', () => {
   it('handles null/empty', () => {
     expect(parseIdList(null).size).toBe(0);
     expect(parseIdList('  \n,').size).toBe(0);
-  });
-});
-
-describe('parseIdEntries', () => {
-  it('preserves order and duplicates, drops empties', () => {
-    expect(parseIdEntries('b, a\n\n a \nc,\n')).toEqual(['b', 'a', 'a', 'c']);
-  });
-
-  it('returns an empty array for empty input', () => {
-    expect(parseIdEntries('')).toEqual([]);
-    expect(parseIdEntries(undefined)).toEqual([]);
-    expect(parseIdEntries(null)).toEqual([]);
   });
 });
 
