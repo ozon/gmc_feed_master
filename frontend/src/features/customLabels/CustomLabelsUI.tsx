@@ -19,7 +19,7 @@ import { ErrorState, LoadingState } from '../../components/StateViews';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { ScopeBadge } from '../../components/ScopeBadge';
 import { ScopeContextBar } from '../../components/ScopeContextBar';
-import { notifySuccess } from '../../app/notifications';
+import { notifyApiError, notifySuccess } from '../../app/notifications';
 import { SlotSelector } from './SlotSelector';
 import { CoverageDashboard } from './CoverageDashboard';
 import { RuleCard } from './RuleCard';
@@ -239,14 +239,24 @@ export function CustomLabelsUI({
     const payloadRules = effectiveRules
       .filter((r) => r.origin === editableTier)
       .map(({ origin: _origin, ...rest }) => rest);
-    await saveConfig.mutateAsync({ slotRules: payloadRules });
+    try {
+      await saveConfig.mutateAsync({ slotRules: payloadRules });
+    } catch (error) {
+      notifyApiError(error, t('saveFailed'));
+      return;
+    }
     setRules(null);
     notifySuccess(t('configSaved'));
   }
 
   async function saveIds() {
     if (saveDataScope === undefined) return;
-    await saveData.mutateAsync({ slotIds: effectiveIds });
+    try {
+      await saveData.mutateAsync({ slotIds: effectiveIds });
+    } catch (error) {
+      notifyApiError(error, t('saveFailed'));
+      return;
+    }
     setSlotIds(null);
     notifySuccess(t('idsSaved'));
   }

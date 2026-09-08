@@ -454,6 +454,25 @@ describe('CustomLabelsUI operational page', () => {
     expect(screen.getByText(/what are slot rules\?/i)).toBeInTheDocument();
     expect(screen.getByText(/getting started/i)).toBeInTheDocument();
   });
+
+  it('toasts and keeps edits when saving rules fails', async () => {
+    const user = userEvent.setup();
+    renderUI(
+      { clientId: 1 },
+      '/clients/1/plugins/custom_labels',
+      (url, init) => {
+        if (init?.method === 'PUT' && url.startsWith('/plugins/custom_labels/config')) {
+          return jsonResponse({ detail: 'rules invalid' }, 422);
+        }
+        return jsonResponseFor(url);
+      },
+      'rules',
+    );
+    await user.click(await screen.findByRole('button', { name: /add rule/i }));
+    await user.click(await screen.findByRole('button', { name: /^save$/i }));
+    expect(await screen.findByText(/rules invalid/i)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /^save$/i })).toBeEnabled();
+  });
 });
 
 describe('CustomLabelsUI bulk tab mode-awareness', () => {

@@ -56,6 +56,7 @@
   "deleteConfirmBody": "Delete rule \"{{name}}\"? You can still undo with Cancel until you save.",
   "deleteGlobalWarning": "Delete rule \"{{name}}\"? It is inherited by every client — deleting it affects all of them. You can still undo with Cancel until you save.",
   "configSaved": "Slot rules saved",
+  "saveFailed": "Could not be saved.",
   "idsSaved": "Bulk IDs saved",
   "unsavedChanges": "You have unsaved changes. Leave anyway?",
   "dragHandle": "Drag to reorder",

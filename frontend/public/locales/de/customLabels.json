@@ -56,6 +56,7 @@
   "deleteConfirmBody": "Regel \"{{name}}\" löschen? Bis zum Speichern kannst du es mit Abbrechen zurücknehmen.",
   "deleteGlobalWarning": "Regel \"{{name}}\" löschen? Sie wird von allen Mandanten geerbt — das Löschen betrifft alle. Bis zum Speichern kannst du es mit Abbrechen zurücknehmen.",
   "configSaved": "Slot-Regeln gespeichert",
+  "saveFailed": "Konnte nicht gespeichert werden.",
   "idsSaved": "Bulk-IDs gespeichert",
   "unsavedChanges": "Du hast ungespeicherte Änderungen. Trotzdem verlassen?",
   "dragHandle": "Zum Neusortieren ziehen",
