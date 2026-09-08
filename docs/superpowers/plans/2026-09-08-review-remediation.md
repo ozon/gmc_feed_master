@@ -507,7 +507,7 @@ function renderAt(path: string) {
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="/clients/:clientId/feeds/:feedSourceId/setup" element={<SetupPage />} />
+          <Route path="/clients/:clientId/feeds/:feedSourceId?/setup" element={<SetupPage />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -1507,8 +1507,8 @@ export default tseslint.config(
 
 - [ ] **Step 3: Add the lint script with a warnings baseline**
 
-Run: `cd frontend && npx eslint src 2>/dev/null | grep -c warning`
-Capture the count `N` from the summary line, then add to `frontend/package.json` scripts:
+Run: `cd frontend && npx eslint src; echo "exit=$?"`
+Read the summary line (`✖ X problems (0 errors, N warnings)`) and use `N` as the baseline, then add to `frontend/package.json` scripts:
 
 ```json
     "lint": "eslint src --max-warnings N"
