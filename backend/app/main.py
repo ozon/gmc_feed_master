@@ -34,6 +34,7 @@ from .persistence.sessions import PostgresSessionStore
 from .db.engine import create_engine, create_session_factory, get_db_session
 from .persistence.users import change_password, seed_initial_user
 from .routes import (
+    admin_router,
     clients_router,
     export_history_router,
     export_public_router,
@@ -199,6 +200,7 @@ def create_app(
     app.include_router(products_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(quality_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(registry_router)
+    app.include_router(admin_router)
     app.state.settings = settings
     app.state.session_store = session_store
     app.state.session_store_injected = session_store is not None
