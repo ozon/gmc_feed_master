@@ -41,6 +41,17 @@ async def seed_initial_user(
         return result.scalar_one()
 
 
+async def authenticate_user(
+    session: AsyncSession, username: str, password: str
+) -> User | None:
+    user = await get_user_by_username(session, username)
+    if user is None or not user.is_active:
+        return None
+    if not verify_password(password, user.password_hash):
+        return None
+    return user
+
+
 async def verify_user_password(
     session: AsyncSession, username: str, password: str
 ) -> bool:

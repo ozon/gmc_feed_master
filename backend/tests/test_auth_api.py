@@ -40,7 +40,11 @@ def test_me_returns_current_operator_without_renewing_idle(client, clock):
     assert client.post("/auth/login", json=VALID_CREDENTIALS).status_code == 200
 
     clock.advance(minutes=29)
-    assert client.get("/auth/me").json() == {"username": "operator"}
+    assert client.get("/auth/me").json() == {
+        "username": "operator",
+        "role": "admin",
+        "client_ids": None,
+    }
     clock.advance(minutes=2)
     assert client.get("/auth/me").status_code == 401
 

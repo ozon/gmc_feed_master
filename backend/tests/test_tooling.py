@@ -173,4 +173,8 @@ def test_create_app_is_public_entry_point_for_health_and_auth_flow():
         "/auth/login", json={"username": "operator", "password": "correct"}
     )
     assert login.status_code == 200
-    assert client.get("/auth/me").json() == {"username": "operator"}
+    assert client.get("/auth/me").json() == {
+        "username": "operator",
+        "role": "admin",
+        "client_ids": None,
+    }

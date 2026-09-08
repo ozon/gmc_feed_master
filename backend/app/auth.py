@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 from .clock import Clock
 from .config import Settings, get_settings
 from .session_store import InMemorySessionStore, SessionStore
-from .persistence.users import verify_user_password
 
 
 SESSION_COOKIE_NAME = "gmc_session"
@@ -94,9 +93,12 @@ async def require_user_for_interaction(
 
 async def authenticate(credentials: Credentials, settings: Settings, session=None) -> str:
     if session is not None:
-        if not await verify_user_password(session, credentials.username, credentials.password):
+        from .persistence.users import authenticate_user
+
+        user = await authenticate_user(session, credentials.username, credentials.password)
+        if user is None:
             raise _unauthorized()
-        return credentials.username
+        return user.username
     if credentials.username != settings.initial_username or credentials.password != settings.initial_password:
         raise _unauthorized()
     return credentials.username

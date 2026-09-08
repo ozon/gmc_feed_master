@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from pydantic import ValidationError
 
+from .access import CurrentUser, get_current_user
 from .auth import (
     Credentials,
     PasswordChange,
@@ -314,8 +315,12 @@ def create_app(
         return {"status": "ok"}
 
     @app.get("/auth/me")
-    def me(username: str = Depends(require_user)) -> dict[str, str]:
-        return {"username": username}
+    def me(user: CurrentUser = Depends(get_current_user)) -> dict:
+        return {
+            "username": user.username,
+            "role": user.role,
+            "client_ids": sorted(user.client_ids) if user.client_ids is not None else None,
+        }
 
     @app.post("/auth/interaction")
     def interaction(username: str = Depends(require_user_for_interaction)) -> dict[str, str]:
