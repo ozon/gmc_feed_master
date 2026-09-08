@@ -34,7 +34,7 @@ Located in `backend/app/routes/products.py`, auth like the other product routes.
   `{"matches": {"<value>": {"count": <int>, "sample": {product_id, status, excluded, title, brand, availability, <extraFields…>} | null}}}`
   - `count` = number of staged products matching the value (any status).
   - `sample` = the matching product with the lowest `product_id` (deterministic), projected to `product_id, status, excluded, title, brand, availability` (title/brand/availability from `raw_data`, missing → `null`) plus requested `extraFields` from `raw_data` (missing → `null`). `null` when `count === 0`.
-- SQL: one grouped pass (per-value `count` + `min(product_id)` over the value set) plus one fetch of the sample rows by id; two queries total, no N+1.
+- Queries: one full-feed fetch of `(product_id, status, excluded, raw_data)` with matching done in Python (mirroring `resolve_path`, building per-value `count` + lowest-`product_id` sample id), plus one fetch of the sample rows by id; two queries total, no N+1.
 - Errors: 404 unknown feed source; 422 invalid body (unknown shape, >10 000 values, >20 extraFields); 503 database unavailable.
 - Docs: `backend/docs/api.md` gains the endpoint entry in the same commit. No schema/migration change.
 

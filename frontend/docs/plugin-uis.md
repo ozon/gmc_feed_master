@@ -223,14 +223,16 @@ badges and bookmarks.
   rules). Distinct "no staged products yet" and preview-error states;
   client/global pages render no stats and send no request.
 - **Slot-selected view:** a top SegmentedControl picks one of
-  `custom_label_0..4` (default: first slot with active rules); only that
+  `custom_label_0..4` (default: first slot with active rules; items are
+  numbered `#1..#5`). Only that
   slot's active rules render, as collapsible `Accordion` rule cards in
-  evaluation order with `#N Priority` badges. Collapsed headers show
+  evaluation order, each header leading with a dimmed `#N` before the
+  rule name. Collapsed headers show
   rule name, priority, inherited-from tier, matched count, and an
   "N overridden" badge when a higher-priority rule of the same slot
   claims values from this rule's list (client-side syntactic analysis;
   an `all`-mode rule shadows everything below it). Expanded panels hold
-  the 400px-capped monospace value-list textarea with the unique-ID
+  the fixed 10-row monospace value-list textarea (no soft-wrap) with the unique-ID
   counter BELOW the input (no bottomSection overlap), per-rule clear
   button, and a shadow list rendering each overridden value struck
   through with a tooltip naming the claiming rule. Empty slots show a
