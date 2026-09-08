@@ -219,3 +219,16 @@ export type DiffOut = {
 export type FeedSourceFieldsResponse = {
   fields: string[];
 };
+
+export type ProductLookupSample = {
+  product_id: string;
+  status: string;
+  excluded: boolean;
+  title: string | null;
+  brand: string | null;
+  availability: string | null;
+} & Record<string, unknown>;
+
+export type ProductLookupMatch = { count: number; sample: ProductLookupSample | null };
+
+export type ProductLookupResponse = { matches: Record<string, ProductLookupMatch> };

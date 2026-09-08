@@ -16,6 +16,7 @@ import type {
   PluginConfigResponse,
   PluginInfo,
   ProductDetail,
+  ProductLookupResponse,
   ProductsPageResponse,
   QualityFindingsResponse,
   RegistryAttribute,
@@ -481,5 +482,25 @@ export function usePatchPipelineInstance(feedSourceId: number | string) {
         queryKey: queryKeys.feedSource(feedSourceId).pipeline,
       });
     },
+  });
+}
+
+export function useProductLookup(
+  feedSourceId: number | undefined,
+  field: string,
+  values: string[],
+  extraFields: string[],
+) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId ?? 0)
+      .productLookup({ field, values, extraFields }),
+    queryFn: () =>
+      apiPost<ProductLookupResponse>(
+        `/feed-sources/${feedSourceId}/products/lookup`,
+        { field, values, extraFields },
+      ),
+    enabled: feedSourceId !== undefined && values.length > 0,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
   });
 }
