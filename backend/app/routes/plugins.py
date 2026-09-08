@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..access import CurrentUser, get_current_user
 from ..auth import require_user
 from ..db.engine import get_db_session
 from ..models.client import Client
@@ -70,6 +71,7 @@ async def _resolve_target(
     feed_source_id: int | None,
     db_session: AsyncSession,
     scope_kind: str,
+    user: CurrentUser,
 ) -> tuple[Plugin, str, int | None, int | None] | JSONResponse:
     plugin = await _get_plugin_by_name(db_session, plugin_id)
     if client_id is not None and feed_source_id is not None:
@@ -80,6 +82,8 @@ async def _resolve_target(
         scope = "feed_source"
     else:
         scope = "global"
+    if scope == "global" and user.client_ids is not None:
+        raise HTTPException(status_code=403, detail="admin role required")
     if scope != "global" and scope not in _declared_scopes(plugin.manifest, scope_kind):
         return _validation_error(_UNDECLARED_SCOPE_ERROR)
     if client_id is not None and await db_session.get(Client, client_id) is None:
@@ -159,11 +163,11 @@ async def get_plugin_config(
     plugin_id: str,
     client_id: int | None = None,
     feed_source_id: int | None = None,
-    _user: str = Depends(require_user),
+    user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict[str, Any] | JSONResponse:
     return await _get_payload(
-        plugin_id, client_id, feed_source_id, PluginConfig, "config", "config_scope", db_session
+        plugin_id, client_id, feed_source_id, PluginConfig, "config", "config_scope", db_session, user
     )
 
 
@@ -173,7 +177,7 @@ async def put_plugin_config(
     payload: dict[str, Any],
     client_id: int | None = None,
     feed_source_id: int | None = None,
-    _user: str = Depends(require_user),
+    user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict[str, str] | JSONResponse:
     return await _put_payload(
@@ -186,6 +190,7 @@ async def put_plugin_config(
         "config_scope",
         "config_schema",
         db_session,
+        user,
     )
 
 
@@ -194,11 +199,11 @@ async def get_plugin_data(
     plugin_id: str,
     client_id: int | None = None,
     feed_source_id: int | None = None,
-    _user: str = Depends(require_user),
+    user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict[str, Any] | JSONResponse:
     return await _get_payload(
-        plugin_id, client_id, feed_source_id, PluginData, "data", "data_scope", db_session
+        plugin_id, client_id, feed_source_id, PluginData, "data", "data_scope", db_session, user
     )
 
 
@@ -208,7 +213,7 @@ async def put_plugin_data(
     payload: dict[str, Any],
     client_id: int | None = None,
     feed_source_id: int | None = None,
-    _user: str = Depends(require_user),
+    user: CurrentUser = Depends(get_current_user),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict[str, str] | JSONResponse:
     return await _put_payload(
@@ -221,6 +226,7 @@ async def put_plugin_data(
         "data_scope",
         "data_schema",
         db_session,
+        user,
     )
 
 
@@ -232,10 +238,11 @@ async def _get_payload(
     column_name: str,
     scope_kind: str,
     db_session: AsyncSession | None,
+    user: CurrentUser,
 ) -> dict[str, Any] | JSONResponse:
     session = _require_db(db_session)
     resolved = await _resolve_target(
-        plugin_id, client_id, feed_source_id, session, scope_kind
+        plugin_id, client_id, feed_source_id, session, scope_kind, user
     )
     if isinstance(resolved, JSONResponse):
         return resolved
@@ -260,11 +267,12 @@ async def _put_payload(
     scope_kind: str,
     schema_key: str,
     db_session: AsyncSession | None,
+    user: CurrentUser,
 ) -> dict[str, str] | JSONResponse:
     session = _require_db(db_session)
     async with session.begin():
         resolved = await _resolve_target(
-            plugin_id, client_id, feed_source_id, session, scope_kind
+            plugin_id, client_id, feed_source_id, session, scope_kind, user
         )
         if isinstance(resolved, JSONResponse):
             return resolved

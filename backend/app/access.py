@@ -92,7 +92,14 @@ async def enforce_scope_access(
         or request.query_params.get("feed_source_id")
     )
     if client_id is not None:
-        if int(client_id) not in user.client_ids:
+        try:
+            client_id_int = int(client_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=422,
+                detail="client_id must be an integer",
+            )
+        if client_id_int not in user.client_ids:
             raise HTTPException(status_code=404, detail="client not found")
         return
     if feed_source_id is not None:
@@ -100,7 +107,14 @@ async def enforce_scope_access(
             return  # handler will raise 503 (database unavailable)
         from .models.feed_source import FeedSource
 
-        feed_source = await db_session.get(FeedSource, int(feed_source_id))
+        try:
+            feed_source_id_int = int(feed_source_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=422,
+                detail="feed_source_id must be an integer",
+            )
+        feed_source = await db_session.get(FeedSource, feed_source_id_int)
         feed_client_id = feed_source.client_id if feed_source is not None else None
         # Close the implicitly-begun read transaction so handlers can start
         # their own `session.begin()` without InvalidRequestError.
