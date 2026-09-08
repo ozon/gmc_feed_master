@@ -65,6 +65,7 @@ npm run typecheck                             # tsc -b
 - `docs/decisions/0006-pipeline-editor-config-hub.md` — ADR: Pipeline Editor as Plugin Config Hub
 - `docs/decisions/0007-plugin-setup-and-page-two-surface.md` — ADR: Plugin Setup + Plugin Page Two-Surface Model
 - `docs/decisions/0008-labelizer-product-preview-and-batch-lookup.md` — ADR: Labelizer product preview + batch value lookup
+- `docs/decisions/0009-basic-rbac.md` — ADR: Two roles, client assignment, admin area
 - `backend/docs/architecture.md` — Pipeline stages, delta mechanics, plugin system
 - `backend/docs/data-model.md` — Entities, contenthash/confighash, retention rules
 - `backend/docs/api.md` — Endpoint reference, reserved plugin routes

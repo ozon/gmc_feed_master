@@ -170,13 +170,27 @@ flowchart TD
 | Entity | Retention |
 |--------|-----------|
 | `ExportVersion` | Last N per feed source (default 30, configurable) |
-| `IngestionRun` | 90 days |
-| `StagingHistory` | 90 days; removed-product rows purged with product |
+| `IngestionRun` | `global_settings.ingestion_run_retention_days` (default 90) |
+| `StagingHistory` | `global_settings.staging_history_retention_days` (default 90); removed-product rows purged with product |
 | `QualityFinding` details | Latest run per feed source only; per-severity counts in `ExportRun` |
-| `StagingProduct` (removed) | Purged 90 days after `removed_at` |
+| `StagingProduct` (removed) | Purged `global_settings.staging_removal_retention_days` (default 90) after `removed_at` |
+
+Retention days live in the single-row `global_settings` table (lazy-seeded, admin-editable via `PUT /admin/settings`); the purge jobs fall back to 90 per column when the row is absent.
+
+## Authorization Layer (`app/access.py`)
+- Two roles on `users.role`: `admin` (unrestricted) and `user` (many-to-many client assignment via `user_clients`).
+- `CurrentUser` (frozen dataclass: `username`, `role`, `is_active`, `client_ids: frozenset[int] | None`) — `client_ids is None` means unrestricted (admins or the non-DB fallback mode where a session store is injected without a PostgreSQL boundary).
+- `get_current_user` — session validation, then one query loading the user row + assigned client ids; 401 on missing/inactive user. Rolls back the implicitly-begun read transaction so handlers can start their own `session.begin()`.
+- `require_admin` — 403 unless `role == 'admin'`. Guards all `/admin/*` handlers and client CRUD.
+- `enforce_scope_access` — router-level dependency on the clients/products/pipeline/quality/dry-run/export-history/field-mapping/plugins routers: reads `client_id`/`feed_source_id` from path AND query params (plugin scope params are query params), resolves feed source → client, returns 404 for unassigned resources (no existence leak). Admins and the non-DB fallback pass through.
+- Client list and dashboard summary filter to assigned clients server-side for `user` role.
+- Deactivation instead of deletion (`users.is_active`): login rejected, sessions die on next request. Password resets bump `revocation_generation`, killing existing sessions.
+- Login-time seed user is admin; the m11 migration promoted pre-existing users.
 
 ## Key Files
-- `app/main.py` — App factory, lifespan, router mounting, scheduler startup
+- `app/main.py` — App factory, lifespan, router mounting (scope-enforcement dependencies), scheduler startup
+- `app/access.py` — Authorization layer (`CurrentUser`, `get_current_user`, `require_admin`, `enforce_scope_access`)
+- `app/routes/admin.py` — Admin area: user CRUD, password reset, global settings, scheduler overview
 - `app/pipeline/runner.py` — `PipelineRunner.execute()` with lock + step orchestration
 - `app/pipeline/steps.py` — All 6 `PipelineStep` implementations
 - `app/staging/delta.py` — `classify()` delta logic

@@ -1,22 +1,57 @@
 # Backend API Reference
 
+## Authorization (roles)
+
+Two roles: `admin` and `user` (literal strings on `users.role`).
+
+- The seed user created at startup (`INITIAL_USERNAME`/`INITIAL_PASSWORD`) is `admin`; the m11 migration promoted all pre-existing users to `admin`.
+- A `user` can be assigned to multiple clients (`user_clients` join table) and has full functional scope inside them (runs, exports, plugin configs, monitoring).
+- Non-DB fallback mode (session store injected, no PostgreSQL boundary): treated as admin/unrestricted.
+
+### Enforcement matrix
+
+| Resource | admin | user (assigned) | user (not assigned) |
+|---|---|---|---|
+| `GET /clients`, `GET /dashboard/summary` | all clients | assigned clients only | n/a (filtered out) |
+| Client-scoped routes (`/clients/{id}/…`) and feed-source-scoped routes (`/feed-sources/{id}/…`, products, pipeline, monitoring, export-history, dry-run, plugin config/data with `client_id`/`feed_source_id` scope) | full | full | **404** (no existence leak) |
+| Client create/update/delete | allowed | **403** | **404** |
+| `/admin/*` | allowed | **403** | **403** |
+| Public export endpoint (`/export/{token}.xml`) | token-auth, unchanged | unchanged | unchanged |
+
+Enforcement lives in `app/access.py`: `get_current_user` (loads role + assigned client ids per request; 401 for missing/inactive users), `require_admin` (403), and router-level `enforce_scope_access` (reads `client_id`/`feed_source_id` from path AND query params — plugin scope params are query params). Role/assignment changes apply on the next request; a password reset bumps `revocation_generation`, invalidating existing sessions. Deactivated users (`is_active=false`) cannot log in and existing sessions die.
+
 ## Authentication
 All endpoints (except `/health` and `/export/{token}.xml`) require a valid session cookie.
-- `POST /auth/login` — `{username, password}` → sets `HttpOnly; Secure; SameSite=Lax` cookie
+- `POST /auth/login` — `{username, password}` → sets `HttpOnly; Secure; SameSite=Lax` cookie; rejects inactive users (401)
 - `POST /auth/logout` — clears session
 - `POST /auth/password` — change password (requires PostgreSQL session store)
 - `GET /auth/me` — returns `{"username": str, "role": "admin"|"user", "client_ids": list[int] | null}` (`null` = admin/unrestricted; a sorted list of assigned client ids for users)
 - `POST /auth/interaction` — refreshes session idle timer
 
+## Admin Area (admin only)
+
+### Users
+- `GET /admin/users` — list `[{id, username, role, is_active, client_ids}]`
+- `POST /admin/users` (201) — create `{username, password, role: "admin"|"user", client_ids?, is_active?}`; 409 on duplicate username
+- `PATCH /admin/users/{user_id}` — update `{role?, is_active?, client_ids?}` (client_ids full-replaces assignments); 404 unknown user
+- `POST /admin/users/{user_id}/password` (204) — set new password `{new_password}` (revokes the user's sessions); 404 unknown user
+
+### Settings
+- `GET /admin/settings` — `{staging_removal_retention_days, staging_history_retention_days, ingestion_run_retention_days}`; seeds the single `global_settings` row with 90s on first read
+- `PUT /admin/settings` — update retention days (each ≥ 1; 422 otherwise). The nightly purge jobs read these values (fallback 90 while no row exists)
+
+### Scheduler
+- `GET /admin/scheduler` — registered job overview `[{id, trigger}]`; 503 when no scheduler is running (app lifespan not started)
+
 ## Health
 - `GET /health` → `{"status": "ok"}`
 
 ## Clients
-- `GET /clients` — list all clients
-- `POST /clients` — create client `{name, status?}`
+- `GET /clients` — list clients (admin: all; user: assigned only)
+- `POST /clients` — create client `{name, status?}` — **admin only (403)**
 - `GET /clients/{id}` — get client
-- `PUT /clients/{id}` — update client `{name?, status?}`
-- `DELETE /clients/{id}` — delete client (cascades: feed sources, pipelines, staging, exports)
+- `PUT /clients/{id}` — update client `{name?, status?}` — **admin only (403)**
+- `DELETE /clients/{id}` — delete client (cascades: feed sources, pipelines, staging, exports) — **admin only (403)**
 
 ## Feed Sources
 - `GET /clients/{client_id}/feed-sources` — list feed sources for client
@@ -114,9 +149,9 @@ Plugin routes must not use these prefixes. Example: Category plugin uses `/plugi
   `{limit: number}` — max products to process
 
 ## Error Responses
-- `401` — invalid/missing session
-- `403` — cross-tenant access (e.g., plugin route for feed source not owned by client)
-- `404` — resource not found
+- `401` — invalid/missing session, or deactivated user
+- `403` — admin-only operation by a non-admin (e.g., client CRUD, `/admin/*`)
+- `404` — resource not found; also unassigned client/feed-source access (no existence leak)
 - `422` — validation error: `{"errors": ["message", ...]}`
 - `503` — database unavailable
 

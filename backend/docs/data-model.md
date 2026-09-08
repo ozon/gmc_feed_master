@@ -5,6 +5,8 @@
 ```mermaid
 erDiagram
     USER ||--o{ SESSION : has
+    USER ||--o{ USER_CLIENT : assigned_to
+    CLIENT ||--o{ USER_CLIENT : has
     CLIENT ||--o{ FEED_SOURCE : owns
     FEED_SOURCE ||--o{ MODULE_PIPELINE : has
     FEED_SOURCE ||--o{ INGESTION_RUN : generates
@@ -31,9 +33,32 @@ erDiagram
 | `id` | Integer | PK |
 | `username` | String(255) | Unique |
 | `password_hash` | String(255) | Argon2 |
+| `revocation_generation` | Integer | Bumped on password change → all sessions die |
+| `role` | String(20) | `admin` / `user` (NOT NULL, default `user`) |
+| `is_active` | Boolean | NOT NULL, default true; false → login rejected (401), sessions die |
 | `created_at` | DateTime | |
 
-Seeded from `INITIAL_USERNAME` / `INITIAL_PASSWORD` env vars on first start.
+Seeded from `INITIAL_USERNAME` / `INITIAL_PASSWORD` env vars on first start — the seed user is `admin`. The m11 migration promoted all pre-existing users to `admin`. Users are deactivated, never deleted (FK/session integrity, run attribution).
+
+### UserClient (client assignment)
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | Integer | PK |
+| `user_id` | Integer | FK → User, CASCADE |
+| `client_id` | Integer | FK → Client, CASCADE |
+
+Unique `(user_id, client_id)`. Many-to-many: a `user` sees only their assigned clients; `admin` is unrestricted (no rows needed).
+
+### GlobalSetting
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | Integer | PK, fixed value 1 (single row) |
+| `staging_removal_retention_days` | Integer | Default 90 |
+| `staging_history_retention_days` | Integer | Default 90 |
+| `ingestion_run_retention_days` | Integer | Default 90 |
+| `updated_at` | DateTime | |
+
+Row is seeded lazily on first `GET /admin/settings` (the migration does not insert it). The nightly purge jobs read these values; fallback is 90 days per column while no row exists. Editable via `PUT /admin/settings` (admin only).
 
 ### Client
 | Column | Type | Notes |
@@ -265,16 +290,19 @@ New StagingProduct row (status=active), full reprocess (no prior hash)
 | Table | Policy |
 |-------|--------|
 | `ExportVersion` | Last N per feed_source (configurable, default 30) |
-| `IngestionRun` | 90 days |
-| `StagingHistory` | 90 days (cascades with StagingProduct purge) |
-| `StagingProduct` (removed) | 90 days after `removed_at` |
+| `IngestionRun` | `global_settings.ingestion_run_retention_days` (default 90) |
+| `StagingHistory` | `global_settings.staging_history_retention_days` (default 90; cascades with StagingProduct purge) |
+| `StagingProduct` (removed) | `global_settings.staging_removal_retention_days` (default 90) after `removed_at` |
 | `QualityFinding` (detail) | Latest run per feed_source only |
 | `ExportRun` counts | Persist indefinitely (small) |
 | `Session` | Sliding (configurable idle) + absolute (configurable) |
 | `ImageDimension` | No auto-expiry; keyed by URL |
 
+Retention days are DB-backed (single `global_settings` row, admin-editable via `/admin/settings`) — previously hardcoded 90-day constants in `app/staging/purge.py`.
+
 ## Key Files
 - `app/models/*.py` — SQLAlchemy 2.0 mapped classes
+- `app/access.py` — authorization layer (`CurrentUser`, `get_current_user`, `require_admin`, `enforce_scope_access`)
 - `app/staging/delta.py` — `classify()` hash comparison logic
 - `app/staging/persistence.py` — `apply_staging_delta()`, `apply_plugin_outcomes()`, `load_export_bound()`
 - `app/staging/purge.py` — `purge_expired()`, `purge_expired_ingestion_runs()`

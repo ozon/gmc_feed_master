@@ -112,12 +112,26 @@ export function useSavePipeline(feedSourceId) {
     ├── /clients/:clientId/feeds/:feedSourceId/export         → ExportPage
     ├── /clients/:clientId/feeds/:feedSourceId/plugins/:pluginId  → PluginPage (feed scope)
     ├── /clients/:clientId/plugins/:pluginId                  → PluginPage (client scope)
-    └── /plugins/:pluginId                                    → PluginPage (global scope)
+    ├── /plugins/:pluginId                                    → PluginPage (global scope)
+    └── (RequireAdmin)
+        ├── /admin/users                     → AdminUsersPage
+        ├── /admin/clients                   → AdminClientsPage
+        └── /admin/settings                  → AdminSettingsPage
 ```
 
 - **Lazy loading** for all feature pages (`React.lazy` + `Suspense`)
 - **Session guard**: `RequireSession` redirects to `/login` on 401
+- **Admin guard**: `RequireAdmin` redirects non-admins (session `role !== 'admin'`) away from `/admin/*`
 - **Unauthorized handler**: Clears session queries, redirects with `from` state
+
+## Admin Area & Role-aware UI
+
+- Session shape (`GET /auth/me`): `{username, role: 'admin' | 'user', client_ids: number[] | null}` (`null` = admin/unrestricted). Server state via `useSession` only (ADR-0001).
+- "Administration" nav group in `AppShell` (Users, Clients, Settings) renders only for admins; dashboard shows a "Manage clients" link for admins instead of inline client CRUD.
+- Client CRUD moved from the dashboard (now read-only listing for everyone) to `AdminClientsPage`; the dashboard's `ClientModal`/`DeleteClientModal` components are reused there.
+- `AdminUsersPage` — user table (role badge, assigned-client count, active switch), create/edit modal with role select + client multi-select, reset-password modal.
+- `AdminSettingsPage` — editable retention days (`/admin/settings`), scheduler job overview (`/admin/scheduler`), plugin enable/disable toggles (reuses `useUpdatePluginEnabled`).
+- Backend enforces the same rules (404 for unassigned client/feed-source access, 403 for admin-only operations, `/admin/*` admin-only) — the frontend guard is UX only.
 
 ## State Boundaries
 
