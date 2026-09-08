@@ -215,21 +215,26 @@ badges and bookmarks.
 
 - **Preview:** the feed-page bulk tab debounce-posts the current DRAFT
   (rules + values, unsaved edits included) to the plugin-local
-  `POST /plugins/custom_labels/preview` and renders a compact stats header per
-  slot: "X of N staged products labeled" with a coverage progress bar, plus an
-  "N matched" badge on each rule input block (the badge tooltip explains
-  shadowed "never applied" rules). Distinct "no staged products yet" and
-  preview-error states; client/global pages render no stats and send no
-  request. Sample product deep-links were removed.
-- **Grouped by slot:** the bulk tab renders full-width slot cards stacked
-  vertically (one per `custom_label_0..4` with active rules, registry
-  order). Each card header carries the slot badge (orange dot while the slot
-  has unsaved value edits), slot explanation, active-rule count, and live
-  stats; the slot's rule editors sit side-by-side in a responsive inner grid
-  (1 column on mobile, 2 from `sm`, 5 per row from `lg`) —
-  400px-capped monospace value-list textareas with inline ID counters and
-  per-rule clear buttons. Slots without active rules collapse into a single
-  summary row of badges.
+  `POST /plugins/custom_labels/preview` and renders a header coverage
+  dashboard over ALL slots: "X / N staged products labeled" (products
+  labeled in at least one slot), a green/gray progress bar, and quick
+  stats (total, labeled, unlabeled, active rules). Each rule card header
+  carries an "N matched" badge (tooltip explains matched-but-never-applied
+  rules). Distinct "no staged products yet" and preview-error states;
+  client/global pages render no stats and send no request.
+- **Slot-selected view:** a top SegmentedControl picks one of
+  `custom_label_0..4` (default: first slot with active rules); only that
+  slot's active rules render, as collapsible `Accordion` rule cards in
+  evaluation order with `#N Priority` badges. Collapsed headers show
+  rule name, priority, inherited-from tier, matched count, and an
+  "N overridden" badge when a higher-priority rule of the same slot
+  claims values from this rule's list (client-side syntactic analysis;
+  an `all`-mode rule shadows everything below it). Expanded panels hold
+  the 400px-capped monospace value-list textarea with the unique-ID
+  counter BELOW the input (no bottomSection overlap), per-rule clear
+  button, and a shadow list rendering each overridden value struck
+  through with a tooltip naming the claiming rule. Empty slots show a
+  notice when selected.
 - **Rule actions:** the rule editor offers Duplicate (fresh id, "(copy)" name)
   and Delete (ConfirmModal; global-origin deletes warn about the inheritance
   blast radius) — editable-origin rules only.

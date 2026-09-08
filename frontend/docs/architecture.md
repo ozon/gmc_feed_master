@@ -158,7 +158,7 @@ export function useSavePipeline(feedSourceId) {
 - **Plugin UIs with custom components**:
   - `rules` → `RulesUI` (`src/features/rules/`) — ordered rule list with dnd reordering, master pinning, i18n (`rules` namespace)
   - `filter` → `FilterUI` (`src/features/filter/`) — conjunctive scalar condition editor with live preview, dirty-guard + useBlocker, i18n (`filter` namespace)
-  - `custom_labels` → `CustomLabelsUI` (`src/features/customLabels/`, UI name "Labelizer") — merged Global/Client/Feed tier view (union-by-id mirroring the runtime `config_merge`), slot-grouped bulk tab with a compact live-stats header (labeled/total + coverage bar) and per-rule match badges (debounced draft preview via `POST /plugins/custom_labels/preview`), rule duplicate/delete, override-at-client-level, clickable tier navigation, help drawer, i18n (`customLabels` namespace)
+  - `custom_labels` → `CustomLabelsUI` (`src/features/customLabels/`, UI name "Labelizer") — merged Global/Client/Feed tier view (union-by-id mirroring the runtime `config_merge`); the bulk tab is slot-selected via a top SegmentedControl (custom_label_0..4) with a coverage dashboard (any-slot labeled/total, progress bar, quick stats) and collapsible priority-ordered rule cards (matched + overridden badges, shadowed-value list with attribution tooltips), debounced draft preview via `POST /plugins/custom_labels/preview`; rule duplicate/delete, override-at-client-level, clickable tier navigation, help drawer, i18n (`customLabels` namespace)
 - All three custom components share the pattern: dirty-guard + `useBlocker` navigation guard, `useSavePluginConfig` mutation for editable-tier writes
 
 ### Quality Dashboard (`src/features/monitoring/`)
