@@ -148,3 +148,29 @@ async def test_assigned_feed_source_routes_allowed(scope_app, bob_client, admin_
     assert (await bob_client.get(
         f"/feed-sources/{acme_feed_id}/ingestion-runs"
     )).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_plugin_preview_body_scope_enforced(scope_app, bob_client, admin_client):
+    app, _ = scope_app
+    feeds = (await admin_client.get("/dashboard/summary")).json()["clients"]
+    other_feed_id = [f["id"] for c in feeds if c["name"] == "Other Corp"
+                     for f in c["feed_sources"]][0]
+    acme_feed_id = [f["id"] for c in feeds if c["name"] == "Acme"
+                    for f in c["feed_sources"]][0]
+    # Plugin preview routes take feed_source_id in the BODY — router-level
+    # path/query enforcement cannot see them; the routes must check scope.
+    # Lifespan mounts the plugin routes (assigned → 200 proves they exist).
+    async with app.router.lifespan_context(app):
+        assert (await bob_client.post("/plugins/filter/preview", json={
+            "feed_source_id": acme_feed_id, "conditions": [],
+        })).status_code == 200
+        assert (await bob_client.post("/plugins/custom_labels/preview", json={
+            "feed_source_id": acme_feed_id, "rules": [], "slotIds": {},
+        })).status_code == 200
+        assert (await bob_client.post("/plugins/filter/preview", json={
+            "feed_source_id": other_feed_id, "conditions": [],
+        })).status_code == 404
+        assert (await bob_client.post("/plugins/custom_labels/preview", json={
+            "feed_source_id": other_feed_id, "rules": [], "slotIds": {},
+        })).status_code == 404

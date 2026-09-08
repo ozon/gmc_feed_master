@@ -107,3 +107,26 @@ async def enforce_scope_access(
         await db_session.rollback()
         if feed_client_id is None or feed_client_id not in user.client_ids:
             raise HTTPException(status_code=404, detail="feed source not found")
+
+
+async def ensure_feed_source_access(
+    db_session: AsyncSession | None,
+    user: CurrentUser,
+    feed_source_id: int,
+) -> None:
+    """Scope check for routes that carry feed_source_id in the request body
+    (plugin preview routes) — router-level path/query enforcement cannot see
+    body params. Raises 404 for unknown or unassigned feed sources. Call
+    BEFORE beginning a transaction on db_session (performs its own rollback).
+    """
+    if user.client_ids is None:
+        return
+    if db_session is None:
+        return  # handler will raise 503 (database unavailable)
+    from .models.feed_source import FeedSource
+
+    feed_source = await db_session.get(FeedSource, feed_source_id)
+    feed_client_id = feed_source.client_id if feed_source is not None else None
+    await db_session.rollback()
+    if feed_client_id is None or feed_client_id not in user.client_ids:
+        raise HTTPException(status_code=404, detail="feed source not found")

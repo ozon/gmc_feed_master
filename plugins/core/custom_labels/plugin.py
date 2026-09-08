@@ -318,7 +318,7 @@ class CustomLabelsPlugin:
         from pydantic import BaseModel, Field
         from sqlalchemy import select
 
-        from app.auth import require_user
+        from app.access import CurrentUser, ensure_feed_source_access, get_current_user
         from app.db.engine import get_db_session
         from app.models.feed_source import FeedSource
         from app.models.staging import StagingProduct
@@ -331,7 +331,7 @@ class CustomLabelsPlugin:
 
         async def preview(
             payload: PreviewRequest,
-            _user: str = Depends(require_user),
+            user: CurrentUser = Depends(get_current_user),
             db_session: Any = Depends(get_db_session),
         ) -> dict[str, Any] | JSONResponse:
             try:
@@ -340,6 +340,8 @@ class CustomLabelsPlugin:
                 return JSONResponse(status_code=422, content={"errors": [str(exc)]})
             if db_session is None:
                 raise HTTPException(status_code=503, detail="database unavailable")
+            # feed_source_id arrives in the body — enforce client scope here.
+            await ensure_feed_source_access(db_session, user, payload.feed_source_id)
             async with db_session.begin():
                 if await db_session.get(FeedSource, payload.feed_source_id) is None:
                     raise HTTPException(status_code=404, detail="feed source not found")

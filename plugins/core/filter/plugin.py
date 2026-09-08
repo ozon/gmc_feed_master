@@ -131,7 +131,7 @@ class FilterPlugin:
         from pydantic import BaseModel, Field
         from sqlalchemy import select
 
-        from app.auth import require_user
+        from app.access import CurrentUser, ensure_feed_source_access, get_current_user
         from app.db.engine import get_db_session
         from app.models.feed_source import FeedSource
         from app.models.staging import StagingProduct
@@ -142,7 +142,7 @@ class FilterPlugin:
 
         async def preview(
             payload: PreviewRequest,
-            _user: str = Depends(require_user),
+            user: CurrentUser = Depends(get_current_user),
             db_session: Any = Depends(get_db_session),
         ) -> dict[str, int]:
             for index, condition in enumerate(payload.conditions):
@@ -154,6 +154,8 @@ class FilterPlugin:
             session = db_session
             if session is None:
                 raise HTTPException(status_code=503, detail="database unavailable")
+            # feed_source_id arrives in the body — enforce client scope here.
+            await ensure_feed_source_access(session, user, payload.feed_source_id)
             async with session.begin():
                 if await session.get(FeedSource, payload.feed_source_id) is None:
                     raise HTTPException(status_code=404, detail="feed source not found")

@@ -58,5 +58,7 @@ hardcoded constants in `app/staging/purge.py`.
   migration can add a CHECK.
 - Plugins contributing routes under `/plugins/{id}/...` inherit router-level
   scope enforcement only where mounted on the guarded routers; plugin-owned
-  custom routes must apply their own checks if they expose client-scoped
-  data beyond the reserved config/data routes.
+  custom routes that carry `feed_source_id`/`client_id` in the request body
+  (e.g. the preview routes) call the shared `ensure_feed_source_access`
+  helper themselves — the router-level dependency only sees path and query
+  params.
