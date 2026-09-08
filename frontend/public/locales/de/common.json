@@ -6,7 +6,11 @@
     "products": "Produkte",
     "pipeline": "Pipeline-Editor",
     "monitoring": "Überwachung",
-    "export": "Export"
+    "export": "Export",
+    "adminSection": "Verwaltung",
+    "adminUsers": "Benutzer",
+    "adminClients": "Kunden",
+    "adminSettings": "Einstellungen"
   },
   "actions": {
     "confirm": "Bestätigen",

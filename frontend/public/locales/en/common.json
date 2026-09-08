@@ -6,7 +6,11 @@
     "products": "Products",
     "pipeline": "Pipeline Editor",
     "monitoring": "Monitoring",
-    "export": "Export"
+    "export": "Export",
+    "adminSection": "Administration",
+    "adminUsers": "Users",
+    "adminClients": "Clients",
+    "adminSettings": "Settings"
   },
   "actions": {
     "confirm": "Confirm",

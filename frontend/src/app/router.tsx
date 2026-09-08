@@ -51,6 +51,15 @@ const ExportPage = lazy(() =>
 const PluginPage = lazy(() =>
   import('../features/plugin/PluginPage').then((m) => ({ default: m.PluginPage })),
 );
+const AdminUsersPage = lazy(() =>
+  import('../features/admin/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })),
+);
+const AdminClientsPage = lazy(() =>
+  import('../features/admin/AdminClientsPage').then((m) => ({ default: m.AdminClientsPage })),
+);
+const AdminSettingsPage = lazy(() =>
+  import('../features/admin/AdminSettingsPage').then((m) => ({ default: m.AdminSettingsPage })),
+);
 
 export function RequireSession() {
   const location = useLocation();
@@ -69,6 +78,14 @@ export function RequireSession() {
     }
     return <ErrorState onRetry={() => void refetch()} />;
   }
+  return <Outlet />;
+}
+
+export function RequireAdmin() {
+  const { status, data, error, refetch } = useSession();
+  if (status === 'pending') return <LoadingState />;
+  if (status === 'error') return <ErrorState onRetry={() => void refetch()} />;
+  if (data?.role !== 'admin') return <Navigate to="/" replace />;
   return <Outlet />;
 }
 
@@ -135,6 +152,14 @@ const routes = [
           { path: 'clients/:clientId/feeds/:feedSourceId/plugins/:pluginId', element: <PluginPage /> },
           { path: 'clients/:clientId/plugins/:pluginId', element: <PluginPage /> },
           { path: 'plugins/:pluginId', element: <PluginPage /> },
+          {
+            element: <RequireAdmin />,
+            children: [
+              { path: 'admin/users', element: <AdminUsersPage /> },
+              { path: 'admin/clients', element: <AdminClientsPage /> },
+              { path: 'admin/settings', element: <AdminSettingsPage /> },
+            ],
+          },
         ],
       },
     ],

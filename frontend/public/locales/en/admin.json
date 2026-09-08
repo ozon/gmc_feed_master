@@ -1,0 +1,46 @@
+{
+  "users": {
+    "title": "User Management",
+    "add": "Add User",
+    "edit": "Edit User",
+    "save": "Save",
+    "saved": "User saved",
+    "saveFailed": "Saving the user failed",
+    "resetPassword": "Reset password",
+    "roleUser": "User",
+    "roleAdmin": "Admin",
+    "columns": {
+      "username": "Username",
+      "password": "Password",
+      "role": "Role",
+      "clients": "Clients",
+      "active": "Active"
+    }
+  },
+  "clients": {
+    "title": "Client Management",
+    "add": "Add Client",
+    "edit": "Edit",
+    "delete": "Delete client",
+    "columns": {
+      "name": "Name",
+      "status": "Status"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "removalRetention": "Removed-product retention (days)",
+    "historyRetention": "Staging history retention (days)",
+    "ingestionRetention": "Ingestion run retention (days)",
+    "save": "Save",
+    "saved": "Settings saved",
+    "saveFailed": "Saving settings failed",
+    "scheduler": "Scheduler Jobs",
+    "schedulerUnavailable": "Scheduler unavailable",
+    "jobId": "Job",
+    "trigger": "Trigger",
+    "plugins": "Plugins",
+    "pluginName": "Plugin",
+    "pluginEnabled": "Enabled"
+  }
+}

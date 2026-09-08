@@ -50,5 +50,6 @@
   "deleteFailed": "Could not be deleted.",
   "duplicateName": "A client with this name already exists.",
   "typeToConfirm": "Type {{name}} to confirm",
-  "empty": "No clients yet. Create the first client to get started."
+  "empty": "No clients yet. Create the first client to get started.",
+  "manageClients": "Manage clients"
 }

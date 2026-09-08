@@ -13,15 +13,13 @@ import {
   TextInput,
   Title,
 } from '@mantine/core';
-import { IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconPlus } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router';
-import { useCreateFeedSource, useDashboardSummary } from '../../api/hooks';
+import { Link, useNavigate } from 'react-router';
+import { useCreateFeedSource, useDashboardSummary, useSession } from '../../api/hooks';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import { notifyMutationError, notifySuccess } from '../../app/notifications';
 import type { ClientSummary } from '../../api/types';
-import { ClientModal } from './ClientModal';
-import { DeleteClientModal } from './DeleteClientModal';
 import { FeedSourceCard } from './FeedSourceCard';
 
 const FEED_FORMATS = ['xml', 'tsv', 'csv', 'wide_tsv'] as const;
@@ -107,8 +105,6 @@ function ClientSection({ client }: { client: ClientSummary }) {
             >
               {t('addFeed')}
             </Button>
-            <EditClientButton client={client} />
-            <DeleteClientButton client={client} />
           </Group>
           <Modal
             opened={addFeedOpened}
@@ -152,36 +148,10 @@ function ClientSection({ client }: { client: ClientSummary }) {
   );
 }
 
-function EditClientButton({ client }: { client: ClientSummary }) {
-  const { t } = useTranslation('dashboard');
-  const [opened, setOpened] = useState(false);
-  return (
-    <>
-      <Button size="xs" variant="light" leftSection={<IconPencil size={14} />} onClick={() => setOpened(true)}>
-        {t('edit')}
-      </Button>
-      <ClientModal opened={opened} client={client} onClose={() => setOpened(false)} />
-    </>
-  );
-}
-
-function DeleteClientButton({ client }: { client: ClientSummary }) {
-  const { t } = useTranslation('dashboard');
-  const [opened, setOpened] = useState(false);
-  return (
-    <>
-      <Button size="xs" variant="light" color="red" leftSection={<IconTrash size={14} />} onClick={() => setOpened(true)}>
-        {t('delete')}
-      </Button>
-      <DeleteClientModal opened={opened} client={client} onClose={() => setOpened(false)} />
-    </>
-  );
-}
-
 export function DashboardPage() {
   const { t } = useTranslation('dashboard');
   const summaryQuery = useDashboardSummary();
-  const [createOpened, setCreateOpened] = useState(false);
+  const { data: session } = useSession();
 
   if (summaryQuery.isPending) return <LoadingState />;
   if (summaryQuery.isError) {
@@ -195,7 +165,9 @@ export function DashboardPage() {
     <Stack>
       <Group justify="space-between">
         <Title order={3}>{t('title')}</Title>
-        <Button onClick={() => setCreateOpened(true)}>{t('addClient')}</Button>
+        {session?.role === 'admin' ? (
+          <Button component={Link} to="/admin/clients">{t('manageClients')}</Button>
+        ) : null}
       </Group>
       <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }}>
         <StatCard label={t('stats.clients')} value={summary.counts.clients} />
@@ -216,7 +188,6 @@ export function DashboardPage() {
       ) : (
         <EmptyState message={t('empty')} />
       )}
-      <ClientModal opened={createOpened} client={null} onClose={() => setCreateOpened(false)} />
     </Stack>
   );
 }

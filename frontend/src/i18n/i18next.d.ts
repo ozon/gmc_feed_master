@@ -1,4 +1,5 @@
 import 'i18next';
+import type admin from '../../public/locales/en/admin.json';
 import type auth from '../../public/locales/en/auth.json';
 import type common from '../../public/locales/en/common.json';
 import type customLabels from '../../public/locales/en/customLabels.json';
@@ -18,6 +19,7 @@ declare module 'i18next' {
   interface CustomTypeOptions {
     defaultNS: 'common';
     resources: {
+      admin: typeof admin;
       auth: typeof auth;
       common: typeof common;
       customLabels: typeof customLabels;

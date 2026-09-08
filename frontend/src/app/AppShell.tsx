@@ -21,6 +21,7 @@ import { useDisclosure } from '@mantine/hooks';
 import {
   IconActivity,
   IconBox,
+  IconBuilding,
   IconChevronDown,
   IconDashboard,
   IconFileExport,
@@ -29,6 +30,7 @@ import {
   IconMoon,
   IconSettings,
   IconSun,
+  IconUsers,
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
@@ -203,6 +205,7 @@ export function AppShell() {
   const [opened, { toggle, close }] = useDisclosure();
   const location = useLocation();
   const { clientId, feedSourceId } = useParams();
+  const { data: session } = useSession();
 
   const feedBase = clientId && feedSourceId ? `/clients/${clientId}/feeds/${feedSourceId}` : null;
 
@@ -268,6 +271,41 @@ export function AppShell() {
             color={isActive('/') ? 'blue' : undefined}
             onClick={close}
           />
+          {session?.role === 'admin' && (
+            <>
+              <Text size="xs" c="dimmed" mt="sm">{t('nav.adminSection')}</Text>
+              <NavLink
+                component={Link}
+                to="/admin/users"
+                label={t('nav.adminUsers')}
+                leftSection={<IconUsers size={16} />}
+                active={isActive('/admin/users')}
+                variant={isActive('/admin/users') ? 'light' : undefined}
+                color={isActive('/admin/users') ? 'blue' : undefined}
+                onClick={close}
+              />
+              <NavLink
+                component={Link}
+                to="/admin/clients"
+                label={t('nav.adminClients')}
+                leftSection={<IconBuilding size={16} />}
+                active={isActive('/admin/clients')}
+                variant={isActive('/admin/clients') ? 'light' : undefined}
+                color={isActive('/admin/clients') ? 'blue' : undefined}
+                onClick={close}
+              />
+              <NavLink
+                component={Link}
+                to="/admin/settings"
+                label={t('nav.adminSettings')}
+                leftSection={<IconSettings size={16} />}
+                active={isActive('/admin/settings')}
+                variant={isActive('/admin/settings') ? 'light' : undefined}
+                color={isActive('/admin/settings') ? 'blue' : undefined}
+                onClick={close}
+              />
+            </>
+          )}
           {feedScoped.map((item) =>
             item.to ? (
               <NavLink

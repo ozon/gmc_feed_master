@@ -146,34 +146,37 @@ describe('DashboardPage', () => {
     expect(screen.getByText('120')).toBeInTheDocument();
   });
 
-  it('creates a client from the modal and notifies', async () => {
+  it('shows the manage-clients link for admins and hides it for users', async () => {
     const user = userEvent.setup();
-    let created = false;
     fetchMock = stubFetch((url) => {
-      if (url === '/auth/me') return jsonResponse({ username: 'operator' });
-      if (url === '/dashboard/summary') return jsonResponse(created ? summary : emptySummary);
-      if (url === '/clients' && !created) {
-        created = true;
-        return jsonResponse(
-          { id: 1, name: 'Acme 2', contact_details: {}, status: 'active', created_at: '2026-01-01' },
-          201,
-        );
-      }
+      if (url === '/auth/me')
+        return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
+      if (url === '/dashboard/summary') return jsonResponse(summary);
       if (url === '/plugins') return jsonResponse(plugins);
       return jsonResponse({});
     });
 
     render(<App />);
-    expect(
-      await screen.findByText('No clients yet. Create the first client to get started.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+    const manage = await screen.findByRole('link', { name: 'Manage clients' });
+    expect(manage).toHaveAttribute('href', '/admin/clients');
+    await user.click(manage);
+    await waitFor(() => expect(window.location.pathname).toBe('/admin/clients'));
+  });
 
-    await user.click(screen.getByRole('button', { name: 'Add client' }));
-    await user.type(await screen.findByLabelText(/^name/i), 'Acme 2');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+  it('hides the manage-clients link for non-admin users', async () => {
+    fetchMock = stubFetch((url) => {
+      if (url === '/auth/me')
+        return jsonResponse({ username: 'bob', role: 'user', client_ids: [1] });
+      if (url === '/dashboard/summary') return jsonResponse(summary);
+      if (url === '/plugins') return jsonResponse(plugins);
+      return jsonResponse({});
+    });
 
-    await waitFor(() => expect(postCalls('/clients')).toBe(1));
-    expect(await screen.findByText('Saved')).toBeInTheDocument();
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Manage clients' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add client' })).not.toBeInTheDocument();
   });
 
   it('creates a feed source and navigates to its setup page', async () => {
@@ -244,48 +247,6 @@ describe('DashboardPage', () => {
     expect(await screen.findByText('Could not be saved.')).toBeInTheDocument();
     expect(screen.queryByText('Saved')).not.toBeInTheDocument();
     expect(window.location.pathname).toBe('/');
-  });
-
-  it('requires typing the client name to confirm deletion', async () => {
-    const user = userEvent.setup();
-    let deleted = false;
-    fetchMock = stubFetch((url) => {
-      if (url === '/auth/me') return jsonResponse({ username: 'operator' });
-      if (url === '/dashboard/summary') return jsonResponse(deleted ? deletedSummary : summary);
-      if (url === '/clients/3') {
-        deleted = true;
-        return new Response(null, { status: 204 });
-      }
-      if (url === '/plugins') return jsonResponse(plugins);
-      return jsonResponse({});
-    });
-
-    render(<App />);
-    expect(await screen.findByText('Globex')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /globex/i }));
-
-    const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
-    expect(deleteButtons.length).toBe(1);
-    await user.click(deleteButtons[0]);
-
-    const confirm = await screen.findByRole('button', { name: 'Confirm' });
-    expect(confirm).toBeDisabled();
-
-    const confirmInput = screen.getByLabelText(/type globex to confirm/i);
-    await user.type(confirmInput, 'Glob');
-    expect(confirm).toBeDisabled();
-
-    await user.type(confirmInput, 'ex');
-    expect(confirm).toBeEnabled();
-
-    await user.click(confirm);
-
-    await waitFor(() => expect(deleteCalls('/clients/3')).toBe(1));
-    expect(await screen.findByText('Saved')).toBeInTheDocument();
-    await waitFor(() => {
-      expect(screen.queryByText('Globex TSV')).not.toBeInTheDocument();
-    });
   });
 
   it('renders the empty state and the error state with retry', async () => {

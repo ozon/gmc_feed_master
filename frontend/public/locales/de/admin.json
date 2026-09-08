@@ -1,0 +1,46 @@
+{
+  "users": {
+    "title": "Benutzerverwaltung",
+    "add": "Benutzer hinzufügen",
+    "edit": "Benutzer bearbeiten",
+    "save": "Speichern",
+    "saved": "Benutzer gespeichert",
+    "saveFailed": "Speichern fehlgeschlagen",
+    "resetPassword": "Passwort zurücksetzen",
+    "roleUser": "Benutzer",
+    "roleAdmin": "Admin",
+    "columns": {
+      "username": "Benutzername",
+      "password": "Passwort",
+      "role": "Rolle",
+      "clients": "Kunden",
+      "active": "Aktiv"
+    }
+  },
+  "clients": {
+    "title": "Kundenverwaltung",
+    "add": "Kunden hinzufügen",
+    "edit": "Bearbeiten",
+    "delete": "Kunden löschen",
+    "columns": {
+      "name": "Name",
+      "status": "Status"
+    }
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "removalRetention": "Aufbewahrung entfernter Produkte (Tage)",
+    "historyRetention": "Aufbewahrung Staging-Historie (Tage)",
+    "ingestionRetention": "Aufbewahrung Ingestion-Läufe (Tage)",
+    "save": "Speichern",
+    "saved": "Einstellungen gespeichert",
+    "saveFailed": "Speichern fehlgeschlagen",
+    "scheduler": "Scheduler-Jobs",
+    "schedulerUnavailable": "Scheduler nicht verfügbar",
+    "jobId": "Job",
+    "trigger": "Trigger",
+    "plugins": "Plugins",
+    "pluginName": "Plugin",
+    "pluginEnabled": "Aktiviert"
+  }
+}
