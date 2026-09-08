@@ -331,7 +331,7 @@ export function CustomLabelsUI({
                 : null
             }
             editable={ruleEditable(rule)}
-            matchedStats={preview.result?.rules[rule.id]}
+            matchedStats={preview.result?.rules?.[rule.id]}
             showLive={atFeed}
             shadowedBy={shadow[rule.id]?.shadowedBy ?? new Map()}
             feedSourceId={scope.feedSourceId}

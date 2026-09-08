@@ -8,7 +8,7 @@ export type ProductPreviewColumnProps = {
   field: string;
   entries: string[];
   matches: ReadonlyMap<string, ProductLookupMatch> | null;
-  isPending: boolean;
+  isFetching: boolean;
   isError: boolean;
   extraFields: string[];
   scrollTop: number;
@@ -16,7 +16,7 @@ export type ProductPreviewColumnProps = {
 };
 
 export function ProductPreviewColumn({
-  field, entries, matches, isPending, isError, extraFields, scrollTop, viewportRef,
+  field, entries, matches, isFetching, isError, extraFields, scrollTop, viewportRef,
 }: ProductPreviewColumnProps) {
   const { t } = useTranslation('customLabels');
   const total = entries.length;
@@ -60,7 +60,7 @@ export function ProductPreviewColumn({
                   }}
                   data-testid={`preview-row-${index}`}
                 >
-                  <PreviewRow field={field} value={value} match={match} isPending={isPending} extraFields={extraFields} />
+                  <PreviewRow field={field} value={value} match={match} isFetching={isFetching} extraFields={extraFields} />
                 </Group>
               );
             })}
@@ -72,16 +72,16 @@ export function ProductPreviewColumn({
 }
 
 function PreviewRow({
-  field, value, match, isPending, extraFields,
+  field, value, match, isFetching, extraFields,
 }: {
   field: string;
   value: string;
   match: ProductLookupMatch | null;
-  isPending: boolean;
+  isFetching: boolean;
   extraFields: string[];
 }) {
   const { t } = useTranslation('customLabels');
-  if (match === null && isPending) {
+  if (match === null && isFetching) {
     return (
       <Group gap="xs" wrap="nowrap" w="100%">
         <Skeleton height={14} width="45%" />

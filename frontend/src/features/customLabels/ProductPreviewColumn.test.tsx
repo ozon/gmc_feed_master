@@ -26,7 +26,7 @@ function renderColumn(over: Partial<Parameters<typeof ProductPreviewColumn>[0]> 
         ['a1', match(1, { title: 'Alpha', brand: 'Acme', availability: 'in_stock' })],
         ['zz', match(0, null)],
       ])}
-      isPending={false}
+      isFetching={false}
       isError={false}
       extraFields={['price']}
       scrollTop={0}
@@ -91,7 +91,7 @@ describe('ProductPreviewColumn', () => {
 
   it('windows rows: renders only the slice for the given scrollTop', () => {
     const entries = Array.from({ length: 1000 }, (_, i) => `v${i}`);
-    renderColumn({ entries, matches: null, isPending: false, scrollTop: 34 * 500 });
+    renderColumn({ entries, matches: null, isFetching: false, scrollTop: 34 * 500 });
     expect(screen.getByTestId('preview-row-495')).toBeInTheDocument();
     expect(screen.queryByTestId('preview-row-0')).not.toBeInTheDocument();
     expect(screen.queryByTestId('preview-row-600')).not.toBeInTheDocument();

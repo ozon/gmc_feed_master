@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut, changePassword, getCurrentUser, logout } from './client';
 import { queryKeys } from './queryKeys';
@@ -491,13 +492,17 @@ export function useProductLookup(
   values: string[],
   extraFields: string[],
 ) {
+  // Sort for the cache key and body so reordered lists hit the same entry
+  // (the response is a value-keyed map — order-insensitive).
+  const sortedValues = useMemo(() => [...values].sort(), [values]);
+  const sortedExtraFields = useMemo(() => [...extraFields].sort(), [extraFields]);
   return useQuery({
     queryKey: queryKeys.feedSource(feedSourceId ?? 0)
-      .productLookup({ field, values, extraFields }),
+      .productLookup({ field, values: sortedValues, extraFields: sortedExtraFields }),
     queryFn: () =>
       apiPost<ProductLookupResponse>(
         `/feed-sources/${feedSourceId}/products/lookup`,
-        { field, values, extraFields },
+        { field, values: sortedValues, extraFields: sortedExtraFields },
       ),
     enabled: feedSourceId !== undefined && values.length > 0,
     placeholderData: keepPreviousData,

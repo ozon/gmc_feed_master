@@ -125,7 +125,7 @@ export function RuleValuesEditor({
             field={rule.matchField}
             entries={entries}
             matches={matches}
-            isPending={lookup.isPending}
+            isFetching={lookup.isFetching}
             isError={lookup.isError}
             extraFields={extraFields}
             scrollTop={scrollTop}
