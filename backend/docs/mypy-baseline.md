@@ -83,6 +83,10 @@ tests/test_rules_plugin.py:11: error: Cannot find implementation or library stub
   `list[StagingProduct]` variable reuse; introduce a typed local.
 - **`app/config.py:45` (3)** — `Settings()` constructed with env-provided
   kwargs mypy cannot see; needs an explicit constructor call signature.
+  Exception: `alembic/env.py` carries one narrowly-scoped
+  `# type: ignore[call-arg]` on the same false-positive class (new code,
+  2026-09-08) — the no-ignore rule above targets *baseline* lines; removing
+  the env.py directive belongs to this cluster's constructor-signature fix.
 - **`registry/parser.py:294-296` (2)** — `tuple[SubField, SubField]`
   variable later reassigned to a list.
 - **`app/ingest/fetch.py:28`, `xml_reader.py:58`, `pipeline/scheduler.py:53`
