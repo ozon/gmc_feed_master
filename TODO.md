@@ -12,6 +12,8 @@
 
 ## Cycle log
 
+- **2026-09-09 (branch `main`, review-remediation plan `docs/superpowers/plans/2026-09-08-review-remediation.md`):** 13 tasks executed (Tasks 1–13; Task 14 eslint deferred per operator approval; Task 15 bookkeeping). Backend: B1 global-tier scope guard (403 for scoped users on global plugins), B7 422 detail propagation. CI: ruff pinned + baseline gate, mypy baseline gate. Infrastructure: alembic DATABASE_URL passthrough, Makefile plugin-test target, AGENTS path fix. Frontend: F1 hook-order crash fix, F2 diff empty-state spinner, F3/U2 save-error toasts (CustomLabelsUI), U1/F10+F11 honest toasts (rotateFailed + deleted), F5+F4 admin toggle errors + null-safe client_ids, F8+F9 NumberInput clamping + cron preset labels, U3/U4/U7/U8/U9 German i18n pass (Sie register, grammar, missing keys), U15 plural forms for count keys. Docs: RJSF ADR superseded, Rolldown adopted, stack lines fixed, proxy list updated, data-model/api refreshed to match code, makefile Caddy targets added. Gates: backend 374 passed (ruff zero-new, mypy baseline held); frontend 377/377 + typecheck + build clean. Reviews: Tasks 6, 7 approved by reviewer; Tasks 8–13 controller-verified inline (subagent rate limits). Head: `e2d31f6`.
+
 - **2026-09-07 (branch `main`, session convention):** labelizer polish cycle — closed every still-open minor + recommendation from the two 2026-09-05 labelizer final reviews, in 8 tasks (spec `docs/superpowers/specs/2026-09-07-labelizer-polish-design.md`, plan `docs/superpowers/plans/2026-09-07-labelizer-polish.md`). Backend: `merge_scopes` deleted (probe-verified zero production callers; tests now exercise `_resolve_declared`), equivalence fixture deduped into `backend/tests/labels_equivalence.py`, plugin module loaded once via `backend/tests/labels_plugin_module.py`, dead manifest dict-key check deleted (probe: sole entry is `json.loads`; empty-`{}` + non-string-key-value branches gained tests). Frontend: `mergeSlotIds` tracks `sourceTier` (inherited badge derives its tier instead of hardcoding `scope.client`), values-textarea aria-label localized, `activeRulesCount` pluralized (en+de), nowrap headers wrap, tier chains memoized, `usePreview` resets error at request start + clears result on 422, tests de-flaked, data-URL/badge assertions made exact (fix round: row-scoped badge assertions — the pre-click count was the ScopeContextBar badge), origin-key route integration test added. **Plan amendment (operator-approved):** Task 1's original "delete `preview.__annotations__` lines" step was REFUTED by experiment — under `from __future__ import annotations` the runtime assignments are load-bearing (removal breaks route registration, 4 tests fail); the cycle-2 "dead `__annotations__` line" minor was a mis-review; recorded in decisions.md. Per-task reviews clean (Task 7 needed one fix round: weak badge assertion strengthened to row-scoped). Final whole-branch review: ready to merge, 1 Important fixed pre-merge (`30970ae` — racy post-`waitFor` DOM read made event-driven) + decisions.md module-load sentence qualified. Gates: backend 885 passed; frontend 293 (1 known ProductsPage parallel-load flake, 12/12 solo) + typecheck + build clean; ruff zero new in touched files. Infra note: subagent sessions died mid-task twice (empty returns) — Tasks 1/2 final phases controller-executed with full verification; all other tasks subagent-driven. New backlog: Section 9.
 
 - **2026-09-02 (branch `m11e-dnd`, fast-forward merged to main):** closed the pipeline-dnd pair, completing TODO section 1: TODO 1.3 (stable ids — spec v1's uniqueness argument was flawed; Task 1 review caught a real duplicate-id window after remove+append, fixed via spec v2 bump-past-held suffix + regression test `99ee4fc`) and TODO 1.4 (applyDragEnd extraction + pointer interaction test — two disclosed deviations approved: dead-guard omission per controller; pointer-sequence rewrite after user-event's `offset` proved to be caret semantics, replaced with `coords` + geometry spies). Final whole-branch review: one Important fixed pre-merge (`beb5459` — the plan dropped spec §2.3's reorder-branch unit test). Gates: frontend 176/176 + typecheck + build clean; backend untouched. Reviewer probed the backend PUT contract: positions were always re-enumerated server-side — no latent bug.
@@ -377,9 +379,9 @@
 
 ## Section 9 — Labelizer polish cycle leftovers (2026-09-07 final-review triage, all BACKLOG)
 
-### 9.1 [ ] Sibling customLabels i18n keys lack plural forms [P2]
+### 9.1 [x] Sibling customLabels i18n keys lack plural forms [P2]
 
-**Why:** The polish cycle pluralized `activeRulesCount` only (the flagged key). `matchedCount` ("{{count}} match"), `slotLabeled`, `freshnessHint` in `frontend/public/locales/{en,de}/customLabels.json` still render "1 match"/"1 Produkte erhalten..."-style singular/plural collisions in de. Pre-existing; plan scoped them out.
+**Done (2026-09-09, `dd02d72`, review-remediation Task 11):** `matchedCount` and `shadowedCount` pluralized (en+de `_one`/`_other` pairs); `idCount` and `coverage.labeledOf` also pluralized. `slotLabeled` and `freshnessHint` no longer exist in the codebase (removed by the 2026-09-08 rule-card refactor).
 
 **Acceptance:** `_one`/`_other` variants for each key, en+de; update tests asserting the old single-key strings.
 
@@ -402,6 +404,58 @@
 ### 9.6 [ ] App-side plugin.py re-exec under `create_app(plugins_dir=...)` [P2]
 
 **Why:** `backend/tests/labels_plugin_module.py` consolidated the two test-preamble loads, but `load_plugin_class` still execs `plugin.py` under `gmc_plugin_custom_labels` in tests that start the app with a `plugins_dir`. Test-only; the decisions.md entry now carries the "(test preambles...)" qualifier.
+
+---
+
+## Section 9A — Review remediation deferred findings (2026-09-09)
+
+### 9A.1 [ ] U5 products-table keyboard/row activation path (a11y) [P2]
+
+**Why:** UX a11y — products table lacks keyboard navigation and row activation. `docs/reports/2026-09-08-04-ux-i18n.md`.
+
+### 9A.2 [ ] U6 raw enum values in tables/filters — translate via existing keys [P2]
+
+**Why:** Raw enum values shown in tables/filters instead of translated labels. Same report.
+
+### 9A.3 [ ] U12 NotFound route instead of silent redirect [P2]
+
+**Why:** Missing route silently redirects instead of showing NotFound page. Same report.
+
+### 9A.4 [ ] U11 disabled-nav tooltip when no feed source selected [P2]
+
+**Why:** Nav items disabled without tooltip explaining why. Same report.
+
+### 9A.5 [ ] U14 ProductDrawer dayjs locale + `drawerRawData` key [P2]
+
+**Why:** ProductDrawer doesn't respect locale; missing i18n key. Same report.
+
+### 9A.6 [ ] U16 ConfirmModal for unsaved-changes guards (replace `window.confirm`) [P2]
+
+**Why:** `window.confirm` used for unsaved-changes prompts — should use ConfirmModal. Same report.
+
+### 9A.7 [ ] U17 i18n a11y labels (pagination, user menu) [P2]
+
+**Why:** Pagination and user menu lack i18n a11y labels. Same report.
+
+### 9A.8 [ ] U18 localized lead-in for raw server error details [P2]
+
+**Why:** Raw server error details shown without localized lead-in text. Same report.
+
+### 9A.9 [ ] F6 ProductsPage state reset on feed-source change [P2]
+
+**Why:** ProductsPage state not reset when feed source changes. `docs/reports/2026-09-08-03-frontend.md`.
+
+### 9A.10 [ ] F13 deep-link page strip; F14 usePreview deps/unmount; F15 toggle rollback scope; F16 ProductsTable dead code; F17 raw_data heading; F18 MonitoringLayout dead code [P2]
+
+**Why:** Multiple frontend minors from the review. Same report.
+
+### 9A.11 [ ] T6 Caddyfile parameterized document root; T11 compose restart policy; T12 Caddy encode/headers; T13 engines field + committed .nvmrc [P2]
+
+**Why:** Deployment hardening items. `docs/reports/2026-09-08-05-tooling.md`.
+
+### 9A.12 [ ] Operator questions: enable/disable toggle admin-gating (B1 follow-up), U10 terminology pick, TODO 2.2 source enum [P2]
+
+**Why:** Decisions requiring operator input.
 
 ---
 

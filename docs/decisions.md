@@ -1073,3 +1073,13 @@ binding product specification. Dates use ISO 8601 calendar dates.
   - Dead `isinstance(key, str)` dict-key check deleted from `_parse_config_merge` — manifests arrive via `json.loads`, whose object keys are always strings; the empty-`{}` and non-string `key`-value branches gained tests.
   - `mergeSlotIds` now tracks `sourceTier`; the inherited-value badge derives its tier label from it instead of hardcoding `scope.client`.
   - Slot-rules equivalence fixture deduplicated into `backend/tests/labels_equivalence.py` (was hand-synced across three backend suites); custom_labels plugin module now loads once per test process via `backend/tests/labels_plugin_module.py` (test preambles; app-side discovery may still load it separately in tests that pass a `plugins_dir`).
+
+## 2026-09-09
+
+### Review remediation cycle
+
+- **B1 fix semantics:** Global plugin tier is admin-only; scoped users receive 403 on global-scope plugin mutations. Single-user mode unaffected (no `user_clients` rows → no scope check triggered).
+- **CI baseline-gate design:** `ruff check` and `mypy` use count-file baselines (`docs/ruff-baseline.txt`, `docs/mypy-baseline.md`); the gate scripts count errors and flip to exit-0 when the count equals the baseline, enforcing zero-new-errors without fixing pre-existing issues.
+- **eslint adoption:** Deferred per operator decision — warnings-baseline convention documented in `frontend/AGENTS.md` but eslint not yet installed.
+- **B6 non-action:** `history_retention_count` is already `Field(ge=1)` at the API (`backend/app/schemas/clients.py:49`); Task 9 closes the client-side 0/NaN path with NumberInput clamping. The `max(retention, 1)` clamp stays as defense-in-depth.
+- **B3/T10 refutations:** B3 (plugin config merge double-writes) — refuted: `_resolve_declared` writes once per scope, merge only deduplicates; verified by test inspection. T10 (alembic `create_all` bypass) — refuted: all migrations use `alembic upgrade head`; `create_all` is test-only (`conftest.py`).
