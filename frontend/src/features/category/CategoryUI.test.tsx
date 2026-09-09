@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
@@ -34,13 +34,19 @@ function renderCategoryUI(
 ) {
   const fetchMock = stubFetch(routeHandler(routes));
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  const router = createMemoryRouter(
+    [
+      {
+        path: '/',
+        element: <CategoryUI pluginId="category" scope={scope} />,
+      },
+    ],
+    { initialEntries: ['/'] },
   );
   render(
-    <Wrapper>
-      <CategoryUI pluginId="category" scope={scope} />
-    </Wrapper>,
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
   );
   return fetchMock;
 }
