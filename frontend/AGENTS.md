@@ -27,7 +27,7 @@ npm run typecheck        # tsc -b
 
 ## Documentation map
 - `docs/architecture.md` — Stack, server-state strategy, routing, state boundaries
-- `docs/plugin-uis.md` — Build-time discovery, RJSF schema rendering, error boundaries
+- `docs/plugin-uis.md` — Build-time discovery, custom JsonSchemaForm schema rendering, error boundaries
 
 ## Documentation
 Any change to behavior, API surface, data model, or commands MUST update the affected docs and ADRs in the same commit. Documentation that contradicts `gmc-feed-engine-spec.md` is a bug: fix the doc, never the spec, and flag the conflict to the operator.

@@ -23,3 +23,11 @@ Vite 6+ uses Rolldown (Rust-based bundler) internally for production builds. The
 
 ## Rejected Alternative
 **Mandate Rolldown now** — Rejected because: Rolldown is pre-1.0; Vite's Rolldown integration is experimental; plugin ecosystem (especially `@vitejs/plugin-react`) has known edge cases with Rolldown; no user-facing benefit for MVP scope.
+
+## Status: Completed (2026-09-08)
+
+Rolldown became the production bundler via the Vite 8.2.2 upgrade
+(`build.rolldownOptions.output.codeSplitting.groups` for vendor chunks;
+`manualChunks` no longer exists). The evaluation criteria passed — this ADR's
+rollback path ("remove rolldownOptions") is moot; see `docs/decisions.md`
+2026-08-30 for the chunking-strategy entry.

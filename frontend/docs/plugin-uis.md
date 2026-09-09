@@ -34,7 +34,7 @@ Import in PluginPage → render via dynamic import
 | `menu_item` | No | Legacy display name; not rendered (nav labels use `pluginNames.*` i18n with `plugin.name` as fallback) |
 | `icon` | No | Tabler icon name (e.g., `tag`, `category`, `filter`); rendered in the Pipeline Editor plugin list |
 | `component` | No | Relative path to TSX default export |
-| `uischema` | No | Layout hints for RJSF (field order, custom widgets) |
+| `uischema` | No | Layout hints (field order, custom widgets) |
 
 ## Schema-Rendered Forms (Default)
 
@@ -55,7 +55,6 @@ When no `component` is declared, config/data UIs are auto-rendered from JSON Sch
 ### Validation
 - **Client-side**: `JsonSchemaForm` validates on change (required, type, enum)
 - **Server-side**: Backend returns 422 `{"errors":[...]}` → `notifyApiError` → `mapFieldErrors` surfaces per-field
-- **AJV** (for RJSF): Configured for JSON Schema draft 2020-12 (Pydantic v2 output)
 
 ## Custom Plugin Components
 

@@ -24,3 +24,11 @@ Use **`@rjsf/core` + `@rjsf/mantine`** for schema-rendered plugin configuration/
 
 ## Rejected Alternative
 **Custom JSON Schema renderer** — Rejected because: duplicating RJSF's feature set (conditional fields, arrays, enums, validation, themes) would take significant effort; ongoing maintenance for schema spec updates; inconsistent UX risk.
+
+## Status: Superseded (2026-09-08)
+
+RJSF was never installed. The shipped renderer is a custom Mantine-themed
+`JsonSchemaForm` (`frontend/src/components/JsonSchemaForm.tsx`, no `@rjsf/*`
+and no AJV dependency); payload validation happens server-side against the
+plugin manifest's JSON Schema. The "Rejected Alternative" above is what
+shipped. See `frontend/docs/plugin-uis.md` for the current rendering story.

@@ -58,7 +58,7 @@ npm run typecheck                             # tsc -b
 
 ## Documentation map
 - `docs/decisions/0001-server-state-tanstack-query.md` — ADR: TanStack Query for server state
-- `docs/decisions/0002-schema-renderer-rjsf.md` — ADR: RJSF for schema-rendered plugin UIs
+- `docs/decisions/0002-schema-renderer-rjsf.md` — ADR: RJSF for schema-rendered plugin UIs (superseded)
 - `docs/decisions/0003-rolldown-optional-evaluation.md` — ADR: Rolldown as optional bundler evaluation
 - `docs/decisions/0004-plugin-frontend-error-isolation.md` — ADR: Plugin frontend error isolation
 - `docs/decisions/0005-labelizer-scope-merge-and-value-pinning.md` — ADR: Labelizer scope merge + bulk-value pinning
@@ -71,7 +71,7 @@ npm run typecheck                             # tsc -b
 - `backend/docs/api.md` — Endpoint reference, reserved plugin routes
 - `backend/docs/plugins.md` — Runtime contract, manifest, three-tier scope merge
 - `frontend/docs/architecture.md` — Stack, server-state strategy, routing, state boundaries
-- `frontend/docs/plugin-uis.md` — Build-time discovery, RJSF schema rendering, error boundaries
+- `frontend/docs/plugin-uis.md` — Build-time discovery, custom JsonSchemaForm schema rendering, error boundaries
 - `backend/AGENTS.md` — Backend-specific commands and conventions
 - `frontend/AGENTS.md` — Frontend-specific commands and conventions
 

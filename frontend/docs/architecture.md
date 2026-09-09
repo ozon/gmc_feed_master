@@ -4,11 +4,11 @@
 | Layer | Technology |
 |-------|------------|
 | Framework | React 19 + TypeScript |
-| Build | Vite 6 (esbuild dev, Rollup prod) |
+| Build | Vite 8 (Rolldown bundler; vendor chunks via build.rolldownOptions.output.codeSplitting.groups) |
 | UI Library | Mantine 9 |
 | Server State | TanStack Query v5 |
 | Tables | TanStack Table v9 |
-| Forms | TanStack Form v1 (core) + RJSF (plugin schemas) |
+| Forms | TanStack Form v1 (core) + custom JsonSchemaForm (plugin schemas) |
 | Drag & Drop | dnd-kit |
 | Routing | React Router v7 |
 | i18n | i18next (HTTP backend, browser detector) |
@@ -165,7 +165,7 @@ export function useSavePipeline(feedSourceId) {
 ### Plugin System (`src/features/plugin/`)
 - `PluginPage` — renders plugin config/data form
   - Schema from `plugin.manifest.config_schema`
-  - Auto-rendered via `JsonSchemaForm` (RJSF-style custom impl)
+  - Auto-rendered via `JsonSchemaForm` (custom Mantine renderer)
   - Custom component via `manifest.frontend.component` (build-time import)
   - Registry map in `src/features/plugin/customComponents.ts` — keyed by plugin id (currently `rules` → `RulesUI`, `filter` → `FilterUI`, `custom_labels` → `CustomLabelsUI`)
   - Fallback: if plugin id has no registry entry, renders schema form

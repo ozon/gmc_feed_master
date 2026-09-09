@@ -170,7 +170,7 @@ Checks:
 - Frontend builds menu entries dynamically from `manifest.frontend.menu_item` + `icon`
 
 ### UI Rendering
-- **Default**: Auto-rendered from `config_schema` / `data_schema` via Mantine-themed `JsonSchemaForm` (RJSF)
+- **Default**: Auto-rendered from `config_schema` / `data_schema` via Mantine-themed `JsonSchemaForm` (custom Mantine renderer)
 - **Custom**: `manifest.frontend.component` path → build-time Vite discovery → imported as React component
 
 ### Build-Time Discovery
