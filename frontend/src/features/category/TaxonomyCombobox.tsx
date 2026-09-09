@@ -49,6 +49,7 @@ export function TaxonomyCombobox({
       searchable
       clearable
       disabled={disabled}
+      filter={({ options }) => options}
       data={entries.map((entry) => ({
         value: entry.id,
         label: `${entry.id} — ${entry.path}`,
