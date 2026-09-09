@@ -90,7 +90,7 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 
 
 ### Export History
-- `GET /feed-sources/{id}/export-history` — list versions
+- `GET /feed-sources/{id}/export-history` — list versions (`source` ∈ `scheduled` | `manual` | `rollback`)
 - `GET /feed-sources/{id}/export-history/{v}/diff?against={v2}` — field-based diff (per product + attribute, old vs new)
 - `POST /feed-sources/{id}/export-history/{v}/rollback` — append-only rollback, creates new version
 

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
+
+ExportSource = Literal["scheduled", "manual", "rollback"]
 
 
 class ExportFindingCounts(BaseModel):
@@ -19,7 +21,7 @@ class ExportVersionOut(BaseModel):
     version_number: int
     product_count: int
     file_hash: str
-    source: str
+    source: ExportSource
     source_version_id: int | None
     created_at: datetime
     findings: ExportFindingCounts | None = None

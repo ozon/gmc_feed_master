@@ -7,7 +7,7 @@ from app.pipeline import SchedulerService, job_id, validate_cron
 
 
 class FakeRunner:
-    async def execute(self, feed_source_id, run_id=None):
+    async def execute(self, feed_source_id, run_id=None, trigger="manual"):
         return None
 
 
@@ -44,6 +44,13 @@ def test_register_adds_job(service):
     job = service._scheduler.get_job("feed-source-1")
     assert job is not None
     assert job.misfire_grace_time is None
+
+
+def test_register_passes_scheduled_trigger(service):
+    service.register(feed_source(1, "0 * * * *"))
+    job = service._scheduler.get_job("feed-source-1")
+    assert job is not None
+    assert job.kwargs == {"trigger": "scheduled"}
 
 
 def test_register_duplicate_replaces(service):

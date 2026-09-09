@@ -37,9 +37,9 @@ const feed = {
 };
 
 const versions = [
-  { id: 3, version_number: 3, product_count: 100, file_hash: 'h3', source: 'run', source_version_id: null, created_at: '2026-08-29T10:00:00Z', findings: { critical: 2, warning: 0, info: 5 } },
+  { id: 3, version_number: 3, product_count: 100, file_hash: 'h3', source: 'scheduled', source_version_id: null, created_at: '2026-08-29T10:00:00Z', findings: { critical: 2, warning: 0, info: 5 } },
   { id: 2, version_number: 2, product_count: 98, file_hash: 'h2', source: 'rollback', source_version_id: 3, created_at: '2026-08-28T10:00:00Z', findings: null },
-  { id: 1, version_number: 1, product_count: 90, file_hash: 'h1', source: 'run', source_version_id: null, created_at: '2026-08-27T10:00:00Z', findings: { critical: 0, warning: 0, info: 0 } },
+  { id: 1, version_number: 1, product_count: 90, file_hash: 'h1', source: 'manual', source_version_id: null, created_at: '2026-08-27T10:00:00Z', findings: { critical: 0, warning: 0, info: 0 } },
 ];
 
 beforeAll(async () => {

@@ -210,9 +210,9 @@
 
 ---
 
-### 2.2 [ ] Backend: extend `ExportVersionOut.source` to the 3-value enum from the spec [P2]
+### 2.2 [x] Backend: extend `ExportVersionOut.source` to the 3-value enum from the spec [P2] — done 2026-09-09 (operator decision, 9A.12)
 
-**Why:** The spec says `source ∈ {scheduled, manual, rollback}` (3 values). The backend currently writes only `'run'` and `'rollback'` (verified in `backend/app/services/export.py:135,301`). The frontend now matches the backend (M10-d `981c32d`). If the backend is extended to distinguish scheduled vs manual runs, the frontend's `source.run | source.rollback` whitelist needs to expand and the i18n needs a third key.
+**Done:** `PipelineRunner.execute` gained a `trigger` param (manual default; `SchedulerService` registers jobs with `trigger="scheduled"`) plumbed through `StepContext` into `ExportService.export_for_run(source=...)`. Model default `'run'` → `'manual'` + migration `20260909_0001` (data-migrates `'run'` rows). `ExportVersionOut.source` is now `Literal["scheduled", "manual", "rollback"]` (`ExportSource`). Frontend: types narrowed to the 3-value union, `SOURCE_COLOR` per value, i18n `source.scheduled`/`source.manual` (en+de, `source.run` removed). Docs: data-model.md, api.md.
 
 **Files (frontend, conditional on backend change):**
 - Modify: `frontend/src/features/export/ExportVersionList.tsx` (extend source enum)

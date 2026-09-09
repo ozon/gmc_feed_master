@@ -214,7 +214,7 @@ Retention: 90 days.
 | `version_number` | Integer | Sequential per feed source |
 | `file_hash` | String(64) | Content hash of the export file |
 | `product_count` | Integer | Products in this version |
-| `source` | String(20) | `run` or `rollback` (default `run`) |
+| `source` | String(20) | `scheduled`, `manual`, or `rollback` (spec §4.7; default `manual`; scheduler-invoked runs write `scheduled`) |
 | `source_version_id` | Integer | FK → ExportVersion, nullable (SET NULL); rollback lineage |
 | `created_at` | DateTime | |
 

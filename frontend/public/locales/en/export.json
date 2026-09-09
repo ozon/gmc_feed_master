@@ -28,7 +28,8 @@
     "info_other": "{{count}} info"
   },
   "source": {
-    "run": "Run",
+    "scheduled": "Scheduled",
+    "manual": "Manual",
     "rollback": "Rollback"
   },
   "productsLabel": "products",

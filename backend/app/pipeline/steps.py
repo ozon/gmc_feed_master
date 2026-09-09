@@ -48,6 +48,7 @@ class StepContext:
     logger: logging.Logger
     run_state: RunState
     ingestion_run_id: int = 0
+    trigger: str = "manual"
 
 
 @dataclass(frozen=True)
@@ -423,7 +424,8 @@ class ExportStep:
             ctx.session_factory, self._store, self._clock, self._public_base_url
         )
         outcome = await service.export_for_run(
-            ctx.feed_source_id, ctx.ingestion_run_id, products, self._registry
+            ctx.feed_source_id, ctx.ingestion_run_id, products, self._registry,
+            source=ctx.trigger,
         )
         return StepResult(
             statistics={

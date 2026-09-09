@@ -146,7 +146,7 @@ async def test_full_pipeline_publishes_gmc_xml_at_token_url(app_factory):
             select(ExportRun).where(ExportRun.feed_source_id == feed_source["id"])
         )).scalars().all())
     assert len(versions) == 1
-    assert versions[0].source == "run"
+    assert versions[0].source == "manual"
     assert versions[0].product_count == 2
     assert len(runs) == 1
     assert runs[0].status == "completed"

@@ -40,6 +40,6 @@ class ExportVersion(Base):
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     file_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     product_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
-    source: Mapped[str] = mapped_column(String(20), nullable=False, default="run", server_default="run")
+    source: Mapped[str] = mapped_column(String(20), nullable=False, default="manual", server_default="manual")
     source_version_id: Mapped[int | None] = mapped_column(ForeignKey("export_versions.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

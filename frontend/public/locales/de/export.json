@@ -28,7 +28,8 @@
     "info_other": "{{count}} Hinweise"
   },
   "source": {
-    "run": "Lauf",
+    "scheduled": "Geplant",
+    "manual": "Manuell",
     "rollback": "Zurückgesetzt"
   },
   "productsLabel": "Produkte",

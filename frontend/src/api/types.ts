@@ -190,7 +190,7 @@ export type ExportVersionOut = {
   version_number: number;
   product_count: number;
   file_hash: string;
-  source: 'run' | 'rollback' | string;
+  source: 'scheduled' | 'manual' | 'rollback';
   source_version_id: number | null;
   created_at: string;
   findings?: { critical: number; warning: number; info: number } | null;

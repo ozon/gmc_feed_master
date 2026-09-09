@@ -5,7 +5,7 @@ import logging
 import secrets
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +17,7 @@ from ..ingest.xml_reader import parse_xml
 from ..models.client import Client
 from ..models.export import ExportRun, ExportVersion
 from ..models.feed_source import FeedSource
-from ..schemas.export import ExportFindingCounts, ExportVersionOut
+from ..schemas.export import ExportFindingCounts, ExportSource, ExportVersionOut
 from .renderer import ChannelMetadata, render_feed
 from .store import ExportFileStore
 
@@ -65,6 +65,7 @@ class ExportService:
         ingestion_run_id: int,
         products: Sequence[dict[str, Any]],
         registry: RegistryDocument,
+        source: str = "manual",
     ) -> ExportOutcome:
         async with self._session_factory() as session:
             async with session.begin():
@@ -133,7 +134,7 @@ class ExportService:
                             version_number=version_number,
                             file_hash=file_hash,
                             product_count=len(products),
-                            source="run",
+                            source=source,
                         )
                         session.add(new_version)
                         await session.flush()
@@ -198,7 +199,7 @@ class ExportService:
             version_number=version.version_number,
             product_count=version.product_count,
             file_hash=version.file_hash,
-            source=version.source,
+            source=cast(ExportSource, version.source),
             source_version_id=version.source_version_id,
             created_at=version.created_at,
             findings=findings,

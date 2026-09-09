@@ -107,7 +107,7 @@ async def test_history_lists_versions_descending(app_factory):
     assert resp.status_code == 200
     body = resp.json()
     assert [v["version_number"] for v in body] == [2, 1]
-    assert body[0]["source"] == "run"
+    assert body[0]["source"] == "manual"
     assert body[0]["product_count"] == 2
     assert len(body[0]["file_hash"]) == 64
     assert body[0]["source_version_id"] is None
@@ -145,7 +145,7 @@ async def test_history_shows_rollback_version_as_not_qc_d(app_factory):
     assert body[0]["source"] == "rollback"
     assert body[0]["findings"] is None
     assert body[0]["url"] == "http://test.public/export/tok-history-test.xml"
-    assert body[1]["source"] == "run"
+    assert body[1]["source"] == "manual"
     assert body[1]["findings"] == {"critical": 0, "warning": 0, "info": 0}
 
 

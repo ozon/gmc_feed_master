@@ -111,7 +111,7 @@ async def test_first_export_creates_version_publishes_and_wires_run(env):
     assert outcome == ExportOutcome(version_number=1, product_count=2, deduplicated=False)
     versions = await _versions(env["factory"], env["feed_source_id"])
     assert [v.version_number for v in versions] == [1]
-    assert versions[0].source == "run"
+    assert versions[0].source == "manual"
     assert versions[0].product_count == 2
     assert len(versions[0].file_hash) == 64
     assert env["store"].published_exists(env["feed_source_id"])
@@ -121,6 +121,16 @@ async def test_first_export_creates_version_publishes_and_wires_run(env):
     assert runs[0].status == "completed"
     assert runs[0].export_version_id == versions[0].id
     assert runs[0].completed_at == datetime(2026, 8, 27, tzinfo=timezone.utc)
+
+
+async def test_scheduled_source_is_persisted_on_export_version(env):
+    run_id = await _start_run(env)
+    await env["service"].export_for_run(
+        env["feed_source_id"], run_id, PRODUCTS, REGISTRY, source="scheduled"
+    )
+
+    versions = await _versions(env["factory"], env["feed_source_id"])
+    assert versions[0].source == "scheduled"
 
 
 async def test_unchanged_second_export_is_deduplicated(env):

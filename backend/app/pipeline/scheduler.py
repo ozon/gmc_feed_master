@@ -57,6 +57,7 @@ class SchedulerService:
             self._runner.execute,
             trigger,
             args=[feed_source.id],
+            kwargs={"trigger": "scheduled"},
             id=job_id(feed_source.id),
             replace_existing=True,
             misfire_grace_time=None,

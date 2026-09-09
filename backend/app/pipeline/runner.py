@@ -28,7 +28,9 @@ class PipelineRunner:
         self._session_factory = session_factory
         self._steps = steps
 
-    async def execute(self, feed_source_id: int, run_id: int | None = None) -> int | None:
+    async def execute(
+        self, feed_source_id: int, run_id: int | None = None, trigger: str = "manual"
+    ) -> int | None:
         if self._lock_registry.is_locked(feed_source_id):
             logger.warning(
                 "previous run still active: skipping run for feed source %s",
@@ -73,6 +75,7 @@ class PipelineRunner:
                         logger=logger,
                         run_state=run_state,
                         ingestion_run_id=run_id,
+                        trigger=trigger,
                     )
                     result: StepResult = await step.execute(ctx)
                     processed_count += result.processed_count
