@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ApiError, apiPost } from '../../api/client';
 import type { SlotRule } from './scopeMerge';
 
@@ -32,6 +33,7 @@ export function useLabelizerPreview(input: {
   slotIds: Record<string, string>;
 }): PreviewState {
   const { enabled, feedSourceId, rules, slotIds } = input;
+  const { t } = useTranslation('customLabels');
   const [result, setResult] = useState<PreviewResult | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [errors, setErrors] = useState<string[] | null>(null);
@@ -41,8 +43,16 @@ export function useLabelizerPreview(input: {
 
   const draftKey = JSON.stringify({ rules, slotIds });
 
+  const payloadRef = useRef({ feedSourceId, rules, slotIds });
+  payloadRef.current = { feedSourceId, rules, slotIds };
+
+  useEffect(() => () => {
+    seq.current++;
+  }, []);
+
   useEffect(() => {
     if (!enabled) {
+      seq.current++;
       setResult(null);
       setErrors(null);
       setUnavailable(false);
@@ -56,6 +66,7 @@ export function useLabelizerPreview(input: {
   useEffect(() => {
     if (!enabled || tick === 0) return;
     const mySeq = ++seq.current;
+    const { feedSourceId, rules, slotIds } = payloadRef.current;
     setIsPending(true);
     setErrors(null);
     void apiPost<PreviewResult>('/plugins/custom_labels/preview', {
@@ -74,7 +85,7 @@ export function useLabelizerPreview(input: {
       .catch((err: unknown) => {
         if (mySeq !== seq.current) return;
         if (err instanceof ApiError && err.status === 422) {
-          setErrors(err.errors ?? [err.detail ?? 'Invalid rules']);
+          setErrors(err.errors ?? [err.detail ?? t('previewInvalidRules')]);
           setResult(null);
           setUnavailable(false);
         } else {
@@ -82,7 +93,7 @@ export function useLabelizerPreview(input: {
         }
         setIsPending(false);
       });
-  }, [tick]);
+  }, [tick, enabled, t]);
 
   return { result, isPending, errors, unavailable };
 }

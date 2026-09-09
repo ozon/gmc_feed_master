@@ -1,7 +1,6 @@
 import {
   Anchor,
   Badge,
-  Box,
   Group,
   Image,
   Pagination,
@@ -67,11 +66,6 @@ export function ProductsTable({
         row.excluded ? 'excluded' : row.processed ? '' : 'notProcessed',
       enableSorting: false,
     });
-  }
-
-  const columnVisibility: Record<string, boolean> = {};
-  for (const col of columns) {
-    columnVisibility[col.id] = true;
   }
 
   const table = useTable(

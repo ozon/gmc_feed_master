@@ -101,13 +101,14 @@ export function PipelinePage() {
       setLocal((prev) => prev.map((i) => (i.clientId === clientId ? { ...i, enabled: next } : i)));
       return;
     }
-    const before = local;
     setLocal((prev) => prev.map((i) => (i.clientId === clientId ? { ...i, enabled: next } : i)));
     patchInstance.mutate(
       { instanceId: instance.id, enabled: next },
       {
         onError: (error) => {
-          setLocal(before); // rollback
+          setLocal((prev) =>
+            prev.map((i) => (i.clientId === clientId ? { ...i, enabled: !next } : i)),
+          ); // rollback only the toggled instance — concurrent edits survive
           notifyApiError(error, t('toggleFailed'));
           void queryClient.invalidateQueries({
             queryKey: queryKeys.feedSource(id).pipeline,

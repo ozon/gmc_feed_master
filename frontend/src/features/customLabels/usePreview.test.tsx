@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
+import i18n from '../../i18n';
 import type { SlotRule } from './scopeMerge';
 import { useLabelizerPreview, type PreviewResult } from './usePreview';
 
@@ -60,6 +61,23 @@ function DraftProbe() {
       </button>
       <span data-testid="errors">{state.errors?.join('|') ?? ''}</span>
       <span data-testid="total">{state.result?.total ?? ''}</span>
+    </div>
+  );
+}
+
+function EnabledProbe() {
+  const [enabled, setEnabled] = useState(true);
+  const state = useLabelizerPreview({
+    enabled,
+    feedSourceId: 1,
+    rules: RULES,
+    slotIds: {},
+  });
+  return (
+    <div>
+      <button onClick={() => setEnabled(false)}>disable</button>
+      <span data-testid="total">{state.result?.total ?? ''}</span>
+      <span data-testid="errors">{state.errors?.join('|') ?? ''}</span>
     </div>
   );
 }
@@ -201,5 +219,46 @@ describe('useLabelizerPreview', () => {
       { timeout: 5000 },
     )).toBeTruthy();
     expect(document.querySelector('[data-testid="errors"]')?.textContent).toBe('nope');
+  }, 10000);
+
+  it('discards in-flight responses once the preview is disabled', async () => {
+    let calls = 0;
+    let release!: (response: Response) => void;
+    stubFetch((url) => {
+      if (url.startsWith('/plugins/custom_labels/preview')) {
+        calls += 1;
+        return new Promise<Response>((resolve) => {
+          release = resolve;
+        });
+      }
+      return jsonResponse({});
+    });
+    render(<EnabledProbe />);
+    await waitFor(() => expect(calls).toBe(1), { timeout: 5000 });
+    await userEvent.click(screen.getByRole('button', { name: /disable/i }));
+    act(() => release(jsonResponse(RESULT)));
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(screen.getByTestId('total').textContent).toBe('');
+  }, 10000);
+
+  it('uses a localized fallback when a 422 carries no errors or detail', async () => {
+    stubFetch((url) => {
+      if (url.startsWith('/plugins/custom_labels/preview')) {
+        return jsonResponse({}, 422);
+      }
+      return jsonResponse({});
+    });
+    await i18n.loadNamespaces(['customLabels']);
+    await i18n.changeLanguage('de');
+    try {
+      render(<Probe rules={RULES} />);
+      expect(await waitFor(
+        () => expect(document.querySelector('[data-testid="errors"]')?.textContent)
+          .toBe('Die Regeln sind ungültig.'),
+        { timeout: 5000 },
+      )).toBeTruthy();
+    } finally {
+      await i18n.changeLanguage('en');
+    }
   }, 10000);
 });

@@ -10,6 +10,7 @@
   "activeRulesCount_one": "{{count}} aktive Regel",
   "activeRulesCount_other": "{{count}} aktive Regeln",
   "previewUnavailable": "Live-Vorschau nicht verfügbar.",
+  "previewInvalidRules": "Die Regeln sind ungültig.",
   "noStagedProducts": "Noch keine Produkte im Staging — zuerst die Pipeline ausführen.",
   "clearValues": "Werteliste leeren",
   "formatDedupe": "Formatieren & Duplikate entfernen",

@@ -31,6 +31,7 @@
   "colState": "State",
   "stateExcluded": "excluded",
   "stateNotProcessed": "not processed",
+  "drawerRawData": "Raw data",
   "drawerProcessedData": "Processed data",
   "drawerExcluded": "Excluded"
 }

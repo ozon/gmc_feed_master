@@ -136,6 +136,19 @@ describe('ProductsPage', () => {
     expect(screen.queryByText('Product 1')).not.toBeInTheDocument();
   });
 
+  it('preserves deep-linked page when a search param is present', async () => {
+    setupFetch((url) => {
+      if (url.includes('/feed-sources/2/products')) return jsonResponse(productsPage1);
+      return jsonResponse({});
+    });
+
+    window.history.replaceState({}, '', '/clients/1/feeds/2/products?q=x&page=3');
+    render(<App />);
+
+    expect(await screen.findByText('Product 1')).toBeInTheDocument();
+    expect(window.location.search).toContain('page=3');
+  });
+
   it('changes page size', async () => {
     const user = userEvent.setup();
     setupFetch((url) => {

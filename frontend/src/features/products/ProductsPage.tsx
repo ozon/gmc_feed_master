@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Checkbox, Group, Popover, SegmentedControl, Select, Stack, TextInput } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconColumns3, IconSearch } from '@tabler/icons-react';
@@ -92,7 +92,10 @@ export function ProductsPage() {
     setSearchInput(value);
   };
 
+  const prevDebouncedQRef = useRef(debouncedQ);
   useEffect(() => {
+    if (prevDebouncedQRef.current === debouncedQ) return;
+    prevDebouncedQRef.current = debouncedQ;
     updateParams({ q: debouncedQ || null, page: null });
   }, [debouncedQ]);
 

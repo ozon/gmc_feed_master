@@ -445,11 +445,13 @@
 
 **Why:** ProductsPage state not reset when feed source changes. `docs/reports/2026-09-08-03-frontend.md`.
 
-### 9A.10 [ ] F13 deep-link page strip; F14 usePreview deps/unmount; F15 toggle rollback scope; F16 ProductsTable dead code; F17 raw_data heading; F18 MonitoringLayout dead code [P2]
+### 9A.10 [x] F13 deep-link page strip; F14 usePreview deps/unmount; F15 toggle rollback scope; F16 ProductsTable dead code; F17 raw_data heading; F18 MonitoringLayout dead code [P2] — done 2026-09-09
 
 **Why:** Multiple frontend minors from the review. Same report.
 
-### 9A.11 [ ] T6 Caddyfile parameterized document root; T11 compose restart policy; T12 Caddy encode/headers; T13 engines field + committed .nvmrc [P2]
+**Done:** F13 — deep-link `?q=x&page=3` keeps `page` (prev-value ref guards the strip effect; regression test). F14 — usePreview: payload ref (honest deps), seq bump on disable + unmount (in-flight responses can no longer repaint a disabled/unmounted preview; tests), 422 fallback routed through `t('previewInvalidRules')` (en+de). F15 — failed toggle restores only the toggled instance's `enabled` via functional `setLocal`; concurrent edits survive (deferred-PATCH test). F16 — Box import + unused columnVisibility map removed. F17 — `drawerRawData` key (en+de) replaces the hardcoded `raw_data` heading. F18 — MonitoringLayout + its test deleted (unreachable: router registers the monitoring pages directly; false coverage signal removed).
+
+### 9A.11 [x] T6 Caddyfile parameterized document root; T11 compose restart policy; T12 Caddy encode/headers; T13 engines field + committed .nvmrc [P2] — done 2026-09-09 (`bb47776`)
 
 **Why:** Deployment hardening items. `docs/reports/2026-09-08-05-tooling.md`.
 

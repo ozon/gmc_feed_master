@@ -83,7 +83,7 @@ export function ProductDrawer({ feedSourceId, productId, onClose }: ProductDrawe
             </>
           )}
           <Title order={5} mt="md" mb="xs">
-            raw_data
+            {t('drawerRawData')}
           </Title>
           <pre
             style={{

@@ -10,6 +10,7 @@
   "activeRulesCount_one": "{{count}} active rule",
   "activeRulesCount_other": "{{count}} active rules",
   "previewUnavailable": "Live preview unavailable.",
+  "previewInvalidRules": "The rules are invalid.",
   "noStagedProducts": "No staged products yet — run the pipeline first.",
   "clearValues": "Clear value list",
   "formatDedupe": "Format & remove duplicates",

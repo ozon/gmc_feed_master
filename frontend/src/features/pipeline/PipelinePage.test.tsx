@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider, Link } from 'react-router';
 import { Notifications, notifications } from '@mantine/notifications';
@@ -140,6 +140,28 @@ describe('PipelinePage', () => {
     await waitFor(() => expect(patchFailed).toBe(true));
     // rolled back to checked after failure
     await waitFor(() => expect(screen.getByTestId('plugin-toggle-upper-0')).toBeChecked());
+  });
+
+  it('a failed toggle rolls back only the toggled instance, keeping concurrent edits', async () => {
+    const user = userEvent.setup();
+    let releasePatch!: (response: Response) => void;
+    stubFetch((url, init) => {
+      if (url === '/plugins') return jsonResponse([plugin, { ...plugin, id: 'fresh', name: 'Fresh' }]);
+      if (url === '/feed-sources/1/pipeline') return jsonResponse(serverDoc);
+      if (url === '/feed-sources/1/pipeline/instances/11' && init?.method === 'PATCH') {
+        return new Promise<Response>((resolve) => {
+          releasePatch = resolve;
+        });
+      }
+      return jsonResponse({});
+    });
+    renderAt();
+    await screen.findByTestId('plugin-toggle-upper-0');
+    await user.click(screen.getByTestId('plugin-toggle-upper-0'));
+    await user.click(screen.getByTestId('add-plugin-fresh'));
+    act(() => releasePatch(jsonResponse({ detail: 'boom' }, 500)));
+    await waitFor(() => expect(screen.getByTestId('plugin-toggle-upper-0')).toBeChecked());
+    expect(screen.getByTestId('plugin-row-fresh-1')).toBeInTheDocument();
   });
 
   it('add from registry marks the page dirty', async () => {
