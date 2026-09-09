@@ -124,7 +124,7 @@ function UserMenu() {
     <>
       <Menu shadow="md" width={200} position="bottom-end">
         <Menu.Target>
-          <UnstyledButton aria-label={user?.username ?? 'user'}>
+          <UnstyledButton aria-label={user?.username ?? t('userMenuAriaLabel')}>
             <Group gap={4}>
               <Text size="sm">{user?.username}</Text>
               <IconChevronDown size={14} />
@@ -300,6 +300,7 @@ export function AppShell() {
                 key={item.label}
                 label={item.label}
                 leftSection={<item.icon size={16} />}
+                description={t('selectFeedSourceHint')}
                 disabled
               />
             ),

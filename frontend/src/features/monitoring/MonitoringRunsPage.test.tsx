@@ -76,7 +76,7 @@ describe('MonitoringRunsPage', () => {
     });
     renderAt();
     await waitFor(() => expect(screen.getByTestId('run-row-1')).toBeInTheDocument());
-    expect(screen.getByText('success')).toBeInTheDocument();
+    expect(screen.getByText('Success')).toBeInTheDocument();
     expect(screen.getByText('100')).toBeInTheDocument();
   });
 

@@ -28,7 +28,10 @@ export function MonitoringFindingsPage() {
       <Group>
         <MultiSelect
           label={t('findings.severityFilter')}
-          data={SEVERITIES}
+          data={SEVERITIES.map((severity) => ({
+            value: severity,
+            label: t(`severity.${severity}`, { defaultValue: severity }),
+          }))}
           value={severityFilter}
           onChange={(v) => setSeverityFilter(v)}
           placeholder={t('findings.severityPlaceholder')}

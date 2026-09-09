@@ -8,6 +8,7 @@ import { useFeedSourcePipeline, usePatchPipelineInstance, usePlugins, useSavePip
 import { ApiError } from '../../api/client';
 import type { PipelineDoc, PipelineInstance } from '../../api/types';
 import { ErrorState, LoadingState } from '../../components/StateViews';
+import { ConfirmModal } from '../../components/ConfirmModal';
 import { notifyApiError, notifySuccess } from '../../app/notifications';
 import { PluginConfigPanel } from './PluginConfigPanel';
 import { PluginList } from './PluginList';
@@ -66,11 +67,9 @@ export function PipelinePage() {
   const dirty = !isInstancesEqual(local, serverSnapshot);
   const selected = local.find((i) => i.clientId === selectedClientId) ?? local[0] ?? null;
 
-  useBlocker(({ currentLocation, nextLocation }) => {
-    if (!dirty) return false;
-    if (currentLocation.pathname === nextLocation.pathname) return false;
-    return !window.confirm(t('unsavedChanges'));
-  });
+  const blocker = useBlocker(({ currentLocation, nextLocation }) =>
+    dirty && currentLocation.pathname !== nextLocation.pathname,
+  );
 
   async function onSave() {
     try {
@@ -173,6 +172,15 @@ export function PipelinePage() {
           />
         </Grid.Col>
       </Grid>
+      <ConfirmModal
+        opened={blocker.state === 'blocked'}
+        title={t('unsavedChangesTitle')}
+        message={t('unsavedChanges')}
+        confirmLabel={tCommon('actions.leave')}
+        danger
+        onConfirm={() => blocker.proceed?.()}
+        onClose={() => blocker.reset?.()}
+      />
     </Stack>
   );
 }

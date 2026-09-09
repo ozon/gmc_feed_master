@@ -41,5 +41,17 @@
     "processed": "Verarbeitet: {{count}}",
     "dropped": "Verworfen: {{count}}",
     "empty": "Starten Sie einen Trockenlauf, um Ergebnisse zu sehen."
+  },
+  "runStatus": {
+    "pending": "Ausstehend",
+    "running": "Läuft",
+    "success": "Erfolgreich",
+    "error": "Fehler",
+    "skipped": "Übersprungen"
+  },
+  "severity": {
+    "critical": "Kritisch",
+    "warning": "Warnung",
+    "info": "Info"
   }
 }

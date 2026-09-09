@@ -1,9 +1,10 @@
 import { lazy, useEffect, useRef } from 'react';
-import { Button, Center, Stack, Text } from '@mantine/core';
+import { Button, Center, Stack, Text, Title } from '@mantine/core';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
   createBrowserRouter,
+  Link,
   Navigate,
   Outlet,
   RouterProvider,
@@ -90,6 +91,22 @@ function isChunkLoadFailure(error: unknown): boolean {
   );
 }
 
+export function NotFoundPage() {
+  const { t } = useTranslation();
+  return (
+    <Center px="md">
+      <Stack align="center" gap="sm" mih="50vh" justify="center">
+        <Title order={3} role="heading">
+          {t('notFoundTitle')}
+        </Title>
+        <Button variant="light" component={Link} to="/">
+          {t('notFoundHome')}
+        </Button>
+      </Stack>
+    </Center>
+  );
+}
+
 export function RouteErrorBoundary() {
   const { t } = useTranslation();
   const error = useRouteError();
@@ -159,7 +176,7 @@ const routes = [
       },
     ],
   },
-  { path: '*', element: <Navigate to="/" replace /> },
+  { path: '*', element: <NotFoundPage /> },
 ];
 
 type UnauthorizedRouter = {

@@ -151,6 +151,17 @@ export function ProductsTable({
               <MantineTable.Tr
                 key={row.id}
                 onClick={() => onRowClick(row.original.product_id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onRowClick(row.original.product_id);
+                  }
+                }}
+                tabIndex={0}
+                role="button"
+                aria-label={t('rowDetailsAriaLabel', {
+                  title: row.original.title ?? row.original.product_id,
+                })}
                 style={{ cursor: 'pointer' }}
               >
                 {row.getVisibleCells().map((cell) => {
@@ -176,7 +187,7 @@ export function ProductsTable({
                           variant="light"
                           size="sm"
                         >
-                          {value}
+                          {t(`status.${value}`, { defaultValue: value })}
                         </Badge>
                       </MantineTable.Td>
                     );
@@ -241,7 +252,7 @@ export function ProductsTable({
             value={pageIndex + 1}
             onChange={(p) => onPaginationChange(p - 1, pageSize)}
             component="nav"
-            aria-label="pagination"
+            aria-label={t('paginationAriaLabel')}
           />
         </Group>
       </Group>

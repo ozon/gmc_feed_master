@@ -11,7 +11,7 @@ type ProductDrawerProps = {
 };
 
 export function ProductDrawer({ feedSourceId, productId, onClose }: ProductDrawerProps) {
-  const { t } = useTranslation('products');
+  const { t, i18n } = useTranslation('products');
   const detail = useProductDetail(feedSourceId, productId);
 
   return (
@@ -45,12 +45,12 @@ export function ProductDrawer({ feedSourceId, productId, onClose }: ProductDrawe
               </Table.Tr>
               <Table.Tr>
                 <Table.Td fw={500}>{t('drawerLastSeenAt')}</Table.Td>
-                <Table.Td>{dayjs(detail.data.last_seen_at).format('L LTS')}</Table.Td>
+                <Table.Td>{dayjs(detail.data.last_seen_at).locale(i18n.language).format('L LTS')}</Table.Td>
               </Table.Tr>
               {detail.data.removed_at && (
                 <Table.Tr>
                   <Table.Td fw={500}>{t('drawerRemovedAt')}</Table.Td>
-                  <Table.Td>{dayjs(detail.data.removed_at).format('L LTS')}</Table.Td>
+                  <Table.Td>{dayjs(detail.data.removed_at).locale(i18n.language).format('L LTS')}</Table.Td>
                 </Table.Tr>
               )}
               {detail.data.excluded && (

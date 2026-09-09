@@ -30,8 +30,14 @@
   "noResults": "No products match your filters.",
   "colState": "State",
   "stateExcluded": "excluded",
+  "rowDetailsAriaLabel": "Show details for {{title}}",
+  "status": {
+    "active": "Active",
+    "removed": "Removed"
+  },
   "stateNotProcessed": "not processed",
   "drawerRawData": "Raw data",
   "drawerProcessedData": "Processed data",
-  "drawerExcluded": "Excluded"
+  "drawerExcluded": "Excluded",
+  "paginationAriaLabel": "Pagination"
 }

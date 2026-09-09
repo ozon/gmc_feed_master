@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
@@ -298,6 +298,25 @@ describe('ProductsPage', () => {
     expect(screen.getAllByText(/test-value-42/)).toHaveLength(2);
   });
 
+  it('opens the drawer via keyboard on a focused row', async () => {
+    const user = userEvent.setup();
+    setupFetch((url) => {
+      if (url.includes('/feed-sources/2/products/pid-1')) return jsonResponse(productDetail);
+      if (url.includes('/feed-sources/2/products')) return jsonResponse(productsPage1);
+      return jsonResponse({});
+    });
+
+    render(<App />);
+    await screen.findByText('Product 1');
+
+    const row = screen.getByRole('button', { name: /product 1/i });
+    userEvent.setup();
+    row.focus();
+    await user.keyboard('{Enter}');
+
+    expect(await screen.findByText('Product Details')).toBeInTheDocument();
+  });
+
   it('renders badge for removed item', async () => {
     setupFetch((url) => {
       if (url.includes('/feed-sources/2/products')) return jsonResponse(productsPage1);
@@ -312,6 +331,7 @@ describe('ProductsPage', () => {
     const firstRow = rows[0];
     expect(firstRow).toBeTruthy();
     expect(firstRow.querySelector('[class*="Badge"]')).toBeInTheDocument();
+    expect(within(firstRow as HTMLElement).getByText('Removed')).toBeInTheDocument();
   });
 
   it('processed stage toggle fetches processed values and shows state badges', async () => {

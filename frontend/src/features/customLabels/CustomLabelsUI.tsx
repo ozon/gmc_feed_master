@@ -228,11 +228,9 @@ export function CustomLabelsUI({
       r.id === selected.id ? { ...r, origin: 'client' } : r));
   }
 
-  useBlocker(({ currentLocation, nextLocation }) => {
-    if (!dirty) return false;
-    if (currentLocation.pathname === nextLocation.pathname) return false;
-    return !window.confirm(t('unsavedChanges'));
-  });
+  const blocker = useBlocker(({ currentLocation, nextLocation }) =>
+    dirty && currentLocation.pathname !== nextLocation.pathname,
+  );
 
   async function saveRules() {
     if (editableTier === null) return;
@@ -585,6 +583,15 @@ export function CustomLabelsUI({
           ? t('deleteGlobalWarning', { name: selected.name })
           : t('deleteConfirmBody', { name: selected?.name ?? '' })}
         confirmLabel={t('deleteRule')}
+      />
+      <ConfirmModal
+        opened={blocker.state === 'blocked'}
+        title={t('unsavedChangesTitle')}
+        message={t('unsavedChanges')}
+        confirmLabel={tCommon('actions.leave')}
+        danger
+        onConfirm={() => blocker.proceed?.()}
+        onClose={() => blocker.reset?.()}
       />
     </Stack>
   );

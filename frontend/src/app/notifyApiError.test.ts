@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { notifications } from '@mantine/notifications';
 import { ApiError } from '../api/client';
+import i18n from '../i18n';
 import { mapFieldErrors, notifyApiError } from './notifyApiError';
 import { notifyApiError as notifyApiErrorViaNotifications } from './notifications';
 
@@ -21,7 +22,7 @@ describe('notifyApiError', () => {
     const map = notifyApiError(error, 'Save failed');
     expect(showMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: 'name: too short; email is invalid',
+        message: 'Server message: name: too short; email is invalid',
         color: 'red',
         autoClose: false,
       }),
@@ -46,7 +47,7 @@ describe('notifyApiError', () => {
     const error = new ApiError(422, 'name already exists');
     expect(notifyApiError(error, 'Save failed')).toEqual({});
     expect(showMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'name already exists' }),
+      expect.objectContaining({ message: 'Server message: name already exists' }),
     );
   });
 
@@ -54,8 +55,22 @@ describe('notifyApiError', () => {
     const error = new ApiError(422, 'invalid body', []);
     expect(notifyApiError(error, 'Save failed')).toEqual({});
     expect(showMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'invalid body' }),
+      expect.objectContaining({ message: 'Server message: invalid body' }),
     );
+  });
+
+  it('prefixes the raw detail with a localized lead-in', async () => {
+    const error = new ApiError(422, 'invalid body');
+    await i18n.loadNamespaces(['common']);
+    await i18n.changeLanguage('de');
+    try {
+      expect(notifyApiError(error, 'Save failed')).toEqual({});
+      expect(showMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Servermeldung: invalid body' }),
+      );
+    } finally {
+      await i18n.changeLanguage('en');
+    }
   });
 
   it('uses the fallback for a plain Error', () => {

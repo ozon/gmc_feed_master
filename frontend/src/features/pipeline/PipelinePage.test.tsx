@@ -176,6 +176,42 @@ describe('PipelinePage', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /save/i })).toBeEnabled());
   });
 
+  it('asks for confirmation via modal when leaving with unsaved changes', async () => {
+    const user = userEvent.setup();
+    stubFetch((url) => {
+      if (url === '/plugins') return jsonResponse([plugin, { ...plugin, id: 'fresh', name: 'Fresh' }]);
+      if (url === '/feed-sources/1/pipeline') return jsonResponse(serverDoc);
+      return jsonResponse({});
+    });
+    renderAt();
+    await user.click(await screen.findByTestId('add-plugin-fresh'));
+
+    await user.click(screen.getByRole('link', { name: /go to products/i }));
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /unsaved changes/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /leave/i }));
+    expect(await screen.findByText('Products')).toBeInTheDocument();
+  });
+
+  it('stays on the page when the unsaved-changes modal is dismissed', async () => {
+    const user = userEvent.setup();
+    stubFetch((url) => {
+      if (url === '/plugins') return jsonResponse([plugin, { ...plugin, id: 'fresh', name: 'Fresh' }]);
+      if (url === '/feed-sources/1/pipeline') return jsonResponse(serverDoc);
+      return jsonResponse({});
+    });
+    renderAt();
+    await user.click(await screen.findByTestId('add-plugin-fresh'));
+
+    await user.click(screen.getByRole('link', { name: /go to products/i }));
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(await screen.findByRole('heading', { name: /pipeline/i })).toBeInTheDocument();
+    expect(screen.queryByText('Products')).not.toBeInTheDocument();
+  });
+
   it('drag reorders rows and Save PUTs the new order with stable ids', async () => {
     const user = userEvent.setup();
     const twoInstanceDoc = {
@@ -249,7 +285,6 @@ describe('PipelinePage', () => {
   });
 
   it('useBlocker prompts on navigation when dirty', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm');
     const user = userEvent.setup();
     stubFetch((url) => {
       if (url === '/plugins') return jsonResponse([plugin]);
@@ -261,7 +296,7 @@ describe('PipelinePage', () => {
     await user.clear(input);
     await user.type(input, '?');
     await user.click(screen.getByRole('link', { name: /go to products/i }));
-    await waitFor(() => expect(confirmSpy).toHaveBeenCalled());
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });
 
   it('CUSTOM-only plugin in the panel links to its feed-tier plugin page', async () => {

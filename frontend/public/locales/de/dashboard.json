@@ -52,5 +52,5 @@
   "duplicateName": "Ein Mandant mit diesem Namen existiert bereits.",
   "typeToConfirm": "Geben Sie {{name}} ein, um zu bestätigen",
   "empty": "Noch keine Mandanten. Legen Sie den ersten Mandanten an, um zu starten.",
-  "manageClients": "Kunden verwalten"
+  "manageClients": "Mandanten verwalten"
 }

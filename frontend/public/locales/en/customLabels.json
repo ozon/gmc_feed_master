@@ -119,5 +119,6 @@
     "gettingStarted": "Getting started",
     "gettingStartedBody": "1. Add a rule under Slot rules and pick a target slot. 2. Choose a match mode — paste bulk IDs or let all products match. 3. Write a value template. 4. Save, then run the pipeline to see the labels in the export."
   },
-  "overrideAtClient": "Override at client level"
+  "overrideAtClient": "Override at client level",
+  "unsavedChangesTitle": "Unsaved changes"
 }

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { notifications } from '@mantine/notifications';
@@ -268,6 +268,15 @@ describe('feed-scoped plugin route', () => {
 
 describe('route error boundary', () => {
   const chunkError = new TypeError('Failed to fetch dynamically imported module');
+  const originalLocation = window.location;
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+      writable: true,
+      configurable: true,
+    });
+  });
 
   function renderRouterWithFailingLazyRoute(errorToThrow: Error) {
     const router = createMemoryRouter(
@@ -293,8 +302,9 @@ describe('route error boundary', () => {
   it('renders a friendly reload state when a lazy chunk fails to load', async () => {
     const assign = vi.fn();
     Object.defineProperty(window, 'location', {
-      value: { ...window.location, assign: assign },
+      value: { ...originalLocation, assign: assign },
       writable: true,
+      configurable: true,
     });
 
     renderRouterWithFailingLazyRoute(chunkError);
@@ -311,8 +321,9 @@ describe('route error boundary', () => {
   it('renders the same friendly boundary with reload for a non-chunk render error', async () => {
     const assign = vi.fn();
     Object.defineProperty(window, 'location', {
-      value: { ...window.location, assign: assign },
+      value: { ...originalLocation, assign: assign },
       writable: true,
+      configurable: true,
     });
 
     renderRouterWithFailingLazyRoute(new Error('random render failure'));
@@ -320,5 +331,22 @@ describe('route error boundary', () => {
     expect(await screen.findByText('Something went wrong.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument();
     expect(screen.queryByText(/Unexpected Application Error/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('unknown routes', () => {
+  it('shows a not-found page with a link home instead of a silent redirect', async () => {
+    stubFetch((url) => {
+      if (url === '/auth/me') return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
+      if (url === '/dashboard/summary') return jsonResponse(emptySummary);
+      if (url === '/plugins') return jsonResponse([]);
+      return jsonResponse({});
+    });
+
+    window.history.replaceState({}, '', '/nope');
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: /page not found/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /go to the dashboard/i })).toBeInTheDocument();
   });
 });

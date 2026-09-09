@@ -41,5 +41,17 @@
     "processed": "Processed: {{count}}",
     "dropped": "Dropped: {{count}}",
     "empty": "Trigger a dry run to see results."
+  },
+  "runStatus": {
+    "pending": "Pending",
+    "running": "Running",
+    "success": "Success",
+    "error": "Error",
+    "skipped": "Skipped"
+  },
+  "severity": {
+    "critical": "Critical",
+    "warning": "Warning",
+    "info": "Info"
   }
 }

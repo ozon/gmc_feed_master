@@ -77,7 +77,7 @@ describe('MonitoringFindingsPage', () => {
     await waitFor(() => expect(screen.getByTestId('findings-table')).toBeInTheDocument());
     expect(screen.getAllByTestId(/finding-row-/)).toHaveLength(2);
     await user.click(screen.getByRole('combobox', { name: /severity/i }));
-    await user.click(screen.getByRole('option', { name: /critical/i }));
+    await user.click(screen.getByRole('option', { name: 'Critical' }));
     expect(screen.getAllByTestId(/finding-row-/)).toHaveLength(1);
   });
 });

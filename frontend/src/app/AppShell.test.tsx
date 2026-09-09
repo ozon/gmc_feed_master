@@ -164,6 +164,7 @@ describe('AppShell', () => {
     render(<App />);
     await screen.findByRole('heading', { name: 'Dashboard' });
     expect(screen.getByText('Setup').closest('a,button')).toHaveAttribute('data-disabled', 'true');
+    expect(screen.getAllByText('Select a feed source first').length).toBeGreaterThan(0);
   });
 
   it('shows the client and feed breadcrumb on a feed route', async () => {

@@ -851,6 +851,22 @@ describe('CustomLabelsUI tier override', () => {
   });
 });
 
+describe('CustomLabelsUI unsaved-changes guard', () => {
+  it('asks via modal when navigating away with unsaved changes; Leave closes it', async () => {
+    renderUI({ feedSourceId: 1 });
+    await screen.findByText('Mid Funnel');
+    await userEvent.click(screen.getByText('Mid Funnel'));
+    await userEvent.type(await screen.findByLabelText('Product IDs — Mid Funnel'), ',d');
+
+    await userEvent.click(screen.getByTestId('scope-link-global'));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(screen.getByRole('heading', { name: /unsaved changes/i })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /leave/i }));
+    await waitFor(() => expect(dialog).not.toBeInTheDocument());
+  });
+});
+
 describe('CustomLabelsUI tier navigation', () => {
   it('tier badges navigate: feed page links to global and client pages', async () => {
     renderUI({ feedSourceId: 1 });

@@ -119,5 +119,6 @@
     "gettingStarted": "Erste Schritte",
     "gettingStartedBody": "1. Unter „Slot-Regeln“ eine Regel anlegen und einen Ziel-Slot wählen. 2. Match-Modus wählen — Bulk-IDs einfügen oder alle Produkte matchen lassen. 3. Wertvorlage schreiben. 4. Speichern und die Pipeline ausführen, um die Labels im Export zu sehen."
   },
-  "overrideAtClient": "Auf Client-Ebene überschreiben"
+  "overrideAtClient": "Auf Client-Ebene überschreiben",
+  "unsavedChangesTitle": "Ungespeicherte Änderungen"
 }

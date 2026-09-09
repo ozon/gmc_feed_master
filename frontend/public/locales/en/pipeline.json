@@ -31,5 +31,6 @@
   "configSwitchTier": "Switch to {{tier}} tier",
   "configOnPluginPage": "This plugin is configured on its plugin page.",
   "configOpenPluginPage": "Open plugin page",
-  "configRemove": "Remove"
+  "configRemove": "Remove",
+  "unsavedChangesTitle": "Unsaved changes"
 }

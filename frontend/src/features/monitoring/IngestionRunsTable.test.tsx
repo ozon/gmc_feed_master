@@ -47,4 +47,10 @@ describe('IngestionRunsTable', () => {
     render(<IngestionRunsTable runs={runs} />);
     expect(screen.getByText('Boom')).toBeInTheDocument();
   });
+
+  it('renders localized run statuses', () => {
+    render(<IngestionRunsTable runs={runs} />);
+    expect(screen.getByText('Success')).toBeInTheDocument();
+    expect(screen.getAllByText('Error').length).toBeGreaterThanOrEqual(2);
+  });
 });

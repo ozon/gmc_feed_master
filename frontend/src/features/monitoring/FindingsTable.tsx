@@ -31,7 +31,9 @@ export function FindingsTable({ findings }: Props) {
         {findings.map((finding, idx) => (
           <Table.Tr key={`${finding.code}-${finding.product_id}-${idx}`} data-testid={`finding-row-${idx}`}>
             <Table.Td>
-              <Badge color={SEVERITY_COLOR[finding.severity] ?? 'gray'}>{finding.severity}</Badge>
+              <Badge color={SEVERITY_COLOR[finding.severity] ?? 'gray'}>
+                {t(`severity.${finding.severity}`, { defaultValue: finding.severity })}
+              </Badge>
             </Table.Td>
             <Table.Td>{finding.code}</Table.Td>
             <Table.Td>{finding.field}</Table.Td>

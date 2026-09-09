@@ -1,5 +1,6 @@
 import { notifyError } from './notifications';
 import { ApiError } from '../api/client';
+import i18n from '../i18n';
 
 export function mapFieldErrors(errors: string[] | null): Record<string, string> {
   if (!errors) return {};
@@ -21,11 +22,14 @@ export function notifyApiError(
   errorsSummary?: string,
 ): Record<string, string> {
   if (error instanceof ApiError && error.errors && error.errors.length > 0) {
-    notifyError(errorsSummary ?? error.errors.join('; '));
+    notifyError(
+      errorsSummary
+        ?? i18n.t('serverDetailLeadIn', { detail: error.errors.join('; ') }),
+    );
     return mapFieldErrors(error.errors);
   }
   if (error instanceof ApiError && error.detail) {
-    notifyError(error.detail);
+    notifyError(i18n.t('serverDetailLeadIn', { detail: error.detail }));
     return {};
   }
   notifyError(fallback);

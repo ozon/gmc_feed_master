@@ -22,7 +22,8 @@
     "remove": "Entfernen",
     "logout": "Abmelden",
     "changePassword": "Passwort ändern",
-    "typeToConfirm": "Geben Sie {{name}} ein, um zu bestätigen"
+    "typeToConfirm": "Geben Sie {{name}} ein, um zu bestätigen",
+    "leave": "Verlassen"
   },
   "state": {
     "loading": "Wird geladen…",
@@ -61,5 +62,10 @@
     "custom_labels": "Labelizer",
     "rules": "Regeln",
     "filter": "Filter"
-  }
+  },
+  "notFoundTitle": "Seite nicht gefunden",
+  "notFoundHome": "Zum Dashboard gehen",
+  "userMenuAriaLabel": "Benutzermenü",
+  "serverDetailLeadIn": "Servermeldung: {{detail}}",
+  "selectFeedSourceHint": "Wählen Sie zuerst eine Feed-Source aus"
 }

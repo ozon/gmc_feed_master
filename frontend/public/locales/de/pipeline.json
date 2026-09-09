@@ -31,5 +31,6 @@
   "configSwitchTier": "Zur {{tier}}-Ebene wechseln",
   "configOnPluginPage": "Dieses Plugin wird auf seiner Plugin-Seite konfiguriert.",
   "configOpenPluginPage": "Plugin-Seite öffnen",
-  "configRemove": "Entfernen"
+  "configRemove": "Entfernen",
+  "unsavedChangesTitle": "Ungespeicherte Änderungen"
 }

@@ -1,7 +1,7 @@
 {
   "tabs": {
     "users": "Benutzer",
-    "clients": "Kunden",
+    "clients": "Mandanten",
     "settings": "Einstellungen"
   },
   "users": {
@@ -18,15 +18,15 @@
       "username": "Benutzername",
       "password": "Passwort",
       "role": "Rolle",
-      "clients": "Kunden",
+      "clients": "Mandanten",
       "active": "Aktiv"
     }
   },
   "clients": {
-    "title": "Kundenverwaltung",
-    "add": "Kunden hinzufügen",
+    "title": "Mandantenverwaltung",
+    "add": "Mandanten hinzufügen",
     "edit": "Bearbeiten",
-    "delete": "Kunden löschen",
+    "delete": "Mandanten löschen",
     "columns": {
       "name": "Name",
       "status": "Status"

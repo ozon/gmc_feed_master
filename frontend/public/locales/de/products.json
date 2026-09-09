@@ -30,8 +30,14 @@
   "noResults": "Keine Produkte stimmen mit Ihren Filtern überein.",
   "colState": "Zustand",
   "stateExcluded": "ausgeschlossen",
+  "rowDetailsAriaLabel": "Details für {{title}} anzeigen",
+  "status": {
+    "active": "Aktiv",
+    "removed": "Entfernt"
+  },
   "stateNotProcessed": "nicht verarbeitet",
   "drawerRawData": "Rohdaten",
   "drawerProcessedData": "Verarbeitete Daten",
-  "drawerExcluded": "Ausgeschlossen"
+  "drawerExcluded": "Ausgeschlossen",
+  "paginationAriaLabel": "Seitennavigation"
 }

@@ -25,9 +25,9 @@ describe('FindingsTable', () => {
     expect(screen.getByTestId('finding-row-1')).toBeInTheDocument();
   });
 
-  it('renders severity text from the finding', () => {
+  it('renders localized severity text from the finding', () => {
     render(<FindingsTable findings={findings} />);
-    expect(screen.getByText('critical')).toBeInTheDocument();
-    expect(screen.getByText('warning')).toBeInTheDocument();
+    expect(screen.getByText('Critical')).toBeInTheDocument();
+    expect(screen.getByText('Warning')).toBeInTheDocument();
   });
 });
