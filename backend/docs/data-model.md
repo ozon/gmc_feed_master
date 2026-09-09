@@ -282,6 +282,7 @@ config_hash = SHA256(json_dumps({
 ```
 - Captures: ordered pipeline, instance configs, resolved PluginConfig/PluginData (three-tier merge), plugin versions
 - Any change → full reprocessing of affected feed source products
+- The Category plugin attaches `_category_provenance` and `_category_rule_id` sidecars to `staging_products.processed_data`; they are stripped from the content hash (`strip_derived`) and never rendered to XML, and are read by the plugin's stats/matches routes.
 
 ### Removed Product Lifecycle
 ```

@@ -305,11 +305,23 @@ def validate_config(config: Any) -> None:
                 )
 
 
+def _build_state(config: Any, data: Any) -> dict[str, Any]:
+    rules = (config or {}).get("rules") or []
+    assignments = (data or {}).get("assignments") or {}
+    return {
+        "rules": [compile_rule(rule) for rule in rules if isinstance(rule, dict)],
+        "assignments": {str(key): str(value) for key, value in assignments.items()},
+    }
+
+
 class CategoryPlugin:
     """Pipeline module assigning google_product_category from taxonomy rules."""
 
     def validate_config(self, config: Any) -> None:
         validate_config(config)
+
+    def prepare_run(self, config: Any, data: Any, ctx: Any) -> dict[str, Any]:
+        return _build_state(config, data)
 
     def process(
         self,
@@ -317,5 +329,17 @@ class CategoryPlugin:
         config: Any,
         data: Any,
         ctx: Any,
+        state: Any = None,
     ) -> dict[str, Any]:
-        return product
+        run_state = state if state is not None else _build_state(config, data)
+        if not run_state["rules"] and not run_state["assignments"]:
+            return product
+        outcome = apply_category(product, run_state["rules"], run_state["assignments"])
+        if outcome is None:
+            return product
+        result = dict(product)
+        result["google_product_category"] = outcome["taxonomy_id"]
+        result["_category_provenance"] = outcome["provenance"]
+        if outcome["rule_id"] is not None:
+            result["_category_rule_id"] = outcome["rule_id"]
+        return result
