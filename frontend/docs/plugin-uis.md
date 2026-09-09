@@ -136,6 +136,31 @@ generating `pluginComponents.ts`, per ADR 0002 — third-party plugins currently
 use schema-rendered forms). Error isolation via `PluginErrorBoundary` is now
 implemented (see below).
 
+### First-Party Reference: Category (`plugins/core/category/frontend/component.tsx`)
+
+The Category module is the third core plugin with a custom UI. The stub follows
+the same re-export pattern as Rules and Filter; the component receives
+`{ pluginId, scope }` and the shell keeps page-level state (feedSourceId +
+language) that it passes to all tabs.
+
+- **Dashboard tab:** feed-source selector drawn from the dashboard summary for
+  the route's client; 4-bucket progress (auto/manual/excluded/uncategorized) +
+  total; as-of-last-run note; auto-selects the first feed source.
+- **Rules tab:** dnd-kit ordered editor mirroring the pipeline page; global/client
+  tier view with Inherited read-only badges; taxonomy autocomplete via
+  `GET /plugins/category/taxonomy/search`; per-rule match badges + a
+  matched-products modal (as-of-last-run); draft validation via
+  `POST /plugins/category/validate` before save; dirty guard via `useBlocker` +
+  ConfirmModal.
+- **Manual Categorization tab:** product lookup via `GET /plugins/category/product`,
+  assign/unassign via the generic scoped data endpoint, read-modify-write of the
+  assignments map.
+- **Taxonomy language selector:** en-US shipped; de-DE fetched via
+  `POST /plugins/category/taxonomy/fetch`, persisted server-side as a gitignored
+  CSV; one merged ID-keyed index.
+- **Placeholders:** the AI and Uncategorized tabs and the Generate / Copy /
+  Bulk-delete controls render as disabled-with-tooltip placeholders (spec v1 scope).
+
 ### Error Isolation (ADR-0004)
 Error isolation via `PluginErrorBoundary` (`src/features/plugin/PluginErrorBoundary.tsx`):
 custom plugin components are wrapped with it in both `PluginPage` and the
@@ -169,7 +194,7 @@ badges and bookmarks.
 |--------|---------|--------------|
 | Labelizer | Custom (`Editor.tsx`) | Dimension editor with global/client scope switch, ID lists per dimension |
 | Rules | Custom (`component.tsx` stub → `frontend/src/features/rules/RulesUI`) | Ordered rule list (IF/THEN AST) with dnd reordering, active/master toggles, per-rule editor, dirty-save guard |
-| Category | Custom (`Editor.tsx`) | 4-bucket dashboard (auto/manual/excluded/uncategorized), drag-drop rule editor, taxonomy autocomplete, match counts, matched-products modal, dirty-state guard |
+| Category | Custom (`component.tsx` stub → `frontend/src/features/category/CategoryUI`) | 4-bucket dashboard (auto/manual/excluded/uncategorized), drag-drop rule editor, taxonomy autocomplete, match counts, matched-products modal, dirty-state guard |
 | Filter | Custom (`component.tsx` stub → `frontend/src/features/filter/FilterUI`) | Conjunctive scalar condition editor with live preview |
 
 ## Adding a Plugin UI
