@@ -61,7 +61,7 @@ cd backend && uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers
 cd frontend && npm run dev
 ```
 
-The Vite development server proxies the backend API prefixes (/admin, /auth, /health, /clients, /feed-sources, /dashboard, /plugins, /registry, /export) to the backend.
+The Vite development server proxies the backend API prefixes (/admin, /auth, /health, /clients, /feed-sources, /dashboard, /plugins, /registry, /export) to the backend at `http://127.0.0.1:8000`, so the documented frontend uses the same-origin API boundary without requiring CORS configuration. With both `VITE_HTTPS_CERT` and
 `VITE_HTTPS_KEY` set, open `https://localhost:5173` in the browser. If neither
 variable is set, Vite retains normal HTTP behavior. The variables must be
 provided as a pair; a partial TLS configuration fails fast.
