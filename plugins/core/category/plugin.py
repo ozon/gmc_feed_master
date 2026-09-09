@@ -454,3 +454,142 @@ class CategoryPlugin:
             "payload": FetchRequest, "user": CurrentUser, "return": dict[str, Any],
         })
         router.post("/taxonomy/fetch", response_model=None)(fetch_language)
+
+        from sqlalchemy import func, select
+
+        from app.access import ensure_feed_source_access
+        from app.db.engine import get_db_session
+        from app.models.feed_source import FeedSource
+        from app.models.staging import StagingProduct
+
+        async def stats(feed_source_id, user=Depends(get_current_user),
+                        db_session=Depends(get_db_session)):
+            if db_session is None:
+                raise HTTPException(status_code=503, detail="database unavailable")
+            await ensure_feed_source_access(db_session, user, feed_source_id)
+            provenance_col = StagingProduct.processed_data["_category_provenance"].astext
+            rule_col = StagingProduct.processed_data["_category_rule_id"].astext
+            buckets = {"manual": 0, "auto": 0, "excluded": 0, "uncategorized": 0}
+            rules: dict[str, int] = {}
+            total = 0
+            async with db_session.begin():
+                if await db_session.get(FeedSource, feed_source_id) is None:
+                    raise HTTPException(status_code=404, detail="feed source not found")
+                base_where = (
+                    StagingProduct.feed_source_id == feed_source_id,
+                    StagingProduct.status == "active",
+                    StagingProduct.excluded.is_(False),
+                )
+                for count, provenance in (await db_session.execute(
+                    select(func.count(), provenance_col)
+                    .where(*base_where)
+                    .group_by(provenance_col)
+                )).all():
+                    total += count
+                    key = provenance or "uncategorized"
+                    if key in buckets:
+                        buckets[key] += count
+                for count, rule_id in (await db_session.execute(
+                    select(func.count(), rule_col)
+                    .where(*base_where, rule_col.is_not(None))
+                    .group_by(rule_col)
+                )).all():
+                    rules[rule_id] = count
+            return {"total": total, "buckets": buckets, "rules": rules}
+
+        stats.__annotations__.update({
+            "feed_source_id": int, "user": CurrentUser, "return": dict[str, Any],
+        })
+        router.get("/stats", response_model=None)(stats)
+
+        async def matches(feed_source_id, rule_id,
+                          limit=Query(default=50, ge=1, le=200),
+                          offset=Query(default=0, ge=0),
+                          user=Depends(get_current_user),
+                          db_session=Depends(get_db_session)):
+            if db_session is None:
+                raise HTTPException(status_code=503, detail="database unavailable")
+            await ensure_feed_source_access(db_session, user, feed_source_id)
+            rule_col = StagingProduct.processed_data["_category_rule_id"].astext
+            title_col = func.coalesce(
+                StagingProduct.processed_data["title"].astext,
+                StagingProduct.raw_data["title"].astext,
+            ).label("title")
+            where = (
+                StagingProduct.feed_source_id == feed_source_id,
+                StagingProduct.status == "active",
+                StagingProduct.excluded.is_(False),
+                rule_col == rule_id,
+            )
+            async with db_session.begin():
+                if await db_session.get(FeedSource, feed_source_id) is None:
+                    raise HTTPException(status_code=404, detail="feed source not found")
+                total = int((await db_session.execute(
+                    select(func.count()).select_from(StagingProduct).where(*where)
+                )).scalar() or 0)
+                rows = (await db_session.execute(
+                    select(StagingProduct.product_id, title_col)
+                    .where(*where)
+                    .order_by(StagingProduct.product_id)
+                    .limit(limit)
+                    .offset(offset)
+                )).all()
+            return {
+                "total": total,
+                "items": [
+                    {"product_id": row.product_id, "title": row.title} for row in rows
+                ],
+            }
+
+        matches.__annotations__.update({
+            "feed_source_id": int, "rule_id": str, "limit": int, "offset": int,
+            "user": CurrentUser, "return": dict[str, Any],
+        })
+        router.get("/matches", response_model=None)(matches)
+
+        async def product_state(feed_source_id, product_id,
+                                user=Depends(get_current_user),
+                                db_session=Depends(get_db_session)):
+            if db_session is None:
+                raise HTTPException(status_code=503, detail="database unavailable")
+            await ensure_feed_source_access(db_session, user, feed_source_id)
+            provenance_col = StagingProduct.processed_data["_category_provenance"].astext
+            rule_col = StagingProduct.processed_data["_category_rule_id"].astext
+            category_col = func.coalesce(
+                StagingProduct.processed_data["google_product_category"].astext,
+                StagingProduct.raw_data["google_product_category"].astext,
+            ).label("category")
+            title_col = func.coalesce(
+                StagingProduct.processed_data["title"].astext,
+                StagingProduct.raw_data["title"].astext,
+            ).label("title")
+            async with db_session.begin():
+                if await db_session.get(FeedSource, feed_source_id) is None:
+                    raise HTTPException(status_code=404, detail="feed source not found")
+                row = (await db_session.execute(
+                    select(
+                        provenance_col, rule_col, category_col, title_col,
+                        StagingProduct.status,
+                    ).where(
+                        StagingProduct.feed_source_id == feed_source_id,
+                        StagingProduct.product_id == product_id,
+                        StagingProduct.status == "active",
+                        StagingProduct.excluded.is_(False),
+                    )
+                )).first()
+                if row is None:
+                    raise HTTPException(status_code=404, detail="product not found")
+            return {
+                "product_id": product_id,
+                "title": row.title,
+                "provenance": row[0],
+                "rule_id": row[1],
+                "google_product_category": row.category,
+                "status": row.status,
+            }
+
+        product_state.__annotations__.update({
+            "feed_source_id": int, "product_id": str, "user": CurrentUser,
+            "return": dict[str, Any],
+        })
+        router.get("/product", response_model=None)(product_state)
