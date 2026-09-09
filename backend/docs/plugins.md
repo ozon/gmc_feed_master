@@ -55,7 +55,7 @@ list).
 3. **Third-party**: `plugins/<id>/` (disabled by default)
 4. **Validate** manifest via `parse_manifest()` (checks schema validity, scope values, required fields)
 5. **Load** Python class via `load_plugin_class()` (imports `entry_point`)
-6. **Collect** optional router via `register_routes()` (validates no reserved paths)
+6. **Collect** optional router via `register_routes()` (validates no reserved paths: `/config`, `/data`)
 7. **Register** in `Plugin` table (upsert by `name` + `version`)
 8. **Mount** router at `/plugins/{id}/` if present
 9. **Store** instance in `app.state.plugin_registry[manifest.id]` for pipeline runner
