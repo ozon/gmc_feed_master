@@ -30,7 +30,7 @@ export function DashboardTab({
   }, [feedSourceId, feedSources, onSelectFeedSource]);
 
   if (clientId === undefined) {
-    return <EmptyState message={t('manual.needsClient')} />;
+    return <EmptyState message={t('dashboard.needsClient')} />;
   }
   if (summary.isLoading) return <LoadingState />;
   if (summary.isError) return <ErrorState onRetry={() => void summary.refetch()} />;

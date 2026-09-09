@@ -30,7 +30,8 @@
       "excluded": "Excluded",
       "uncategorized": "Uncategorized"
     },
-    "progress": "{{labeled}} of {{total}} categorized"
+    "progress": "{{labeled}} of {{total}} categorized",
+    "needsClient": "Open this dashboard from a client to see category stats."
   },
   "rules": {
     "add": "Add rule",

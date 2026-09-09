@@ -30,7 +30,8 @@
       "excluded": "Ausgeschlossen",
       "uncategorized": "Nicht kategorisiert"
     },
-    "progress": "{{labeled}} von {{total}} kategorisiert"
+    "progress": "{{labeled}} von {{total}} kategorisiert",
+    "needsClient": "Öffnen Sie dieses Dashboard über einen Mandanten, um Kategorie-Statistiken zu sehen."
   },
   "rules": {
     "add": "Regel hinzufügen",

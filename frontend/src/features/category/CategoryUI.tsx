@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Badge, Group, Select, Stack, Tabs, Tooltip } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
+import { notifyApiError } from '../../app/notifications';
 import type { PluginScope } from '../../api/hooks';
 import { useCategoryLanguages, useFetchCategoryLanguage } from './hooks';
 import { editableTier } from './scope';
@@ -45,6 +46,7 @@ export default function CategoryUI({
               onChange={(value) =>
                 value && fetchLanguage.mutate(value, {
                   onSuccess: () => setLanguage(value),
+                  onError: (error) => notifyApiError(error, t('fetchLanguageFailed')),
                 })
               }
             />

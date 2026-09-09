@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Badge, Button, Group, List, Modal, Stack, Text } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { useCategoryMatches } from './hooks';
+import { ErrorState, LoadingState } from '../../components/StateViews';
 
 const PAGE_SIZE = 50;
 
@@ -29,7 +30,8 @@ export function MatchesModal({
     >
       <Stack gap="sm">
         <Text size="xs" c="dimmed">{t('matches.stale')}</Text>
-        {query.isLoading && <Text c="dimmed">{t('matches.stale')}</Text>}
+        {query.isLoading && <LoadingState />}
+        {query.isError && <ErrorState onRetry={() => void query.refetch()} />}
         {query.data && query.data.items.length === 0 && (
           <Text c="dimmed">{t('matches.empty')}</Text>
         )}
