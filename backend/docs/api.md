@@ -49,7 +49,6 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 ## Clients
 - `GET /clients` — list clients (admin: all; user: assigned only)
 - `POST /clients` — create client `{name, status?}` — **admin only (403)**
-- `GET /clients/{id}` — get client
 - `PUT /clients/{id}` — update client `{name?, status?}` — **admin only (403)**
 - `DELETE /clients/{id}` — delete client (cascades: feed sources, pipelines, staging, exports) — **admin only (403)**
 
@@ -87,6 +86,7 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 - `GET /feed-sources/{id}/products` — paginated staged products. Params: `stage` (`raw` default / `processed`), `page`, `page_size` (≤200), `q` (id/title substring — matches `raw_data` title in raw stage, `processed_data` title in processed stage), `status` (`active`/`removed`/`all`), `sort` (`product_id`/`title`/`status`/`last_seen_at`, `-` prefix for descending; title sorts by the stage's data). Response: `{items, fields, total, page, page_size}` where `fields` is the sorted union of the stage's data keys across the returned rows (drives the UI column picker) and each item carries its full `raw_data` alongside the baseline fields (`title`, `description`, `link`, `image_link`, `availability`, `price`, `condition`). In `processed` stage, baseline/dynamic values resolve from `processed_data` (the post-pipeline-module state; falls back to `raw_data` for rows not yet processed), and items additionally carry `processed` (bool), `excluded` (bool — product dropped/errored by a pipeline module), and the full `processed_data` object
 - `GET /feed-sources/{id}/products/{product_id}` — single product with status, hashes, full `raw_data`, `processed_data` (nullable) and `excluded`
 - `POST /feed-sources/{id}/products/lookup` — batch value lookup over staged products. Body: `{field (registry attribute path, default "id"), values (1–10 000, deduped server-side), extraFields (0–20)}`. Response `{matches: {<value>: {count, sample: {product_id, status, excluded, title, brand, availability, <extraFields…>} | null}}}` — `count` = staged products (any status) whose `raw_data[field]` contains the value (scalar equality, repeated fields match any element, `attr.sub` subfields resolve; mirrors the custom_labels plugin's match semantics); `sample` = the match with the lowest `product_id`. 404 unknown feed source; 422 invalid body; 503 database unavailable.
+- `GET /feed-sources/{id}/fields` — sorted union of data keys across all staged products (drives the UI column picker / preview extraFields)
 
 
 ### Export History
@@ -134,7 +134,7 @@ Plugin routes must not use these prefixes. Example: Category plugin uses `/plugi
 ## Registry
 - `GET /registry/attributes` — full GMC Attribute Registry (from `backend/registry/attributes.json`)
   Each attribute includes `baseline_required: boolean` — true for the baseline-required set (spec §7: `id`, `link`, `image_link`, `availability`, `price`, `condition`, and the `title`/`structured_title`, `description`/`structured_description` alternative-pair members); false otherwise.
-- `POST /registry/generate` — regenerate from `gmc_def.md` (admin only)
+  Regeneration is a CLI script: `cd backend && uv run python scripts/registry_check.py --source ../gmc_def.md --output registry/attributes.json`
 
 ## Public Export Endpoint
 - `GET /export/{token}.xml` — **unauthenticated**, serves static XML file

@@ -32,11 +32,12 @@ erDiagram
 |--------|------|-------|
 | `id` | Integer | PK |
 | `username` | String(255) | Unique |
-| `password_hash` | String(255) | Argon2 |
+| `password_hash` | String(512) | Argon2 |
 | `revocation_generation` | Integer | Bumped on password change → all sessions die |
 | `role` | String(20) | `admin` / `user` (NOT NULL, default `user`) |
 | `is_active` | Boolean | NOT NULL, default true; false → login rejected (401), sessions die |
 | `created_at` | DateTime | |
+| `updated_at` | DateTime | |
 
 Seeded from `INITIAL_USERNAME` / `INITIAL_PASSWORD` env vars on first start — the seed user is `admin`. The m11 migration promoted all pre-existing users to `admin`. Users are deactivated, never deleted (FK/session integrity, run attribution).
 
@@ -65,8 +66,11 @@ Row is seeded lazily on first `GET /admin/settings` (the migration does not inse
 |--------|------|-------|
 | `id` | Integer | PK |
 | `name` | String(255) | |
+| `settings` | JSONB | Client-level settings |
+| `contact_details` | JSONB | Contact information |
 | `status` | String(50) | `active` / `inactive` |
 | `created_at` | DateTime | |
+| `updated_at` | DateTime | |
 
 ### FeedSource
 | Column | Type | Notes |
@@ -126,7 +130,7 @@ Unique constraint on `(pipeline_id, position)`.
 
 Unique constraint on `(name, version)`.
 
-### PluginConfig / PluginData (identical structure)
+### PluginConfig / PluginData
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | Integer | PK |
@@ -136,7 +140,7 @@ Unique constraint on `(name, version)`.
 | `feed_source_id` | Integer | FK → FeedSource, nullable |
 | `key` | String(255) | Logical key (default `"default"`) |
 | `config` / `data` | JSONB | Validated against manifest schema |
-| `created_at` | DateTime | |
+| `created_at` | DateTime | PluginData only (PluginConfig has no `created_at`) |
 
 **Scope constraints** (enforced by DB):
 - `global`: `client_id IS NULL AND feed_source_id IS NULL`
@@ -165,7 +169,7 @@ Unique constraint on `(name, version)`.
 | `id` | Integer | PK |
 | `staging_product_id` | Integer | FK → StagingProduct |
 | `snapshot` | JSONB | Full product snapshot at change |
-| `created_at` | DateTime | |
+| `recorded_at` | DateTime | |
 
 Written only when `content_hash` changes.
 
@@ -174,7 +178,7 @@ Written only when `content_hash` changes.
 |--------|------|-------|
 | `id` | Integer | PK |
 | `feed_source_id` | Integer | FK → FeedSource |
-| `status` | String(20) | `running` / `success` / `error` / `skipped` |
+| `status` | String(20) | `running` / `success` / `error` / `skipped` / `pending` |
 | `processed_count` | Integer | |
 | `failed_count` | Integer | Row errors + plugin errors |
 | `statistics` | JSONB | Per-step stats |
@@ -190,11 +194,15 @@ Retention: 90 days.
 |--------|------|-------|
 | `id` | Integer | PK |
 | `feed_source_id` | Integer | FK → FeedSource |
-| `ingestion_run_id` | Integer | FK → IngestionRun |
+| `ingestion_run_id` | Integer | FK → IngestionRun, nullable (SET NULL on purge) |
+| `status` | String(50) | Run status |
 | `product_count` | Integer | Exported products |
 | `critical_finding_count` | Integer | |
 | `warning_finding_count` | Integer | |
 | `info_finding_count` | Integer | |
+| `options` | JSONB | Export options |
+| `started_at` | DateTime | |
+| `completed_at` | DateTime | Nullable; set when run finishes |
 | `created_at` | DateTime | |
 
 ### ExportVersion
@@ -204,7 +212,10 @@ Retention: 90 days.
 | `feed_source_id` | Integer | FK → FeedSource |
 | `export_run_id` | Integer | FK → ExportRun |
 | `version_number` | Integer | Sequential per feed source |
-| `xml_path` | String(512) | Relative to export_dir |
+| `file_hash` | String(64) | Content hash of the export file |
+| `product_count` | Integer | Products in this version |
+| `source` | String(20) | `run` or `rollback` (default `run`) |
+| `source_version_id` | Integer | FK → ExportVersion, nullable (SET NULL); rollback lineage |
 | `created_at` | DateTime | |
 
 Retention: Last N per feed source (default 30, includes rollback versions).
@@ -228,11 +239,15 @@ Retention: Last N per feed source (default 30, includes rollback versions).
 ### Session
 | Column | Type | Notes |
 |--------|------|-------|
-| `id` | String(64) | PK, random token |
+| `id` | Integer | PK |
 | `user_id` | Integer | FK → User |
+| `token_hash` | String(64) | Hashed session token (not raw) |
 | `created_at` | DateTime | |
-| `last_accessed_at` | DateTime | Sliding expiration |
-| `expires_at` | DateTime | Absolute expiration |
+| `last_interaction_at` | DateTime | Sliding expiration |
+| `idle_expires_at` | DateTime | Idle timeout |
+| `absolute_expires_at` | DateTime | Absolute expiration |
+| `revocation_generation` | Integer | Bumped on password change → all sessions die |
+| `revoked_at` | DateTime | Nullable; set when session is revoked |
 
 Cookie: `HttpOnly`, `Secure`, `SameSite=Lax`.
 
