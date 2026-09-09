@@ -457,6 +457,12 @@
 
 **Why:** Decisions requiring operator input.
 
+### 9A.13 [ ] alembic env.py: ambient `DATABASE_URL` silently overrides conftest's template-DB URL [P1]
+
+**Why:** `backend/alembic/env.py:13-18` (review-remediation Task 3) reads `DATABASE_URL` from the environment and overrides `sqlalchemy.url` — including the URL that `backend/tests/conftest.py:_load_alembic_schema` sets via `config.set_main_option` for the pytest-postgresql template DB. Any test run with `DATABASE_URL` exported (e.g. `set -a; source .env`) silently migrates the dev DB instead of the template: 320 DB-dependent tests fail with `UndefinedTableError` (`relation "export_versions" does not exist`) while the migration logs look healthy. Observed live 2026-09-09 during the cycle's final backend gate; misdiagnosis as a regression is easy.
+
+**Acceptance:** Flip the precedence in `env.py` — a `sqlalchemy.url` explicitly set on the config object (or a dedicated sentinel) wins; fall back to the `DATABASE_URL` env var only when the config value is absent/not set programmatically. Add a regression test that runs `command.upgrade` with both a config-set URL and an ambient `DATABASE_URL` pointing elsewhere, asserting the config URL wins. Document the dev-vs-test invocation in `backend/AGENTS.md` (tests need `TEST_DATABASE_URL` and must NOT inherit an ambient `DATABASE_URL`).
+
 ---
 
 ## Section 10 — Ops: mypy baseline cleanup (2026-09-08)
