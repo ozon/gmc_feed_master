@@ -3,19 +3,19 @@
     "bulkIds": "Bulk-IDs",
     "slotRules": "Slot-Regeln"
   },
-  "idsUnavailable": "Bulk-ID-Listen leben auf Client- oder Feed-Source-Ebene. Öffne dieses Plugin über einen Client oder eine Feed-Source, um sie zu verwalten.",
+  "idsUnavailable": "Bulk-ID-Listen leben auf Client- oder Feed-Source-Ebene. Öffnen Sie dieses Plugin über einen Client oder eine Feed-Source, um sie zu verwalten.",
   "idsPlaceholder": "Eine ID pro Zeile oder kommagetrennt",
   "idCount": "{{count}} eindeutige IDs",
   "activeRulesCount_one": "{{count}} aktive Regel",
   "activeRulesCount_other": "{{count}} aktive Regeln",
   "previewUnavailable": "Live-Vorschau nicht verfügbar.",
-  "noStagedProducts": "Noch keine gestagten Produkte — zuerst die Pipeline ausführen.",
+  "noStagedProducts": "Noch keine Produkte im Staging — zuerst die Pipeline ausführen.",
   "clearValues": "Werteliste leeren",
   "formatDedupe": "Formatieren & Duplikate entfernen",
   "togglePreview": "Produktvorschau ein-/ausblenden",
   "slotSelectorLabel": "Custom-Label-Slot",
   "coverage": {
-    "labeledOf": "{{count}} / {{total}} gestagte Produkte gelabelt",
+    "labeledOf": "{{count}} / {{total}} Produkte im Staging gelabelt",
     "totalProducts": "Produkte insgesamt",
     "labeled": "Gelabelt",
     "unlabeled": "Nicht gelabelt",
@@ -53,12 +53,12 @@
   "deleteRule": "Löschen",
   "duplicateSuffix": "(Kopie)",
   "deleteConfirmTitle": "Regel löschen",
-  "deleteConfirmBody": "Regel \"{{name}}\" löschen? Bis zum Speichern kannst du es mit Abbrechen zurücknehmen.",
-  "deleteGlobalWarning": "Regel \"{{name}}\" löschen? Sie wird von allen Mandanten geerbt — das Löschen betrifft alle. Bis zum Speichern kannst du es mit Abbrechen zurücknehmen.",
+  "deleteConfirmBody": "Regel \"{{name}}\" löschen? Sie lässt sich bis zum Speichern über Abbrechen wiederherstellen.",
+  "deleteGlobalWarning": "Regel \"{{name}}\" löschen? Sie wird von allen Mandanten geerbt — das Löschen betrifft alle. Sie lässt sich bis zum Speichern über Abbrechen wiederherstellen.",
   "configSaved": "Slot-Regeln gespeichert",
   "saveFailed": "Konnte nicht gespeichert werden.",
   "idsSaved": "Bulk-IDs gespeichert",
-  "unsavedChanges": "Du hast ungespeicherte Änderungen. Trotzdem verlassen?",
+  "unsavedChanges": "Sie haben ungespeicherte Änderungen. Trotzdem verlassen?",
   "dragHandle": "Zum Neusortieren ziehen",
   "ruleInherited": "Wird auf {{tier}}-Ebene verwaltet — hier schreibgeschützt.",
   "inheritedFrom": "Geerbt von {{tier}}",
@@ -66,7 +66,7 @@
   "matchMode": {
     "label": "Match-Modus",
     "values": "Werteliste abgleichen",
-    "all": "Alle Produkte treffen"
+    "all": "Alle Produkte zuordnen"
   },
   "bulk": {
     "productIds": "Produkt-IDs",
@@ -101,7 +101,7 @@
     },
     "templates": {
       "question": "Wie funktionieren Wertvorlagen?",
-      "answer": "Verwende {field}-Tokens wie {brand} - Mid Funnel. Löst ein Token leer auf, wird die Regel übersprungen; eine Fallback-Vorlage deckt diesen Fall ab."
+      "answer": "Verwenden Sie {field}-Tokens wie {brand} - Mid Funnel. Löst ein Token leer auf, wird die Regel übersprungen; eine Fallback-Vorlage deckt diesen Fall ab."
     },
     "scopes": {
       "question": "Wo leben Regeln und Bulk-Werte?",

@@ -3,5 +3,8 @@
   "runFailed": "Lauf fehlgeschlagen",
   "mutationSuccess": "Gespeichert",
   "mutationError": "Anfrage fehlgeschlagen",
-  "validationError": "Bitte korrigieren Sie die markierten Felder."
+  "validationError": "Bitte korrigieren Sie die markierten Felder.",
+  "autoMappingRunning": "Automatische Zuordnung läuft…",
+  "autoMappingDone": "Automatische Zuordnung abgeschlossen",
+  "autoMappingFailed": "Automatische Zuordnung fehlgeschlagen"
 }

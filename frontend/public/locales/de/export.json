@@ -38,6 +38,7 @@
   "rollbackFailed": "Rollback fehlgeschlagen.",
   "rollbackFailedWithErrors": "Rollback fehlgeschlagen: {{errors}}",
   "selectVersions": "Wählen Sie oben zwei Versionen aus, um den Diff zu sehen.",
+  "compareVersions": "Versionen vergleichen",
   "noChanges": "Keine Änderungen zwischen diesen Versionen.",
   "added": "Hinzugefügt",
   "removed": "Entfernt",
