@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 from pathlib import Path
 from typing import Any
 
@@ -146,11 +147,169 @@ async def _fetch_url(url: str) -> bytes:
     return await HttpFetcher().fetch(url)
 
 
+def resolve_path(product: dict[str, Any], path: str) -> list[str]:
+    """Resolve a registry attribute path to candidate string values (spec §2.1)."""
+    head, _, sub = path.partition(".")
+    value = product.get(head)
+    if value is None:
+        return []
+    if sub:
+        if isinstance(value, dict):
+            item = value.get(sub)
+            return [str(item)] if item not in (None, "") else []
+        if isinstance(value, list):
+            if len(value) != 1 or not isinstance(value[0], dict):
+                return []
+            item = value[0].get(sub)
+            return [str(item)] if item not in (None, "") else []
+        return []
+    if isinstance(value, str):
+        return [value] if value != "" else []
+    if isinstance(value, list):
+        return [str(item) for item in value if item not in (None, "")]
+    return [str(value)]
+
+
+def compile_rule(rule: dict[str, Any]) -> dict[str, Any]:
+    operator = rule["operator"]
+    source_value = rule.get("source_value")
+    if operator == "in":
+        raw_list = source_value if isinstance(source_value, list) else [source_value]
+        values = tuple(str(item).strip() for item in raw_list if str(item).strip())
+    else:
+        values = (str(source_value),)
+    pattern = re.compile(values[0]) if operator == "regex" else None
+    return {
+        "id": rule["id"],
+        "source_field": rule.get("source_field") or DEFAULT_SOURCE_FIELD,
+        "operator": operator,
+        "values": values,
+        "pattern": pattern,
+        "taxonomy_id": rule.get("taxonomy_id") or "",
+        "is_excluded": bool(rule.get("is_excluded", False)),
+    }
+
+
+def rule_matches(compiled: dict[str, Any], product: dict[str, Any]) -> bool:
+    candidates = resolve_path(product, compiled["source_field"])
+    operator = compiled["operator"]
+    if operator == "eq":
+        return any(
+            candidate.strip().casefold() == compiled["values"][0].strip().casefold()
+            for candidate in candidates
+        )
+    if operator == "ne":
+        return not any(
+            candidate.strip().casefold() == compiled["values"][0].strip().casefold()
+            for candidate in candidates
+        )
+    if operator == "contains":
+        return any(compiled["values"][0] in candidate for candidate in candidates)
+    if operator == "regex":
+        return any(
+            compiled["pattern"] is not None and compiled["pattern"].search(candidate)
+            for candidate in candidates
+        )
+    return any(candidate.strip() in compiled["values"] for candidate in candidates)
+
+
+def apply_category(
+    product: dict[str, Any],
+    rules: list[dict[str, Any]],
+    assignments: dict[str, str],
+) -> dict[str, Any] | None:
+    product_id = str(product.get("id", ""))
+    if product_id and product_id in assignments:
+        return {
+            "taxonomy_id": assignments[product_id],
+            "provenance": "manual",
+            "rule_id": None,
+        }
+    for compiled in rules:
+        if rule_matches(compiled, product):
+            if compiled["is_excluded"]:
+                return {
+                    "taxonomy_id": "",
+                    "provenance": "excluded",
+                    "rule_id": compiled["id"],
+                }
+            return {
+                "taxonomy_id": compiled["taxonomy_id"],
+                "provenance": "auto",
+                "rule_id": compiled["id"],
+            }
+    return None
+
+
+def validate_config(config: Any) -> None:
+    """Strict validation of a category config document. Empty config passes."""
+    if not isinstance(config, dict) or not config:
+        return
+    rules = config.get("rules")
+    if rules is None:
+        return
+    if not isinstance(rules, list):
+        raise ValueError("config.rules must be an array")
+    seen: set[str] = set()
+    index = taxonomy_index()
+    for position, rule in enumerate(rules):
+        where = f"rules[{position}]"
+        if not isinstance(rule, dict):
+            raise ValueError(f"{where}: rule must be an object")
+        rule_id = rule.get("id")
+        if not isinstance(rule_id, str) or not rule_id:
+            raise ValueError(f"{where}: id must be a non-empty string")
+        if rule_id in seen:
+            raise ValueError(f"{where}: duplicate rule id {rule_id!r}")
+        seen.add(rule_id)
+        source_field = rule.get("source_field")
+        if source_field is not None and (
+            not isinstance(source_field, str) or not source_field
+        ):
+            raise ValueError(f"{where}: source_field must be a non-empty string")
+        operator = rule.get("operator")
+        if operator not in OPERATORS:
+            raise ValueError(f"{where}: operator must be one of {', '.join(OPERATORS)}")
+        source_value = rule.get("source_value")
+        if operator == "in":
+            if not isinstance(source_value, list) or not source_value:
+                raise ValueError(
+                    f"{where}: source_value must be a non-empty array for operator 'in'"
+                )
+            for item in source_value:
+                if not isinstance(item, str) or not item.strip():
+                    raise ValueError(
+                        f"{where}: source_value entries must be non-empty strings"
+                    )
+        else:
+            if not isinstance(source_value, str) or not source_value:
+                raise ValueError(f"{where}: source_value must be a non-empty string")
+            if operator == "regex":
+                try:
+                    re.compile(source_value)
+                except re.error as exc:
+                    raise ValueError(f"{where}: invalid regex: {exc}") from exc
+        is_excluded = rule.get("is_excluded", False)
+        if not isinstance(is_excluded, bool):
+            raise ValueError(f"{where}: is_excluded must be a boolean")
+        taxonomy_id = rule.get("taxonomy_id")
+        if not is_excluded:
+            if not isinstance(taxonomy_id, str) or not taxonomy_id:
+                raise ValueError(
+                    f"{where}: taxonomy_id must be a non-empty string when "
+                    "is_excluded is false"
+                )
+            if not index.contains(taxonomy_id):
+                raise ValueError(
+                    f"{where}: taxonomy_id {taxonomy_id!r} not found in the taxonomy"
+                )
+
+
 class CategoryPlugin:
     """Pipeline module assigning google_product_category from taxonomy rules."""
 
     def validate_config(self, config: Any) -> None:
-        return None
+        validate_config(config)
 
     def process(
         self,
