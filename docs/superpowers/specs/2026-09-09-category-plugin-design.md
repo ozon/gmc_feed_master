@@ -12,8 +12,8 @@ The engine spec defines Category fully: mapping rules + manual assignments → `
 Operator decisions from the 2026-09-09 brainstorming session (binding):
 
 1. **M11+ scope = Category plugin.** One milestone covering backend + full v1 UI.
-2. **Taxonomy model:** one ID-keyed index with per-language paths. The shipped file is Google's official `.txt` format (`taxonomy-with-ids.en-US.txt`), placed in the plugin directory. v1 supports exactly two languages: en-US (shipped, committed) and de-DE (fetched server-side from Google's official URL and merged into the same index).
-3. **Fetch mechanism:** backend route fetches the language file from Google's URL and persists it (no manual file upload in v1).
+2. **Taxonomy model:** one ID-keyed index with per-language paths. The shipped file is the operator-provided CSV `taxonomy-with-ids.en-US.csv` (committed at `cbb1867`, 5595 rows, format `id,segment1,…,segment7` — 8 columns, path = segments joined with `" > "`), moved into the plugin directory as part of this milestone (`git mv` from the repo root). v1 supports exactly two languages: en-US (shipped, committed) and de-DE (fetched server-side from Google's official URL, converted to the same CSV format, and merged into the same index).
+3. **Fetch mechanism:** backend route fetches Google's official `.txt` file for de-DE, converts it to the house CSV format, and persists it (no manual file upload in v1).
 4. **Architecture:** platform-native (Approach A) — rules as scoped PluginConfig, manual assignments as PluginData, custom `register_routes` only for what the generic surface cannot serve.
 5. **Stats basis:** stored sidecars ("as of last run"), like QC findings; live rule-preview evaluation is a follow-up cycle (Labelizer precedent: live matching shipped in a later cycle, ADR-0008 era).
 
@@ -21,7 +21,7 @@ Operator decisions from the 2026-09-09 brainstorming session (binding):
 
 Directory `plugins/core/category/`:
 
-- `__init__.py` (empty), `plugin.json`, `plugin.py`, `taxonomy-with-ids.en-US.txt` (committed), `.gitignore` (ignores `taxonomy-with-ids.de-DE.txt`), `frontend/component.tsx`.
+- `__init__.py` (empty), `plugin.json`, `plugin.py`, `taxonomy-with-ids.en-US.csv` (committed; `git mv` of the operator's `cbb1867` file from the repo root), `.gitignore` (ignores `taxonomy-with-ids.de-DE.csv`), `frontend/component.tsx`.
 
 `plugin.json`:
 
@@ -36,10 +36,11 @@ Single-file constraint: the loader execs exactly one module (`backend/app/plugin
 
 ## §2 Taxonomy subsystem
 
-- **Format:** official Google taxonomy-with-ids .txt — one category per line as `ID - Path > Segments` (split on the first `" - "`); `#`-prefixed comment lines and blank lines skipped. The committed file is the current en-US release.
-- **Index:** `{taxonomy_id → {language → path}}`, one merged structure (operator decision 2). Built from every `taxonomy-with-ids.<lang>.txt` present in the plugin directory (en-US always; de-DE once fetched). IDs are language-independent, so paths merge by ID.
+- **Canonical storage format:** the house CSV — one category per line, `id,segment1,…,segment7` (8 columns; trailing empties pad); path renders as segments joined with `" > "`. Parsed with the stdlib `csv` module (RFC-4180 quoting), so segments containing commas/quotes are safe — relevant because converted de-DE data may contain them.
+- **Fetch-time input format:** Google's official `.txt` (lines `ID - Path > Segments`; `#` comments and blanks skipped). Only the fetch route reads this format; it converts to the house CSV before persisting, so storage has exactly one format.
+- **Index:** `{taxonomy_id → {language → path}}`, one merged structure (operator decision 2). Built from every `taxonomy-with-ids.<lang>.csv` present in the plugin directory (en-US always; de-DE once fetched). IDs are language-independent, so paths merge by ID.
 - **Lifecycle:** the index is UI/route-facing only — `process()` writes IDs and never consults it (rules store `taxonomy_id` directly). Built lazily on the plugin instance, cached, invalidated by file mtime. Restart needs no re-fetch: files persist in the plugin dir.
-- **Fetch route:** `POST /plugins/category/taxonomy/fetch` with `{language: "de-DE"}`. v1 whitelist: de-DE only (en-US is the committed shipped file, updated via git, not overwritten by the server). Flow: GET `https://www.google.com/basepages/producttype/taxonomy-with-ids.de-DE.txt` using the backend's existing HTTP client → parse → sanity-validate (unique IDs, plausible entry count) → atomic write (temp file + `os.replace` in the plugin dir) → index rebuild. Failure modes: upstream fetch/parse failure → 502 with detail; unwritable plugin dir → 500 with clear detail. No DB rows, no config-hash impact (fetching a language never changes feed output, which is written as IDs).
+- **Fetch route:** `POST /plugins/category/taxonomy/fetch` with `{language: "de-DE"}`. v1 whitelist: de-DE only (en-US is the committed shipped file, updated via git, not overwritten by the server). Flow: GET `https://www.google.com/basepages/producttype/taxonomy-with-ids.de-DE.txt` using the backend's existing HTTP client → parse `.txt` → sanity-validate (unique IDs, plausible entry count) → convert to house CSV → atomic write (temp file + `os.replace` in the plugin dir) → index rebuild. Failure modes: upstream fetch/parse failure → 502 with detail; unwritable plugin dir → 500 with clear detail. No DB rows, no config-hash impact (fetching a language never changes feed output, which is written as IDs).
 
 ## §3 Processing semantics
 
@@ -82,7 +83,7 @@ One custom component (Labelizer architecture precedent; ADR-0006/0007 two-surfac
 ## §6 Testing and gates
 
 - **Contract:** `uv run pytest backend/tests/test_plugin_contract.py` must pass with the new plugin (mandatory for plugin host/plugin changes).
-- **Backend unit/integration:** taxonomy parser + index (fixture .txt file: comments, blanks, multi-segment paths, merged languages); rule engine semantics (manual-before-rules, first-match-wins, casefold eq/ne, case-sensitive contains/regex, `in`, excluded sets `""`, untouched uncategorized); `validate_config` (accept/reject matrix, unknown taxonomy_id); sidecar exclusion (content_hash unchanged by sidecars; rendered XML contains no `_category_*` keys); routes (stats buckets against seeded staging rows, matches paging, product state, taxonomy search ranking, languages, fetch with mocked upstream HTTP incl. failure → 502 and unwritable-dir → 500, cross-tenant 404); config_hash reprocess on rule and assignment changes (delta classify).
+- **Backend unit/integration:** taxonomy CSV parser + index (fixture .csv: trailing empty segments, deepest 7-level rows, merged languages, RFC-4180-quoted segments) and the fetch-time `.txt`→CSV converter (comments, blanks, `" - "` split); rule engine semantics (manual-before-rules, first-match-wins, casefold eq/ne, case-sensitive contains/regex, `in`, excluded sets `""`, untouched uncategorized); `validate_config` (accept/reject matrix, unknown taxonomy_id); sidecar exclusion (content_hash unchanged by sidecars; rendered XML contains no `_category_*` keys); routes (stats buckets against seeded staging rows, matches paging, product state, taxonomy search ranking, languages, fetch with mocked upstream HTTP incl. failure → 502 and unwritable-dir → 500, cross-tenant 404); config_hash reprocess on rule and assignment changes (delta classify).
 - **Frontend:** tab rendering, disabled placeholders, icon map entry (`sitemap` resolves, unknown names still fall back), language selector + fetch action, rule editor add/reorder/remove, autocomplete select, per-rule badge, matches modal, dirty guard (snapshot/reset/save), 422 mapping, manual categorization assign/unassign.
 - **Gates:** `uv run pytest -n auto` (needs `TEST_DATABASE_URL`), `uv run ruff check .` (zero new in touched files), `uv run mypy .` (≤ 42 baseline, no new), `npm run test && npm run typecheck && npm run build`.
 - **Docs updated in the same commits:** `backend/docs/plugins.md` (Category scope-table row + route list), `backend/docs/api.md` (new plugin routes), `backend/docs/data-model.md` (sidecar note: `_category_provenance`/`_category_rule_id` in `processed_data`), `docs/decisions.md` (operator decisions 2-5, the `_category_rule_id` extension, file-based taxonomy storage rationale), `backend/docs/architecture.md` if the core-plugin inventory list needs the entry. TODO bookkeeping at cycle end: 5.1 closes, 8.1 marked answered (Category picked).
