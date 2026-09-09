@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, Group, PasswordInput, Select, Stack, TextInput } from '@mantine/core';
+import { Button, Group, NumberInput, PasswordInput, Select, Stack, TextInput } from '@mantine/core';
 import { useForm } from '@tanstack/react-form';
 import { useTranslation } from 'react-i18next';
 import { useUpdateFeedSource } from '../../api/hooks';
@@ -166,9 +166,9 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
           )}
         </form.Field>
         <Select
-          label={t('cron.utcHint')}
+          label={t('cron.presetsLabel')}
           data={cronPresets}
-          placeholder={t('fields.cronExpression')}
+          placeholder={t('cron.presetsPlaceholder')}
           onChange={(value) => {
             if (value) {
               form.setFieldValue('cron_expression', value);
@@ -204,24 +204,22 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
         </form.Field>
         <form.Field name="volume_drop_threshold_pct">
           {(field) => (
-            <TextInput
+            <NumberInput
               label={t('fields.volumeDropThreshold')}
-              type="number"
               min={0}
               max={100}
-              value={String(field.state.value)}
-              onChange={(event) => field.handleChange(Number(event.currentTarget.value))}
+              value={field.state.value}
+              onChange={(v) => field.handleChange(Number(v) || 0)}
             />
           )}
         </form.Field>
         <form.Field name="history_retention_count">
           {(field) => (
-            <TextInput
+            <NumberInput
               label={t('fields.historyRetention')}
-              type="number"
               min={1}
-              value={String(field.state.value)}
-              onChange={(event) => field.handleChange(Number(event.currentTarget.value))}
+              value={field.state.value}
+              onChange={(v) => field.handleChange(Math.max(Number(v) || 1, 1))}
             />
           )}
         </form.Field>

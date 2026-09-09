@@ -47,7 +47,9 @@
       "weekly": "Weekly",
       "monthly": "Monthly"
     },
-    "utcHint": "Schedule in UTC"
+    "utcHint": "Schedule in UTC",
+    "presetsLabel": "Common schedules",
+    "presetsPlaceholder": "Pick a schedule"
   },
   "basicAuth": {
     "title": "Basic Auth",

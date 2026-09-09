@@ -47,7 +47,9 @@
       "weekly": "Wöchentlich",
       "monthly": "Monatlich"
     },
-    "utcHint": "Zeitplan in UTC"
+    "utcHint": "Zeitplan in UTC",
+    "presetsLabel": "Häufige Zeitpläne",
+    "presetsPlaceholder": "Zeitplan wählen"
   },
   "basicAuth": {
     "title": "Basis-Authentifizierung",

@@ -138,7 +138,7 @@ describe('FeedSettingsForm', () => {
 
     await screen.findByDisplayValue('Acme Feed');
 
-    const presetSelect = screen.getByRole('combobox', { name: /utc/i });
+    const presetSelect = screen.getByRole('combobox', { name: /common schedules/i });
     await user.click(presetSelect);
     await user.click(screen.getByRole('option', { name: /daily/i }));
 
