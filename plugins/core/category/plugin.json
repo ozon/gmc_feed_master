@@ -41,5 +41,10 @@
         "additionalProperties": {"type": "string"}
       }
     }
+  },
+  "frontend": {
+    "menu_item": "Category",
+    "icon": "sitemap",
+    "component": "component.tsx"
   }
 }

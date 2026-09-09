@@ -1,6 +1,7 @@
 import 'i18next';
 import type admin from '../../public/locales/en/admin.json';
 import type auth from '../../public/locales/en/auth.json';
+import type category from '../../public/locales/en/category.json';
 import type common from '../../public/locales/en/common.json';
 import type customLabels from '../../public/locales/en/customLabels.json';
 import type dashboard from '../../public/locales/en/dashboard.json';
@@ -22,6 +23,7 @@ declare module 'i18next' {
       admin: typeof admin;
       auth: typeof auth;
       common: typeof common;
+      category: typeof category;
       customLabels: typeof customLabels;
       dashboard: typeof dashboard;
       export: typeof exportNs;
