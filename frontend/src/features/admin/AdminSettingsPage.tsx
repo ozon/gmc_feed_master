@@ -9,11 +9,13 @@ import {
   useUpdatePluginEnabled,
 } from '../../api/hooks';
 import { LoadingState, ErrorState } from '../../components/StateViews';
-import { notifyMutationError, notifySuccess } from '../../app/notifications';
+import { notifyError, notifyMutationError, notifySuccess } from '../../app/notifications';
+import { ApiError } from '../../api/client';
 
 export function AdminSettingsPage() {
   const { t } = useTranslation('admin');
   const { t: tPlugins } = useTranslation('plugins');
+  const { t: tPipeline } = useTranslation('pipeline');
   const settingsQuery = useAdminSettings();
   const schedulerQuery = useSchedulerJobs();
   const pluginsQuery = usePlugins();
@@ -120,6 +122,19 @@ export function AdminSettingsPage() {
                   onChange={(event) =>
                     updatePluginEnabled.mutate(
                       { id: plugin.id, enabled: event.currentTarget.checked },
+                      {
+                        onError: (error) => {
+                          if (error instanceof ApiError && error.status === 409) {
+                            notifyError(
+                              tPipeline('disableBlocked', {
+                                count: plugin.used_by_feed_sources,
+                              }),
+                            );
+                          } else {
+                            notifyMutationError(error, t('settings.saveFailed'));
+                          }
+                        },
+                      },
                     )
                   }
                 />

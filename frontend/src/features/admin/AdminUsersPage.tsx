@@ -82,7 +82,7 @@ export function AdminUsersPage() {
                   {user.role === 'admin' ? t('users.roleAdmin') : t('users.roleUser')}
                 </Badge>
               </Table.Td>
-              <Table.Td>{user.client_ids.length}</Table.Td>
+              <Table.Td>{user.client_ids?.length ?? 0}</Table.Td>
               <Table.Td>
                 <Switch
                   aria-label={t('users.columns.active')}
@@ -147,7 +147,7 @@ function UserModal({
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'user'>(user?.role === 'admin' ? 'admin' : 'user');
   const [clientIds, setClientIds] = useState<string[]>(
-    user ? user.client_ids.map(String) : [],
+    user ? (user.client_ids ?? []).map(String) : [],
   );
 
   function submit() {

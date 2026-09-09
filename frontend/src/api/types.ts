@@ -238,7 +238,7 @@ export type AdminUser = {
   username: string;
   role: string;
   is_active: boolean;
-  client_ids: number[];
+  client_ids: number[] | null;
 };
 
 export type GlobalSettings = {
