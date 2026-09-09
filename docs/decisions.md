@@ -1083,3 +1083,33 @@ binding product specification. Dates use ISO 8601 calendar dates.
 - **eslint adoption:** Deferred per operator decision. Attempted 2026-09-09: blocked by an ecosystem conflict — `typescript-eslint@8.70.0` hard-fails at import on the repo's `typescript 7.0.2` pin (TS 7's native package ships no JS AST API; tracking issue typescript-eslint/typescript-eslint#10940). Plain eslint cannot parse TS syntax, so partial adoption is impossible. Revisit when typescript-eslint ships TS ≥7.1 support; fallbacks (TS 6 side-by-side or downgrade to 6.0.3) need operator approval. Filed as TODO 9A.14.
 - **B6 non-action:** `history_retention_count` is already `Field(ge=1)` at the API (`backend/app/schemas/clients.py:49`); Task 9 closes the client-side 0/NaN path with NumberInput clamping. The `max(retention, 1)` clamp stays as defense-in-depth.
 - **B3/T10 refutations:** B3 (plugin config merge double-writes) — refuted: `_resolve_declared` writes once per scope, merge only deduplicates; verified by test inspection. T10 (alembic `create_all` bypass) — refuted: all migrations use `alembic upgrade head`; `create_all` is test-only (`conftest.py`).
+
+
+### Category plugin (M12) architecture decisions
+
+- **Taxonomy storage is file-based, not PluginData:** the shipped en-US CSV
+  (moved from the repo root, operator-provided `cbb1867`) plus the fetched
+  de-DE CSV live in `plugins/core/category/` (fetched file gitignored,
+  atomic temp+replace write). Rationale: the taxonomy is UI-facing data only
+  (`process()` writes IDs and never consults it); storing it as global
+  PluginData would push ~5.6k entries into every run's resolved_data and
+  trigger pointless full reprocessing on every fetch (config_hash includes
+  resolved data) while never changing feed output.
+- **One merged ID-keyed index with per-language paths** (operator decision):
+  `{id -> {lang -> path}}`; fetched languages merge by ID. v1 languages:
+  en-US (shipped, git-updated) + de-DE (fetched from Google's official .txt,
+  converted to the house CSV format before persisting).
+- **`_category_rule_id` second sidecar:** spec §5.9 names only
+  `_category_provenance`; the spec's UI mandates per-rule match counts and a
+  matched-products modal, which need the matched rule id on staged products.
+  Both sidecars are `_`-prefixed (stripped from content_hash, never rendered
+  to XML) — a spec-consistent extension, documented in data-model.md.
+- **Draft validation route `POST /plugins/category/validate`:** the platform
+  runs `validate_config` only on pipeline-instance configs (pipeline.py:91-95)
+  and in the contract suite — not on the generic scoped-config PUT (which
+  validates against `config_schema` via jsonschema only). The Rules tab calls
+  the validate route before saving; jsonschema remains the generic backstop.
+- **Stats are stored-sidecar, "as of last run"** (operator decision): SQL
+  GROUP BY over `processed_data->>'_category_provenance'` /
+  `->>'_category_rule_id'`; live draft evaluation is a follow-up cycle
+  (Labelizer precedent).
