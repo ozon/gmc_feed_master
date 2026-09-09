@@ -95,6 +95,29 @@ async def test_admin_can_read_global_plugin_config(scope_app):
 
 
 @pytest.mark.asyncio
+async def test_scoped_user_cannot_toggle_plugin_enabled(scope_app):
+    app = scope_app
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as bob:
+        await _login(bob, "bob", "bob-pass")
+        assert (await bob.put(
+            "/plugins/custom_labels/enabled", json={"enabled": False}
+        )).status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_admin_can_toggle_plugin_enabled(scope_app):
+    app = scope_app
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as admin:
+        await _login(admin, "operator", "admin-pass")
+        assert (await admin.put(
+            "/plugins/custom_labels/enabled", json={"enabled": False}
+        )).status_code == 200
+        assert (await admin.put(
+            "/plugins/custom_labels/enabled", json={"enabled": True}
+        )).status_code == 200
+
+
+@pytest.mark.asyncio
 async def test_scoped_user_can_use_client_tier(scope_app):
     app = scope_app
     async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as bob:

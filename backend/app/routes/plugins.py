@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..access import CurrentUser, get_current_user
+from ..access import CurrentUser, get_current_user, require_admin
 from ..auth import require_user
 from ..db.engine import get_db_session
 from ..models.client import Client
@@ -140,7 +140,7 @@ async def list_plugins(
 async def update_plugin_enabled(
     plugin_id: str,
     payload: EnabledPut,
-    _user: str = Depends(require_user),
+    _admin: CurrentUser = Depends(require_admin),
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict[str, str]:
     session = _require_db(db_session)

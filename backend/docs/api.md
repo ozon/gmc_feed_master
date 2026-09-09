@@ -104,7 +104,7 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 ## Plugins
 - `GET /plugins` — manifests of all registered plugins (enabled + disabled)
   Returns: `[{id, name, version, enabled, manifest, used_by_feed_sources}]`
-- `PUT /plugins/{plugin_id}/enabled` — enable/disable plugin; returns 409 when disabling a plugin used by ≥1 feed source
+- `PUT /plugins/{plugin_id}/enabled` — enable/disable plugin (admin only; registry-wide state); returns 409 when disabling a plugin used by ≥1 feed source, 403 for non-admin users
 
 ### Plugin Config (Reserved Routes)
 - `GET /plugins/{plugin_id}/config?client_id=&feed_source_id=` — get config at scope (omitted = global)
