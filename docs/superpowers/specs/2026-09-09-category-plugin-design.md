@@ -44,7 +44,7 @@ Single-file constraint: the loader execs exactly one module (`backend/app/plugin
 
 ## §3 Processing semantics
 
-- `validate_config(config)`: strict validation on the generic config write path (custom_labels precedent). Checks: `rules` is an array; each rule is an object with non-empty string `id` (unique), `source_field` non-empty string, `operator` in the enum, `source_value` a non-empty string (or non-empty list of non-empty strings for `in`), `taxonomy_id` non-empty string present in the taxonomy index (IDs are language-independent; index always has en-US), `is_excluded` boolean if present; regex operator must compile. Empty config passes.
+- `validate_config(config)`: strict validation of rule documents (custom_labels-style checks). Platform reality: the generic `PUT /plugins/{id}/config` validates only against `config_schema` (jsonschema); `validate_config` runs on the pipeline-instance path (backend/app/routes/pipeline.py:91-95) and in the contract suite — not on the generic scoped-config write. So the plugin also exposes `POST /plugins/category/validate` which runs `validate_config` on a draft; the Rules tab calls it before saving. Checks: `rules` is an array; each rule has non-empty unique string `id`, `source_field` non-empty string when present (defaults to `product_type`), `operator` in the enum, `source_value` a non-empty string (or non-empty list of non-empty strings for `in`), regex operator must compile, `is_excluded` boolean, and for non-excluded rules `taxonomy_id` non-empty AND present in the taxonomy index (IDs are language-independent; the index always has the shipped en-US). Empty config passes.
 - `prepare_run(config, data, ctx)`: compile the ordered rule list into run state: `eq`/`ne` compare via `strip().casefold()`; `contains`/`regex`/`in` are case-sensitive; `in` tests membership in the value list. Manual assignments compile to a `product_id → taxonomy_id` dict.
 - `process(product, config, data, ctx, state)`: evaluates against the mapped canonical product via `resolve_path` (Labelizer's helper semantics, duplicated locally since plugins cannot import each other):
   1. Manual assignment for `product["id"]` wins first → `google_product_category = taxonomy_id`, provenance `manual`.
@@ -65,6 +65,7 @@ Pattern: custom_labels `register_routes` (plugin.py:314-360) — inline Pydantic
 - `GET /plugins/category/taxonomy/languages` → `["en-US"]` plus `"de-DE"` iff the fetched file exists.
 - `GET /plugins/category/taxonomy/search?language&q&limit&offset` → autocomplete: case-insensitive contains-match on path in the selected language, starts-with matches ranked first; returns `{id, path}` items.
 - `GET /plugins/category/taxonomy/validate?taxonomy_id` → `{valid, path?}`.
+- `POST /plugins/category/validate` → draft rule-list validation (§3); 422 `{"errors": [...]}` on invalid, `{"status": "ok"}` otherwise. No DB.
 - `POST /plugins/category/taxonomy/fetch` → §2.
 
 Taxonomy routes are client-agnostic (global data) and require only an authenticated user; feed-source-scoped routes are cross-tenant guarded.
