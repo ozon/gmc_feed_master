@@ -20,9 +20,12 @@
     "new": "New"
   },
   "findings": {
-    "critical": "{{count}} critical",
-    "warning": "{{count}} warning",
-    "info": "{{count}} info"
+    "critical_one": "{{count}} critical",
+    "critical_other": "{{count}} critical",
+    "warning_one": "{{count}} warning",
+    "warning_other": "{{count}} warnings",
+    "info_one": "{{count}} info",
+    "info_other": "{{count}} info"
   },
   "source": {
     "run": "Run",
@@ -43,7 +46,8 @@
   "added": "Added",
   "removed": "Removed",
   "diffTitle": "Diff: version {{version}} vs version {{against}}",
-  "fieldsChanged": "{{count}} field(s) changed",
+  "fieldsChanged_one": "{{count}} field changed",
+  "fieldsChanged_other": "{{count}} fields changed",
   "versions": {
     "empty": "No export versions yet."
   },

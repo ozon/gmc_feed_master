@@ -658,7 +658,7 @@ describe('CustomLabelsUI live preview stats', () => {
     // switch to custom_label_2: r3 is matched-but-never-labeled
     const selector = screen.getByTestId('slot-selector');
     await userEvent.click(within(selector).getByText('#3 CUSTOM_LABEL_2'));
-    expect(screen.getByText('1 matched')).toBeInTheDocument();
+    expect(screen.getByText('1 match')).toBeInTheDocument();
     expect(screen.getByTestId('coverage-rule-hit-r3')).toHaveTextContent('#1 Client Only: 0x');
     expect(screen.queryByRole('link', { name: 'z1' })).not.toBeInTheDocument();
   });

@@ -20,9 +20,12 @@
     "new": "Neu"
   },
   "findings": {
-    "critical": "{{count}} kritisch",
-    "warning": "{{count}} Warnungen",
-    "info": "{{count}} Hinweise"
+    "critical_one": "{{count}} kritisch",
+    "critical_other": "{{count}} kritisch",
+    "warning_one": "{{count}} Warnung",
+    "warning_other": "{{count}} Warnungen",
+    "info_one": "{{count}} Hinweis",
+    "info_other": "{{count}} Hinweise"
   },
   "source": {
     "run": "Lauf",
@@ -43,7 +46,8 @@
   "added": "Hinzugefügt",
   "removed": "Entfernt",
   "diffTitle": "Diff: Version {{version}} vs Version {{against}}",
-  "fieldsChanged": "{{count}} Feld(er) geändert",
+  "fieldsChanged_one": "{{count}} Feld geändert",
+  "fieldsChanged_other": "{{count}} Felder geändert",
   "versions": {
     "empty": "Noch keine Export-Versionen."
   },

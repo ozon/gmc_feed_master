@@ -125,7 +125,7 @@ describe('ExportPage', () => {
     renderAt();
     await waitFor(() => expect(screen.getByTestId('version-row-3')).toBeInTheDocument());
     expect(screen.getByTestId('findings-critical-3')).toHaveAttribute('aria-label', '2 critical');
-    expect(screen.getByTestId('findings-warning-3')).toHaveAttribute('aria-label', '0 warning');
+    expect(screen.getByTestId('findings-warning-3')).toHaveAttribute('aria-label', '0 warnings');
     expect(screen.getByTestId('findings-info-3')).toHaveAttribute('aria-label', '5 info');
   });
 
