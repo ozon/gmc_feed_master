@@ -113,11 +113,11 @@ export function useSavePipeline(feedSourceId) {
     ├── /clients/:clientId/feeds/:feedSourceId/plugins/:pluginId  → PluginPage (feed scope)
     ├── /clients/:clientId/plugins/:pluginId                  → PluginPage (client scope)
     ├── /plugins/:pluginId                                    → PluginPage (global scope)
-    └── (RequireAdmin) — all four routes render AdminPage (URL-driven tabs, Users default)
-        ├── /admin                           → AdminPage (Users tab)
-        ├── /admin/users                     → AdminPage (Users tab)
-        ├── /admin/clients                   → AdminPage (Clients tab)
-        └── /admin/settings                  → AdminPage (Settings tab)
+    ├── /admin                           → AdminPage (Users tab, RequireAdmin)
+    │   ├── /admin/users                 → AdminPage (Users tab)
+    │   ├── /admin/clients               → AdminPage (Clients tab)
+    │   └── /admin/settings              → AdminPage (Settings tab)
+    └── *                                 → NotFoundPage
 ```
 
 - **Lazy loading** for all feature pages (`React.lazy` + `Suspense`)
@@ -153,7 +153,7 @@ export function useSavePipeline(feedSourceId) {
 ## Key Components
 
 ### Pipeline Builder (`src/features/pipeline/`) — master-detail layout
-- `PipelinePage` — container; local instance state (`LocalInstance` = `PipelineInstance` + position-based `clientId`), dirty tracking (`isInstancesEqual` vs server snapshot), `useBlocker` navigation guard
+- `PipelinePage` — container; local instance state (`LocalInstance` = `PipelineInstance` + position-based `clientId`), dirty tracking (`isInstancesEqual` vs server snapshot), `useBlocker` navigation guard with `ConfirmModal`
   - Layout: `PipelineOverviewStrip` on top, `PluginList` left (`Grid.Col span={4}`), `PluginConfigPanel` right (`Grid.Col span={8}`)
   - Save (PUT) persists the full local array — reorder, add, remove, and config edits in one request; Reset restores the server snapshot; unsaved-instance toggles also flush on Save
   - **Per-instance enable is immediate-persist**: the Switch PATCHes `enabled` for saved instances (optimistic; on failure rolls back the whole local array snapshot and invalidates the pipeline query to refetch); unsaved instances (no `id` yet) flip locally and persist with Save
@@ -174,7 +174,7 @@ export function useSavePipeline(feedSourceId) {
   - `rules` → `RulesUI` (`src/features/rules/`) — ordered rule list with dnd reordering, master pinning, i18n (`rules` namespace)
   - `filter` → `FilterUI` (`src/features/filter/`) — conjunctive scalar condition editor with live preview, dirty-guard + useBlocker, i18n (`filter` namespace)
   - `custom_labels` → `CustomLabelsUI` (`src/features/customLabels/`, UI name "Labelizer") — merged Global/Client/Feed tier view (union-by-id mirroring the runtime `config_merge`); the bulk tab is slot-selected via a top SegmentedControl (custom_label_0..4) with a coverage dashboard (any-slot labeled/total, progress bar, quick stats) and collapsible priority-ordered rule cards (matched + overridden badges, shadowed-value list with attribution tooltips), debounced draft preview via `POST /plugins/custom_labels/preview`; rule duplicate/delete, override-at-client-level, clickable tier navigation, help drawer; expanded rule cards at feed tier add a synchronized, windowed product preview column beside the value list (batch lookup via `POST /feed-sources/{id}/products/lookup`), i18n (`customLabels` namespace)
-- All three custom components share the pattern: dirty-guard + `useBlocker` navigation guard, `useSavePluginConfig` mutation for editable-tier writes
+- All three custom components share the pattern: dirty-guard + `useBlocker` navigation guard with `ConfirmModal`, `useSavePluginConfig` mutation for editable-tier writes
 
 ### Quality Dashboard (`src/features/monitoring/`)
 - `MonitoringRunsPage` — `IngestionRunsTable` with polling

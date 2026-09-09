@@ -114,7 +114,7 @@ rule list, editor, dnd reordering, i18n). It exists because bare package imports
 are unresolvable from `plugins/` (no `node_modules` above it); the stub is the
 documented seam until full build-time discovery lands.
 
-RulesUI owns its own save state (dirty check + `useBlocker`); it fetches and
+RulesUI owns its own save state (dirty check + `useBlocker` with `ConfirmModal`); it fetches and
 saves via the scope-aware plugin config hooks.
 
 The rules UI is reachable at the feed-scoped route
