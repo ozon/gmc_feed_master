@@ -409,35 +409,35 @@
 
 ## Section 9A — Review remediation deferred findings (2026-09-09)
 
-### 9A.1 [ ] U5 products-table keyboard/row activation path (a11y) [P2]
+### 9A.1 [x] U5 products-table keyboard/row activation path (a11y) [P2] — done 2026-09-09
 
 **Why:** UX a11y — products table lacks keyboard navigation and row activation. `docs/reports/2026-09-08-04-ux-i18n.md`.
 
-### 9A.2 [ ] U6 raw enum values in tables/filters — translate via existing keys [P2]
+### 9A.2 [x] U6 raw enum values in tables/filters — translate via existing keys [P2] — done 2026-09-09
 
 **Why:** Raw enum values shown in tables/filters instead of translated labels. Same report.
 
-### 9A.3 [ ] U12 NotFound route instead of silent redirect [P2]
+### 9A.3 [x] U12 NotFound route instead of silent redirect [P2] — done 2026-09-09
 
 **Why:** Missing route silently redirects instead of showing NotFound page. Same report.
 
-### 9A.4 [ ] U11 disabled-nav tooltip when no feed source selected [P2]
+### 9A.4 [x] U11 disabled-nav tooltip when no feed source selected [P2] — done 2026-09-09
 
 **Why:** Nav items disabled without tooltip explaining why. Same report.
 
-### 9A.5 [ ] U14 ProductDrawer dayjs locale + `drawerRawData` key [P2]
+### 9A.5 [x] U14 ProductDrawer dayjs locale + `drawerRawData` key [P2] — done 2026-09-09
 
 **Why:** ProductDrawer doesn't respect locale; missing i18n key. Same report.
 
-### 9A.6 [ ] U16 ConfirmModal for unsaved-changes guards (replace `window.confirm`) [P2]
+### 9A.6 [x] U16 ConfirmModal for unsaved-changes guards (replace `window.confirm`) [P2] — done 2026-09-09
 
 **Why:** `window.confirm` used for unsaved-changes prompts — should use ConfirmModal. Same report.
 
-### 9A.7 [ ] U17 i18n a11y labels (pagination, user menu) [P2]
+### 9A.7 [x] U17 i18n a11y labels (pagination, user menu) [P2] — done 2026-09-09
 
 **Why:** Pagination and user menu lack i18n a11y labels. Same report.
 
-### 9A.8 [ ] U18 localized lead-in for raw server error details [P2]
+### 9A.8 [x] U18 localized lead-in for raw server error details [P2] — done 2026-09-09
 
 **Why:** Raw server error details shown without localized lead-in text. Same report.
 

@@ -21,7 +21,7 @@ Operator-only items NOT in this plan (flagged, not fixable by agents):
 
 - **D2/D3 spec conflicts** (spec §10 vs §2/§5.9 labelizer scope; spec §2 single-user vs shipped RBAC) — spec amendments, see `docs/reports/2026-09-08-06-docs-consistency.md`.
 - **B1 follow-up question:** should the plugin enable/disable toggle (`PUT /plugins/{id}/enabled`) also be admin-only? It is equally agency-global, but the frontend registry panel is currently operator-facing; 409-in-use already limits damage. Filed in TODO by Task 15.
-- **U10 terminology:** "Mandant" vs "Kunde" — operator picks; sweep follows in a later cycle.
+- **U10 terminology:** "Mandant" — operator decision. de/admin.json + de/dashboard.json swept (Kunde→Mandant).
 
 ## Global Constraints
 
@@ -1558,15 +1558,15 @@ git commit -m "chore(frontend): adopt eslint with react-hooks rules and warnings
 
 Following the file's existing style (checkbox items with priority tags), add a section listing the deferred findings as new P2 backlog items, each one line with its report ID:
 
-- U5 products-table keyboard/row activation path (a11y, Important) — `docs/reports/2026-09-08-04-ux-i18n.md`
-- U6 raw enum values in tables/filters (translate via existing keys) — same report
-- U12 NotFound route instead of silent redirect — same report
-- U11 disabled-nav tooltip when no feed source selected — same report
-- U14 ProductDrawer dayjs locale + `drawerRawData` key — same report
-- U16 ConfirmModal for unsaved-changes guards (replace `window.confirm`) — same report
-- U17 i18n a11y labels (pagination, user menu) — same report
-- U18 localized lead-in for raw server error details — same report
-- F6 ProductsPage state reset on feed-source change; F13 deep-link page strip; F14 usePreview deps/unmount; F15 toggle rollback scope; F16 ProductsTable dead code; F17 raw_data heading; F18 MonitoringLayout dead code — `docs/reports/2026-09-08-03-frontend.md`
+- [x] U5 products-table keyboard/row activation path (a11y, Important) — `docs/reports/2026-09-08-04-ux-i18n.md`
+- [x] U6 raw enum values in tables/filters (translate via existing keys) — same report
+- [x] U12 NotFound route instead of silent redirect — same report
+- [x] U11 disabled-nav tooltip when no feed source selected — same report
+- [x] U14 ProductDrawer dayjs locale + `drawerRawData` key — same report
+- [x] U16 ConfirmModal for unsaved-changes guards (replace `window.confirm`) — same report
+- [x] U17 i18n a11y labels (pagination, user menu) — same report
+- [x] U18 localized lead-in for raw server error details — same report
+- [x] F6 ProductsPage state reset on feed-source change; F13 deep-link page strip; F14 usePreview deps/unmount; F15 toggle rollback scope; F16 ProductsTable dead code; F17 raw_data heading; F18 MonitoringLayout dead code — `docs/reports/2026-09-08-03-frontend.md`
 - T6 Caddyfile parameterized document root; T11 compose restart policy; T12 Caddy encode/headers; T13 engines field + committed .nvmrc — `docs/reports/2026-09-08-05-tooling.md`
 - Operator questions: enable/disable toggle admin-gating (B1 follow-up), U10 terminology pick, TODO 2.2 source enum
 
@@ -1595,13 +1595,13 @@ git commit -m "docs: review remediation cycle log; file deferred findings; recon
 
 Filed into `TODO.md` by Task 15 with report references — not silently dropped:
 
-- **U5, U6, U11, U12, U14, U16, U17, U18** (UX) — small UX/a11y additions; U5/U6 deserve their own focused task with interaction design, not a drive-by.
-- **F6, F13, F14, F15, F16, F17, F18** (frontend Minors) — F16/F17 are mechanical and could be pulled into Task 9 opportunistically if the reviewer approves; F18 needs a delete-or-wire decision.
-- **T6, T11, T12, T13** (deployment hardening) — Caddy/compose production hardening; owner-operated surface.
+- **U5, U6, U11, U12, U14, U16, U17, U18** (UX) — small UX/a11y additions; U5/U6 deserve their own focused task with interaction design, not a drive-by. **DONE 2026-09-09.**
+- **F6, F13, F14, F15, F16, F17, F18** (frontend Minors) — F16/F17 are mechanical and could be pulled into Task 9 opportunistically if the reviewer approves; F18 needs a delete-or-wire decision. **DONE 2026-09-09.**
+- **T6, T11, T12, T13** (deployment hardening) — Caddy/compose production hardening; owner-operated surface. **DONE 2026-09-09.**
 - **B3, T10** — REFUTED on verification (see reports); recorded in decisions.md by Task 15 to prevent re-reporting.
 - **B6** — moot: `history_retention_count` is already `Field(ge=1)` at the API (`backend/app/schemas/clients.py:49`); Task 9 closes the client-side 0/NaN path. The `max(retention, 1)` clamp stays as defense.
 - **D2, D3** — operator spec amendments (flagged in the plan header and reports; not agent-fixable).
-- **U10** — operator terminology decision ("Mandant" vs "Kunde").
+- **U10** — operator terminology decision ("Mandant" vs "Kunde"). **DONE 2026-09-09.**
 - **TODO 2.2 / 5.1 / 8.1 / 9.2–9.6 / 10.1** — pre-existing backlog items unchanged by this cycle (10.1 gets CI-enforced by Task 2; the fix work remains).
 
 ## Self-review (completed by plan author)
