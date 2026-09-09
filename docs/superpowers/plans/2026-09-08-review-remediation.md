@@ -1460,6 +1460,8 @@ git commit -m "docs: refresh data-model and api reference to match code; makefil
 
 ### Task 14: T7 — frontend eslint adoption (OPERATOR APPROVAL: new devDependencies)
 
+> **STATUS 2026-09-09: BLOCKED — not executed.** `typescript-eslint@8.70.0` hard-fails at import on the repo's `typescript 7.0.2` pin (TS 7's native package ships no JS AST API; tracking issue typescript-eslint/typescript-eslint#10940; plain eslint cannot parse TS syntax, so partial adoption is impossible). Attempted and reverted; evidence and fallbacks in TODO 9A.14. Re-run this task verbatim once typescript-eslint supports TS ≥7.1.
+
 **OPERATOR APPROVAL:** adds eslint + plugins to `frontend/package.json` devDependencies (needed for the Task 4 hook-order class to be statically enforced). Droppable without affecting other tasks; do NOT run in the same commit as any other task.
 
 **Files:**
