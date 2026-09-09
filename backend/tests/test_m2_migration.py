@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 def alembic_config(isolated_database_url):
     config = Config("alembic.ini")
     config.set_main_option("sqlalchemy.url", isolated_database_url)
+    config.attributes["database_url"] = isolated_database_url
     return config
 
 

@@ -12,6 +12,7 @@ pytestmark = pytest.mark.asyncio
 def _alembic_config(url):
     config = Config("alembic.ini")
     config.set_main_option("sqlalchemy.url", url)
+    config.attributes["database_url"] = url
     return config
 
 

@@ -55,6 +55,7 @@ def _load_alembic_schema(**kwargs):
         f"@{kwargs['host']}:{kwargs['port']}/{kwargs['dbname']}"
     )
     config.set_main_option("sqlalchemy.url", url)
+    config.attributes["database_url"] = url
     command.upgrade(config, "head")
     # alembic's env.py disposes its own engine before returning, so no
     # connections hold the template open when the plugin clones it.

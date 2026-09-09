@@ -30,6 +30,7 @@ uv run mypy .                            # known baseline: docs/mypy-baseline.md
 - Contract test: `uv run pytest tests/test_plugin_contract.py`
 - Fixtures in `tests/fixtures/` — feeds, registry, example plugin
 - `TEST_DATABASE_URL` must point to PostgreSQL for integration tests
+- Tests are immune to an ambient `DATABASE_URL`: alembic callers in tests pin their URL via `config.attributes["database_url"]`, which `alembic/env.py` prefers over the env var (the var remains the fallback for the dev command `DATABASE_URL=… uv run alembic upgrade head`)
 
 ## Documentation map
 - `docs/architecture.md` — Pipeline stages, delta mechanics, plugin system

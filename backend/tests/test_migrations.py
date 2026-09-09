@@ -47,20 +47,34 @@ def database_url() -> str:
 def alembic_config(database_url):
     config = Config("alembic.ini")
     config.set_main_option("sqlalchemy.url", database_url)
+    config.attributes["database_url"] = database_url
     return config
 
 
 @pytest.fixture
-def isolated_schema(database_url):
+def isolated_schema_factory(database_url):
     parts = urlsplit(database_url)
-    database_name = f"m1_test_{uuid.uuid4().hex}"
     admin_url = urlunsplit((parts.scheme.replace("+asyncpg", ""), parts.netloc, "/postgres", parts.query, parts.fragment))
-    asyncio.run(_database_command(admin_url, f'CREATE DATABASE "{database_name}"'))
-    isolated_url = urlunsplit((parts.scheme, parts.netloc, f"/{database_name}", parts.query, parts.fragment))
+    created = []
+
+    def _make():
+        database_name = f"m1_test_{uuid.uuid4().hex}"
+        asyncio.run(_database_command(admin_url, f'CREATE DATABASE "{database_name}"'))
+        isolated_url = urlunsplit((parts.scheme, parts.netloc, f"/{database_name}", parts.query, parts.fragment))
+        created.append(isolated_url)
+        return isolated_url
+
     try:
-        yield isolated_url
+        yield _make
     finally:
-        asyncio.run(_database_command(admin_url, f'DROP DATABASE IF EXISTS "{database_name}" WITH (FORCE)'))
+        for url in created:
+            database_name = urlsplit(url).path.lstrip("/")
+            asyncio.run(_database_command(admin_url, f'DROP DATABASE IF EXISTS "{database_name}" WITH (FORCE)'))
+
+
+@pytest.fixture
+def isolated_schema(isolated_schema_factory):
+    yield isolated_schema_factory()
 
 
 async def _database_command(database_url, statement):
@@ -120,6 +134,7 @@ async def _indexes_and_constraints(database_url, schema):
 
 def test_baseline_upgrade_downgrade_reupgrade(alembic_config, database_url, isolated_schema):
     alembic_config.set_main_option("sqlalchemy.url", isolated_schema)
+    alembic_config.attributes["database_url"] = isolated_schema
 
     try:
         command.upgrade(alembic_config, "head")
@@ -140,3 +155,15 @@ def test_baseline_upgrade_downgrade_reupgrade(alembic_config, database_url, isol
         assert asyncio.run(_table_names(isolated_schema, "public")) == EXPECTED_TABLES
     finally:
         os.environ.pop("MIGRATION_SCHEMA", None)
+
+
+def test_upgrade_targets_config_url_not_ambient_database_url(alembic_config, isolated_schema_factory, monkeypatch):
+    configured_url = isolated_schema_factory()
+    ambient_url = isolated_schema_factory()
+    alembic_config.attributes["database_url"] = configured_url
+    monkeypatch.setenv("DATABASE_URL", ambient_url)
+
+    command.upgrade(alembic_config, "head")
+
+    assert asyncio.run(_table_names(configured_url, "public")) == EXPECTED_TABLES
+    assert asyncio.run(_table_names(ambient_url, "public")) == set()

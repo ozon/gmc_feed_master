@@ -27,6 +27,7 @@ async def test_migration_promotes_existing_users_to_admin(isolated_database_url)
     # Downgrade to the revision before m11, insert a pre-RBAC user, upgrade, verify.
     config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
     config.set_main_option("sqlalchemy.url", isolated_database_url)
+    config.attributes["database_url"] = isolated_database_url
     await asyncio.to_thread(command.downgrade, config, "20260905_0001")
     engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
