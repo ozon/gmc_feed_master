@@ -391,4 +391,27 @@ describe('ProductsPage', () => {
     expect(await screen.findByText('Dropped Item')).toBeInTheDocument();
     expect(screen.getByText(/ausgeschlossen|excluded/i)).toBeInTheDocument();
   });
+
+  it('resets search, selection and column config when feed source changes', async () => {
+    const user = userEvent.setup();
+    setupFetch((url) => {
+      if (url.includes('/feed-sources/2/products')) return jsonResponse(productsPage1);
+      if (url.includes('/feed-sources/2/fields')) return jsonResponse(feedFields);
+      return jsonResponse({});
+    });
+
+    window.history.replaceState({}, '', '/clients/1/feeds/2/products');
+    render(<App />);
+    await screen.findByText('Product 1');
+
+    const searchInput = screen.getByPlaceholderText(/search/i);
+    await user.type(searchInput, 'old query');
+    expect(searchInput).toHaveValue('old query');
+
+    window.history.pushState({}, '', '/clients/1/feeds/3/products');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    await waitFor(() => {
+      expect(searchInput).toHaveValue('');
+    });
+  });
 });

@@ -35,6 +35,24 @@ export function ProductsPage() {
   const [searchInput, setSearchInput] = useState(qParam);
   const [debouncedQ] = useDebouncedValue(searchInput, 300);
 
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+
+  const savedColumns = useMemo(
+    () => (feedSourceId ? loadColumnConfig(feedSourceId) : null),
+    [feedSourceId],
+  );
+  const [visibleColumnIds, setVisibleColumnIds] = useState<ProductColumnId[]>(
+    savedColumns ?? DEFAULT_COLUMNS,
+  );
+
+  useEffect(() => {
+    setSelectedProductId(null);
+    setSearchInput('');
+    if (feedSourceId) {
+      setVisibleColumnIds(loadColumnConfig(feedSourceId) ?? DEFAULT_COLUMNS);
+    }
+  }, [feedSourceId]);
+
   const query = useProductList(feedSourceId ?? '', {
     page: pageParam,
     page_size: pageSizeParam,
@@ -63,16 +81,6 @@ export function ProductsPage() {
     const id = desc ? sortParam.slice(1) : sortParam;
     return { id, desc };
   }, [sortParam]);
-
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-
-  const savedColumns = useMemo(
-    () => (feedSourceId ? loadColumnConfig(feedSourceId) : null),
-    [feedSourceId],
-  );
-  const [visibleColumnIds, setVisibleColumnIds] = useState<ProductColumnId[]>(
-    savedColumns ?? DEFAULT_COLUMNS,
-  );
 
   const updateParams = (updates: Record<string, string | null>) => {
     setSearchParams((prev) => {
