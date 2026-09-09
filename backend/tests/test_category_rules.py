@@ -1,6 +1,7 @@
 """Category plugin rule engine + validate_config."""
 
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
@@ -79,7 +80,7 @@ class TestRuleMatches:
 
 
 class TestApplyCategory:
-    RULES = [
+    RULES: ClassVar[list] = [
         cp.compile_rule(_rule(id="r-auto", taxonomy_id="166")),
         cp.compile_rule(_rule(id="r-second", source_value="Boots", taxonomy_id="53")),
     ]

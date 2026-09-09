@@ -126,7 +126,7 @@ Plugins may register custom routes under `/plugins/{plugin_id}/...` via `registe
 - `/plugins/{plugin_id}/config` — core config endpoints
 - `/plugins/{plugin_id}/data` — core data endpoints
 
-Plugin routes must not use these prefixes. Example: Category plugin uses `/plugins/category/rules/stats`, `/plugins/category/matches`.
+Plugin routes must not use these prefixes. Example: Category plugin uses `/plugins/category/stats`, `/plugins/category/matches`.
 
 - `POST /plugins/category/validate` — validates a draft set of category rules before saving. Body: `{rules}`. Returns `{status: "ok"}` or 422 `{"errors": [...]}` naming the first invalid rule (bad id, unknown operator, empty source_value, or a taxonomy_id not found in the taxonomy).
 - `GET /plugins/category/taxonomy/languages` — lists available taxonomy languages currently loaded from the plugin's CSV files.

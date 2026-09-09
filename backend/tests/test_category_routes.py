@@ -176,7 +176,7 @@ class TestFetchRoute:
         mp.setattr(cp, "_INDEX", None)
 
         async def tiny_fetch(url):
-            return "1 - Tiere & Tierbedarf\n".encode("utf-8")
+            return b"1 - Tiere & Tierbedarf\n"
 
         mp.setattr(cp, "_fetch_url", tiny_fetch)
         client = await logged_in_client(app_factory)
