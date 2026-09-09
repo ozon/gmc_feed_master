@@ -1,4 +1,13 @@
+{
+	admin off
+}
+
 {$DOMAIN:localhost} {
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+	}
 	handle /admin/* {
 		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
 	}
@@ -28,7 +37,7 @@
 	}
 
 	handle {
-		root * /path/to/frontend/dist
+		root * {$FRONTEND_DIST:/srv/gmc/frontend/dist}
 		try_files {path} /index.html
 		file_server
 	}

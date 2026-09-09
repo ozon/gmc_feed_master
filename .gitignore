@@ -53,7 +53,6 @@ backend/scripts/live_integration_test_report.md
 backend/gmc_feed_*.sql.gz
 *.kate-swp
 gmc_feed_*.sql.gz
-.nvmrc
 
 # Local UX review input (source doc, not app code)
 frontend-report.md

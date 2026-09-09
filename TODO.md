@@ -453,9 +453,12 @@
 
 **Why:** Deployment hardening items. `docs/reports/2026-09-08-05-tooling.md`.
 
-### 9A.12 [ ] Operator questions: enable/disable toggle admin-gating (B1 follow-up), U10 terminology pick, TODO 2.2 source enum [P2]
+### 9A.12 [x] Operator questions: enable/disable toggle admin-gating (B1 follow-up), U10 terminology pick, TODO 2.2 source enum [P2] — answered 2026-09-09
 
-**Why:** Decisions requiring operator input.
+**Decisions:**
+1. **Admin-gate `PUT /plugins/{id}/enabled`** — registry-wide state affecting every client's feeds, same cross-tenant class as B1's global-tier writes (`backend/app/routes/plugins.py:139` currently `require_user` only).
+2. **U10: "Mandant"** is the German term for client — sweep `Kunde*` out of all de/ namespaces.
+3. **TODO 2.2: expand to the 3-value spec enum** — `source ∈ {scheduled, manual, rollback}` per spec §4.7; backend stops writing `'run'`; frontend whitelist + en/de i18n keys expand.
 
 ### 9A.14 [ ] T7 frontend eslint adoption — blocked by typescript-eslint × TypeScript 7 [P2]
 

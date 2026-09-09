@@ -96,13 +96,14 @@ make dev-stop
 | Variable | Default | Used by |
 |----------|---------|---------|
 | `DATABASE_URL` | `postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed` | backend targets |
+| `FRONTEND_DIST` | `/srv/gmc/frontend/dist` | `make prod` (static root for the built frontend) |
 | `MSG` | _(required)_ | `backend-migrate-new` |
 
 ### Caddy (Reverse Proxy)
 
 | Target | Description |
 |--------|-------------|
-| `make prod` | Start Caddy production server (requires `DOMAIN` and `BACKEND_URL` env vars; uses `Caddyfile`) |
+| `make prod` | Start Caddy production server (requires `DOMAIN` and `BACKEND_URL` env vars; serves static files from `FRONTEND_DIST`; gzip + HSTS/nosniff headers; admin endpoint off; uses `Caddyfile`) |
 | `make dev-caddy` | Start Caddy dev server (http://localhost, no TLS; uses `Caddyfile.dev`) |
 
 ## Notes
