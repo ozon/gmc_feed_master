@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import io
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -343,3 +344,113 @@ class CategoryPlugin:
         if outcome["rule_id"] is not None:
             result["_category_rule_id"] = outcome["rule_id"]
         return result
+
+    def register_routes(self, router: Any) -> None:
+        from fastapi import Depends, HTTPException, Query
+        from fastapi.responses import JSONResponse
+        from pydantic import BaseModel, Field
+
+        from app.access import CurrentUser, get_current_user
+
+        class ValidateRequest(BaseModel):
+            rules: list[dict[str, Any]] = Field(default_factory=list)
+
+        class FetchRequest(BaseModel):
+            language: str
+
+        async def validate_rules(payload, user=Depends(get_current_user)):
+            try:
+                validate_config({"rules": payload.rules} if payload.rules else {})
+            except ValueError as exc:
+                return JSONResponse(status_code=422, content={"errors": [str(exc)]})
+            return {"status": "ok"}
+
+        validate_rules.__annotations__.update({
+            "payload": ValidateRequest, "user": CurrentUser,
+            "return": dict[str, Any] | JSONResponse,
+        })
+        router.post("/validate", response_model=None)(validate_rules)
+
+        async def taxonomy_languages(user=Depends(get_current_user)):
+            return {"languages": taxonomy_index().languages()}
+
+        taxonomy_languages.__annotations__.update({
+            "user": CurrentUser, "return": dict[str, Any],
+        })
+        router.get("/taxonomy/languages")(taxonomy_languages)
+
+        async def taxonomy_search(language, q="", limit=Query(default=20, ge=1, le=100),
+                                   offset=Query(default=0, ge=0),
+                                   user=Depends(get_current_user)):
+            index = taxonomy_index()
+            if language not in index.languages():
+                raise HTTPException(
+                    status_code=422, detail=f"unknown taxonomy language {language!r}"
+                )
+            return {"items": index.search(q, language, limit, offset)}
+
+        taxonomy_search.__annotations__.update({
+            "language": str, "q": str, "limit": int, "offset": int,
+            "user": CurrentUser, "return": dict[str, Any],
+        })
+        router.get("/taxonomy/search", response_model=None)(taxonomy_search)
+
+        async def taxonomy_validate(taxonomy_id, user=Depends(get_current_user)):
+            index = taxonomy_index()
+            valid = index.contains(taxonomy_id)
+            return {
+                "valid": valid,
+                "path": index.path(taxonomy_id, index.languages()[0]) if valid else None,
+            }
+
+        taxonomy_validate.__annotations__.update({
+            "taxonomy_id": str, "user": CurrentUser, "return": dict[str, Any],
+        })
+        router.get("/taxonomy/validate", response_model=None)(taxonomy_validate)
+
+        async def fetch_language(payload, user=Depends(get_current_user)):
+            if payload.language not in _FETCHABLE_LANGUAGES:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"language must be one of {', '.join(_FETCHABLE_LANGUAGES)}",
+                )
+            try:
+                content = await _fetch_url(
+                    _FETCH_URL_TEMPLATE.format(lang=payload.language)
+                )
+            except Exception as exc:
+                raise HTTPException(
+                    status_code=502, detail=f"upstream fetch failed: {exc}"
+                ) from exc
+            try:
+                csv_text = taxonomy_txt_to_csv(content.decode("utf-8"))
+                entries = parse_taxonomy_csv(csv_text)
+                if len(entries) < MIN_TAXONOMY_ENTRIES:
+                    raise ValueError(
+                        f"only {len(entries)} entries, expected at least "
+                        f"{MIN_TAXONOMY_ENTRIES}"
+                    )
+            except (ValueError, UnicodeDecodeError) as exc:
+                raise HTTPException(
+                    status_code=502, detail=f"upstream taxonomy invalid: {exc}"
+                ) from exc
+            target = _taxonomy_directory() / _LANGUAGE_FILES[payload.language]
+            tmp = target.with_name(target.name + ".tmp")
+            try:
+                tmp.write_text(csv_text, encoding="utf-8")
+                os.replace(tmp, target)
+            except OSError as exc:
+                raise HTTPException(
+                    status_code=500, detail=f"cannot write taxonomy file: {exc}"
+                ) from exc
+            taxonomy_index().invalidate()
+            return {
+                "status": "ok",
+                "language": payload.language,
+                "entries": len(entries),
+            }
+
+        fetch_language.__annotations__.update({
+            "payload": FetchRequest, "user": CurrentUser, "return": dict[str, Any],
+        })
+        router.post("/taxonomy/fetch", response_model=None)(fetch_language)
