@@ -98,7 +98,7 @@ over its declared `data_scope` rows.
 ### Per-Plugin Scope Declaration
 | Plugin | `config_scope` | `data_scope` | Rationale |
 |--------|----------------|--------------|-----------|
-| Category | `["global", "client"]` | `["client"]` | Taxonomy shared; per-market out of MVP |
+| Category | `["global", "client"]` (rules, `union_by_key` by `id`) | `["global", "client"]` (client: manual assignments) | Google Product Taxonomy is market-independent; client-wide rule sharing is intentional (spec §5.3) |
 | Rules | `["global", "client", "feed_source"]` | `["global", "client", "feed_source"]` | Full flexibility |
 | Filter | `["global", "client", "feed_source"]` | `["global", "client", "feed_source"]` | Full flexibility |
 

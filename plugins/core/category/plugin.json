@@ -1,0 +1,45 @@
+{
+  "id": "category",
+  "name": "Category",
+  "version": "1.0.0",
+  "extension_point": "pipeline_module",
+  "entry_point": "plugin:CategoryPlugin",
+  "config_scope": ["global", "client"],
+  "data_scope": ["global", "client"],
+  "config_merge": {"rules": {"strategy": "union_by_key", "key": "id"}},
+  "config_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "title": "Category",
+    "properties": {
+      "rules": {
+        "type": "array",
+        "title": "Rules",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "string", "title": "ID"},
+            "source_field": {"type": "string", "title": "Source field", "default": "product_type"},
+            "operator": {"type": "string", "title": "Operator", "enum": ["eq", "ne", "contains", "regex", "in"]},
+            "source_value": {"title": "Source value"},
+            "taxonomy_id": {"type": "string", "title": "Taxonomy ID"},
+            "is_excluded": {"type": "boolean", "title": "Excluded", "default": false}
+          },
+          "required": ["id", "source_field", "operator", "source_value"]
+        }
+      }
+    }
+  },
+  "data_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "title": "Category data",
+    "properties": {
+      "assignments": {
+        "type": "object",
+        "title": "Manual assignments",
+        "additionalProperties": {"type": "string"}
+      }
+    }
+  }
+}

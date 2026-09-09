@@ -1,0 +1,4 @@
+# Google Product Taxonomy (de-DE fixture)
+1 - Tiere & Tierbedarf
+166 - Bekleidung & Accessoires
+5001 - Sonstiges > Kategorien, Allgemein
