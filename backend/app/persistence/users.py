@@ -81,7 +81,9 @@ async def change_password(
 
 async def list_users(session: AsyncSession) -> list[tuple[User, list[int]]]:
     users = list((await session.execute(select(User).order_by(User.id))).scalars())
-    assignments = list((await session.execute(select(UserClient))).all())
+    assignments = list(
+        (await session.execute(select(UserClient.user_id, UserClient.client_id))).all()
+    )
     by_user: dict[int, list[int]] = {}
     for user_id, client_id in assignments:
         by_user.setdefault(user_id, []).append(client_id)
