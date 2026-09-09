@@ -441,9 +441,11 @@
 
 **Why:** Raw server error details shown without localized lead-in text. Same report.
 
-### 9A.9 [ ] F6 ProductsPage state reset on feed-source change [P2]
+### 9A.9 [x] F6 ProductsPage state reset on feed-source change [P2] — done 2026-09-09
 
 **Why:** ProductsPage state not reset when feed source changes. `docs/reports/2026-09-08-03-frontend.md`.
+
+**Done:** useEffect keyed on feedSourceId clears searchInput, resets selectedProductId to null, and re-loads visibleColumnIds from localStorage. Regression test: type into search, navigate via popstate, verify cleared.
 
 ### 9A.10 [x] F13 deep-link page strip; F14 usePreview deps/unmount; F15 toggle rollback scope; F16 ProductsTable dead code; F17 raw_data heading; F18 MonitoringLayout dead code [P2] — done 2026-09-09
 
