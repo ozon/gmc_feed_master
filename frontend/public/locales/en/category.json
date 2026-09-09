@@ -1,0 +1,99 @@
+{
+  "title": "Category",
+  "language": "Taxonomy language",
+  "fetchLanguage": "Fetch de-DE taxonomy",
+  "fetchLanguagePending": "Fetching…",
+  "fetchLanguageFailed": "Could not fetch the taxonomy from Google.",
+  "tabs": {
+    "dashboard": "Dashboard",
+    "rules": "Rules",
+    "manual": "Manual categorization",
+    "ai": "AI",
+    "uncategorized": "Uncategorized"
+  },
+  "placeholders": {
+    "aiDisabled": "AI-assisted categorization is not part of v1.",
+    "uncategorizedDisabled": "The uncategorized worklist ships in a follow-up release.",
+    "generateDisabled": "Generate is not part of v1.",
+    "copyDisabled": "Copy rules is not part of v1.",
+    "bulkDeleteDisabled": "Bulk delete is not part of v1."
+  },
+  "dashboard": {
+    "feedSource": "Feed source",
+    "noFeedSources": "This client has no feed sources yet.",
+    "noProducts": "No staged products yet — run the pipeline first.",
+    "asOfLastRun": "Counts reflect the last pipeline run.",
+    "total": "Total staged products",
+    "buckets": {
+      "manual": "Manual",
+      "auto": "Auto (rules)",
+      "excluded": "Excluded",
+      "uncategorized": "Uncategorized"
+    },
+    "progress": "{{labeled}} of {{total}} categorized"
+  },
+  "rules": {
+    "add": "Add rule",
+    "empty": "No rules yet. Add your first rule.",
+    "reset": "Reset",
+    "save": "Save",
+    "saved": "Rules saved.",
+    "saveFailed": "Could not save rules.",
+    "validateFailed": "The draft has errors.",
+    "confirmLeave": "You have unsaved changes. Leave anyway?",
+    "confirmLeaveTitle": "Unsaved changes",
+    "delete": "Delete rule",
+    "deleteConfirmTitle": "Delete rule",
+    "deleteConfirmBody": "Delete rule {{id}}? Products categorized by it become uncategorized on the next run.",
+    "matchesCount_one": "{{count}} match",
+    "matchesCount_other": "{{count}} matches",
+    "showMatches": "Show matched products",
+    "inherited": "Inherited",
+    "override": "Override at client level",
+    "sourceField": "Source field",
+    "operator": "Operator",
+    "sourceValue": "Source value",
+    "sourceValueIn": "Values (one per line)",
+    "taxonomy": "Google category",
+    "excluded": "Excluded (no category)",
+    "operators": {
+      "eq": "equals",
+      "ne": "not equals",
+      "contains": "contains",
+      "regex": "regex",
+      "in": "one of"
+    }
+  },
+  "matches": {
+    "modalTitle": "Products matched by rule {{id}}",
+    "loadMore": "Load more",
+    "empty": "No staged products matched this rule yet.",
+    "stale": "Counts are as of the last pipeline run."
+  },
+  "manual": {
+    "productId": "Product ID",
+    "lookup": "Look up",
+    "notFound": "Product not found in this feed source.",
+    "empty": "Enter a product ID to categorize it manually.",
+    "needsClient": "Manual categorization needs a client context.",
+    "selectFeedSource": "Select a feed source first.",
+    "provenanceLabel": "Provenance",
+    "categoryLabel": "Current category",
+    "assignmentLabel": "Manual assignment",
+    "none": "none",
+    "assign": "Assign category",
+    "unassign": "Remove assignment",
+    "saved": "Assignments saved.",
+    "saveFailed": "Could not save assignments.",
+    "provenance": {
+      "manual": "Manual",
+      "auto": "Auto (rule {{rule}})",
+      "excluded": "Excluded (rule {{rule}})",
+      "null": "Uncategorized"
+    }
+  },
+  "taxonomy": {
+    "search": "Search category",
+    "noResults": "No matching category."
+  }
+}

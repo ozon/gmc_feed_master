@@ -1,4 +1,4 @@
-import { IconLetterA, IconLetterB, IconLetterC, IconLetterE, IconCircle } from '@tabler/icons-react';
+import { IconLetterA, IconLetterB, IconLetterC, IconLetterE, IconSitemap, IconCircle } from '@tabler/icons-react';
 import type { ComponentType } from 'react';
 
 const MAP: Record<string, ComponentType<{ size?: number }>> = {
@@ -6,6 +6,7 @@ const MAP: Record<string, ComponentType<{ size?: number }>> = {
   'letter-a': IconLetterA,
   'letter-b': IconLetterB,
   'letter-c': IconLetterC,
+  'sitemap': IconSitemap,
 };
 
 export function getPluginIcon(name: string | undefined): ComponentType<{ size?: number }> {

@@ -61,7 +61,8 @@
   "pluginNames": {
     "custom_labels": "Labelizer",
     "rules": "Rules",
-    "filter": "Filter"
+    "filter": "Filter",
+    "category": "Category"
   },
   "notFoundTitle": "Page not found",
   "notFoundHome": "Go to the dashboard",

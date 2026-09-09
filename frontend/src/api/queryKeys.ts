@@ -24,6 +24,15 @@ export const queryKeys = {
     ['plugin-config', pluginId, scope ?? {}] as const,
   pluginData: (pluginId: string, scope?: { clientId?: number; feedSourceId?: number }) =>
     ['plugin-data', pluginId, scope ?? {}] as const,
+  category: {
+    stats: (feedSourceId: number | string) =>
+      ['feed-source', feedSourceId, 'category-stats'] as const,
+    matches: (feedSourceId: number | string, ruleId: string, limit: number, offset: number) =>
+      ['feed-source', feedSourceId, 'category-matches', ruleId, { limit, offset }] as const,
+    product: (feedSourceId: number | string, productId: string) =>
+      ['feed-source', feedSourceId, 'category-product', productId] as const,
+    languages: ['category', 'taxonomy-languages'] as const,
+  },
   adminUsers: ['admin', 'users'] as const,
   adminSettings: ['admin', 'settings'] as const,
   adminScheduler: ['admin', 'scheduler'] as const,

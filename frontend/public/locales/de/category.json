@@ -1,0 +1,99 @@
+{
+  "title": "Kategorie",
+  "language": "Taxonomie-Sprache",
+  "fetchLanguage": "de-DE-Taxonomie abrufen",
+  "fetchLanguagePending": "Wird abgerufen…",
+  "fetchLanguageFailed": "Die Taxonomie konnte nicht von Google abgerufen werden.",
+  "tabs": {
+    "dashboard": "Dashboard",
+    "rules": "Regeln",
+    "manual": "Manuelle Kategorisierung",
+    "ai": "KI",
+    "uncategorized": "Nicht kategorisiert"
+  },
+  "placeholders": {
+    "aiDisabled": "KI-gestützte Kategorisierung ist nicht Teil von v1.",
+    "uncategorizedDisabled": "Die Arbeitliste für nicht kategorisierte Produkte folgt in einem späteren Release.",
+    "generateDisabled": "Generieren ist nicht Teil von v1.",
+    "copyDisabled": "Regeln kopieren ist nicht Teil von v1.",
+    "bulkDeleteDisabled": "Mehrfaches Löschen ist nicht Teil von v1."
+  },
+  "dashboard": {
+    "feedSource": "Feed-Quelle",
+    "noFeedSources": "Dieser Mandant hat noch keine Feed-Quellen.",
+    "noProducts": "Noch keine bereitgestellten Produkte — zuerst die Pipeline ausführen.",
+    "asOfLastRun": "Die Zahlen beziehen sich auf den letzten Pipeline-Lauf.",
+    "total": "Bereitgestellte Produkte gesamt",
+    "buckets": {
+      "manual": "Manuell",
+      "auto": "Automatisch (Regeln)",
+      "excluded": "Ausgeschlossen",
+      "uncategorized": "Nicht kategorisiert"
+    },
+    "progress": "{{labeled}} von {{total}} kategorisiert"
+  },
+  "rules": {
+    "add": "Regel hinzufügen",
+    "empty": "Noch keine Regeln. Fügen Sie die erste Regel hinzu.",
+    "reset": "Zurücksetzen",
+    "save": "Speichern",
+    "saved": "Regeln gespeichert.",
+    "saveFailed": "Regeln konnten nicht gespeichert werden.",
+    "validateFailed": "Der Entwurf enthält Fehler.",
+    "confirmLeave": "Es gibt ungespeicherte Änderungen. Trotzdem verlassen?",
+    "confirmLeaveTitle": "Ungespeicherte Änderungen",
+    "delete": "Regel löschen",
+    "deleteConfirmTitle": "Regel löschen",
+    "deleteConfirmBody": "Regel {{id}} löschen? Davon kategorisierte Produkte werden beim nächsten Lauf nicht kategorisiert.",
+    "matchesCount_one": "{{count}} Treffer",
+    "matchesCount_other": "{{count}} Treffer",
+    "showMatches": "Zugeordnete Produkte anzeigen",
+    "inherited": "Geerbt",
+    "override": "Auf Mandantenebene überschreiben",
+    "sourceField": "Quellfeld",
+    "operator": "Operator",
+    "sourceValue": "Quellwert",
+    "sourceValueIn": "Werte (einer pro Zeile)",
+    "taxonomy": "Google-Kategorie",
+    "excluded": "Ausgeschlossen (keine Kategorie)",
+    "operators": {
+      "eq": "gleich",
+      "ne": "ungleich",
+      "contains": "enthält",
+      "regex": "Regex",
+      "in": "einer von"
+    }
+  },
+  "matches": {
+    "modalTitle": "Von Regel {{id}} zugeordnete Produkte",
+    "loadMore": "Mehr laden",
+    "empty": "Noch keine bereitgestellten Produkte entsprechen dieser Regel.",
+    "stale": "Die Zahlen beziehen sich auf den letzten Pipeline-Lauf."
+  },
+  "manual": {
+    "productId": "Produkt-ID",
+    "lookup": "Nachschlagen",
+    "notFound": "Produkt in dieser Feed-Quelle nicht gefunden.",
+    "empty": "Geben Sie eine Produkt-ID ein, um sie manuell zu kategorisieren.",
+    "needsClient": "Die manuelle Kategorisierung benötigt einen Mandanten-Kontext.",
+    "selectFeedSource": "Wählen Sie zuerst eine Feed-Quelle.",
+    "provenanceLabel": "Herkunft",
+    "categoryLabel": "Aktuelle Kategorie",
+    "assignmentLabel": "Manuelle Zuordnung",
+    "none": "keine",
+    "assign": "Kategorie zuordnen",
+    "unassign": "Zuordnung entfernen",
+    "saved": "Zuordnungen gespeichert.",
+    "saveFailed": "Zuordnungen konnten nicht gespeichert werden.",
+    "provenance": {
+      "manual": "Manuell",
+      "auto": "Automatisch (Regel {{rule}})",
+      "excluded": "Ausgeschlossen (Regel {{rule}})",
+      "null": "Nicht kategorisiert"
+    }
+  },
+  "taxonomy": {
+    "search": "Kategorie suchen",
+    "noResults": "Keine passende Kategorie."
+  }
+}
