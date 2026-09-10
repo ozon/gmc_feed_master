@@ -1,5 +1,10 @@
 {
   "appName": "GMC Feed Master",
+  "fieldSelect": {
+    "customValue": "Eigenen Wert verwenden: „{{value}}“",
+    "invalidPath": "Indizes sind 1-basiert (z. B. .1, .2)",
+    "clear": "Leeren"
+  },
   "nav": {
     "dashboard": "Übersicht",
     "setup": "Einrichtung",
