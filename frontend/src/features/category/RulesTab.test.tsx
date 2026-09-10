@@ -54,6 +54,14 @@ function renderRulesTab(
   routes: Route[],
 ) {
   const fetchMock = stubFetch(routeHandler(routes));
+  renderRulesTabWithHandler(scope, fetchMock);
+  return fetchMock;
+}
+
+function renderRulesTabWithHandler(
+  scope: { clientId?: number; feedSourceId?: number },
+  fetchHandler: (url: string) => Response | Promise<Response>,
+) {
   const client = makeClient();
   const router = createMemoryRouter(
     [
@@ -72,7 +80,6 @@ function renderRulesTab(
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  return fetchMock;
 }
 
 const BASE_ROUTES: Route[] = [
@@ -199,6 +206,76 @@ describe('RulesTab', () => {
     expect(await screen.findByText('Unsaved changes')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
     await waitFor(() => expect(screen.getByText('Left page')).toBeInTheDocument());
+  });
+
+  it('Dirty guard: Cancel keeps the draft and stays on the page', async () => {
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/',
+          element: (
+            <div>
+              <Link to="/other">Leave</Link>
+              <RulesTab pluginId="category" scope={{ clientId: 1 }} language="en-US" feedSourceId={undefined} />
+            </div>
+          ),
+        },
+        { path: '/other', element: <div>Left page</div> },
+      ],
+      { initialEntries: ['/'] },
+    );
+    const client = makeClient();
+    stubFetch(routeHandler(BASE_ROUTES));
+    render(
+      <QueryClientProvider client={client}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+    await screen.findByText('c1');
+    await userEvent.click(screen.getByRole('button', { name: 'Add rule' }));
+    await userEvent.click(screen.getByText('Leave'));
+    expect(await screen.findByText('Unsaved changes')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() =>
+      expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText('c1')).toBeInTheDocument();
+    expect(screen.queryByText('Left page')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Add rule' })).toBeEnabled();
+  });
+
+  it('Rapid double-click on Save fires exactly one validate and one PUT', async () => {
+    const baseHandler = routeHandler(BASE_ROUTES);
+    let releaseValidate: ((response: Response) => void) | undefined;
+    const fetchMock = stubFetch((url: string) => {
+      if (url.includes('/plugins/category/validate')) {
+        return new Promise<Response>((resolve) => {
+          releaseValidate = resolve;
+        });
+      }
+      return baseHandler(url);
+    });
+    renderRulesTabWithHandler({ clientId: 1 }, fetchMock);
+    await screen.findByText('c1');
+    await userEvent.click(screen.getByRole('button', { name: 'Add rule' }));
+    const saveButton = screen.getByRole('button', { name: 'Save' });
+    userEvent.click(saveButton);
+    userEvent.click(saveButton);
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([url]) => String(url).includes('/plugins/category/validate')),
+      ).toHaveLength(1),
+    );
+    releaseValidate!(jsonResponse({ status: 'ok' }));
+    const puts = () =>
+      fetchMock.mock.calls.filter(
+        ([url, init]) =>
+          String(url).includes('/plugins/category/config?client_id=1') &&
+          (init?.method ?? 'GET') === 'PUT',
+      );
+    await waitFor(() => expect(puts()).toHaveLength(1));
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/plugins/category/validate'))).toHaveLength(1);
   });
 
   it('Per-rule match badge from stats and matches modal with product list', async () => {

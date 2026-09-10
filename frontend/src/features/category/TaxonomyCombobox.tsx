@@ -29,7 +29,7 @@ export function TaxonomyCombobox({
     let cancelled = false;
     const timer = setTimeout(() => {
       void apiGet<{ items: TaxonomyEntry[] }>(
-        `/plugins/category/taxonomy/search?language=${language}` +
+        `/plugins/category/taxonomy/search?language=${encodeURIComponent(language)}` +
           `&q=${encodeURIComponent(query)}&limit=50&offset=0`,
       )
         .catch(() => ({ items: [] as TaxonomyEntry[] }))

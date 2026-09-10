@@ -1,4 +1,4 @@
-import { Component, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ActionIcon, Badge, Button, Card, Group, Select, Stack, Switch, Text,
   Textarea, TextInput, Title,
@@ -207,6 +207,7 @@ export function RulesTab({
   const [draft, setDraft] = useState<ScopedCategoryRule[] | null>(null);
   const [matchesRule, setMatchesRule] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const savingRef = useRef(false);
   const sensors = useSensors(useSensor(PointerSensor));
 
   const baseline = useMemo(
@@ -259,18 +260,29 @@ export function RulesTab({
   }
 
   function saveRules() {
+    if (savingRef.current) return;
+    savingRef.current = true;
     const payload: CategoryRule[] = editableRules.map(({ origin: _origin, ...rule }) => rule);
     validate.mutate(payload, {
       onSuccess: () => {
         save.mutate(
           { rules: payload },
           {
-            onSuccess: () => notifySuccess(t('rules.saved')),
-            onError: (error) => notifyApiError(error, t('rules.saveFailed')),
+            onSuccess: () => {
+              savingRef.current = false;
+              notifySuccess(t('rules.saved'));
+            },
+            onError: (error) => {
+              savingRef.current = false;
+              notifyApiError(error, t('rules.saveFailed'));
+            },
           },
         );
       },
-      onError: (error) => notifyApiError(error, t('rules.validateFailed')),
+      onError: (error) => {
+        savingRef.current = false;
+        notifyApiError(error, t('rules.validateFailed'));
+      },
     });
   }
 
@@ -291,7 +303,7 @@ export function RulesTab({
           <Button variant="default" disabled={!dirty} onClick={() => setDraft(baseline)}>
             {t('rules.reset')}
           </Button>
-          <Button disabled={!dirty} loading={save.isPending} onClick={saveRules}>
+          <Button disabled={!dirty} loading={save.isPending || validate.isPending} onClick={saveRules}>
             {t('rules.save')}
           </Button>
           <Button variant="light" onClick={addRule}>{t('rules.add')}</Button>
