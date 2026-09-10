@@ -15,6 +15,7 @@ class SourceField:
     name: str
     kind: str
     sub_fields: tuple[str, ...] = ()
+    max_repeats: int = 0
 
 
 @dataclass

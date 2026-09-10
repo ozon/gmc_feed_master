@@ -89,6 +89,7 @@ def _find_items(root: ET.Element) -> list[ET.Element]:
 def _infer_source_fields(products: list[dict[str, object]]) -> list[SourceField]:
     first_value: dict[str, object] = {}
     sub_field_order: dict[str, list[str]] = {}
+    max_repeats: dict[str, int] = {}
 
     for product in products:
         for key, value in product.items():
@@ -100,6 +101,8 @@ def _infer_source_fields(products: list[dict[str, object]]) -> list[SourceField]
                     if sub_key not in seen:
                         seen.append(sub_key)
             elif isinstance(value, list):
+                if value:
+                    max_repeats[key] = max(max_repeats.get(key, 0), len(value))
                 for element in value:
                     if isinstance(element, dict):
                         seen = sub_field_order.setdefault(key, [])
@@ -109,10 +112,11 @@ def _infer_source_fields(products: list[dict[str, object]]) -> list[SourceField]
 
     fields: list[SourceField] = []
     for key, value in first_value.items():
+        repeats = max_repeats.get(key, 0)
         if isinstance(value, str):
-            kind = "scalar"
+            kind = "repeated_scalar" if repeats > 0 else "scalar"
         elif isinstance(value, dict):
-            kind = "structured"
+            kind = "repeated_structured" if repeats > 0 else "structured"
         elif isinstance(value, list):
             first = value[0] if value else None
             kind = "repeated_structured" if isinstance(first, dict) else "repeated_scalar"
@@ -120,7 +124,10 @@ def _infer_source_fields(products: list[dict[str, object]]) -> list[SourceField]
             continue
         fields.append(
             SourceField(
-                name=key, kind=kind, sub_fields=tuple(sub_field_order.get(key, []))
+                name=key,
+                kind=kind,
+                sub_fields=tuple(sub_field_order.get(key, [])),
+                max_repeats=repeats,
             )
         )
     return fields

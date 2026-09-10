@@ -142,7 +142,7 @@ class TestXmlSourceFields:
 
         assert report.source_fields == [
             SourceField("sku", "scalar", ()),
-            SourceField("images", "repeated_scalar", ()),
+            SourceField("images", "repeated_scalar", (), 2),
             SourceField("shipping", "structured", ("country",)),
         ]
 
@@ -156,7 +156,7 @@ class TestXmlSourceFields:
         )
         report = parse_xml(data, reg)
 
-        assert report.source_fields == [SourceField("x", "scalar", ())]
+        assert report.source_fields == [SourceField("x", "repeated_scalar", (), 2)]
 
     def test_sub_fields_union_across_items(self) -> None:
         reg = _registry({})
@@ -185,10 +185,63 @@ class TestXmlSourceFields:
         report = parse_xml(data, reg)
 
         assert report.source_fields == [
-            SourceField("shipping", "repeated_structured", ("country",)),
+            SourceField("shipping", "repeated_structured", ("country",), 2),
         ]
 
     def test_no_items_has_no_source_fields(self) -> None:
         reg = _registry({})
         report = parse_xml(b"<rss><channel></channel></rss>", reg)
         assert report.source_fields == []
+
+    def test_max_repeats_zero_for_scalar_and_structured(self) -> None:
+        reg = _registry({})
+        data = (
+            b"<rss><channel>"
+            b"<item><sku>A</sku><shipping><country>US</country></shipping></item>"
+            b"</channel></rss>"
+        )
+        report = parse_xml(data, reg)
+        assert report.source_fields == [
+            SourceField("sku", "scalar", (), 0),
+            SourceField("shipping", "structured", ("country",), 0),
+        ]
+
+    def test_max_repeats_largest_observed_list_length(self) -> None:
+        reg = _registry({})
+        data = (
+            b"<rss><channel>"
+            b"<item>"
+            b"<images>a.jpg</images>"
+            b"<shipping><country>US</country><price>1</price></shipping>"
+            b"<shipping><country>UK</country><price>2</price></shipping>"
+            b"<shipping><country>DE</country><price>3</price></shipping>"
+            b"</item>"
+            b"<item><images>a.jpg</images><images>b.jpg</images><images>c.jpg</images></item>"
+            b"</channel></rss>"
+        )
+        report = parse_xml(data, reg)
+        by_name = {sf.name: sf for sf in report.source_fields}
+        assert by_name["shipping"].max_repeats == 3
+        assert by_name["images"].max_repeats == 3
+
+    def test_max_repeats_union_regression_first_item_missing_keys(self) -> None:
+        """Spec §2.1: union sub-fields — first item lacks keys later items have."""
+        reg = _registry({})
+        data = (
+            b"<rss><channel>"
+            b"<item><product_detail><section_name>General</section_name></product_detail></item>"
+            b"<item>"
+            b"<product_detail><section_name>General</section_name></product_detail>"
+            b"<product_detail>"
+            b"<section_name>General</section_name>"
+            b"<attribute_name>Battery</attribute_name>"
+            b"<attribute_value>5000 mAh</attribute_value>"
+            b"</product_detail>"
+            b"</item>"
+            b"</channel></rss>"
+        )
+        report = parse_xml(data, reg)
+        pd = next(sf for sf in report.source_fields if sf.name == "product_detail")
+        assert pd.kind == "repeated_structured"
+        assert list(pd.sub_fields) == ["section_name", "attribute_name", "attribute_value"]
+        assert pd.max_repeats == 2
