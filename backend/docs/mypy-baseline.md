@@ -5,7 +5,7 @@ CI enforces the count via `backend/mypy-baseline.txt`; keep both in sync — eac
 `uv run mypy .` is configured in `pyproject.toml` (`[tool.mypy]`, target
 Python 3.10; `ignore_missing_imports` limited to the untyped third-party
 libs `jsonschema`, `apscheduler`, `asyncpg`). The command reports the
-known errors below — **7** as of 2026-09-10 (mypy 2.3.1) — and
+known errors below — **0** as of 2026-09-10 (mypy 2.3.1) — and
 exits non-zero until the baseline reaches zero. That is expected; do not
 "fix" a red exit by loosening the config.
 
@@ -22,21 +22,10 @@ exits non-zero until the baseline reaches zero. That is expected; do not
 ## Baseline (mypy output, `error:` lines only, sorted)
 
 ```text
-tests/test_export_token_log_redaction.py:21: error: Invalid index type "int" for "Mapping[str, object]"; expected type "str"  [index]
-tests/test_export_token_log_redaction.py:21: error: Value of type "tuple[object, ...] | Mapping[str, object] | None" is not indexable  [index]
-tests/test_export_token_log_redaction.py:28: error: Invalid index type "int" for "Mapping[str, object]"; expected type "str"  [index]
-tests/test_export_token_log_redaction.py:28: error: Value of type "tuple[object, ...] | Mapping[str, object] | None" is not indexable  [index]
-tests/test_export_token_log_redaction.py:35: error: "None" object is not iterable  [misc]
-tests/test_rules_conditions.py:9: error: Cannot find implementation or library stub for module named "plugin"  [import-not-found]
-tests/test_rules_plugin.py:11: error: Cannot find implementation or library stub for module named "plugin"  [import-not-found]
 ```
 
 ## Notes on clusters
 
-- **`app/config.py:45` (3)** — `Settings()` constructed with env-provided
-  kwargs mypy cannot see; needs an explicit constructor call signature.
-  Exception: `alembic/env.py` carries one narrowly-scoped
-  `[[tool.mypy.overrides]]` or import via the plugin loader).
 
 ## Follow-up
 

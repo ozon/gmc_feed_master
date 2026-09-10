@@ -18,6 +18,7 @@ def _access_record(path: str) -> logging.LogRecord:
 def test_export_token_redacted_in_access_record() -> None:
     record = _access_record("/export/secret-token-value.xml")
     assert _ExportTokenRedactor().filter(record) is True
+    assert isinstance(record.args, tuple)
     assert record.args[2] == "/export/[REDACTED]"
     assert "secret-token-value" not in record.getMessage()
 
@@ -25,6 +26,7 @@ def test_export_token_redacted_in_access_record() -> None:
 def test_non_export_path_is_untouched() -> None:
     record = _access_record("/health")
     assert _ExportTokenRedactor().filter(record) is True
+    assert isinstance(record.args, tuple)
     assert record.args[2] == "/health"
     assert record.getMessage().endswith('GET /health HTTP/1.1" 200')
 
@@ -32,6 +34,7 @@ def test_non_export_path_is_untouched() -> None:
 def test_redaction_preserves_five_tuple_for_uvicorn_formatter() -> None:
     record = _access_record("/export/abc123.xml")
     _ExportTokenRedactor().filter(record)
+    assert isinstance(record.args, tuple)
     client_addr, method, full_path, http_version, status_code = record.args
     assert client_addr == "127.0.0.1:54321"
     assert method == "GET"

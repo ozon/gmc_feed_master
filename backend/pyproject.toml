@@ -38,6 +38,10 @@ plugins = ["pydantic.mypy"]
 module = ["jsonschema.*", "apscheduler.*", "asyncpg"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["plugin"]
+ignore_missing_imports = true
+
 [tool.uv]
 package = true
 
