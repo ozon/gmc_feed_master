@@ -303,3 +303,88 @@ def test_dotted_key_broadcast_drops_empty_sentinels_for_repeated_scalar(registry
     )
     assert result == {"additional_image_link": ["US"]}
     assert stats == ApplyStats(dropped_unmapped=0, shape_mismatches=0)
+
+
+def test_indexed_repeated_scalar_target_sets_element(registry):
+    product = {"img_a": "a.jpg", "img_b": "b.jpg"}
+    result, stats = apply_mapping(
+        product,
+        {"img_a": MappingEntry("additional_image_link.1", "manual"),
+         "img_b": MappingEntry("additional_image_link.2", "manual")},
+        registry,
+    )
+    assert result == {"additional_image_link": ["a.jpg", "b.jpg"]}
+    assert stats == ApplyStats(dropped_unmapped=0, shape_mismatches=0)
+
+
+def test_indexed_repeated_structured_target_sets_slot(registry):
+    product = {"sn": "General", "an": "Battery", "av": "5000 mAh"}
+    result, stats = apply_mapping(
+        product,
+        {"sn": MappingEntry("product_detail.1.section_name", "manual"),
+         "an": MappingEntry("product_detail.1.attribute_name", "manual"),
+         "av": MappingEntry("product_detail.1.attribute_value", "manual")},
+        registry,
+    )
+    assert result == {"product_detail": [
+        {"section_name": "General", "attribute_name": "Battery",
+         "attribute_value": "5000 mAh"},
+    ]}
+    assert stats == ApplyStats(dropped_unmapped=0, shape_mismatches=0)
+
+
+def test_indexed_sparse_auto_extends(registry):
+    product = {"sn": "General"}
+    result, stats = apply_mapping(
+        product,
+        {"sn": MappingEntry("product_detail.3.section_name", "manual")},
+        registry,
+    )
+    assert result == {"product_detail": [{}, {}, {"section_name": "General"}]}
+    assert stats == ApplyStats(dropped_unmapped=0, shape_mismatches=0)
+
+
+def test_indexed_overrides_broadcast_slot(registry):
+    """Operator directive 5: indexed assignment beats broadcast for its slot."""
+    product = {
+        "images": ["a.jpg", "b.jpg", "c.jpg"],
+        "first_image": "OVERRIDE.jpg",
+    }
+    result, stats = apply_mapping(
+        product,
+        {"images": MappingEntry("additional_image_link", "manual"),
+         "first_image": MappingEntry("additional_image_link.1", "manual")},
+        registry,
+    )
+    assert result == {"additional_image_link": ["OVERRIDE.jpg", "b.jpg", "c.jpg"]}
+    assert stats == ApplyStats(dropped_unmapped=0, shape_mismatches=0)
+
+
+def test_indexed_sub_overrides_broadcast_sub_slot(registry):
+    product = {
+        "details": [
+            {"section_name": "S1", "attribute_name": "A1", "attribute_value": "V1"},
+            {"section_name": "S2", "attribute_name": "A2", "attribute_value": "V2"},
+        ],
+        "override_value": "NEW",
+    }
+    result, stats = apply_mapping(
+        product,
+        {"details": MappingEntry("product_detail", "manual"),
+         "override_value": MappingEntry("product_detail.2.attribute_value", "manual")},
+        registry,
+    )
+    assert result == {"product_detail": [
+        {"section_name": "S1", "attribute_name": "A1", "attribute_value": "V1"},
+        {"section_name": "S2", "attribute_name": "A2", "attribute_value": "NEW"},
+    ]}
+    assert stats == ApplyStats(dropped_unmapped=0, shape_mismatches=0)
+
+
+def test_indexed_target_on_scalar_kind_shape_mismatch(registry):
+    product = {"x": "value"}
+    result, stats = apply_mapping(
+        product, {"x": MappingEntry("title.1", "manual")}, registry,
+    )
+    assert result == {}
+    assert stats.shape_mismatches == 1

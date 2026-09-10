@@ -67,8 +67,9 @@ async def seed_field_mapping(factory, feed_source_id, doc):
             feed_source.field_mapping = doc
 
 
-def source_field(name, kind, sub_fields=()):
-    return {"name": name, "kind": kind, "sub_fields": list(sub_fields), "max_repeats": 0}
+def source_field(name, kind, sub_fields=(), max_repeats=0):
+    return {"name": name, "kind": kind, "sub_fields": list(sub_fields),
+            "max_repeats": max_repeats}
 
 
 async def test_get_field_mapping_missing_feed_source_returns_404(app_factory):
@@ -572,3 +573,87 @@ async def test_put_exact_source_name_wins_over_path_resolution(app_factory):
     assert resp.json()["mappings"] == {
         "ship.price": {"target": "price", "origin": "manual"}
     }
+
+
+async def test_put_indexed_target_on_repeated_accepted(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    feed_id = await create_feed_source(client)
+    await seed_field_mapping(factory, feed_id, {
+        "version": 1, "auto_mapped": False,
+        "source_fields": [
+            source_field("sn", "scalar"),
+            source_field("pd", "repeated_structured",
+                         ["section_name", "attribute_name", "attribute_value"]),
+        ],
+        "mappings": {},
+    })
+    resp = await client.put(f"/feed-sources/{feed_id}/field-mapping", json={
+        "mappings": {
+            "sn": {"target": "product_detail.1.section_name"},
+        },
+    })
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["mappings"]["sn"]["target"] == "product_detail.1.section_name"
+
+
+async def test_put_indexed_target_on_scalar_rejected_422(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    feed_id = await create_feed_source(client)
+    await seed_field_mapping(factory, feed_id, {
+        "version": 1, "auto_mapped": False,
+        "source_fields": [source_field("t", "scalar")],
+        "mappings": {},
+    })
+    resp = await client.put(f"/feed-sources/{feed_id}/field-mapping", json={
+        "mappings": {"t": {"target": "title.1"}},
+    })
+    assert resp.status_code == 422
+    assert any("repeated" in e for e in resp.json()["errors"])
+
+
+async def test_put_indexed_coexists_with_whole_claim(app_factory):
+    """Operator directive 5: whole claim + indexed claim on same attr coexist."""
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    feed_id = await create_feed_source(client)
+    await seed_field_mapping(factory, feed_id, {
+        "version": 1, "auto_mapped": False,
+        "source_fields": [
+            source_field("images", "repeated_scalar"),
+            source_field("hero", "scalar"),
+        ],
+        "mappings": {},
+    })
+    resp = await client.put(f"/feed-sources/{feed_id}/field-mapping", json={
+        "mappings": {
+            "images": {"target": "additional_image_link"},
+            "hero": {"target": "additional_image_link.1"},
+        },
+    })
+    assert resp.status_code == 200
+    assert resp.json()["mappings"]["hero"]["target"] == "additional_image_link.1"
+
+
+async def test_put_indexed_duplicate_target_still_rejected(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    feed_id = await create_feed_source(client)
+    await seed_field_mapping(factory, feed_id, {
+        "version": 1, "auto_mapped": False,
+        "source_fields": [
+            source_field("a", "scalar"),
+            source_field("b", "scalar"),
+        ],
+        "mappings": {},
+    })
+    resp = await client.put(f"/feed-sources/{feed_id}/field-mapping", json={
+        "mappings": {
+            "a": {"target": "product_detail.1.section_name"},
+            "b": {"target": "product_detail.1.section_name"},
+        },
+    })
+    assert resp.status_code == 422
+    assert any("already claimed" in e for e in resp.json()["errors"])

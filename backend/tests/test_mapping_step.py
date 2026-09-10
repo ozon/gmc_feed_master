@@ -76,10 +76,10 @@ class TestFirstIngestion:
             "ean": {"target": "gtin", "origin": "synonym"},
         }
         assert feed_source.field_mapping["source_fields"] == [
-            {"name": "id", "kind": "scalar", "sub_fields": []},
-            {"name": "title", "kind": "scalar", "sub_fields": []},
-            {"name": "ean", "kind": "scalar", "sub_fields": []},
-            {"name": "margin", "kind": "scalar", "sub_fields": []},
+            {"name": "id", "kind": "scalar", "sub_fields": [], "max_repeats": 0},
+            {"name": "title", "kind": "scalar", "sub_fields": [], "max_repeats": 0},
+            {"name": "ean", "kind": "scalar", "sub_fields": [], "max_repeats": 0},
+            {"name": "margin", "kind": "scalar", "sub_fields": [], "max_repeats": 0},
         ]
         assert run_state.products is products
         assert run_state.products == [{"id": "1", "title": "Shirt", "gtin": ["123"]}]
@@ -119,8 +119,8 @@ class TestSecondRun:
             "sku": {"target": "id", "origin": "manual"}
         }
         assert feed_source.field_mapping["source_fields"] == [
-            {"name": "sku", "kind": "scalar", "sub_fields": []},
-            {"name": "title", "kind": "scalar", "sub_fields": []},
+            {"name": "sku", "kind": "scalar", "sub_fields": [], "max_repeats": 0},
+            {"name": "title", "kind": "scalar", "sub_fields": [], "max_repeats": 0},
         ]
         assert run_state.products == [{"id": "A1"}]
         assert result.processed_count == 1

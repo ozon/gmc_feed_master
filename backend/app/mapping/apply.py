@@ -6,6 +6,7 @@ from typing import Any
 from registry.model import AttributeKind, RegistryDocument
 
 from .document import MappingEntry
+from .indexed_path import IndexedPath, parse_indexed_path
 
 
 @dataclass
@@ -55,6 +56,44 @@ def _merge_elementwise(
         bucket[index][subfield] = item
 
 
+def _entry_is_indexed(entry: MappingEntry) -> bool:
+    try:
+        return parse_indexed_path(entry.target).index is not None
+    except ValueError:
+        return False
+
+
+def _set_indexed(
+    result: dict[str, Any],
+    parsed: IndexedPath,
+    value: str,
+) -> bool:
+    """Write value into attr[N-1][sub] (N is 1-based); True on success."""
+    assert parsed.index is not None
+    idx0 = parsed.index - 1
+    if parsed.sub is None:
+        bucket = result.get(parsed.attr)
+        if not isinstance(bucket, list):
+            bucket = []
+            result[parsed.attr] = bucket
+        while len(bucket) <= idx0:
+            bucket.append("")
+        if not isinstance(value, str):
+            return False
+        bucket[idx0] = value
+        return True
+    bucket = result.get(parsed.attr)
+    if not isinstance(bucket, list):
+        bucket = []
+        result[parsed.attr] = bucket
+    while len(bucket) <= idx0:
+        bucket.append({})
+    if not isinstance(bucket[idx0], dict):
+        return False
+    bucket[idx0][parsed.sub] = value
+    return True
+
+
 def apply_mapping(
     product: dict[str, Any],
     mappings: dict[str, MappingEntry],
@@ -71,15 +110,51 @@ def apply_mapping(
     for source, value in product.items():
         entry = mappings.get(source)
         if entry is not None:
+            try:
+                if parse_indexed_path(entry.target).index is not None:
+                    continue  # deferred to the indexed pass (precedence)
+            except ValueError:
+                pass
             _apply_entry(result, source, value, entry, registry, stats)
         elif source not in parent_has_sub_mapping:
             stats.dropped_unmapped += 1
 
+    # Pass 1: non-indexed sub-path source mappings in dict order.
     for key, entry in mappings.items():
         if key in product or "." not in key:
             continue
+        if _entry_is_indexed(entry):
+            continue
         parent, _, sub = key.partition(".")
         if not sub or "." in sub or parent not in product:
+            continue
+        values, mismatch = _sub_values(product[parent], sub)
+        if mismatch:
+            stats.shape_mismatches += 1
+            continue
+        if values is not None:
+            value = values[0] if len(values) == 1 else values
+            _apply_entry(result, key, value, entry, registry, stats)
+
+    # Pass 2: indexed target assignments, sorted by target path — override
+    # broadcast values in their exact slot (operator directive 5).
+    indexed = sorted(
+        (
+            (key, entry)
+            for key, entry in mappings.items()
+            if _entry_is_indexed(entry)
+        ),
+        key=lambda pair: pair[1].target,
+    )
+    for key, entry in indexed:
+        if key in product:
+            value = product[key]
+            if isinstance(value, list):
+                value = value[0] if len(value) == 1 else value
+            _apply_entry(result, key, value, entry, registry, stats)
+            continue
+        parent, dot, sub = key.partition(".")
+        if not dot or not sub or "." in sub or parent not in product:
             continue
         values, mismatch = _sub_values(product[parent], sub)
         if mismatch:
@@ -100,18 +175,38 @@ def _apply_entry(
     registry: RegistryDocument,
     stats: ApplyStats,
 ) -> None:
-    attr_name, _, subfield = entry.target.partition(".")
-    attribute = registry.attributes.get(attr_name)
+    try:
+        parsed = parse_indexed_path(entry.target)
+    except ValueError:
+        stats.shape_mismatches += 1
+        return
+    attribute = registry.attributes.get(parsed.attr)
     if attribute is None:
         stats.shape_mismatches += 1
         return
+    kind = attribute.kind
 
+    if parsed.index is not None:
+        if kind not in (AttributeKind.REPEATED_SCALAR, AttributeKind.REPEATED_STRUCTURED):
+            stats.shape_mismatches += 1
+            return
+        if parsed.sub is not None and kind is not AttributeKind.REPEATED_STRUCTURED:
+            stats.shape_mismatches += 1
+            return
+        if not isinstance(value, str):
+            stats.shape_mismatches += 1
+            return
+        if not _set_indexed(result, parsed, value):
+            stats.shape_mismatches += 1
+        return
+
+    attr_name, subfield = parsed.attr, parsed.sub
     if subfield:
-        if attribute.kind.value not in ("structured", "repeated_structured"):
+        if kind.value not in ("structured", "repeated_structured"):
             stats.shape_mismatches += 1
             return
         if isinstance(value, str):
-            if attribute.kind is AttributeKind.STRUCTURED:
+            if kind is AttributeKind.STRUCTURED:
                 bucket = result.setdefault(attr_name, {})
                 if isinstance(bucket, dict):
                     bucket[subfield] = value
@@ -125,7 +220,7 @@ def _apply_entry(
             bucket[0][subfield] = value
             return
         if isinstance(value, list):
-            if attribute.kind is AttributeKind.STRUCTURED:
+            if kind is AttributeKind.STRUCTURED:
                 if len(value) == 1:
                     bucket = result.setdefault(attr_name, {})
                     if isinstance(bucket, dict):
@@ -138,7 +233,6 @@ def _apply_entry(
         stats.shape_mismatches += 1
         return
 
-    kind = attribute.kind
     if kind is AttributeKind.SCALAR:
         if isinstance(value, str):
             result[attr_name] = value

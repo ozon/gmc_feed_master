@@ -156,3 +156,50 @@ def test_full_registry_round_trip_through_parse_xml():
     report = parse_xml(data, registry)
     assert report.row_errors == []
     assert report.products == [product]
+
+
+def test_sparse_product_detail_renders_only_non_empty_blocks():
+    registry = load_registry()
+    product = {
+        "id": "1",
+        "product_detail": [{}, {}, {"attribute_value": "Val"}],
+    }
+    text = render_feed([product], registry, CHANNEL).decode("utf-8")
+    assert text.count("<g:product_detail>") == 1
+    assert "<g:attribute_value>Val</g:attribute_value>" in text
+    assert "<g:product_detail></g:product_detail>" not in text
+
+
+def test_golden_indexed_mapping_end_to_end():
+    """apply_mapping with indexed targets -> clean structured XML."""
+    from app.mapping import MappingEntry, apply_mapping
+    registry = load_registry()
+    product = {
+        "sn1": "General", "an1": "Battery", "av1": "5000 mAh",
+        "sn2": "General", "an2": "Color", "av2": "Blue",
+        "img": ["x.jpg", "y.jpg", "z.jpg"],
+    }
+    mappings = {
+        "sn1": MappingEntry("product_detail.1.section_name", "manual"),
+        "an1": MappingEntry("product_detail.1.attribute_name", "manual"),
+        "av1": MappingEntry("product_detail.1.attribute_value", "manual"),
+        "sn2": MappingEntry("product_detail.2.section_name", "manual"),
+        "an2": MappingEntry("product_detail.2.attribute_name", "manual"),
+        "av2": MappingEntry("product_detail.2.attribute_value", "manual"),
+        "img": MappingEntry("additional_image_link", "manual"),
+    }
+    mapped, stats = apply_mapping(product, mappings, registry)
+    assert stats.shape_mismatches == 0
+    text = render_feed([mapped], registry, CHANNEL).decode("utf-8")
+    assert text.count("<g:product_detail>") == 2
+    assert ("<g:product_detail><g:section_name>General</g:section_name>"
+            "<g:attribute_name>Battery</g:attribute_name>"
+            "<g:attribute_value>5000 mAh</g:attribute_value></g:product_detail>"
+            ) in text
+    assert ("<g:product_detail><g:section_name>General</g:section_name>"
+            "<g:attribute_name>Color</g:attribute_name>"
+            "<g:attribute_value>Blue</g:attribute_value></g:product_detail>"
+            ) in text
+    assert "<g:additional_image_link>x.jpg</g:additional_image_link>" in text
+    assert "<g:additional_image_link>y.jpg</g:additional_image_link>" in text
+    assert "<g:additional_image_link>z.jpg</g:additional_image_link>" in text

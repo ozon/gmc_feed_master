@@ -9,6 +9,7 @@ from registry.loader import load_registry
 from ..auth import require_user
 from ..db.engine import get_db_session
 from ..mapping.document import MappingDocument, MappingDocumentError, MappingEntry
+from ..mapping.indexed_path import parse_indexed_path
 from ..mapping.matcher import (
     _COMPATIBLE_KINDS,
     _STRUCTURED_SOURCE_KINDS,
@@ -46,46 +47,85 @@ def _validate_mappings(
     claimed: dict[str, str] = {}
 
     def check_target(source: str, target: str, source_kind: str | None) -> None:
-        parts = target.split(".")
-        if len(parts) > 2 or not all(parts):
+        try:
+            parsed = parse_indexed_path(target)
+        except ValueError:
             errors.append(f"{source}: invalid target path {target!r}")
             return
-        attribute = registry.attributes.get(parts[0])
+        attribute = registry.attributes.get(parsed.attr)
         if attribute is None:
-            errors.append(f"{source}: unknown attribute {parts[0]!r}")
+            errors.append(f"{source}: unknown attribute {parsed.attr!r}")
             return
-        if len(parts) == 2:
-            if attribute.kind.value not in _STRUCTURED_KINDS:
-                errors.append(f"{source}: {parts[0]!r} has no sub-fields")
+        attr_kind = attribute.kind.value
+        known_subs = {sub.name for sub in attribute.fields}
+
+        if parsed.index is not None:
+            if attr_kind not in ("repeated_scalar", "repeated_structured"):
+                errors.append(
+                    f"{source}: indexed target {target!r} requires a repeated attribute"
+                )
                 return
-            if parts[1] not in {sub.name for sub in attribute.fields}:
-                errors.append(f"{source}: unknown sub-field {parts[1]!r} on {parts[0]!r}")
+            if parsed.sub is not None:
+                if attr_kind != "repeated_structured":
+                    errors.append(
+                        f"{source}: indexed sub target {target!r} requires a "
+                        "repeated_structured attribute"
+                    )
+                    return
+                if parsed.sub not in known_subs:
+                    errors.append(
+                        f"{source}: unknown sub-field {parsed.sub!r} on {parsed.attr!r}"
+                    )
+                    return
+        elif parsed.sub is not None:
+            if attr_kind not in _STRUCTURED_KINDS:
+                errors.append(f"{source}: {parsed.attr!r} has no sub-fields")
                 return
-        if (
-            len(parts) == 1
-            and source_kind is not None
-            and attribute.kind.value not in _COMPATIBLE_KINDS.get(source_kind, frozenset())
-        ):
+            if parsed.sub not in known_subs:
+                errors.append(
+                    f"{source}: unknown sub-field {parsed.sub!r} on {parsed.attr!r}"
+                )
+                return
+        else:
+            if (
+                source_kind is not None
+                and attr_kind not in _COMPATIBLE_KINDS.get(source_kind, frozenset())
+            ):
+                errors.append(
+                    f"{source}: kind {source_kind!r} incompatible with "
+                    f"{attr_kind!r} target {target!r}"
+                )
+                return
+
+        # Overlap policy (operator directive 5): indexed targets never claim
+        # the whole attribute and never block other claims; whole/broadcast
+        # claims never block indexed sub-slots. Only exact duplicates block.
+        if parsed.index is None and parsed.sub is not None and parsed.attr in claimed:
             errors.append(
-                f"{source}: kind {source_kind!r} incompatible with "
-                f"{attribute.kind.value!r} target {target!r}"
+                f"{source}: target {target!r} overlaps claim on "
+                f"{parsed.attr!r} by {claimed[parsed.attr]!r}"
             )
             return
-        if len(parts) == 2 and parts[0] in claimed:
-            errors.append(
-                f"{source}: target {target!r} overlaps claim on {parts[0]!r} by {claimed[parts[0]]!r}"
-            )
-            return
-        if len(parts) == 1:
+        if parsed.index is None and parsed.sub is None:
             for claimed_target, claimed_by in claimed.items():
-                if claimed_target.startswith(f"{parts[0]}."):
+                if "." not in claimed_target:
+                    continue
+                try:
+                    claimed_parsed = parse_indexed_path(claimed_target)
+                except ValueError:
+                    continue
+                if claimed_parsed.index is not None:
+                    continue  # directive 5: indexed claims never block whole claims
+                if claimed_target.startswith(f"{parsed.attr}."):
                     errors.append(
                         f"{source}: target {target!r} overlaps claim on "
                         f"{claimed_target!r} by {claimed_by!r}"
                     )
                     return
         if target in claimed:
-            errors.append(f"{source}: target {target!r} already claimed by {claimed[target]!r}")
+            errors.append(
+                f"{source}: target {target!r} already claimed by {claimed[target]!r}"
+            )
             return
         claimed[target] = source
 
