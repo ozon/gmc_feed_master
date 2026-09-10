@@ -90,3 +90,22 @@ async def test_create_app_falls_back_to_settings_plugins_dir(settings, isolated_
     app = create_app(settings=settings, db_session_factory=factory)
     assert app.state.plugins_dir == Path(settings.plugins_dir)
     await engine.dispose()
+
+
+async def test_plugin_module_not_reexeced_under_create_app(settings, isolated_database_url):
+    """Plugin modules are loaded via importlib.import_module; Python's sys.modules
+    cache prevents re-execution when a test both imports the plugin directly
+    and calls create_app(plugins_dir=...)."""
+    import sys
+
+    import tests.labels_plugin_module  # noqa: F401 — ensures the module is pre-loaded
+    pre_id = id(sys.modules["custom_labels_plugin"])
+
+    engine = create_async_engine(isolated_database_url)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    app = create_app(settings=settings, db_session_factory=factory)
+    async with app.router.lifespan_context(app):
+        post_id = id(sys.modules["custom_labels_plugin"])
+
+    assert pre_id == post_id, "plugin module was re-executed under create_app"
+    await engine.dispose()
