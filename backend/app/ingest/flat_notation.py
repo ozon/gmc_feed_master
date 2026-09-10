@@ -25,6 +25,7 @@ class ColumnSpec:
     kind: str
     sub_fields: list[str]
     arity: int = 1
+    max_repeats: int = 0
 
 
 @dataclass(frozen=True)
@@ -83,6 +84,7 @@ def parse_header(
                     kind=kind,
                     sub_fields=existing.sub_fields,
                     arity=prev + 1,
+                    max_repeats=prev + 1,
                 )
         else:
             attr = registry.attributes.get(header)

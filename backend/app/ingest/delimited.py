@@ -42,15 +42,6 @@ def parse_delimited(
 
     plan = parse_header(parsed[0][1], registry)
 
-    source_fields = [
-        SourceField(
-            name=spec.name,
-            kind="scalar" if spec.kind == "generic" else spec.kind,
-            sub_fields=tuple(spec.sub_fields),
-        )
-        for spec in plan.columns
-    ]
-
     products: list[dict] = []
     row_errors: list[RowError] = []
 
@@ -60,6 +51,27 @@ def parse_delimited(
             row_errors.append(RowError(line=line, message=error.message))
         else:
             products.append(product)
+
+    scalar_repeats: dict[str, int] = {}
+    for spec in plan.columns:
+        if spec.kind != "repeated_scalar":
+            continue
+        for product in products:
+            value = product.get(spec.name)
+            if isinstance(value, list):
+                scalar_repeats[spec.name] = max(
+                    scalar_repeats.get(spec.name, 0), len(value)
+                )
+
+    source_fields = [
+        SourceField(
+            name=spec.name,
+            kind="scalar" if spec.kind == "generic" else spec.kind,
+            sub_fields=tuple(spec.sub_fields),
+            max_repeats=scalar_repeats.get(spec.name, spec.max_repeats),
+        )
+        for spec in plan.columns
+    ]
 
     return IngestReport(
         products=products, row_errors=row_errors, source_fields=source_fields

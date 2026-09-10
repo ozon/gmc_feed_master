@@ -269,3 +269,19 @@ class TestEmptyCells:
         assert "price" not in report.products[0]
         assert report.products[0]["id"] == "1"
         assert report.products[0]["title"] == "Shirt"
+
+    def test_max_repeats_repeated_scalar(self) -> None:
+        reg = _registry({
+            "id": _scalar("id"),
+            "title": _scalar("title"),
+            "additional_image_link": _repeated_scalar("additional_image_link"),
+        })
+        data = (
+            b"id\ttitle\tadditional_image_link\n"
+            b"1\tA\timg1.jpg,img2.jpg,img3.jpg\n"
+            b"2\tB\timg4.jpg\n"
+        )
+        report = parse_delimited(data, "tsv", reg)
+        by_name = {sf.name: sf for sf in report.source_fields}
+        assert by_name["additional_image_link"].max_repeats == 3
+        assert by_name["id"].max_repeats == 0

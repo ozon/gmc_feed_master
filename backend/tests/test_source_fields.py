@@ -116,13 +116,33 @@ class TestDelimitedSourceFields:
         assert report.source_fields == [
             SourceField("id", "scalar", ()),
             SourceField("title", "scalar", ()),
-            SourceField("shipping", "repeated_structured", ("country", "price")),
+            SourceField("shipping", "repeated_structured", ("country", "price"), 2),
         ]
 
     def test_empty_input_has_no_source_fields(self) -> None:
         reg = _registry({"id": _scalar_attr("id")})
         report = parse_delimited(b"", "tsv", reg)
         assert report.source_fields == []
+
+    def test_wide_tsv_max_repeats_from_column_arity(self) -> None:
+        reg = _registry({
+            "id": _scalar_attr("id"),
+            "shipping": _repeated_structured_attr(
+                "shipping",
+                (
+                    SubField("country", "String", RequirementStatus.REQUIRED),
+                    SubField("price", "Price", RequirementStatus.OPTIONAL),
+                ),
+            ),
+        })
+        data = (
+            b"id\tshipping(country:price)\tshipping(country:price)\tshipping(country:price)\n"
+            b"1\tUS:6.49\tUK:5.99\tDE:5.49\n"
+        )
+        report = parse_delimited(data, "wide_tsv", reg)
+        by_name = {sf.name: sf for sf in report.source_fields}
+        assert by_name["shipping"].kind == "repeated_structured"
+        assert by_name["shipping"].max_repeats == 3
 
 
 class TestXmlSourceFields:

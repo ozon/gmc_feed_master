@@ -90,6 +90,7 @@ class TestParseHeaderRepeatedStructured:
                 kind="repeated_structured",
                 sub_fields=["country", "price"],
                 arity=2,
+                max_repeats=2,
             ),
         ]
 
@@ -200,6 +201,7 @@ class TestParseHeaderLenientSubFields:
                 kind="repeated_structured",
                 sub_fields=["country", "location_group_name", "rate", "tax_ship"],
                 arity=2,
+                max_repeats=2,
             ),
         ]
 
