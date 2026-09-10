@@ -136,10 +136,14 @@ export function useFieldMapping(feedSourceId: number | string) {
   });
 }
 
-export function useRegistryAttributes() {
+export function useRegistryAttributes(feedSourceId?: number | string) {
   return useQuery({
-    queryKey: queryKeys.registryAttributes,
-    queryFn: () => apiGet<RegistryAttribute[]>('/registry/attributes'),
+    queryKey: queryKeys.registryAttributes(feedSourceId),
+    queryFn: () => apiGet<RegistryAttribute[]>(
+      feedSourceId === undefined
+        ? '/registry/attributes'
+        : `/registry/attributes?feed_source_id=${feedSourceId}`,
+    ),
     staleTime: Infinity,
   });
 }
@@ -191,6 +195,7 @@ export function useRunDryRun(feedSourceId: number | string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).runs });
       void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).findings });
+      void queryClient.invalidateQueries({ queryKey: ['registry', 'attributes'] });
     },
   });
 }
@@ -203,6 +208,7 @@ export function useTriggerRun(feedSourceId: number | string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).runs });
       void queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary });
+      void queryClient.invalidateQueries({ queryKey: ['registry', 'attributes'] });
     },
   });
 }

@@ -3,7 +3,10 @@ export const queryKeys = {
   dashboardSummary: ['dashboard', 'summary'] as const,
   clients: ['clients'] as const,
   plugins: ['plugins'] as const,
-  registryAttributes: ['registry', 'attributes'] as const,
+  registryAttributes: (feedSourceId?: number | string) =>
+    (feedSourceId === undefined
+      ? ['registry', 'attributes'] as const
+      : ['registry', 'attributes', feedSourceId] as const),
   productDetail: (feedSourceId: number | string, productId: string) =>
     ['feed-source', feedSourceId, 'products', 'detail', productId] as const,
   feedSource: (id: number | string) => ({

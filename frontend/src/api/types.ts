@@ -73,6 +73,7 @@ export type RegistrySubField = {
   name: string;
   type: string;
   required: string;
+  kind?: string;
 };
 
 export type RegistryAttribute = {
@@ -82,12 +83,14 @@ export type RegistryAttribute = {
   baseline_required?: boolean;
   sub_fields: RegistrySubField[];
   enum_values: string[];
+  max_repeats: number;
 };
 
 export type SourceField = {
   name: string;
   kind: string;
   sub_fields: string[];
+  max_repeats: number;
 };
 
 export type MappingEntry = {
@@ -217,7 +220,12 @@ export type DiffOut = {
 };
 
 export type FeedSourceFieldsResponse = {
-  fields: string[];
+  fields: {
+    name: string;
+    kind: string;
+    sub_fields: { name: string; kind?: string }[];
+    max_repeats: number;
+  }[];
 };
 
 export type ProductLookupSample = {

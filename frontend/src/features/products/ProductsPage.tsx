@@ -63,7 +63,7 @@ export function ProductsPage() {
   });
 
   const fieldsQuery = useFeedSourceFields(feedSourceId ?? '');
-  const allFields = fieldsQuery.data?.fields ?? [];
+  const allFields = (fieldsQuery.data?.fields ?? []).map((d) => d.name);
   const dataFields = query.data?.fields ?? [];
   const mergedFields = useMemo(
     () => [...new Set([...allFields, ...dataFields])],

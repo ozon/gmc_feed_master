@@ -50,7 +50,9 @@ export function RuleValuesEditor({
 
   const fieldsQuery = useFeedSourceFields(String(feedSourceId ?? ''));
   const fieldOptions = useMemo(
-    () => (fieldsQuery.data?.fields ?? []).filter((f) => !PREVIEW_DEFAULT_FIELDS.has(f)),
+    () => (fieldsQuery.data?.fields ?? [])
+      .map((d) => d.name)
+      .filter((f) => !PREVIEW_DEFAULT_FIELDS.has(f)),
     [fieldsQuery.data],
   );
 

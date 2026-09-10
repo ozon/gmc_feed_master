@@ -7,7 +7,8 @@ describe('queryKeys', () => {
     expect(queryKeys.dashboardSummary).toEqual(['dashboard', 'summary']);
     expect(queryKeys.plugins).toEqual(['plugins']);
     expect(queryKeys.clients).toEqual(['clients']);
-    expect(queryKeys.registryAttributes).toEqual(['registry', 'attributes']);
+    expect(queryKeys.registryAttributes()).toEqual(['registry', 'attributes']);
+    expect(queryKeys.registryAttributes(5)).toEqual(['registry', 'attributes', 5]);
   });
 
   it('nests feed-source keys by id and area', () => {
