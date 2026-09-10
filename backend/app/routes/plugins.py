@@ -6,6 +6,7 @@ import jsonschema
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..access import CurrentUser, get_current_user, require_admin
@@ -285,7 +286,7 @@ async def _expected_version_conflict(
         model.scope == scope,
         model.key == _DEFAULT_KEY,
         *_owner_filters(model, scope, resolved_client_id, resolved_feed_source_id),
-    )
+    ).with_for_update()
     current_id = (await session.execute(stmt)).scalar()
     if expected_version == "null":
         if current_id is not None:
@@ -353,22 +354,32 @@ async def _put_payload(
             )
             if conflict is not None:
                 return conflict
-        await session.execute(
-            delete(model).where(
-                model.plugin_id == plugin.id,
-                model.scope == scope,
-                model.key == _DEFAULT_KEY,
-                *_owner_filters(model, scope, resolved_client_id, resolved_feed_source_id),
+        try:
+            await session.execute(
+                delete(model).where(
+                    model.plugin_id == plugin.id,
+                    model.scope == scope,
+                    model.key == _DEFAULT_KEY,
+                    *_owner_filters(model, scope, resolved_client_id, resolved_feed_source_id),
+                )
             )
-        )
-        session.add(
-            model(
-                plugin_id=plugin.id,
-                scope=scope,
-                client_id=resolved_client_id if scope == "client" else None,
-                feed_source_id=resolved_feed_source_id if scope == "feed_source" else None,
-                key=_DEFAULT_KEY,
-                **{column_name: payload},
+            session.add(
+                model(
+                    plugin_id=plugin.id,
+                    scope=scope,
+                    client_id=resolved_client_id if scope == "client" else None,
+                    feed_source_id=resolved_feed_source_id if scope == "feed_source" else None,
+                    key=_DEFAULT_KEY,
+                    **{column_name: payload},
+                )
             )
-        )
+            await session.flush()
+        except IntegrityError:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "message": "plugin data changed since read",
+                    "current_version": None,
+                },
+            ) from None
     return {"status": "ok"}
