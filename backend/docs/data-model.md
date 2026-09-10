@@ -133,7 +133,7 @@ Unique constraint on `(name, version)`.
 ### PluginConfig / PluginData
 | Column | Type | Notes |
 |--------|------|-------|
-| `id` | Integer | PK |
+| `id` | Integer | PK; doubles as the optimistic-lock revision token (PUTs are delete+insert, so the id strictly increases per write — see api.md `expected_version`) |
 | `plugin_id` | Integer | FK → Plugin, RESTRICT |
 | `scope` | String(50) | `global` / `client` / `feed_source` |
 | `client_id` | Integer | FK → Client, nullable |

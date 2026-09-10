@@ -1132,3 +1132,16 @@ binding product specification. Dates use ISO 8601 calendar dates.
   runs green, two under concurrent backend-suite CPU load.
 - **Assignments read-modify-write race deferred:** needs an optimistic-locking or
   refetch-before-write design — separate cycle.
+
+
+## 2026-09-10 (b)
+
+### Plugin optimistic locking (cycle `plugin-optimistic-locking`)
+
+Closes the assignments-race deferral above. Operator decisions (brainstorming 2026-09-10):
+
+- **Row id as revision token** — no schema change; every PUT is delete+insert so the id strictly orders revisions. `X-Plugin-Data-Version` header on GET; optional `expected_version` on PUT (`"null"` = only-if-absent; int = must match); mismatch → 409 carrying `current_version`. PUTs without the param keep legacy unchecked semantics (back-compat for scripts/tests).
+- **Retry-once with payload builder** — save hooks take `(current) => payload`; on 409 they fetchQuery fresh state and re-apply the builder once. A fixed-payload retry was rejected by test evidence: it silently re-overwrote the concurrent editor's write (the original race, relocated). Builder form makes per-key edits (assignments) merge with the other editor's keys.
+- **fetchQuery over refetchQueries** — the retry's freshen step must work even when the GET query has no active observer (surfaced by the hook unit test).
+- **Scope: all plugin scopes** — generic routes; all consumers wired (ManualTab merge semantics; RulesTab/CustomLabelsUI/PluginPage/RulesUI/FilterUI full-replace intents).
+- Double 409 surfaces the ApiError (consumer toast, draft state preserved); no third PUT.
