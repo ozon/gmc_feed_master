@@ -10,8 +10,48 @@ class ConditionError(ValueError):
     """Invalid condition node (unknown op, bad regex, malformed args)."""
 
 
+def _parse_indexed(path: str) -> tuple[str, int | None, str | None]:
+    """attr | attr.sub | attr.N | attr.N.sub (N 1-based). Raises ValueError."""
+    parts = path.split(".")
+    if not parts or not parts[0] or len(parts) > 3:
+        raise ValueError(f"invalid path {path!r}")
+    attr = parts[0]
+    if len(parts) == 1:
+        return attr, None, None
+    second = parts[1]
+    if second.isdigit():
+        index = int(second)
+        if index < 1:
+            raise ValueError(f"invalid index in {path!r}: 1-based")
+        sub = parts[2] if len(parts) == 3 else None
+        if sub == "":
+            raise ValueError(f"invalid path {path!r}")
+        return attr, index, sub
+    if len(parts) == 3:
+        raise ValueError(f"invalid path {path!r}")
+    return attr, None, second
+
+
 def _field_value(product: dict[str, Any], field: str) -> Any:
-    return product.get(field)
+    try:
+        attr, index, sub = _parse_indexed(field)
+    except ValueError:
+        return None
+    value = product.get(attr)
+    if index is not None:
+        if not isinstance(value, list) or len(value) < index:
+            return None
+        value = value[index - 1]
+        if sub is not None:
+            return value.get(sub) if isinstance(value, dict) else None
+        return value
+    if sub is not None:
+        if isinstance(value, dict):
+            return value.get(sub)
+        if isinstance(value, list) and len(value) == 1 and isinstance(value[0], dict):
+            return value[0].get(sub)
+        return None
+    return value
 
 
 def _as_text(value: Any) -> str:
@@ -166,6 +206,14 @@ def apply_action(product: dict[str, Any], action: dict[str, Any]) -> dict[str, A
     if not isinstance(field, str) or not field:
         raise ActionError(f"action op {op!r} requires a non-empty field")
 
+    try:
+        attr, index, sub = _parse_indexed(field)
+    except ValueError:
+        raise ActionError(f"invalid field path {field!r}")
+
+    if index is not None:
+        return _apply_indexed_action(product, attr, index, sub, action, op)
+
     next_product: dict[str, Any] = dict(product)
 
     if op == "set":
@@ -185,6 +233,79 @@ def apply_action(product: dict[str, Any], action: dict[str, Any]) -> dict[str, A
     elif op == "clear":
         next_product[field] = ""
 
+    return next_product
+
+
+def _apply_indexed_action(
+    product: dict[str, Any],
+    attr: str,
+    index: int,
+    sub: str | None,
+    action: dict[str, Any],
+    op: str,
+) -> dict[str, Any]:
+    """Index-addressed THEN action (copy-on-write). Index is 1-based."""
+    next_product = dict(product)
+    idx0 = index - 1
+    current = next_product.get(attr)
+
+    if sub is None:
+        if op in ("set", "append", "prepend", "replace"):
+            bucket = list(current) if isinstance(current, list) else []
+            while len(bucket) <= idx0:
+                bucket.append("")
+            if op == "set":
+                text = "" if action.get("value") is None else str(action["value"])
+            elif op in ("append", "prepend"):
+                existing = "" if bucket[idx0] is None else str(bucket[idx0])
+                addition = "" if action.get("value") is None else str(action["value"])
+                text = addition + existing if op == "prepend" else existing + addition
+            else:  # replace
+                text = "" if bucket[idx0] is None else str(bucket[idx0])
+                text = _apply_replace(text, action)
+            bucket[idx0] = text
+            next_product[attr] = bucket
+            return next_product
+        if op == "remove":
+            if isinstance(current, list) and len(current) > idx0:
+                bucket = list(current)
+                bucket.pop(idx0)
+                next_product[attr] = bucket
+            return next_product
+        if op == "clear":
+            if isinstance(current, list) and len(current) > idx0:
+                bucket = list(current)
+                bucket[idx0] = ""
+                next_product[attr] = bucket
+            return next_product
+        raise ActionError(f"unknown action op {op!r}")
+
+    bucket = [
+        dict(elem) if isinstance(elem, dict) else elem
+        for elem in (current if isinstance(current, list) else [])
+    ]
+    while len(bucket) <= idx0:
+        bucket.append({})
+    element = bucket[idx0]
+    if not isinstance(element, dict):
+        raise ActionError(f"cannot address sub-field on non-object element of {attr!r}")
+    if op == "set":
+        element[sub] = action.get("value")
+    elif op in ("append", "prepend"):
+        existing = "" if element.get(sub) is None else str(element.get(sub))
+        addition = "" if action.get("value") is None else str(action["value"])
+        element[sub] = addition + existing if op == "prepend" else existing + addition
+    elif op == "replace":
+        text = "" if element.get(sub) is None else str(element.get(sub))
+        element[sub] = _apply_replace(text, action)
+    elif op == "remove":
+        element.pop(sub, None)
+    elif op == "clear":
+        element[sub] = ""
+    else:
+        raise ActionError(f"unknown action op {op!r}")
+    bucket[idx0] = element
+    next_product[attr] = bucket
     return next_product
 
 

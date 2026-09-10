@@ -203,3 +203,41 @@ def test_process_does_not_mutate_original_product():
 def test_process_missing_config_keys_defaults():
     plugin = FilterPlugin()
     assert plugin.process({"a": 1}, {}, _ctx()) == {"a": 1}
+
+
+# --- indexed path tests (Task 6) ---
+
+
+def test_condition_on_indexed_repeated_scalar_element():
+    product = {"additional_image_link": ["a.jpg", "b.jpg", "c.jpg"]}
+    assert evaluate_condition(
+        {"field": "additional_image_link.2", "op": "equals", "arg": "b.jpg"}, product
+    )
+    assert not evaluate_condition(
+        {"field": "additional_image_link.2", "op": "equals", "arg": "a.jpg"}, product
+    )
+
+
+def test_condition_on_indexed_repeated_structured_sub():
+    product = {"product_detail": [
+        {"section_name": "General", "attribute_name": "Battery"},
+        {"section_name": "Extra", "attribute_name": "Color"},
+    ]}
+    assert evaluate_condition(
+        {"field": "product_detail.2.attribute_name", "op": "equals", "arg": "Color"},
+        product,
+    )
+    assert evaluate_condition(
+        {"field": "product_detail.1.section_name", "op": "contains", "arg": "Gen"},
+        product,
+    )
+
+
+def test_condition_indexed_out_of_range_treated_as_empty():
+    product = {"additional_image_link": ["a.jpg"]}
+    assert not evaluate_condition(
+        {"field": "additional_image_link.5", "op": "exists"}, product
+    )
+    assert evaluate_condition(
+        {"field": "additional_image_link.5", "op": "empty"}, product
+    )

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import require_user
 from ..db.engine import get_db_session
+from ..mapping.indexed_path import parse_indexed_path
 from ..models.feed_source import FeedSource
 from ..models.staging import StagingProduct
 
@@ -196,19 +197,33 @@ class _LookupRequest(BaseModel):
 def _product_field_candidates(raw: dict, path: str) -> list[str]:
     """Candidate values of a registry path in raw_data — mirrors the
     custom_labels plugin's resolve_path() semantics (scalar / repeated /
-    attr.sub). Keep in sync with plugins/core/custom_labels/plugin.py."""
-    head, _, sub = path.partition(".")
-    value = raw.get(head)
+    attr.sub / indexed attr.N[.sub]). Keep in sync with
+    plugins/core/custom_labels/plugin.py."""
+    try:
+        parsed = parse_indexed_path(path)
+    except ValueError:
+        return []
+    value = raw.get(parsed.attr)
     if value is None:
         return []
-    if sub:
+    if parsed.index is not None:
+        if not isinstance(value, list) or len(value) < parsed.index:
+            return []
+        element = value[parsed.index - 1]
+        if parsed.sub is None:
+            return [str(element)] if element not in (None, "") else []
+        if not isinstance(element, dict):
+            return []
+        item = element.get(parsed.sub)
+        return [str(item)] if item not in (None, "") else []
+    if parsed.sub:
         if isinstance(value, dict):
-            item = value.get(sub)
+            item = value.get(parsed.sub)
             return [str(item)] if item not in (None, "") else []
         if isinstance(value, list):
             if len(value) != 1 or not isinstance(value[0], dict):
                 return []
-            item = value[0].get(sub)
+            item = value[0].get(parsed.sub)
             return [str(item)] if item not in (None, "") else []
         return []
     if isinstance(value, str):

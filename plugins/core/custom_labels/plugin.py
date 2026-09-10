@@ -36,20 +36,52 @@ def compile_template(template: str) -> tuple[tuple[str, str], ...]:
     return tuple(segments)
 
 
-def resolve_path(product: dict[str, Any], path: str) -> list[str]:
-    """Resolve a registry attribute path to candidate string values.
+def _parse_indexed(path: str) -> tuple[str, int | None, str | None]:
+    """attr | attr.sub | attr.N | attr.N.sub (N 1-based). Raises ValueError."""
+    parts = path.split(".")
+    if not parts or not parts[0] or len(parts) > 3:
+        raise ValueError(f"invalid path {path!r}")
+    attr = parts[0]
+    if len(parts) == 1:
+        return attr, None, None
+    second = parts[1]
+    if second.isdigit():
+        index = int(second)
+        if index < 1:
+            raise ValueError(f"invalid index in {path!r}: 1-based")
+        sub = parts[2] if len(parts) == 3 else None
+        if sub == "":
+            raise ValueError(f"invalid path {path!r}")
+        return attr, index, sub
+    if len(parts) == 3:
+        raise ValueError(f"invalid path {path!r}")
+    return attr, None, second
 
-    Path shapes and semantics (spec §2.1):
-    - ``attr`` on scalar -> [value] (empty string -> no candidates)
-    - ``attr`` on repeated_scalar -> every non-empty element
-    - ``attr.subfield`` on structured -> [value]
-    - ``attr.subfield`` on repeated_structured -> [value] only when exactly
-      one element exists, else no candidates (ambiguous -> treated as empty)
+
+def resolve_path(product: dict[str, Any], path: str) -> list[str]:
+    """Resolve a registry attribute path to candidate string values (spec §2.1).
+
+    Grammar: attr | attr.sub | attr.N | attr.N.sub (N is 1-based).
+    Indexed paths address one list element exactly; out-of-range yields no
+    candidates. Non-indexed paths keep the legacy broadcast semantics.
     """
-    head, _, sub = path.partition(".")
-    value = product.get(head)
+    try:
+        attr, index, sub = _parse_indexed(path)
+    except ValueError:
+        return []
+    value = product.get(attr)
     if value is None:
         return []
+    if index is not None:
+        if not isinstance(value, list) or len(value) < index:
+            return []
+        element = value[index - 1]
+        if sub is None:
+            return [str(element)] if element not in (None, "") else []
+        if not isinstance(element, dict):
+            return []
+        item = element.get(sub)
+        return [str(item)] if item not in (None, "") else []
     if sub:
         if isinstance(value, dict):
             item = value.get(sub)

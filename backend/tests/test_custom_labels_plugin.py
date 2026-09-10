@@ -548,3 +548,33 @@ class TestMatchMode:
             {**CONFIG["slotRules"][0], "matchMode": "all"},
         ]}
         plugin.validate_config(ok)
+
+
+# --- indexed path tests (Task 6) ---
+
+
+def test_resolve_path_indexed_element():
+    product = {"additional_image_link": ["a.jpg", "b.jpg"]}
+    assert resolve_path(product, "additional_image_link.2") == ["b.jpg"]
+
+
+def test_resolve_path_indexed_structured_sub():
+    product = {"product_detail": [
+        {"attribute_value": "V1"},
+        {"attribute_value": "V2"},
+    ]}
+    assert resolve_path(product, "product_detail.2.attribute_value") == ["V2"]
+
+
+def test_resolve_path_indexed_out_of_range_empty():
+    product = {"additional_image_link": ["a.jpg"]}
+    assert resolve_path(product, "additional_image_link.3") == []
+
+
+def test_matches_indexed_field():
+    product = {"product_detail": [
+        {"attribute_name": "Battery"},
+        {"attribute_name": "Color"},
+    ]}
+    assert matches(product, "product_detail.2.attribute_name", frozenset({"Color"}))
+    assert not matches(product, "product_detail.1.attribute_name", frozenset({"Color"}))

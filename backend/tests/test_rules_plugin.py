@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "plugins/core/rules"))
-from plugin import RulesPlugin, apply_action, validate_config  # noqa: E402
+from plugin import RulesPlugin, apply_action, evaluate_condition, validate_config
 
 
 def _ctx():
@@ -207,3 +207,67 @@ def test_validate_config_accepts_valid_document():
             "then": [{"op": "set", "field": "title", "value": "x"}],
         }]
     })
+
+
+# --- indexed path tests (Task 6) ---
+
+
+def test_condition_reads_indexed_path():
+    product = {"product_detail": [
+        {"attribute_name": "Battery"},
+        {"attribute_name": "Color"},
+    ]}
+    assert evaluate_condition(
+        {"op": "equals", "field": "product_detail.2.attribute_name", "arg": "Color"},
+        product,
+    )
+
+
+def test_action_set_indexed_repeated_scalar():
+    product = {"additional_image_link": ["a.jpg", "b.jpg"]}
+    out = apply_action(product, {"op": "set", "field": "additional_image_link.1",
+                                 "value": "hero.jpg"})
+    assert out["additional_image_link"] == ["hero.jpg", "b.jpg"]
+
+
+def test_action_set_indexed_extends_list():
+    product = {"additional_image_link": ["a.jpg"]}
+    out = apply_action(product, {"op": "set", "field": "additional_image_link.3",
+                                 "value": "c.jpg"})
+    assert out["additional_image_link"] == ["a.jpg", "", "c.jpg"]
+
+
+def test_action_set_indexed_structured_sub():
+    product = {"product_detail": [{"section_name": "General"}]}
+    out = apply_action(product, {"op": "set", "field": "product_detail.1.attribute_name",
+                                 "value": "Battery"})
+    assert out["product_detail"][0]["attribute_name"] == "Battery"
+
+
+def test_action_set_indexed_structured_sub_extends():
+    product = {"product_detail": [{"section_name": "General"}]}
+    out = apply_action(product, {"op": "set", "field": "product_detail.3.section_name",
+                                 "value": "Extra"})
+    assert out["product_detail"] == [
+        {"section_name": "General"}, {}, {"section_name": "Extra"},
+    ]
+
+
+def test_action_replace_indexed_element():
+    product = {"additional_image_link": ["a-old.jpg", "b.jpg"]}
+    out = apply_action(product, {"op": "replace", "field": "additional_image_link.1",
+                                 "find": "old", "with": "new"})
+    assert out["additional_image_link"][0] == "a-new.jpg"
+
+
+def test_action_remove_indexed_element():
+    product = {"additional_image_link": ["a.jpg", "b.jpg", "c.jpg"]}
+    out = apply_action(product, {"op": "remove", "field": "additional_image_link.2"})
+    assert out["additional_image_link"] == ["a.jpg", "c.jpg"]
+
+
+def test_action_clear_indexed_element():
+    product = {"additional_image_link": ["a.jpg", "b.jpg"]}
+    out = apply_action(product, {"op": "clear", "field": "additional_image_link.1"})
+    assert out["additional_image_link"][0] == ""
+    assert out["additional_image_link"][1] == "b.jpg"

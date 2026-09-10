@@ -8,6 +8,28 @@ _ALLOWED_OPS = ("equals", "not_equals", "contains", "not_contains", "exists", "e
 _TEXT_OPS = ("equals", "not_equals", "contains", "not_contains")
 
 
+def _parse_indexed(path: str) -> tuple[str, int | None, str | None]:
+    """attr | attr.sub | attr.N | attr.N.sub (N 1-based). Raises ValueError."""
+    parts = path.split(".")
+    if not parts or not parts[0] or len(parts) > 3:
+        raise ValueError(f"invalid path {path!r}")
+    attr = parts[0]
+    if len(parts) == 1:
+        return attr, None, None
+    second = parts[1]
+    if second.isdigit():
+        index = int(second)
+        if index < 1:
+            raise ValueError(f"invalid index in {path!r}: 1-based")
+        sub = parts[2] if len(parts) == 3 else None
+        if sub == "":
+            raise ValueError(f"invalid path {path!r}")
+        return attr, index, sub
+    if len(parts) == 3:
+        raise ValueError(f"invalid path {path!r}")
+    return attr, None, second
+
+
 class FilterError(ValueError):
     """Invalid filter condition (unknown op, missing field, malformed args)."""
 
@@ -35,7 +57,25 @@ def evaluate_condition(condition: dict[str, Any], product: dict[str, Any]) -> bo
     field = condition.get("field")
     if not isinstance(field, str) or not field:
         raise FilterError(f"filter op {op!r} requires a non-empty field")
-    value = product.get(field)
+    try:
+        attr, index, sub = _parse_indexed(field)
+    except ValueError:
+        raise FilterError(f"invalid field path {field!r}")
+    value: Any = product.get(attr)
+    if index is not None:
+        if isinstance(value, list) and len(value) >= index:
+            value = value[index - 1]
+        else:
+            value = None
+        if value is not None and sub is not None:
+            value = value.get(sub) if isinstance(value, dict) else None
+    elif sub is not None:
+        if isinstance(value, dict):
+            value = value.get(sub)
+        elif isinstance(value, list) and len(value) == 1 and isinstance(value[0], dict):
+            value = value[0].get(sub)
+        else:
+            value = None
 
     if op == "exists":
         return value is not None
