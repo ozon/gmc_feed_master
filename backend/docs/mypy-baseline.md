@@ -5,7 +5,7 @@ CI enforces the count via `backend/mypy-baseline.txt`; keep both in sync — eac
 `uv run mypy .` is configured in `pyproject.toml` (`[tool.mypy]`, target
 Python 3.10; `ignore_missing_imports` limited to the untyped third-party
 libs `jsonschema`, `apscheduler`, `asyncpg`). The command reports the
-known errors below — **42** as of 2026-09-08 (mypy 2.3.1) — and
+known errors below — **32** as of 2026-09-10 (mypy 2.3.1) — and
 exits non-zero until the baseline reaches zero. That is expected; do not
 "fix" a red exit by loosening the config.
 
@@ -47,16 +47,6 @@ app/routes/pipeline.py:196: error: Item "None" of "ModulePipeline | None" has no
 app/routes/pipeline.py:97: error: Incompatible return value type (got "JSONResponse", expected "dict[Any, Any]")  [return-value]
 app/routes/plugins.py:117: error: Argument 1 to "dict" has incompatible type "Sequence[Row[tuple[int, int]]]"; expected "Iterable[tuple[Never, Never]]"  [arg-type]
 app/routes/plugins.py:117: error: Need type annotation for "usage" (hint: "usage: dict[<type>, <type>] = ...")  [var-annotated]
-app/routes/quality.py:58: error: "ExportRun" has no attribute "severity"  [attr-defined]
-app/routes/quality.py:59: error: "ExportRun" has no attribute "code"  [attr-defined]
-app/routes/quality.py:60: error: "ExportRun" has no attribute "field"  [attr-defined]
-app/routes/quality.py:61: error: "ExportRun" has no attribute "message"  [attr-defined]
-app/routes/quality.py:62: error: "ExportRun" has no attribute "product_id"  [attr-defined]
-app/routes/quality.py:63: error: "ExportRun" has no attribute "details"  [attr-defined]
-app/staging/persistence.py:124: error: Incompatible types in assignment (expression has type "Result[tuple[int, str]]", variable has type "list[StagingProduct]")  [assignment]
-app/staging/persistence.py:128: error: "list[StagingProduct]" has no attribute "all"  [attr-defined]
-registry/parser.py:294: error: Incompatible types in assignment (expression has type "list[Never]", variable has type "tuple[SubField, SubField]")  [assignment]
-registry/parser.py:296: error: "tuple[SubField, SubField]" has no attribute "append"  [attr-defined]
 tests/test_export_token_log_redaction.py:21: error: Invalid index type "int" for "Mapping[str, object]"; expected type "str"  [index]
 tests/test_export_token_log_redaction.py:21: error: Value of type "tuple[object, ...] | Mapping[str, object] | None" is not indexable  [index]
 tests/test_export_token_log_redaction.py:28: error: Invalid index type "int" for "Mapping[str, object]"; expected type "str"  [index]
@@ -68,27 +58,18 @@ tests/test_rules_plugin.py:11: error: Cannot find implementation or library stub
 
 ## Notes on clusters
 
-- **`app/routes/quality.py:58-63` (6)** — mypy joins `row` (a
-  `QualityFinding`) with the earlier `result`/`export_run` binding
-  (`ExportRun`) because `result` is reused across two queries. Inference
-  artifact, not a runtime bug. Renaming the second `result` (e.g.
-  `findings_result`) resolves all six at once.
 - **`app/pipeline/steps.py`, `runner.py`, `dry_run.py`, `qc/engine.py`
   (10)** — `| None` arguments/assignments where the runtime guarantees
   presence; fix by narrowing (assert/local var) or widening signatures.
 - **`app/routes/pipeline.py:97/120`, `plugins.py:117`, `dashboard.py:47-48`
   (7)** — `JSONResponse` returns on typed `dict` routes; missing dict
   annotations for `dict(Sequence[Row[...]])` conversions.
-- **`app/staging/persistence.py:124-128` (2)** — SQLAlchemy `Result` vs
-  `list[StagingProduct]` variable reuse; introduce a typed local.
 - **`app/config.py:45` (3)** — `Settings()` constructed with env-provided
   kwargs mypy cannot see; needs an explicit constructor call signature.
   Exception: `alembic/env.py` carries one narrowly-scoped
   `# type: ignore[call-arg]` on the same false-positive class (new code,
   2026-09-08) — the no-ignore rule above targets *baseline* lines; removing
   the env.py directive belongs to this cluster's constructor-signature fix.
-- **`registry/parser.py:294-296` (2)** — `tuple[SubField, SubField]`
-  variable later reassigned to a list.
 - **`app/ingest/fetch.py:28`, `xml_reader.py:58`, `pipeline/scheduler.py:53`
   (3)** — single-site `| None` narrowing.
 - **`tests/` (7)** — `record.args` indexing (`tuple | Mapping | None`)

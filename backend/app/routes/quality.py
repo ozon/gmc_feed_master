@@ -46,12 +46,12 @@ async def get_quality_findings(
             "findings": [],
         }
 
-    result = await session.execute(
+    findings_result = await session.execute(
         select(QualityFinding)
         .where(QualityFinding.feed_source_id == feed_source_id)
         .order_by(QualityFinding.id)
     )
-    rows = list(result.scalars().all())
+    rows = list(findings_result.scalars().all())
 
     findings = [
         {

@@ -282,16 +282,16 @@ def _type_info(syntax: str, description: str, line: int):
         object_match = re.match(r".*", object_payload) if object_payload is not None else None
         if not object_match:
             if re.match(r"Object\s+like\b", text, re.I):
-                fields = (
+                like_fields = (
                     SubField("digital_source_type", "Enum", RequirementStatus.OPTIONAL,
                              enum_values=("default", "trained_algorithmic_media")),
                     SubField("content", "String", RequirementStatus.REQUIRED,
                              constraints=_constraints(f"{text} {description}")[0]),
                 )
                 return (AttributeKind.REPEATED_STRUCTURED if repeated else AttributeKind.STRUCTURED,
-                        "Object", fields, enums, cardinality)
+                        "Object", like_fields, enums, cardinality)
             raise RegistryParseError(f"line {line}: ambiguous structured attribute order")
-        fields = []
+        fields: list[SubField] = []
         for raw_name, spec in _object_parts(object_match.group(0)):
             fields.append(_field_spec(raw_name, spec, description, line) if spec else SubField(raw_name, "String", RequirementStatus.OPTIONAL, _constraints(description)[0]))
         if not fields:
