@@ -39,13 +39,11 @@ jobs:
           BASELINE=$(cat ruff-baseline.txt)
           echo "ruff errors: $COUNT (baseline $BASELINE)"
           if [ "$COUNT" -gt "$BASELINE" ]; then exit 1; fi
-      - name: Mypy baseline gate (no new type errors)
+      - name: Mypy gate (exit-0)
         working-directory: backend
         run: |
-          COUNT=$(uv run mypy . 2>/dev/null | grep -c ': error:')
-          BASELINE=$(cat mypy-baseline.txt)
-          echo "mypy errors: $COUNT (baseline $BASELINE)"
-          if [ "$COUNT" -gt "$BASELINE" ]; then exit 1; fi
+          uv run mypy .
+          echo "mypy: clean (0 errors)"
       - name: Run backend tests and compile checks
         working-directory: backend
         run: uv run pytest -q && uv run python -m compileall app alembic registry
