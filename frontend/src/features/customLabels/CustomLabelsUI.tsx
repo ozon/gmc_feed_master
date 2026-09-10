@@ -238,7 +238,7 @@ export function CustomLabelsUI({
       .filter((r) => r.origin === editableTier)
       .map(({ origin: _origin, ...rest }) => rest);
     try {
-      await saveConfig.mutateAsync({ slotRules: payloadRules });
+      await saveConfig.mutateAsync(() => ({ slotRules: payloadRules }));
     } catch (error) {
       notifyApiError(error, t('saveFailed'));
       return;
@@ -250,7 +250,7 @@ export function CustomLabelsUI({
   async function saveIds() {
     if (saveDataScope === undefined) return;
     try {
-      await saveData.mutateAsync({ slotIds: effectiveIds });
+      await saveData.mutateAsync(() => ({ slotIds: effectiveIds }));
     } catch (error) {
       notifyApiError(error, t('saveFailed'));
       return;

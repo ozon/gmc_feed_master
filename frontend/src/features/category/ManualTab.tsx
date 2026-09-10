@@ -41,9 +41,12 @@ export function ManualTab({
   const assignments = assignmentsOf(data.data);
   const currentAssignment = productId ? assignments[productId] : undefined;
 
-  function persist(next: Record<string, string>) {
+  function persist(apply: (current: Record<string, string>) => Record<string, string>) {
     save.mutate(
-      { assignments: next },
+      (currentPayload: unknown) => {
+        const current = assignmentsOf(currentPayload);
+        return { assignments: apply(current) };
+      },
       {
         onSuccess: () => notifySuccess(t('manual.saved')),
         onError: (error) => notifyApiError(error, t('manual.saveFailed')),
@@ -103,11 +106,11 @@ export function ManualTab({
                   color="red"
                   variant="light"
                   loading={save.isPending}
-                  onClick={() => {
-                    const next = { ...assignments };
+                  onClick={() => persist((current) => {
+                    const next = { ...current };
                     delete next[productId];
-                    persist(next);
-                  }}
+                    return next;
+                  })}
                 >
                   {t('manual.unassign')}
                 </Button>
@@ -124,7 +127,10 @@ export function ManualTab({
                 disabled={!pendingTaxonomy}
                 loading={save.isPending}
                 onClick={() =>
-                  persist({ ...assignments, [productId]: pendingTaxonomy ?? '' })
+                  persist((current) => ({
+                    ...current,
+                    [productId]: pendingTaxonomy ?? '',
+                  }))
                 }
               >
                 {t('manual.assign')}

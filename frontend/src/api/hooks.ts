@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiDelete, apiGet, apiPatch, apiPost, apiPut, changePassword, getCurrentUser, logout } from './client';
+import {
+  keepPreviousData, useMutation, useQuery, useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
+import {
+  ApiError, apiDelete, apiGet, apiGetWithHeaders, apiPatch, apiPost, apiPut,
+  changePassword, getCurrentUser, logout,
+} from './client';
 import { queryKeys } from './queryKeys';
 import type {
   AdminUser,
@@ -378,45 +384,118 @@ function buildScopeQuery(scope?: PluginScope): string {
   return qs ? `?${qs}` : '';
 }
 
+type PluginPayloadCache = {
+  payload: unknown;
+  version: number | null;
+};
+
+function pluginVersionFromHeaders(headers: Headers): number | null {
+  const raw = headers.get('X-Plugin-Data-Version');
+  if (raw === null || raw === '') return null;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function pluginQuerySelect<T>(cache: PluginPayloadCache | undefined): T | undefined {
+  return (cache?.payload as T | undefined) ?? undefined;
+}
+
+async function putPluginPayloadWithRetry(
+  queryClient: QueryClient,
+  key: readonly unknown[],
+  url: string,
+  buildPayload: (current: unknown) => unknown,
+): Promise<unknown> {
+  const base = url.includes('?') ? url : `${url}?`;
+  const cached = queryClient.getQueryData<PluginPayloadCache>(key);
+  if (cached === undefined) {
+    return apiPut(url, buildPayload(undefined));
+  }
+  const suffix = `expected_version=${cached.version === null ? 'null' : cached.version}`;
+  const payload = buildPayload(cached.payload);
+  try {
+    return await apiPut(`${base}${base.endsWith('?') ? '' : '&'}${suffix}`, payload);
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status !== 409) throw error;
+    await queryClient.fetchQuery({
+      queryKey: key,
+      queryFn: async () => {
+        const { data: freshData, headers } = await apiGetWithHeaders<unknown>(url);
+        return { payload: freshData, version: pluginVersionFromHeaders(headers) };
+      },
+      staleTime: 0,
+    });
+    const fresh = queryClient.getQueryData<PluginPayloadCache>(key);
+    if (fresh === undefined) throw error;
+    const freshSuffix = `expected_version=${fresh.version === null ? 'null' : fresh.version}`;
+    return apiPut(
+      `${base}${base.endsWith('?') ? '' : '&'}${freshSuffix}`,
+      buildPayload(fresh.payload),
+    );
+  }
+}
+
 export function usePluginConfig(pluginId: string, scope?: PluginScope, enabled = true) {
+  const key = queryKeys.pluginConfig(pluginId, scope);
   return useQuery({
-    queryKey: queryKeys.pluginConfig(pluginId, scope),
+    queryKey: key,
     enabled: Boolean(pluginId) && enabled,
-    queryFn: () =>
-      apiGet<PluginConfigResponse>(`/plugins/${pluginId}/config${buildScopeQuery(scope)}`),
+    queryFn: async () => {
+      const { data, headers } = await apiGetWithHeaders<unknown>(
+        `/plugins/${pluginId}/config${buildScopeQuery(scope)}`,
+      );
+      return { payload: data, version: pluginVersionFromHeaders(headers) };
+    },
+    select: (cache: PluginPayloadCache) => pluginQuerySelect<PluginConfigResponse>(cache),
   });
 }
 
 export function useSavePluginConfig(pluginId: string, scope?: PluginScope) {
   const queryClient = useQueryClient();
+  const key = queryKeys.pluginConfig(pluginId, scope);
   return useMutation({
-    mutationFn: (config: PluginConfigResponse) =>
-      apiPut<PluginConfigResponse>(
+    mutationFn: (buildConfig: (current: unknown) => PluginConfigResponse) =>
+      putPluginPayloadWithRetry(
+        queryClient,
+        key,
         `/plugins/${pluginId}/config${buildScopeQuery(scope)}`,
-        config,
+        buildConfig,
       ),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.pluginConfig(pluginId, scope) });
+      void queryClient.invalidateQueries({ queryKey: key });
     },
   });
 }
 
 export function usePluginData(pluginId: string, scope?: PluginScope, enabled = true) {
+  const key = queryKeys.pluginData(pluginId, scope);
   return useQuery({
-    queryKey: queryKeys.pluginData(pluginId, scope),
+    queryKey: key,
     enabled: Boolean(pluginId) && enabled,
-    queryFn: () =>
-      apiGet<Record<string, unknown>>(`/plugins/${pluginId}/data${buildScopeQuery(scope)}`),
+    queryFn: async () => {
+      const { data, headers } = await apiGetWithHeaders<unknown>(
+        `/plugins/${pluginId}/data${buildScopeQuery(scope)}`,
+      );
+      return { payload: data, version: pluginVersionFromHeaders(headers) };
+    },
+    select: (cache: PluginPayloadCache) =>
+      pluginQuerySelect<Record<string, unknown>>(cache) as Record<string, unknown> | undefined,
   });
 }
 
 export function useSavePluginData(pluginId: string, scope?: PluginScope) {
   const queryClient = useQueryClient();
+  const key = queryKeys.pluginData(pluginId, scope);
   return useMutation({
-    mutationFn: (data: Record<string, unknown>) =>
-      apiPut<Record<string, unknown>>(`/plugins/${pluginId}/data${buildScopeQuery(scope)}`, data),
+    mutationFn: (buildData: (current: unknown) => Record<string, unknown>) =>
+      putPluginPayloadWithRetry(
+        queryClient,
+        key,
+        `/plugins/${pluginId}/data${buildScopeQuery(scope)}`,
+        buildData,
+      ),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.pluginData(pluginId, scope) });
+      void queryClient.invalidateQueries({ queryKey: key });
     },
   });
 }

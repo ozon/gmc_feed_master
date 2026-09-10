@@ -66,7 +66,7 @@ export function PluginPage() {
   async function onSubmit(value: unknown) {
     if (!pluginId) return;
     try {
-      const saved = (await saveConfig.mutateAsync((value ?? {}) as Record<string, unknown>)) as Record<string, unknown>;
+      const saved = (await saveConfig.mutateAsync(() => (value ?? {}) as Record<string, unknown>)) as Record<string, unknown>;
       setFormValue(saved);
       hasSeededRef.current = true;
       notifySuccess(t('configSaved'));

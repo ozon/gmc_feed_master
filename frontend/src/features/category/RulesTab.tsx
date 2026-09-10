@@ -266,7 +266,7 @@ export function RulesTab({
     validate.mutate(payload, {
       onSuccess: () => {
         save.mutate(
-          { rules: payload },
+          () => ({ rules: payload }),
           {
             onSuccess: () => {
               savingRef.current = false;

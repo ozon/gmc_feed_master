@@ -3,6 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useUpdatePluginEnabled, usePluginConfig, useSavePluginConfig, usePluginData, useSavePluginData } from './hooks';
+import { ApiError } from './client';
 import { queryClient as defaultClient } from './queryClient';
 import { queryKeys } from './queryKeys';
 import { stubFetch } from '../test/fetch';
@@ -97,7 +98,7 @@ describe('useSavePluginConfig', () => {
     );
 
     const { result } = renderHook(() => useSavePluginConfig('example_upper', scope), { wrapper });
-    result.current.mutate({ suffix: 'X' });
+    result.current.mutate(() => ({ suffix: 'X' }));
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(captured).toEqual({ url: '/plugins/example_upper/config', body: { suffix: 'X' } });
@@ -151,7 +152,7 @@ describe('useSavePluginData', () => {
     const { result } = renderHook(() => useSavePluginData('custom_labels', { feedSourceId: 7 }), {
       wrapper,
     });
-    result.current.mutate({ slotIds: { r1: 'a' } });
+    result.current.mutate(() => ({ slotIds: { r1: 'a' } }));
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(captured).toEqual({
@@ -165,5 +166,133 @@ describe('useSavePluginData', () => {
         JSON.stringify(queryKeys.pluginData('custom_labels', { feedSourceId: 7 })),
     );
     expect(hasDataKey).toBe(true);
+  });
+});
+describe('optimistic locking', () => {
+  function withVersionedData(client?: QueryClient) {
+    const queryClient = client ?? new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    return { queryClient, wrapper };
+  }
+
+  function versionedJson(body: unknown, version: number | null, status = 200) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (version !== null) headers['X-Plugin-Data-Version'] = String(version);
+    return new Response(JSON.stringify(body), { status, headers });
+  }
+
+  it('usePluginData captures the version from the response header', async () => {
+    let getVersion = 0;
+    stubFetch((url) => {
+      if (url.startsWith('/plugins/custom_labels/data')) {
+        getVersion += 1;
+        return versionedJson({ assignments: { a: '1' } }, 41);
+      }
+      return jsonResponse({});
+    });
+
+    const { result } = renderHook(
+      () => usePluginData('custom_labels', { feedSourceId: 7 }),
+      { wrapper: withVersionedData().wrapper },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({ assignments: { a: '1' } });
+    expect(getVersion).toBe(1);
+  });
+
+  it('save hook attaches expected_version and retries once on 409 with fresh version', async () => {
+    const { queryClient, wrapper } = withVersionedData();
+    queryClient.setQueryData(queryKeys.pluginData('custom_labels', { feedSourceId: 7 }), {
+      payload: { assignments: {} },
+      version: 10,
+    });
+
+    const putUrls: string[] = [];
+    stubFetch((url) => {
+      if (url.startsWith('/plugins/custom_labels/data') && url.includes('expected_version')) {
+        putUrls.push(url);
+        if (putUrls.length === 1) {
+          return versionedJson(
+            { detail: { message: 'plugin data changed since read', current_version: 11 } },
+            null,
+            409,
+          );
+        }
+        return versionedJson({ status: 'ok' }, 12);
+      }
+      if (url.startsWith('/plugins/custom_labels/data')) {
+        return versionedJson({ assignments: { other: 'editor' } }, 11);
+      }
+      return jsonResponse({});
+    });
+
+    const { result } = renderHook(
+      () => useSavePluginData('custom_labels', { feedSourceId: 7 }),
+      { wrapper },
+    );
+    result.current.mutate(() => ({ assignments: { mine: '42' } }));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(putUrls).toHaveLength(2);
+    expect(putUrls[0]).toContain('expected_version=10');
+    expect(putUrls[1]).toContain('expected_version=11');
+  });
+
+  it('save hook surfaces the 409 after a double conflict without a third PUT', async () => {
+    const { queryClient, wrapper } = withVersionedData();
+    queryClient.setQueryData(queryKeys.pluginData('custom_labels', { feedSourceId: 7 }), {
+      payload: { assignments: {} },
+      version: 10,
+    });
+
+    const putUrls: string[] = [];
+    stubFetch((url) => {
+      if (url.startsWith('/plugins/custom_labels/data') && url.includes('expected_version')) {
+        putUrls.push(url);
+        return versionedJson(
+          { detail: { message: 'plugin data changed since read', current_version: 99 } },
+          null,
+          409,
+        );
+      }
+      if (url.startsWith('/plugins/custom_labels/data')) {
+        return versionedJson({ assignments: {} }, 11);
+      }
+      return jsonResponse({});
+    });
+
+    const { result } = renderHook(
+      () => useSavePluginData('custom_labels', { feedSourceId: 7 }),
+      { wrapper },
+    );
+    result.current.mutate(() => ({ assignments: { mine: '42' } }));
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(putUrls).toHaveLength(2);
+    expect(result.current.error).toBeInstanceOf(ApiError);
+  });
+
+  it('save hook without cached version PUTs without expected_version (legacy)', async () => {
+    const { wrapper } = withVersionedData();
+    let putUrl: string | null = null;
+    stubFetch((url) => {
+      if (url.startsWith('/plugins/custom_labels/data')) {
+        putUrl = url;
+        return versionedJson({ status: 'ok' }, 1);
+      }
+      return jsonResponse({});
+    });
+
+    const { result } = renderHook(
+      () => useSavePluginData('custom_labels', { feedSourceId: 7 }),
+      { wrapper },
+    );
+    result.current.mutate(() => ({ assignments: { a: '1' } }));
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(putUrl).toBe('/plugins/custom_labels/data?feed_source_id=7');
   });
 });

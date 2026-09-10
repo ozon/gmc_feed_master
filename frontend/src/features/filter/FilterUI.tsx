@@ -128,7 +128,7 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
       ),
     };
     try {
-      await saveConfig.mutateAsync(payload);
+      await saveConfig.mutateAsync(() => payload);
       notifySuccess(t('saved'));
     } catch (error) {
       notifyApiError(error, t('saveFailed'));

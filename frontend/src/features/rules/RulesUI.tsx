@@ -104,7 +104,7 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
       })),
     };
     try {
-      await saveConfig.mutateAsync(payload);
+      await saveConfig.mutateAsync(() => payload);
       notifySuccess(t('saved'));
     } catch (error) {
       notifyApiError(error, t('saveFailed'));
