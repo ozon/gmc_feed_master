@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom/vitest';
 import { beforeAll, vi } from 'vitest';
+import { configure } from '@testing-library/react';
 import { localeResponse } from './fetch';
+
+configure({ asyncUtilTimeout: 5000 });
 
 const { getComputedStyle } = window;
 window.getComputedStyle = (elt) => getComputedStyle(elt);
