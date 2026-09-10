@@ -72,3 +72,4 @@ frontend_new/.vite/
 
 # Exported feed files
 exports/
+backend/.report.json*
