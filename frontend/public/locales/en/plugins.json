@@ -5,7 +5,8 @@
   "noSchema": "This plugin has no configuration schema.",
   "configSaved": "Configuration saved.",
   "saveFailed": "Could not save plugin configuration.",
-  "saveFailedWithErrors": "Could not save: {{count}} validation error(s).",
+  "saveFailedWithErrors_one": "Could not save: {{count}} validation error.",
+  "saveFailedWithErrors_other": "Could not save: {{count}} validation errors.",
   "save": "Save",
   "errorBoundary": {
     "title": "This plugin's interface crashed",

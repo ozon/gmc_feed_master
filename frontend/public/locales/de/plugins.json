@@ -5,7 +5,8 @@
   "noSchema": "Dieses Plugin hat kein Konfigurations-Schema.",
   "configSaved": "Konfiguration gespeichert.",
   "saveFailed": "Plugin-Konfiguration konnte nicht gespeichert werden.",
-  "saveFailedWithErrors": "Speichern fehlgeschlagen: {{count}} Validierungsfehler.",
+  "saveFailedWithErrors_one": "Speichern fehlgeschlagen: {{count}} Validierungsfehler.",
+  "saveFailedWithErrors_other": "Speichern fehlgeschlagen: {{count}} Validierungsfehler.",
   "save": "Speichern",
   "errorBoundary": {
     "title": "Die Oberfläche dieses Plugins ist abgestürzt",
