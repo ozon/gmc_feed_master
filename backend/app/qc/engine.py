@@ -8,6 +8,7 @@ from typing import Any, Protocol, runtime_checkable
 from registry.model import RegistryDocument
 
 from ..clock import Clock
+from ..models.export import ExportRun
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class QcContext:
     volume_drop_threshold_pct: int
     registry: RegistryDocument
     clock: Clock
-    image_probe: ImageProbe
+    image_probe: ImageProbe | None
     previous_export_run: ExportRun | None
 
 
@@ -54,16 +55,6 @@ class ImageProbe(Protocol):
         ...
 
 
-@runtime_checkable
-class ExportRun(Protocol):
-    feed_source_id: int
-    ingestion_run_id: int
-    product_count: int
-    critical_finding_count: int
-    warning_finding_count: int
-    info_finding_count: int
-
-
 async def run_engine(
     products: list[dict],
     product_ids: list[str],
@@ -88,11 +79,11 @@ async def run_engine(
                 logger.exception("rule %s failed on product %s", rule.rule_id, product_id)
 
     # Cross-product rules — no product_id (findings apply to the feed as a whole)
-    for rule in cross_product_rules:
+    for cross_rule in cross_product_rules:
         try:
-            rule_findings = await rule.check(products, ctx)
+            rule_findings = await cross_rule.check(products, ctx)
             findings.extend(rule_findings)
         except Exception:
-            logger.exception("cross-product rule %s failed", rule.rule_id)
+            logger.exception("cross-product rule %s failed", cross_rule.rule_id)
 
     return findings

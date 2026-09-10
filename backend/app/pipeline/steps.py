@@ -18,7 +18,7 @@ from ..ingest import HttpFetcher, read_feed
 from ..ingest.report import SourceField
 from ..mapping import MappingDocument, apply_mapping, auto_match
 from ..models.feed_source import FeedSource
-from ..qc.engine import ImageProbe
+from ..qc.engine import CrossProductRule, ImageProbe, PerProductRule
 from ..staging.config_resolver import resolve_config_bundle
 from ..staging.delta import classify
 from ..staging.hashing import content_hash
@@ -290,7 +290,7 @@ class PluginStep:
                     "plugin_id": instance["plugin"],
                 })
                 if pk is not None:
-                    outcomes.append(PluginOutcome(pid, pk, "dropped", None))
+                    outcomes.append(PluginOutcome(str(pid) if pid is not None else "", pk, "dropped", None))
                 continue
             processed += 1
             survivors.append(current)
@@ -372,12 +372,12 @@ class QualityCheckStep:
             previous_export_run=previous_export_run,
         )
 
-        per_product_rules = [
+        per_product_rules: list[PerProductRule] = [
             BaselineRequired(), BrandRequired(), GtinMpn(), EnumValues(),
             ConditionalRequired(), DateFormat(), LengthLimits(), CardinalityRule(),
             CurrencyConsistency(), ImageRequirements(),
         ]
-        cross_product_rules = [VariantConsistency(), VolumeDrop()]
+        cross_product_rules: list[CrossProductRule] = [VariantConsistency(), VolumeDrop()]
 
         findings = await run_engine(products, product_ids, qc_ctx, per_product_rules, cross_product_rules)
 

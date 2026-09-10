@@ -238,6 +238,8 @@ class ImageRequirements:
                     rule_id=self.rule_id, severity="warning",
                     field=field_name, message=f"unrecognized image format: {ext or '(none)'}",
                 ))
+            if ctx.image_probe is None:
+                continue
             width, height, error = await ctx.image_probe.probe(url)
             if error:
                 findings.append(Finding(

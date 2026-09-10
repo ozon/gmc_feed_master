@@ -117,11 +117,11 @@ class PipelineRunner:
                     session.add(run)
                     await session.flush()
                     return run.id
-                run = await session.get(IngestionRun, run_id)
-                if run is None:
+                existing = await session.get(IngestionRun, run_id)
+                if existing is None:
                     raise ValueError(f"unknown run id {run_id}")
-                run.status = "running"
-                return run.id
+                existing.status = "running"
+                return existing.id
 
     async def _finish(
         self,
@@ -141,10 +141,11 @@ class PipelineRunner:
                     session.add(run)
                     await session.flush()
                 else:
-                    run = await session.get(IngestionRun, run_id)
-                    if run is None:
+                    existing = await session.get(IngestionRun, run_id)
+                    if existing is None:
                         raise ValueError(f"unknown run id {run_id}")
-                    run.status = status
+                    existing.status = status
+                    run = existing
                 run.processed_count = processed_count
                 run.failed_count = failed_count
                 run.statistics = statistics or {}

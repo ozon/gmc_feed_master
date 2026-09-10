@@ -20,7 +20,8 @@ class HttpFetcher:
     ) -> bytes:
         auth = httpx.BasicAuth(*basic_auth) if basic_auth else None
         own_client = _client is None
-        if own_client:
+        client: httpx.AsyncClient
+        if _client is None:
             client = httpx.AsyncClient(
                 timeout=httpx.Timeout(self.timeout),
             )

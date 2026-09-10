@@ -44,7 +44,8 @@ def _parse_item(item: ET.Element) -> dict[str, object]:
     for child in item:
         key = _strip_ns(child.tag)
 
-        has_text = child.text is not None and child.text.strip()
+        text = child.text
+        has_text = text is not None and text.strip() != ""
         has_children = len(child) > 0
 
         if has_text and has_children:
@@ -54,8 +55,8 @@ def _parse_item(item: ET.Element) -> dict[str, object]:
 
         if has_children:
             value: object = _element_to_dict(child)
-        elif has_text:
-            value = child.text.strip()
+        elif text is not None and text.strip():
+            value = text.strip()
         else:
             continue
 

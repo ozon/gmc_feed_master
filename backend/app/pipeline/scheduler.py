@@ -50,6 +50,8 @@ class SchedulerService:
             await asyncio.sleep(0.01)
 
     def register(self, feed_source: FeedSource) -> None:
+        if not feed_source.cron_expression:
+            return
         trigger = validate_cron(feed_source.cron_expression)
         if not self._scheduler.running and self.has_job(feed_source.id):
             self._scheduler.remove_job(job_id(feed_source.id))
