@@ -1,7 +1,8 @@
 # Unified Field List (Mapping, Rules, Filter, Labelizer) — Design
 
 Date: 2026-09-10
-Status: approved (user), pending implementation plan
+Status: approved (user, with 5 operator directives incorporated), pending
+implementation plan
 
 ## 1. Problem
 
@@ -200,9 +201,33 @@ translation only inside this utility and its callers — the single authority
     consistent with today.
 - Auto-matcher unchanged (broadcast-based); indexed targets are a
   manual/free-text capability.
-- Export renderer unchanged — reassembly happens at `apply_mapping` time;
-  `render_feed` already sees well-formed lists. A golden-XML test proves it
-  end-to-end.
+- **Indexed/broadcast coexistence and precedence (operator directive,
+  2026-09-10):** an indexed target mapping (`attr.N`, `attr.N.sub`) may
+  coexist with a whole/broadcast claim on the same attribute.
+  `_validate_mappings` must not block an indexed sub-path because the
+  parent attribute is claimed (kind compatibility still enforced) — in
+  either direction (adding an indexed claim over a whole claim, or a
+  whole claim over existing indexed ones). Exact duplicate indexed
+  targets remain blocked. The existing whole-`attr` vs
+  broadcast-`attr.sub` exclusivity for non-indexed targets is unchanged
+  (2026-09-03 decision). In `apply_mapping`, precedence is
+  deterministic: whole/broadcast target assignments evaluate first,
+  indexed assignments second (sorted by target path), so an explicit
+  indexed assignment overrides the broadcast value for its specific
+  index/sub-field slot. Dedicated tests: `test_field_mapping_api.py`
+  (coexistence accepted, compatible kinds) and `test_mapping_apply.py`
+  (slot-level override).
+- Export renderer: reassembly happens at `apply_mapping` time;
+  `render_feed` sees well-formed lists. **Sparse array sanitization
+  (operator directive, 2026-09-10):** index-addressed auto-extension must
+  never yield empty XML blocks. Verified against current code —
+  `_render_attribute` skips `_is_empty` items and `_structured_body`
+  suppresses an empty body — so `product_detail = [{}, {},
+  {"attribute_value": "Val"}]` renders exactly one `<g:product_detail>`
+  containing `<g:attribute_value>Val</g:attribute_value>`, never
+  `<g:product_detail></g:product_detail>`. Pinned by a dedicated
+  regression test in `test_export_renderer.py` alongside the golden-XML
+  end-to-end test.
 
 ### 5.3 Registry `max_repeats` derivation
 
@@ -211,6 +236,22 @@ staged products' `processed_data` (fallback `raw_data` when null — QC
 precedent) for the feed source and take the max observed list length;
 `scalar`/`structured` → 1; no rows / unknown → 0. Feed source existence is
 validated (404).
+
+**Query efficiency (operator directive, 2026-09-10):** never load full
+`StagingProduct` model instances. Select only the two JSON columns and
+stream the result set:
+
+```python
+stmt = (
+    select(StagingProduct.processed_data, StagingProduct.raw_data)
+    .where(StagingProduct.feed_source_id == feed_source_id)
+    .execution_options(yield_per=1000)
+)
+```
+
+Max observed array lengths per repeated attribute are computed during the
+stream iteration. This caps memory usage and keeps the endpoint latency
+flat on large feeds (no thousands of JSON blobs in memory).
 
 ## 6. Plugin runtime semantics for indexed paths
 
@@ -299,6 +340,23 @@ optional clear (emits `onChange('')`), label/description/placeholder/
 disabled/error/size/width passthrough. Input shows the stored dot-path
 value. No local duplicate option-building.
 
+**Client-side syntax validation of free text (operator directive,
+2026-09-10):** custom values are validated before submission against the
+canonical path grammar (mirrors the backend `parse_indexed_path` rules —
+1-based indices only):
+
+```typescript
+export const INDEXED_PATH_REGEX =
+  /^[a-z_][a-z0-9_]*(\.([1-9]\d*))?(\.[a-z_][a-z0-9_]*)?$/;
+```
+
+A malformed custom value (e.g. `product_detail.0.attribute_name`) is not
+submitted; an inline validation message is shown instead (e.g. "Indices
+are 1-based (e.g. .1, .2)" — new shared i18n key, en+de), so a malformed
+value can never reach the backend and produce a 422. The regex lives in
+`fieldOptions.ts` next to `buildFieldOptions` (single client-side
+authority, unit-tested there).
+
 ### 7.4 Hooks
 
 - `useFeedSourceFields` returns `{ fields: FieldDescriptor[] }` (one-shot
@@ -306,6 +364,19 @@ value. No local duplicate option-building.
 - `useRegistryAttributes(feedSourceId?)` — optional param; query key
   `['registry', 'attributes', id]` when present, existing key otherwise
   (shared namespace, no duplicate caching).
+- **Cache invalidation (operator directive, 2026-09-10):** any action that
+  mutates feed products or reruns the pipeline (ingest completion, mapping
+  run, dry-run, plugin apply, trigger-run) must invalidate the
+  `['registry', 'attributes']` **prefix** so every feed-scoped instance
+  refreshes without a page reload:
+
+  ```typescript
+  await queryClient.invalidateQueries({ queryKey: ['registry', 'attributes'] });
+  ```
+
+  Concretely: `useTriggerRun` and `useDryRun` (and any future run-triggering
+  mutation) gain this invalidation alongside their existing ones; a hooks
+  test asserts the prefix invalidation fires.
 
 ### 7.5 Data-source alignment
 
@@ -373,23 +444,36 @@ Backend:
 - union-sub-fields regression test (first item missing keys later items
   have);
 - `test_field_mapping_api.py`: indexed-target validation (accept on
-  `repeated_*`, still-reject on scalar/structured);
+  `repeated_*`, still-reject on scalar/structured) **plus the
+  coexistence test** (whole/broadcast claim + indexed claim on the same
+  attribute accepted when kinds compatible — operator directive 5);
 - `test_mapping_apply.py`: index reassembly incl. sparse/auto-extend/
-  out-of-range;
+  out-of-range **plus the precedence test** (indexed assignment overrides
+  the broadcast value for its slot — operator directive 5);
 - golden-XML in `test_export_renderer.py`: `product_detail.N.section_name`
-  mappings → clean `<g:product_detail>` blocks (no flat/wrong nesting);
+  mappings → clean `<g:product_detail>` blocks (no flat/wrong nesting),
+  **plus the sparse-sanitization regression test** (`[{}, {},
+  {"attribute_value": "Val"}]` → exactly one non-empty
+  `<g:product_detail>` block, zero empty blocks — operator directive 2);
 - plugin tests: rules indexed read+write, filter indexed reads, labelizer
   indexed matchField, `_product_field_candidates` sync test;
 - route tests: both new response shapes (`test_registry_api.py`, new
-  `test_feed_fields_api.py`).
+  `test_feed_fields_api.py`), and the registry `max_repeats` scan uses
+  the column-only `yield_per` statement (asserted via the statement's
+  execution options / by test inspection — operator directive 1).
 
 Frontend:
 - new `fieldOptions.test.ts` (scalar, structured, repeated_scalar,
-  repeated_structured, 0-repeats, dot-name collision);
-- new `FieldSelect.test.tsx` (grouping, filter, free-text, clear);
+  repeated_structured, 0-repeats, dot-name collision, and the
+  `INDEXED_PATH_REGEX` accept/reject table incl. `.0` rejection —
+  operator directive 4);
+- new `FieldSelect.test.tsx` (grouping, filter, free-text, clear, and the
+  inline 1-based validation message on malformed custom input);
 - updated `MappingTable.test.tsx`, `CustomLabelsUI.test.tsx`,
   `RulesUI.test.tsx`, `FilterUI.test.tsx`, `hooks.m10c.test.tsx`, plus the
-  two mechanical call-site fixtures.
+  two mechanical call-site fixtures;
+- hooks test asserting the `['registry', 'attributes']` prefix
+  invalidation on run-triggering mutations (operator directive 3).
 
 Gates: `uv run ruff check .` (no new errors vs baseline), `uv run mypy .`,
 `uv run pytest -n auto`, `npm run test`, `npm run typecheck`,
