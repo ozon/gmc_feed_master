@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated, Any
 
 import jsonschema
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -161,14 +161,18 @@ async def update_plugin_enabled(
 @router.get("/plugins/{plugin_id}/config", response_model=None)
 async def get_plugin_config(
     plugin_id: str,
+    response: Response,
     user: Annotated[CurrentUser, Depends(get_current_user)],
     client_id: int | None = None,
     feed_source_id: int | None = None,
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict[str, Any] | JSONResponse:
-    return await _get_payload(
+    payload, version = await _get_payload(
         plugin_id, client_id, feed_source_id, PluginConfig, "config", "config_scope", db_session, user
     )
+    if version is not None:
+        response.headers["X-Plugin-Data-Version"] = str(version)
+    return payload
 
 
 @router.put("/plugins/{plugin_id}/config", response_model=None)
@@ -178,6 +182,7 @@ async def put_plugin_config(
     user: Annotated[CurrentUser, Depends(get_current_user)],
     client_id: int | None = None,
     feed_source_id: int | None = None,
+    expected_version: str | None = None,
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict[str, str] | JSONResponse:
     return await _put_payload(
@@ -189,6 +194,7 @@ async def put_plugin_config(
         "config",
         "config_scope",
         "config_schema",
+        expected_version,
         db_session,
         user,
     )
@@ -197,14 +203,18 @@ async def put_plugin_config(
 @router.get("/plugins/{plugin_id}/data", response_model=None)
 async def get_plugin_data(
     plugin_id: str,
+    response: Response,
     user: Annotated[CurrentUser, Depends(get_current_user)],
     client_id: int | None = None,
     feed_source_id: int | None = None,
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict[str, Any] | JSONResponse:
-    return await _get_payload(
+    payload, version = await _get_payload(
         plugin_id, client_id, feed_source_id, PluginData, "data", "data_scope", db_session, user
     )
+    if version is not None:
+        response.headers["X-Plugin-Data-Version"] = str(version)
+    return payload
 
 
 @router.put("/plugins/{plugin_id}/data", response_model=None)
@@ -214,6 +224,7 @@ async def put_plugin_data(
     user: Annotated[CurrentUser, Depends(get_current_user)],
     client_id: int | None = None,
     feed_source_id: int | None = None,
+    expected_version: str | None = None,
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> dict[str, str] | JSONResponse:
     return await _put_payload(
@@ -225,6 +236,7 @@ async def put_plugin_data(
         "data",
         "data_scope",
         "data_schema",
+        expected_version,
         db_session,
         user,
     )
@@ -239,22 +251,67 @@ async def _get_payload(
     scope_kind: str,
     db_session: AsyncSession | None,
     user: CurrentUser,
-) -> dict[str, Any] | JSONResponse:
+) -> tuple[dict[str, Any] | JSONResponse, int | None]:
     session = _require_db(db_session)
     resolved = await _resolve_target(
         plugin_id, client_id, feed_source_id, session, scope_kind, user
     )
     if isinstance(resolved, JSONResponse):
-        return resolved
+        return resolved, None
     plugin, scope, resolved_client_id, resolved_feed_source_id = resolved
-    stmt = select(getattr(model, column_name)).where(
+    stmt = select(getattr(model, column_name), model.id).where(
         model.plugin_id == plugin.id,
         model.scope == scope,
         model.key == _DEFAULT_KEY,
         *_owner_filters(model, scope, resolved_client_id, resolved_feed_source_id),
     )
     row = (await session.execute(stmt)).first()
-    return row[0] if row else {}
+    if row is None:
+        return {}, None
+    return row[0], row[1]
+
+
+async def _expected_version_conflict(
+    session: AsyncSession,
+    model: type[PluginConfig | PluginData],
+    plugin: Plugin,
+    scope: str,
+    resolved_client_id: int | None,
+    resolved_feed_source_id: int | None,
+    expected_version: str,
+) -> JSONResponse | None:
+    stmt = select(model.id).where(
+        model.plugin_id == plugin.id,
+        model.scope == scope,
+        model.key == _DEFAULT_KEY,
+        *_owner_filters(model, scope, resolved_client_id, resolved_feed_source_id),
+    )
+    current_id = (await session.execute(stmt)).scalar()
+    if expected_version == "null":
+        if current_id is not None:
+            return _conflict_response(current_id)
+        return None
+    try:
+        expected_id = int(expected_version)
+    except ValueError:
+        raise HTTPException(
+            status_code=422, detail="expected_version must be an integer or null"
+        ) from None
+    if current_id is None or current_id != expected_id:
+        return _conflict_response(current_id)
+    return None
+
+
+def _conflict_response(current_version: int | None) -> JSONResponse:
+    return JSONResponse(
+        status_code=409,
+        content={
+            "detail": {
+                "message": "plugin data changed since read",
+                "current_version": current_version,
+            }
+        },
+    )
 
 
 async def _put_payload(
@@ -266,6 +323,7 @@ async def _put_payload(
     column_name: str,
     scope_kind: str,
     schema_key: str,
+    expected_version: str | None,
     db_session: AsyncSession | None,
     user: CurrentUser,
 ) -> dict[str, str] | JSONResponse:
@@ -283,6 +341,18 @@ async def _put_payload(
                 jsonschema.validate(payload, schema)
             except (jsonschema.ValidationError, jsonschema.SchemaError) as exc:
                 return _validation_error(exc.message)
+        if expected_version is not None:
+            conflict = await _expected_version_conflict(
+                session,
+                model,
+                plugin,
+                scope,
+                resolved_client_id,
+                resolved_feed_source_id,
+                expected_version,
+            )
+            if conflict is not None:
+                return conflict
         await session.execute(
             delete(model).where(
                 model.plugin_id == plugin.id,

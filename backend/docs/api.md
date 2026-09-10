@@ -107,13 +107,13 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 - `PUT /plugins/{plugin_id}/enabled` — enable/disable plugin (admin only; registry-wide state); returns 409 when disabling a plugin used by ≥1 feed source, 403 for non-admin users
 
 ### Plugin Config (Reserved Routes)
-- `GET /plugins/{plugin_id}/config?client_id=&feed_source_id=` — get config at scope (omitted = global)
-- `PUT /plugins/{plugin_id}/config?client_id=&feed_source_id=` — full-replace config, validated against `config_schema`
-  Returns 422 `{"errors":[...]}` on validation failure
+- `GET /plugins/{plugin_id}/config?client_id=&feed_source_id=` — get config at scope (omitted = global). Response carries `X-Plugin-Data-Version: <row id>` when a stored row exists (header absent = no row, version null); the id is the revision token — every PUT creates a new row, so the id strictly increases per write.
+- `PUT /plugins/{plugin_id}/config?client_id=&feed_source_id=&expected_version=` — full-replace config, validated against `config_schema`
+  Returns 422 `{"errors":[...]}` on validation failure. `expected_version` (optional, optimistic locking): absent = unchecked legacy replace; `"null"` succeeds only if no row exists; an integer row id succeeds only if it matches the current row. Mismatch → 409 `{"detail": {"message", "current_version"}}`. Non-integer value → 422.
 
 ### Plugin Data (Reserved Routes)
-- `GET /plugins/{plugin_id}/data?client_id=&feed_source_id=` — get data at scope
-- `PUT /plugins/{plugin_id}/data?client_id=&feed_source_id=` — full-replace data, validated against `data_schema`
+- `GET /plugins/{plugin_id}/data?client_id=&feed_source_id=` — get data at scope. Carries `X-Plugin-Data-Version` identically to config.
+- `PUT /plugins/{plugin_id}/data?client_id=&feed_source_id=&expected_version=` — full-replace data, validated against `data_schema`; `expected_version` semantics identical to config.
 
 **Scope rules:**
 - At most one of `client_id`, `feed_source_id` (400 if both)

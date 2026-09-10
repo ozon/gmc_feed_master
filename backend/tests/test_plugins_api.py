@@ -1,7 +1,7 @@
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
@@ -403,3 +403,135 @@ async def test_plugins_list_includes_usage_count(app_factory):
     by_id = {p["id"]: p for p in resp.json()}
     assert by_id["used_plugin"]["used_by_feed_sources"] == 2
     assert by_id["unused_plugin"]["used_by_feed_sources"] == 0
+
+
+async def _current_row_id(factory, plugin_row_id, model, scope, client_id=None, feed_source_id=None):
+    async with factory() as session:
+        row = (await session.execute(
+            select(model.id).where(
+                model.plugin_id == plugin_row_id,
+                model.scope == scope,
+                model.key == "default",
+                model.client_id == client_id if scope == "client" else model.client_id.is_(None),
+                model.feed_source_id == feed_source_id if scope == "feed_source" else model.feed_source_id.is_(None),
+            )
+        )).scalar()
+        return row
+
+
+class TestOptimisticLocking:
+    async def test_get_carries_version_header_after_put(self, app_factory):
+        _, factory = app_factory
+        plugin_row_id = await seed_plugin(factory)
+        client = await logged_in_client(app_factory)
+        resp = await client.put("/plugins/title_case/config", json={"prefix": "a"})
+        assert resp.status_code == 200
+        resp = await client.get("/plugins/title_case/config")
+        assert resp.status_code == 200
+        assert resp.json() == {"prefix": "a"}
+        version = resp.headers.get("X-Plugin-Data-Version")
+        assert version is not None
+        assert int(version) == await _current_row_id(
+            factory, plugin_row_id, PluginConfig, "global"
+        )
+
+    async def test_get_version_header_absent_before_any_write(self, app_factory):
+        await seed_plugin(app_factory[1])
+        client = await logged_in_client(app_factory)
+        resp = await client.get("/plugins/title_case/config")
+        assert resp.status_code == 200
+        assert resp.json() == {}
+        assert "X-Plugin-Data-Version" not in resp.headers
+
+    async def test_put_with_matching_version_succeeds_and_bumps(self, app_factory):
+        _, factory = app_factory
+        await seed_plugin(factory)
+        client = await logged_in_client(app_factory)
+        await client.put("/plugins/title_case/config", json={"prefix": "a"})
+        v1 = int((await client.get("/plugins/title_case/config")).headers["X-Plugin-Data-Version"])
+        resp = await client.put(
+            f"/plugins/title_case/config?expected_version={v1}", json={"prefix": "b"}
+        )
+        assert resp.status_code == 200
+        v2 = int((await client.get("/plugins/title_case/config")).headers["X-Plugin-Data-Version"])
+        assert v2 > v1
+        assert (await client.get("/plugins/title_case/config")).json() == {"prefix": "b"}
+
+    async def test_put_with_stale_version_returns_409_with_current(self, app_factory):
+        _, factory = app_factory
+        plugin_row_id = await seed_plugin(factory)
+        client = await logged_in_client(app_factory)
+        await client.put("/plugins/title_case/config", json={"prefix": "a"})
+        v1 = int((await client.get("/plugins/title_case/config")).headers["X-Plugin-Data-Version"])
+        await client.put("/plugins/title_case/config", json={"prefix": "other-editor"})
+        resp = await client.put(
+            f"/plugins/title_case/config?expected_version={v1}", json={"prefix": "b"}
+        )
+        assert resp.status_code == 409
+        detail = resp.json()["detail"]
+        current = await _current_row_id(factory, plugin_row_id, PluginConfig, "global")
+        assert detail["current_version"] == current
+
+    async def test_put_null_on_absent_row_succeeds(self, app_factory):
+        await seed_plugin(app_factory[1])
+        client = await logged_in_client(app_factory)
+        resp = await client.put(
+            "/plugins/title_case/config?expected_version=null", json={"prefix": "a"}
+        )
+        assert resp.status_code == 200
+
+    async def test_put_null_on_existing_row_returns_409(self, app_factory):
+        await seed_plugin(app_factory[1])
+        client = await logged_in_client(app_factory)
+        await client.put("/plugins/title_case/config", json={"prefix": "a"})
+        resp = await client.put(
+            "/plugins/title_case/config?expected_version=null", json={"prefix": "b"}
+        )
+        assert resp.status_code == 409
+        assert resp.json()["detail"]["current_version"] is not None
+
+    async def test_put_int_on_absent_row_returns_409(self, app_factory):
+        await seed_plugin(app_factory[1])
+        client = await logged_in_client(app_factory)
+        resp = await client.put(
+            "/plugins/title_case/config?expected_version=42", json={"prefix": "a"}
+        )
+        assert resp.status_code == 409
+        assert resp.json()["detail"]["current_version"] is None
+
+    async def test_put_without_param_is_legacy_unchecked(self, app_factory):
+        await seed_plugin(app_factory[1])
+        client = await logged_in_client(app_factory)
+        assert (await client.put("/plugins/title_case/config", json={"prefix": "a"})).status_code == 200
+        assert (await client.put("/plugins/title_case/config", json={"prefix": "b"})).status_code == 200
+        assert (await client.get("/plugins/title_case/config")).json() == {"prefix": "b"}
+
+    async def test_put_bad_version_value_returns_422(self, app_factory):
+        await seed_plugin(app_factory[1])
+        client = await logged_in_client(app_factory)
+        resp = await client.put(
+            "/plugins/title_case/config?expected_version=abc", json={"prefix": "a"}
+        )
+        assert resp.status_code == 422
+
+    async def test_version_check_scoped_to_the_target_row(self, app_factory):
+        _, factory = app_factory
+        plugin_row_id = await seed_plugin(factory, manifest=make_manifest(data_scope=["global", "client"]))
+        client = await logged_in_client(app_factory)
+        client_id, _ = await create_client_and_feed_source(client)
+        await client.put(f"/plugins/title_case/data?client_id={client_id}", json={"x": "1"})
+        v_client = int((await client.get(f"/plugins/title_case/data?client_id={client_id}")).headers["X-Plugin-Data-Version"])
+        await client.put("/plugins/title_case/data", json={"global": "yes"})
+        v_global = int((await client.get("/plugins/title_case/data")).headers["X-Plugin-Data-Version"])
+        resp = await client.put(
+            f"/plugins/title_case/data?client_id={client_id}&expected_version={v_client}",
+            json={"x": "2"},
+        )
+        assert resp.status_code == 200
+        resp = await client.put(
+            f"/plugins/title_case/data?expected_version={v_global}", json={"global": "no"}
+        )
+        assert resp.status_code == 200
+        assert (await client.get(f"/plugins/title_case/data?client_id={client_id}")).json() == {"x": "2"}
+        assert (await client.get("/plugins/title_case/data")).json() == {"global": "no"}
+        del plugin_row_id
