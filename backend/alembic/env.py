@@ -10,7 +10,9 @@ from app import models  # noqa: F401
 from app.db.base import Base
 
 config = context.config
-_database_url = config.attributes.get("database_url") or os.environ.get("DATABASE_URL")
+_database_url = config.attributes.get("database_url")
+if _database_url is None:
+    _database_url = os.environ.get("DATABASE_URL")
 if _database_url:
     from app.config import Settings
 

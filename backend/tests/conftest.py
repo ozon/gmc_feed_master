@@ -1,4 +1,5 @@
 import os
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote, urlsplit
@@ -24,6 +25,17 @@ os.environ.setdefault("INITIAL_PASSWORD", "test-password")
 _ARTIFACT_PATH = Path(__file__).resolve().parent.parent / "registry" / "attributes.json"
 
 _BACKEND_ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _warn_ambient_database_url() -> None:
+    if os.environ.get("DATABASE_URL") and os.environ.get("TEST_DATABASE_URL"):
+        warnings.warn(
+            "Both DATABASE_URL and TEST_DATABASE_URL are set. "
+            "Alembic in tests uses TEST_DATABASE_URL; DATABASE_URL is ignored by test paths. "
+            "Unset DATABASE_URL to silence this warning.",
+            stacklevel=2,
+        )
 
 
 def _server_params() -> dict:

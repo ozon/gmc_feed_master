@@ -83,7 +83,12 @@ function EnabledProbe() {
 }
 
 beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.restoreAllMocks();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('useLabelizerPreview', () => {
@@ -114,7 +119,7 @@ describe('useLabelizerPreview', () => {
       return jsonResponse({});
     });
     render(<Probe rules={RULES} enabled={false} />);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await act(async () => { vi.advanceTimersByTime(600); });
     expect(calls.some((u) => u.includes('/preview'))).toBe(false);
     expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('');
   });
@@ -151,18 +156,18 @@ describe('useLabelizerPreview', () => {
       return jsonResponse({});
     });
     render(<DraftProbe />);
-    // wait for the first debounced request to actually start, then change
-    // the draft so a second request begins while the first is still in
-    // flight — the harness must change its own state (rerender remounts in
-    // this RTL setup and would never exercise the per-instance guard)
-    await waitFor(() => expect(calls).toBe(1), { timeout: 5000 });
+    // advance past debounce → first fetch fires
+    await act(async () => { vi.advanceTimersByTime(600); });
+    expect(calls).toBe(1);
     await userEvent.click(screen.getByRole('button', { name: /change draft/i }));
+    // advance past debounce → second fetch fires (resolves immediately)
+    await act(async () => { vi.advanceTimersByTime(600) });
     expect(await waitFor(
       () => expect(screen.getByTestId('total').textContent).toBe('2'),
       { timeout: 5000 },
     )).toBeTruthy();
-    // the slow FIRST response resolves now — the guard must discard it
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // advance past the slow first response → guard discards it
+    await act(async () => { vi.advanceTimersByTime(1500) });
     expect(screen.getByTestId('total').textContent).toBe('2');
     expect(calls).toBe(2);
   }, 10000);

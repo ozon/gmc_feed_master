@@ -62,7 +62,7 @@ def _parse_config_merge(data: dict[str, Any]) -> None:
         raise ManifestError("config_merge must be a non-empty object")
     for key, hint in value.items():
         if not key:
-            raise ManifestError("config_merge keys must be non-empty strings")
+            raise ManifestError("config_merge keys must be non-empty")
         if not isinstance(hint, dict) or hint.get("strategy") != "union_by_key":
             raise ManifestError(
                 f"config_merge.{key}: strategy must be 'union_by_key'"
