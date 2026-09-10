@@ -68,7 +68,7 @@ async def seed_field_mapping(factory, feed_source_id, doc):
 
 
 def source_field(name, kind, sub_fields=()):
-    return {"name": name, "kind": kind, "sub_fields": list(sub_fields)}
+    return {"name": name, "kind": kind, "sub_fields": list(sub_fields), "max_repeats": 0}
 
 
 async def test_get_field_mapping_missing_feed_source_returns_404(app_factory):

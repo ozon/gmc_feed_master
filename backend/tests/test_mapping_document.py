@@ -16,6 +16,24 @@ def test_empty_document():
     assert doc.mappings == {}
 
 
+def test_roundtrip_max_repeats():
+    doc = MappingDocument.from_json({
+        "version": 1,
+        "auto_mapped": False,
+        "source_fields": [
+            {"name": "shipping", "kind": "repeated_structured",
+             "sub_fields": ["country", "price"], "max_repeats": 3},
+            {"name": "title", "kind": "scalar", "sub_fields": []},
+        ],
+        "mappings": {},
+    })
+    assert doc.source_fields[0].max_repeats == 3
+    assert doc.source_fields[1].max_repeats == 0
+    out = doc.to_json()
+    assert out["source_fields"][0]["max_repeats"] == 3
+    assert out["source_fields"][1]["max_repeats"] == 0
+
+
 def test_empty_returns_independent_instances():
     a = MappingDocument.empty()
     b = MappingDocument.empty()
@@ -36,11 +54,12 @@ def test_round_trip_preserves_content():
         "version": 1,
         "auto_mapped": True,
         "source_fields": [
-            {"name": "sku", "kind": "scalar", "sub_fields": []},
+            {"name": "sku", "kind": "scalar", "sub_fields": [], "max_repeats": 0},
             {
                 "name": "shipping",
                 "kind": "repeated_structured",
                 "sub_fields": ["country", "price"],
+                "max_repeats": 0,
             },
         ],
         "mappings": {
@@ -76,7 +95,7 @@ def test_to_json_shape():
         "version": 1,
         "auto_mapped": False,
         "source_fields": [
-            {"name": "sku", "kind": "scalar", "sub_fields": []},
+            {"name": "sku", "kind": "scalar", "sub_fields": [], "max_repeats": 0},
         ],
         "mappings": {"sku": {"target": "id", "origin": "manual"}},
     }

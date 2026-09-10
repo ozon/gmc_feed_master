@@ -63,6 +63,7 @@ class MappingDocument:
                     "name": sf.name,
                     "kind": sf.kind,
                     "sub_fields": list(sf.sub_fields),
+                    "max_repeats": sf.max_repeats,
                 }
                 for sf in self.source_fields
             ],
@@ -101,7 +102,23 @@ def _parse_source_fields(raw: Any) -> list[SourceField]:
             raise MappingDocumentError(
                 f"source field 'sub_fields' must be a list of strings for {name!r}"
             )
-        result.append(SourceField(name=name, kind=kind, sub_fields=tuple(sub_fields)))
+        max_repeats = item.get("max_repeats", 0)
+        if (
+            not isinstance(max_repeats, int)
+            or isinstance(max_repeats, bool)
+            or max_repeats < 0
+        ):
+            raise MappingDocumentError(
+                f"source field 'max_repeats' must be a non-negative int for {name!r}"
+            )
+        result.append(
+            SourceField(
+                name=name,
+                kind=kind,
+                sub_fields=tuple(sub_fields),
+                max_repeats=max_repeats,
+            )
+        )
     return result
 
 

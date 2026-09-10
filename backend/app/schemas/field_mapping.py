@@ -17,6 +17,7 @@ class SourceFieldOut(BaseModel):
     name: str
     kind: str
     sub_fields: list[str]
+    max_repeats: int = 0
 
 
 class MappingEntryOut(BaseModel):
@@ -37,6 +38,7 @@ class RegistrySubFieldOut(BaseModel):
     name: str
     type: str
     required: str
+    kind: str | None = None
 
 
 class RegistryAttributeOut(BaseModel):
@@ -46,3 +48,4 @@ class RegistryAttributeOut(BaseModel):
     baseline_required: bool
     sub_fields: list[RegistrySubFieldOut]
     enum_values: list[str]
+    max_repeats: int = 0

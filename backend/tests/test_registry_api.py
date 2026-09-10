@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
@@ -8,9 +10,9 @@ from app.config import Settings
 from app.main import create_app
 from app.models import Client, ExportRun, ExportVersion, FeedSource, IngestionRun
 from app.models.session import Session
+from app.models.staging import StagingProduct
 from app.models.user import User
 from app.persistence.users import seed_initial_user
-
 
 pytestmark = pytest.mark.asyncio
 
@@ -65,11 +67,13 @@ async def test_registry_attributes_returns_list_with_expected_shape(app_factory)
     assert isinstance(body, list)
     assert len(body) > 0
     for item in body:
-        assert set(item.keys()) == {"name", "kind", "required", "sub_fields", "enum_values", "baseline_required"}
+        assert set(item.keys()) == {"name", "kind", "required", "sub_fields", "enum_values", "baseline_required", "max_repeats"}
         assert isinstance(item["sub_fields"], list)
         assert isinstance(item["enum_values"], list)
         for sub in item["sub_fields"]:
-            assert set(sub.keys()) == {"name", "type", "required"}
+            assert "kind" in sub
+        for sub in item["sub_fields"]:
+            assert set(sub.keys()) == {"name", "type", "required", "kind"}
 
 
 async def test_registry_attributes_title_is_scalar(app_factory):
@@ -118,3 +122,63 @@ async def test_registry_attributes_baseline_required_flag(app_factory):
     assert by_name["vin"]["baseline_required"] is False
     assert by_name["store_code"]["baseline_required"] is False
     assert by_name["gtin"]["baseline_required"] is False
+
+
+async def test_registry_attributes_without_feed_source_max_repeats_zero(app_factory):
+    client = await logged_in_client(app_factory)
+    resp = await client.get("/registry/attributes")
+    body = resp.json()
+    pd = next(a for a in body if a["name"] == "product_detail")
+    assert pd["max_repeats"] == 0
+    assert pd["sub_fields"][0]["kind"] == "repeated_scalar"
+
+
+async def test_registry_attributes_with_feed_source_derives_max_repeats(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    created = (await client.post("/clients", json={"name": "Acme"})).json()
+    feed = (await client.post(
+        f"/clients/{created['id']}/feed-sources",
+        json={"name": "DE", "source_format": "xml"},
+    )).json()
+    async with factory() as session, session.begin():
+        run = IngestionRun(feed_source_id=feed["id"], status="success",
+                           started_at=datetime.now(timezone.utc))
+        session.add(run)
+        await session.flush()
+        session.add(StagingProduct(
+            feed_source_id=feed["id"], ingestion_run_id=run.id,
+            product_id="a", content_hash="h", config_hash="c",
+            status="active", raw_data={"id": "a"},
+            processed_data={
+                "id": "a",
+                "product_detail": [
+                    {"section_name": "General", "attribute_name": "Battery",
+                     "attribute_value": "5000 mAh"},
+                    {"section_name": "General", "attribute_name": "Color",
+                     "attribute_value": "Blue"},
+                    {"section_name": "Extra"},
+                ],
+                "additional_image_link": ["x.jpg", "y.jpg"],
+            }, excluded=False,
+        ))
+        session.add(StagingProduct(
+            feed_source_id=feed["id"], ingestion_run_id=run.id,
+            product_id="b", content_hash="h", config_hash="c",
+            status="active", raw_data={"id": "b", "brand": "RawBrand"},
+            processed_data=None, excluded=False,
+        ))
+    resp = await client.get(f"/registry/attributes?feed_source_id={feed['id']}")
+    assert resp.status_code == 200
+    body = resp.json()
+    by_name = {a["name"]: a for a in body}
+    assert by_name["product_detail"]["max_repeats"] == 3
+    assert by_name["additional_image_link"]["max_repeats"] == 2
+    assert by_name["id"]["max_repeats"] == 1
+    assert by_name["installment"]["max_repeats"] == 1
+
+
+async def test_registry_attributes_unknown_feed_source_404(app_factory):
+    client = await logged_in_client(app_factory)
+    resp = await client.get("/registry/attributes?feed_source_id=99999")
+    assert resp.status_code == 404
