@@ -242,68 +242,82 @@ def apply_category(
     return None
 
 
-def validate_config(config: Any) -> None:
-    """Strict validation of a category config document. Empty config passes."""
+def collect_config_errors(config: Any) -> list[str]:
+    """Collect every validation error for a category config document. Empty config passes."""
     if not isinstance(config, dict) or not config:
-        return
+        return []
     rules = config.get("rules")
     if rules is None:
-        return
+        return []
     if not isinstance(rules, list):
-        raise ValueError("config.rules must be an array")
+        return ["config.rules must be an array"]
+    errors: list[str] = []
     seen: set[str] = set()
     index = taxonomy_index()
     for position, rule in enumerate(rules):
         where = f"rules[{position}]"
         if not isinstance(rule, dict):
-            raise ValueError(f"{where}: rule must be an object")
+            errors.append(f"{where}: rule must be an object")
+            continue
         rule_id = rule.get("id")
         if not isinstance(rule_id, str) or not rule_id:
-            raise ValueError(f"{where}: id must be a non-empty string")
-        if rule_id in seen:
-            raise ValueError(f"{where}: duplicate rule id {rule_id!r}")
-        seen.add(rule_id)
+            errors.append(f"{where}: id must be a non-empty string")
+        elif rule_id in seen:
+            errors.append(f"{where}: duplicate rule id {rule_id!r}")
+        if isinstance(rule_id, str) and rule_id:
+            seen.add(rule_id)
         source_field = rule.get("source_field")
         if source_field is not None and (
             not isinstance(source_field, str) or not source_field
         ):
-            raise ValueError(f"{where}: source_field must be a non-empty string")
+            errors.append(f"{where}: source_field must be a non-empty string")
         operator = rule.get("operator")
         if operator not in OPERATORS:
-            raise ValueError(f"{where}: operator must be one of {', '.join(OPERATORS)}")
+            errors.append(f"{where}: operator must be one of {', '.join(OPERATORS)}")
         source_value = rule.get("source_value")
         if operator == "in":
             if not isinstance(source_value, list) or not source_value:
-                raise ValueError(
+                errors.append(
                     f"{where}: source_value must be a non-empty array for operator 'in'"
                 )
-            for item in source_value:
-                if not isinstance(item, str) or not item.strip():
-                    raise ValueError(
-                        f"{where}: source_value entries must be non-empty strings"
-                    )
-        else:
+            else:
+                for item in source_value:
+                    if not isinstance(item, str) or not item.strip():
+                        errors.append(
+                            f"{where}: source_value entries must be non-empty strings"
+                        )
+                        break
+        elif operator in OPERATORS:
             if not isinstance(source_value, str) or not source_value:
-                raise ValueError(f"{where}: source_value must be a non-empty string")
-            if operator == "regex":
+                errors.append(f"{where}: source_value must be a non-empty string")
+            elif operator == "regex":
                 try:
                     re.compile(source_value)
                 except re.error as exc:
-                    raise ValueError(f"{where}: invalid regex: {exc}") from exc
+                    errors.append(f"{where}: invalid regex: {exc}")
         is_excluded = rule.get("is_excluded", False)
         if not isinstance(is_excluded, bool):
-            raise ValueError(f"{where}: is_excluded must be a boolean")
+            errors.append(f"{where}: is_excluded must be a boolean")
+            continue
         taxonomy_id = rule.get("taxonomy_id")
         if not is_excluded:
             if not isinstance(taxonomy_id, str) or not taxonomy_id:
-                raise ValueError(
+                errors.append(
                     f"{where}: taxonomy_id must be a non-empty string when "
                     "is_excluded is false"
                 )
-            if not index.contains(taxonomy_id):
-                raise ValueError(
+            elif not index.contains(taxonomy_id):
+                errors.append(
                     f"{where}: taxonomy_id {taxonomy_id!r} not found in the taxonomy"
                 )
+    return errors
+
+
+def validate_config(config: Any) -> None:
+    """Strict validation of a category config document. Empty config passes."""
+    errors = collect_config_errors(config)
+    if errors:
+        raise ValueError("; ".join(errors))
 
 
 def _build_state(config: Any, data: Any) -> dict[str, Any]:
@@ -359,10 +373,11 @@ class CategoryPlugin:
             language: str
 
         async def validate_rules(payload, user=Depends(get_current_user)):
-            try:
-                validate_config({"rules": payload.rules} if payload.rules else {})
-            except ValueError as exc:
-                return JSONResponse(status_code=422, content={"errors": [str(exc)]})
+            errors = collect_config_errors(
+                {"rules": payload.rules} if payload.rules else {}
+            )
+            if errors:
+                return JSONResponse(status_code=422, content={"errors": errors})
             return {"status": "ok"}
 
         validate_rules.__annotations__.update({

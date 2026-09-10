@@ -88,6 +88,24 @@ class TestValidateRoute:
         assert resp.status_code == 422
         assert resp.json()["errors"]
 
+    async def test_invalid_draft_returns_all_errors(self, app_factory):
+        client = await logged_in_client(app_factory)
+        resp = await client.post("/plugins/category/validate", json={
+            "rules": [
+                {"id": "r1", "operator": "nope", "source_value": "x", "taxonomy_id": "1"},
+                {"id": "r2", "source_field": "product_type", "operator": "eq",
+                 "source_value": "", "taxonomy_id": "1"},
+                {"id": "r3", "source_field": "product_type", "operator": "eq",
+                 "source_value": "Shoes", "is_excluded": "nope"},
+            ],
+        })
+        assert resp.status_code == 422
+        errors = resp.json()["errors"]
+        assert len(errors) == 3
+        assert any(e.startswith("rules[0]:") and "operator" in e for e in errors)
+        assert any(e.startswith("rules[1]:") and "source_value" in e for e in errors)
+        assert any(e.startswith("rules[2]:") and "is_excluded" in e for e in errors)
+
 
 class TestTaxonomyRoutes:
     async def test_languages_and_invalidation(self, app_factory, tmp_path):

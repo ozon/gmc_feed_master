@@ -172,6 +172,46 @@ class TestValidateConfig:
             cp.validate_config({"rules": [_rule(source_field="")]})
 
 
+class TestCollectConfigErrors:
+    def test_empty_config_collects_nothing(self):
+        assert cp.collect_config_errors({}) == []
+        assert cp.collect_config_errors(None) == []
+
+    def test_collects_every_rule_error(self):
+        errors = cp.collect_config_errors(
+            {
+                "rules": [
+                    _rule(id="r1", source_field=""),
+                    _rule(id="r2", operator="nope"),
+                    _rule(id="r3"),
+                ]
+            }
+        )
+        assert len(errors) == 2
+        assert any(e.startswith("rules[0]:") and "source_field" in e for e in errors)
+        assert any(e.startswith("rules[1]:") and "operator" in e for e in errors)
+
+    def test_error_in_one_rule_does_not_mask_errors_in_later_rules(self):
+        errors = cp.collect_config_errors(
+            {"rules": ["not-a-dict", _rule(id="r2", operator="nope")]}
+        )
+        assert len(errors) == 2
+        assert errors[0] == "rules[0]: rule must be an object"
+        assert errors[1].startswith("rules[1]: operator")
+
+    def test_non_list_rules_single_error(self):
+        assert cp.collect_config_errors({"rules": {}}) == ["config.rules must be an array"]
+
+    def test_validate_config_joins_collected_errors(self):
+        with pytest.raises(ValueError) as excinfo:
+            cp.validate_config(
+                {"rules": [_rule(id="r1", source_field=""), _rule(id="r2", operator="nope")]}
+            )
+        assert "; " in str(excinfo.value)
+        assert "rules[0]: source_field" in str(excinfo.value)
+        assert "rules[1]: operator" in str(excinfo.value)
+
+
 class TestPluginValidateConfigDelegates:
     def test_delegates(self):
         plugin = cp.CategoryPlugin()
