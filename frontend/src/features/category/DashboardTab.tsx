@@ -1,5 +1,5 @@
 import { Group, Paper, Progress, Select, Stack, Text } from '@mantine/core';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDashboardSummary } from '../../api/hooks';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
@@ -21,7 +21,10 @@ export function DashboardTab({
   const stats = useCategoryStats(feedSourceId);
 
   const client = summary.data?.clients?.find((c) => c.id === clientId);
-  const feedSources = client?.feed_sources ?? [];
+  const feedSources = useMemo(
+    () => client?.feed_sources ?? [],
+    [client],
+  );
 
   useEffect(() => {
     if (feedSourceId === undefined && feedSources.length > 0) {
@@ -32,8 +35,27 @@ export function DashboardTab({
   if (clientId === undefined) {
     return <EmptyState message={t('dashboard.needsClient')} />;
   }
-  if (summary.isLoading) return <LoadingState />;
+
+  const select = (
+    <Select
+      label={t('dashboard.feedSource')}
+      w={280}
+      data={feedSources.map((feed) => ({ value: String(feed.id), label: feed.name }))}
+      value={feedSourceId !== undefined ? String(feedSourceId) : null}
+      onChange={(value) => value && onSelectFeedSource(Number(value))}
+      disabled={summary.isLoading}
+    />
+  );
+
   if (summary.isError) return <ErrorState onRetry={() => void summary.refetch()} />;
+  if (summary.isLoading) {
+    return (
+      <Stack gap="md">
+        {select}
+        <LoadingState />
+      </Stack>
+    );
+  }
   if (feedSources.length === 0) return <EmptyState message={t('dashboard.noFeedSources')} />;
 
   const labeled = stats.data ? stats.data.buckets.manual + stats.data.buckets.auto : 0;
@@ -41,13 +63,7 @@ export function DashboardTab({
   return (
     <Stack gap="md">
       <Group justify="space-between">
-        <Select
-          label={t('dashboard.feedSource')}
-          w={280}
-          data={feedSources.map((feed) => ({ value: String(feed.id), label: feed.name }))}
-          value={feedSourceId !== undefined ? String(feedSourceId) : null}
-          onChange={(value) => value && onSelectFeedSource(Number(value))}
-        />
+        {select}
         <Text size="xs" c="dimmed">{t('dashboard.asOfLastRun')}</Text>
       </Group>
       {stats.isLoading && <LoadingState />}

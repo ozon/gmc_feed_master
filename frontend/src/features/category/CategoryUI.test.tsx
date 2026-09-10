@@ -33,6 +33,15 @@ function renderCategoryUI(
   routes: Route[],
 ) {
   const fetchMock = stubFetch(routeHandler(routes));
+  renderCategoryUIWithHandler(scope, fetchMock);
+  return fetchMock;
+}
+
+function renderCategoryUIWithHandler(
+  scope: { clientId?: number; feedSourceId?: number },
+  fetchHandler: (url: string) => Response | Promise<Response>,
+) {
+  stubFetch(fetchHandler);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = createMemoryRouter(
     [
@@ -48,7 +57,6 @@ function renderCategoryUI(
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  return fetchMock;
 }
 
 const BASE_ROUTES: Route[] = [
@@ -113,5 +121,25 @@ describe('CategoryUI shell', () => {
     expect(screen.getByText(/^Excluded$/)).toBeInTheDocument();
     expect(screen.getAllByText(/^Uncategorized$/).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/7 of 10 categorized/)).toBeInTheDocument();
+  });
+
+  it('dashboard renders the feed-source Select while the summary is still loading', async () => {
+    let releaseSummary: ((response: Response) => void) | undefined;
+    const baseHandler = routeHandler(BASE_ROUTES);
+    renderCategoryUIWithHandler({ clientId: 1 }, (url: string) => {
+      if (url.includes('/dashboard/summary')) {
+        return new Promise<Response>((resolve) => {
+          releaseSummary = resolve;
+        });
+      }
+      return baseHandler(url);
+    });
+    expect(await screen.findByRole('tab', { name: /Dashboard/i })).toBeInTheDocument();
+    const combobox = await screen.findByRole('combobox', { name: /feed source/i });
+    expect(combobox).toBeDisabled();
+    releaseSummary!(jsonResponse({ clients: [] }));
+    await waitFor(() =>
+      expect(screen.getByText(/no feed sources yet/i)).toBeInTheDocument(),
+    );
   });
 });
