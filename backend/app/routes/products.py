@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import require_user
 from ..db.engine import get_db_session
+from ..ingest.report import SourceField
+from ..mapping.document import MappingDocument
 from ..mapping.indexed_path import parse_indexed_path
 from ..models.feed_source import FeedSource
 from ..models.staging import StagingProduct
@@ -168,6 +170,20 @@ async def product_detail(
     }
 
 
+def _source_field_descriptor(sf: SourceField) -> dict:
+    sub_kind = "repeated_scalar" if sf.kind == "repeated_structured" else "scalar"
+    return {
+        "name": sf.name,
+        "kind": sf.kind,
+        "sub_fields": [{"name": sub, "kind": sub_kind} for sub in sf.sub_fields],
+        "max_repeats": (
+            sf.max_repeats
+            if sf.kind in ("repeated_scalar", "repeated_structured")
+            else 1
+        ),
+    }
+
+
 @router.get("/feed-sources/{feed_source_id}/fields")
 async def feed_source_fields(
     feed_source_id: int,
@@ -177,15 +193,20 @@ async def feed_source_fields(
     session = _require_db(db_session)
     async with session.begin():
         await _require_feed_source(session, feed_source_id)
-        rows = (await session.execute(
-            text(
-                "SELECT DISTINCT jsonb_object_keys(raw_data)"
-                " FROM staging_products WHERE feed_source_id = :fid"
-            ),
-            {"fid": feed_source_id},
-        )).scalars().all()
-    all_fields = sorted(set(rows) | set(_BASELINE_FIELDS))
-    return {"fields": all_fields}
+        feed_source = await session.get(FeedSource, feed_source_id)
+    doc = MappingDocument.from_json(feed_source.field_mapping)
+    fields: dict[str, dict] = {
+        sf.name: _source_field_descriptor(sf) for sf in doc.source_fields
+    }
+    for name in _BASELINE_FIELDS:
+        if name not in fields:
+            fields[name] = {
+                "name": name,
+                "kind": "scalar",
+                "sub_fields": [],
+                "max_repeats": 1,
+            }
+    return {"fields": [fields[name] for name in sorted(fields)]}
 
 
 class _LookupRequest(BaseModel):
