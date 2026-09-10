@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBlocker } from 'react-router';
 import { apiPost } from '../../api/client';
-import { useFeedSourceFields, usePluginConfig, useSavePluginConfig, type PluginScope } from '../../api/hooks';
+import { usePluginConfig, useSavePluginConfig, useRegistryAttributes, type PluginScope } from '../../api/hooks';
+import { buildFieldOptions, fromRegistryAttributes } from '../../api/fieldOptions';
+import { FieldSelect } from '../../components/FieldSelect';
 import { notifyApiError, notifySuccess } from '../../app/notifications';
 
 type FilterOp = 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'exists' | 'empty';
@@ -56,8 +58,11 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
   const { t: tCommon } = useTranslation('common');
   const config = usePluginConfig(pluginId, scope);
   const saveConfig = useSavePluginConfig(pluginId, scope);
-  const fieldsQuery = useFeedSourceFields(String(scope.feedSourceId ?? ''));
-  const fields = useMemo(() => fieldsQuery.data?.fields ?? [], [fieldsQuery.data]);
+  const registryQuery = useRegistryAttributes(scope.feedSourceId);
+  const fieldOptions = useMemo(
+    () => buildFieldOptions(fromRegistryAttributes(registryQuery.data ?? [])),
+    [registryQuery.data],
+  );
 
   const [draft, setDraft] = useState<FilterConfig>({ isActive: true, conditions: [] });
   const lastConfigRef = useRef<unknown>(null);
@@ -81,7 +86,6 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
     return !window.confirm(t('unsavedChanges'));
   });
 
-  const fieldData = fields.map((f) => ({ value: f, label: f }));
   const hasIncomplete = draft.conditions.some(
     (c) => !c.field || (TEXT_OPS.includes(c.op) && (c.arg === undefined || c.arg === '')),
   );
@@ -163,12 +167,11 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
       <Stack gap="xs" data-testid="filter-editor">
         {draft.conditions.map((condition, index) => (
           <Group key={index} gap="xs" wrap="nowrap" align="flex-start" data-testid={`condition-row-${index}`}>
-            <Select
+            <FieldSelect
               aria-label={t('field')}
-              data={fieldData}
-              value={condition.field || null}
-              onChange={(v) => patchCondition(index, { field: v ?? '' })}
-              searchable
+              value={condition.field || ''}
+              onChange={(v) => patchCondition(index, { field: v })}
+              options={fieldOptions}
               w={180}
             />
             <Select

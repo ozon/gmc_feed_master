@@ -183,7 +183,10 @@ describe('PluginPage', () => {
           ],
         });
       }
-      if (url.startsWith('/feed-sources/1/fields')) return jsonResponse({ fields: ['title', 'condition'] });
+      if (url.startsWith('/registry/attributes')) return jsonResponse([
+        { name: 'title', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
+        { name: 'condition', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
+      ]);
       return jsonResponse({});
     });
     renderWithDataRouter('/clients/1/feeds/1/plugins/rules');
@@ -213,7 +216,9 @@ describe('PluginPage', () => {
         if (init?.method === 'PUT') return jsonResponse({ isActive: true, conditions: [] });
         return jsonResponse({ isActive: true, conditions: [] });
       }
-      if (url.startsWith('/feed-sources/1/fields')) return jsonResponse({ fields: ['brand'] });
+      if (url.startsWith('/registry/attributes')) return jsonResponse([
+        { name: 'brand', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
+      ]);
       if (url.startsWith('/plugins/filter/preview')) return jsonResponse({ total: 2, pass: 1, fail: 1 });
       return jsonResponse({});
     });
@@ -237,7 +242,9 @@ describe('PluginPage', () => {
         if (init?.method === 'PUT') return jsonResponse({ rules: [] });
         return jsonResponse({ rules: [] });
       }
-      if (url.startsWith('/feed-sources/1/fields')) return jsonResponse({ fields: ['title'] });
+      if (url.startsWith('/registry/attributes')) return jsonResponse([
+        { name: 'title', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
+      ]);
       return jsonResponse({});
     });
     renderWithDataRouter('/clients/1/feeds/1/plugins/rules');

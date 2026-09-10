@@ -45,13 +45,19 @@ export function FieldSelect({
   'data-testid': dataTestId,
 }: FieldSelectProps) {
   const { t } = useTranslation('common');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const combobox = useCombobox({
-    onDropdownClose: () => combobox.resetSelectedOption(),
+    onDropdownOpen: () => setDropdownOpen(true),
+    onDropdownClose: () => {
+      setDropdownOpen(false);
+      combobox.resetSelectedOption();
+    },
   });
   const [search, setSearch] = useState(value);
+  const [showAll, setShowAll] = useState(true);
   useEffect(() => setSearch(value), [value]);
 
-  const query = search.trim().toLowerCase();
+  const query = showAll ? '' : search.trim().toLowerCase();
   const isKnown = useMemo(
     () => options.some((g) => g.items.some((i) => i.value === search)),
     [options, search],
@@ -86,6 +92,8 @@ export function FieldSelect({
         <InputBase
           data-testid={dataTestId}
           aria-label={ariaLabel}
+          role="combobox"
+          aria-haspopup="listbox"
           label={label}
           description={description}
           placeholder={placeholder}
@@ -108,11 +116,18 @@ export function FieldSelect({
           w={w}
           onChange={(event) => {
             setSearch(event.currentTarget.value);
+            setShowAll(false);
             combobox.openDropdown();
             combobox.updateSelectedOptionIndex();
           }}
-          onClick={() => combobox.openDropdown()}
-          onFocus={() => combobox.openDropdown()}
+          onClick={() => {
+            setShowAll(true);
+            combobox.openDropdown();
+          }}
+          onFocus={() => {
+            setShowAll(true);
+            combobox.openDropdown();
+          }}
           onBlur={() => {
             combobox.closeDropdown();
             setSearch(value);
@@ -128,27 +143,29 @@ export function FieldSelect({
           }}
         />
       </Combobox.Target>
-      <Combobox.Dropdown>
-        <Combobox.Options mah={280} style={{ overflowY: 'auto' }}>
-          {visibleGroups.map((g) => (
-            <Combobox.Group key={g.group} label={g.group}>
-              {g.items.map((item) => (
-                <Combobox.Option key={item.value} value={item.value} active={item.value === value}>
-                  {item.label}
-                </Combobox.Option>
-              ))}
-            </Combobox.Group>
-          ))}
-          {showCustom && (
-            <Combobox.Option value="__custom__">
-              {t('fieldSelect.customValue', { value: search })}
-            </Combobox.Option>
-          )}
-          {showInvalid && (
-            <Combobox.Empty>{t('fieldSelect.invalidPath')}</Combobox.Empty>
-          )}
-        </Combobox.Options>
-      </Combobox.Dropdown>
+      {dropdownOpen && (
+        <Combobox.Dropdown>
+          <Combobox.Options mah={280} style={{ overflowY: 'auto' }}>
+            {visibleGroups.map((g) => (
+              <Combobox.Group key={g.group} label={g.group}>
+                {g.items.map((item) => (
+                  <Combobox.Option key={item.value} value={item.value} active={item.value === value}>
+                    {item.label}
+                  </Combobox.Option>
+                ))}
+              </Combobox.Group>
+            ))}
+            {showCustom && (
+              <Combobox.Option value="__custom__">
+                {t('fieldSelect.customValue', { value: search })}
+              </Combobox.Option>
+            )}
+            {showInvalid && (
+              <Combobox.Empty>{t('fieldSelect.invalidPath')}</Combobox.Empty>
+            )}
+          </Combobox.Options>
+        </Combobox.Dropdown>
+      )}
     </Combobox>
   );
 }

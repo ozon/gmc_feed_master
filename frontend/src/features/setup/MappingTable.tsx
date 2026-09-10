@@ -1,25 +1,10 @@
-import { Fragment, useState } from 'react';
-import { Badge, Box, Select, Stack, Table, Text, UnstyledButton } from '@mantine/core';
+import { Fragment, useMemo, useState } from 'react';
+import { Badge, Box, Stack, Table, Text, UnstyledButton } from '@mantine/core';
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
+import { FieldSelect } from '../../components/FieldSelect';
+import { buildFieldOptions, fromRegistryAttributes } from '../../api/fieldOptions';
 import type { RegistryAttribute, SourceField } from '../../api/types';
-
-type SelectOption = { value: string; label: string; group: string };
-
-function buildTargetOptions(registryAttributes: RegistryAttribute[]): SelectOption[] {
-  const options: SelectOption[] = [];
-  for (const attr of registryAttributes) {
-    const isStructured = attr.kind === 'structured' || attr.kind === 'repeated_structured';
-    if (isStructured) {
-      for (const sub of attr.sub_fields) {
-        options.push({ value: `${attr.name}.${sub.name}`, label: `${attr.name}.${sub.name}`, group: attr.name });
-      }
-    } else {
-      options.push({ value: attr.name, label: attr.name, group: attr.name });
-    }
-  }
-  return options;
-}
 
 type MappingTableProps = {
   sourceFields: SourceField[];
@@ -68,19 +53,10 @@ export function MappingTable({
 }: MappingTableProps) {
   const { t } = useTranslation('setup');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const targetOptions = buildTargetOptions(registryAttributes);
-
-  const grouped = new Map<string, SelectOption[]>();
-  for (const opt of targetOptions) {
-    const list = grouped.get(opt.group) ?? [];
-    list.push(opt);
-    grouped.set(opt.group, list);
-  }
-
-  const mantineData = Array.from(grouped.entries()).map(([group, items]) => ({
-    group,
-    items: items.map(({ value, label }) => ({ value, label })),
-  }));
+  const targetOptions = useMemo(
+    () => buildFieldOptions(fromRegistryAttributes(registryAttributes)),
+    [registryAttributes],
+  );
 
   return (
     <Table>
@@ -132,15 +108,14 @@ export function MappingTable({
                   </Stack>
                 </Table.Td>
                 <Table.Td>
-                  <Select
-                    data={mantineData}
-                    value={targetValue}
-                    onChange={(val) => onChange(sf.name, val)}
-                    clearable
-                    searchable
+                  <FieldSelect
+                    value={targetValue ?? ''}
+                    onChange={(val) => onChange(sf.name, val || null)}
+                    options={targetOptions}
                     placeholder={t('mapping.table.selectTarget')}
-                    size="sm"
                     error={!!error}
+                    clearable
+                    data-testid={`target-select-${sf.name}`}
                   />
                 </Table.Td>
               </Table.Tr>
@@ -167,15 +142,14 @@ export function MappingTable({
                         </Stack>
                       </Table.Td>
                       <Table.Td>
-                        <Select
-                          data={mantineData}
-                          value={subMapping?.target ?? null}
-                          onChange={(val) => onChange(subKey, val)}
-                          clearable
-                          searchable
+                        <FieldSelect
+                          value={subMapping?.target ?? ''}
+                          onChange={(val) => onChange(subKey, val || null)}
+                          options={targetOptions}
                           placeholder={t('mapping.table.selectTarget')}
-                          size="sm"
                           error={!!subError}
+                          clearable
+                          data-testid={`target-select-${subKey}`}
                         />
                       </Table.Td>
                     </Table.Tr>

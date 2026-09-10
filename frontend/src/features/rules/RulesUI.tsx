@@ -11,7 +11,8 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBlocker } from 'react-router';
-import { useFeedSourceFields, usePluginConfig, useSavePluginConfig, type PluginScope } from '../../api/hooks';
+import { useRegistryAttributes, usePluginConfig, useSavePluginConfig, type PluginScope } from '../../api/hooks';
+import { buildFieldOptions, fromRegistryAttributes } from '../../api/fieldOptions';
 import { notifyApiError, notifySuccess } from '../../app/notifications';
 import {
   enforcePinning,
@@ -33,8 +34,11 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
   const { t: tCommon } = useTranslation('common');
   const config = usePluginConfig(pluginId, scope);
   const saveConfig = useSavePluginConfig(pluginId, scope);
-  const fieldsQuery = useFeedSourceFields(String(scope.feedSourceId ?? ''));
-  const fields = useMemo(() => fieldsQuery.data?.fields ?? [], [fieldsQuery.data]);
+  const registryQuery = useRegistryAttributes(scope.feedSourceId);
+  const fieldOptions = useMemo(
+    () => buildFieldOptions(fromRegistryAttributes(registryQuery.data ?? [])),
+    [registryQuery.data],
+  );
 
   const [rules, setRules] = useState<Rule[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -202,7 +206,7 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
         <Grid.Col span={7}>
           <RuleEditor
             rule={selected}
-            fields={fields}
+            fieldOptions={fieldOptions}
             onPatch={(patch) => {
               if (selected) patchRule(selected.id, patch);
             }}

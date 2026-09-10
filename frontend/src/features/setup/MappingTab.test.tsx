@@ -15,10 +15,10 @@ const mappingDoc: FieldMappingDoc = {
   version: 1,
   auto_mapped: true,
   source_fields: [
-    { name: 'title', kind: 'scalar', sub_fields: [] },
-    { name: 'description', kind: 'scalar', sub_fields: [] },
-    { name: 'product_id', kind: 'scalar', sub_fields: [] },
-    { name: 'synonym_field', kind: 'scalar', sub_fields: [] },
+    { name: 'title', kind: 'scalar', sub_fields: [], max_repeats: 0 },
+    { name: 'description', kind: 'scalar', sub_fields: [], max_repeats: 0 },
+    { name: 'product_id', kind: 'scalar', sub_fields: [], max_repeats: 0 },
+    { name: 'synonym_field', kind: 'scalar', sub_fields: [], max_repeats: 0 },
   ],
   mappings: {
     title: { target: 'title', origin: 'auto' },
@@ -28,20 +28,20 @@ const mappingDoc: FieldMappingDoc = {
 };
 
 const registryAttrs: RegistryAttribute[] = [
-  { name: 'title', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [] },
-  { name: 'description', kind: 'scalar', required: 'optional', baseline_required: true, sub_fields: [], enum_values: [] },
-  { name: 'id', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [] },
-  { name: 'brand', kind: 'scalar', required: 'required', baseline_required: false, sub_fields: [], enum_values: [] },
+  { name: 'title', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
+  { name: 'description', kind: 'scalar', required: 'optional', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
+  { name: 'id', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
+  { name: 'brand', kind: 'scalar', required: 'required', baseline_required: false, sub_fields: [], enum_values: [], max_repeats: 1 },
   { name: 'installment', kind: 'structured', required: 'optional', baseline_required: false, sub_fields: [
     { name: 'months', type: 'string', required: 'optional' },
     { name: 'amount', type: 'string', required: 'optional' },
-  ], enum_values: [] },
-  { name: 'link', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [] },
-  { name: 'image_link', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [] },
-  { name: 'availability', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [] },
-  { name: 'price', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [] },
-  { name: 'condition', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [] },
-  { name: 'structured_title', kind: 'structured', required: 'optional', baseline_required: true, sub_fields: [], enum_values: [] },
+  ], enum_values: [], max_repeats: 1 },
+  { name: 'link', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
+  { name: 'image_link', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
+  { name: 'availability', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
+  { name: 'price', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
+  { name: 'condition', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
+  { name: 'structured_title', kind: 'structured', required: 'optional', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
 ];
 
 function jsonResponse(body: unknown, status = 200) {
@@ -299,7 +299,7 @@ describe('MappingTab', () => {
         return sourceCell?.textContent === 'description';
       });
     expect(descriptionRow).toBeDefined();
-    const clearButton = descriptionRow!.querySelector('.mantine-InputClearButton-root');
+    const clearButton = descriptionRow!.querySelector('.mantine-CloseButton-root');
     expect(clearButton).not.toBeNull();
     await user.click(clearButton!);
 
@@ -394,11 +394,11 @@ describe('MappingTab', () => {
       ...mappingDoc,
       source_fields: [
         ...mappingDoc.source_fields,
-        { name: 'link', kind: 'scalar', sub_fields: [] },
-        { name: 'image_link', kind: 'scalar', sub_fields: [] },
-        { name: 'availability', kind: 'scalar', sub_fields: [] },
-        { name: 'price', kind: 'scalar', sub_fields: [] },
-        { name: 'condition', kind: 'scalar', sub_fields: [] },
+        { name: 'link', kind: 'scalar', sub_fields: [], max_repeats: 0 },
+        { name: 'image_link', kind: 'scalar', sub_fields: [], max_repeats: 0 },
+        { name: 'availability', kind: 'scalar', sub_fields: [], max_repeats: 0 },
+        { name: 'price', kind: 'scalar', sub_fields: [], max_repeats: 0 },
+        { name: 'condition', kind: 'scalar', sub_fields: [], max_repeats: 0 },
       ],
       mappings: {
         title: { target: 'title', origin: 'auto' },
@@ -435,7 +435,7 @@ describe('MappingTab', () => {
       ...mappingDoc,
       source_fields: [
         ...mappingDoc.source_fields,
-        { name: 'ship', kind: 'structured', sub_fields: ['country'] },
+        { name: 'ship', kind: 'structured', sub_fields: ['country'], max_repeats: 0 },
       ],
     };
     fetchMock = stubFetch((url) => {
@@ -462,7 +462,7 @@ describe('MappingTab', () => {
     const subRow = (await screen.findByText('country', { selector: 'td p' })).closest('tr')!;
     const select = subRow.querySelector('[role="combobox"]') as HTMLElement;
     await user.click(select);
-    const option = await screen.findByRole('option', { name: 'installment.months' });
+    const option = await screen.findByRole('option', { name: /^months$/ });
     await user.click(option);
 
     const saveBtn = screen.getByRole('button', { name: /save/i });
@@ -487,7 +487,7 @@ describe('MappingTab', () => {
       ...mappingDoc,
       source_fields: [
         ...mappingDoc.source_fields,
-        { name: 'ship', kind: 'structured', sub_fields: ['country'] },
+        { name: 'ship', kind: 'structured', sub_fields: ['country'], max_repeats: 0 },
       ],
       mappings: {
         ...mappingDoc.mappings,
@@ -518,7 +518,7 @@ describe('MappingTab', () => {
     const subRow = (await screen.findByText('country', { selector: 'td p' })).closest('tr')!;
     const select = subRow.querySelector('[role="combobox"]') as HTMLElement;
     await user.click(select);
-    const option = await screen.findByRole('option', { name: 'installment.months' });
+    const option = await screen.findByRole('option', { name: /^months$/ });
     await user.click(option);
 
     const saveBtn = screen.getByRole('button', { name: /save/i });
@@ -543,7 +543,7 @@ describe('MappingTab', () => {
       ...mappingDoc,
       source_fields: [
         ...mappingDoc.source_fields,
-        { name: 'ship', kind: 'structured', sub_fields: ['country'] },
+        { name: 'ship', kind: 'structured', sub_fields: ['country'], max_repeats: 0 },
       ],
     };
     fetchMock = stubFetch((url) => {
@@ -570,7 +570,7 @@ describe('MappingTab', () => {
     const subRow = (await screen.findByText('country', { selector: 'td p' })).closest('tr')!;
     const subSelect = subRow.querySelector('[role="combobox"]') as HTMLElement;
     await user.click(subSelect);
-    const subOption = await screen.findByRole('option', { name: 'installment.months' });
+    const subOption = await screen.findByRole('option', { name: /^months$/ });
     await user.click(subOption);
 
     const parentRow = document.querySelector('[data-sub-toggle="ship"]')!.closest('tr')!;

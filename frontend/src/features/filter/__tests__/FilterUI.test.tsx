@@ -69,7 +69,11 @@ function renderUI() {
       if (init?.method === 'PUT') return jsonResponse({ isActive: true, conditions: [] });
       return jsonResponse(savedConfig);
     }
-    if (url.startsWith('/feed-sources/1/fields')) return jsonResponse({ fields: ['brand', 'title', 'price'] });
+    if (url.startsWith('/registry/attributes')) return jsonResponse([
+      { name: 'brand', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
+      { name: 'title', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
+      { name: 'price', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
+    ]);
     if (url.startsWith('/plugins/filter/preview')) return jsonResponse({ total: 308, pass: 137, fail: 171 });
     return jsonResponse({});
   });
@@ -99,7 +103,11 @@ describe('FilterUI', () => {
         if (init?.method === 'PUT') return jsonResponse({ isActive: true, conditions: [] });
         return jsonResponse(savedConfig);
       }
-      if (url.startsWith('/feed-sources/1/fields')) return jsonResponse({ fields: ['brand', 'title', 'price'] });
+      if (url.startsWith('/registry/attributes')) return jsonResponse([
+      { name: 'brand', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
+      { name: 'title', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
+      { name: 'price', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
+    ]);
       if (url.startsWith('/plugins/filter/preview')) {
         previewCalls += 1;
         return jsonResponse({ total: 308, pass: 137, fail: 171 });
@@ -125,7 +133,9 @@ describe('FilterUI', () => {
         }
         return jsonResponse(serverConfig);
       }
-      if (url.startsWith('/feed-sources/1/fields')) return jsonResponse({ fields: ['brand'] });
+      if (url.startsWith('/registry/attributes')) return jsonResponse([
+      { name: 'brand', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
+    ]);
       if (url.startsWith('/plugins/filter/preview')) return jsonResponse({ total: 1, pass: 1, fail: 0 });
       return jsonResponse({});
     });

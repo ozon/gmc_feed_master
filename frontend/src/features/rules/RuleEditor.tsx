@@ -14,6 +14,8 @@ import {
 import { IconCopy, IconPlus, IconSettings, IconTrash } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { FieldSelect } from '../../components/FieldSelect';
+import type { GroupedFieldOptions } from '../../api/fieldOptions';
 import {
   CONDITION_NUMERIC_OPS,
   CONDITION_TEXT_OPS,
@@ -31,7 +33,7 @@ const ACTION_OPS: readonly string[] = ['set', 'replace', 'append', 'prepend', 'r
 
 export type RuleEditorProps = {
   rule: Rule | null;
-  fields: string[];
+  fieldOptions: GroupedFieldOptions;
   onPatch: (patch: Partial<Rule>) => void;
   onPatchWhen: (when: RuleCondition) => void;
   onPatchThen: (then: RuleAction[]) => void;
@@ -83,7 +85,7 @@ function opOptions(t: TFunction<'rules'>, ops: readonly string[]): Option[] {
 
 export function RuleEditor({
   rule,
-  fields,
+  fieldOptions,
   onPatch,
   onPatchWhen,
   onPatchThen,
@@ -101,7 +103,6 @@ export function RuleEditor({
     );
   }
 
-  const fieldData: Option[] = fields.map((f) => ({ value: f, label: f }));
   const when = rule.when;
 
   return (
@@ -154,13 +155,13 @@ export function RuleEditor({
             value={when.op === 'all' ? 'all' : 'where'}
             onChange={(v) => {
               if (v === 'all') onPatchWhen({ op: 'all' });
-              else onPatchWhen({ op: 'equals', field: fields[0] ?? '', arg: '' });
+              else onPatchWhen({ op: 'equals', field: fieldOptions[0]?.items[0]?.value ?? '', arg: '' });
             }}
             data-testid="condition-type"
             w={180}
           />
           {when.op !== 'all' ? (
-            <ConditionNodeEditor node={when} fields={fieldData} onChange={onPatchWhen} t={t} />
+            <ConditionNodeEditor node={when} fieldOptions={fieldOptions} onChange={onPatchWhen} t={t} />
           ) : null}
         </Group>
       </Stack>
@@ -175,16 +176,15 @@ export function RuleEditor({
             <Text size="sm" c="dimmed">
               {t('editor.take')}
             </Text>
-            <Select
+            <FieldSelect
               aria-label={t('editor.addField')}
-              data={fieldData}
-              value={action.field || null}
+              value={action.field || ''}
               onChange={(v) => {
                 const next = [...rule.then];
-                next[index] = { ...action, field: v ?? '' };
+                next[index] = { ...action, field: v };
                 onPatchThen(next);
               }}
-              searchable
+              options={fieldOptions}
               data-testid={`then-field-${index}`}
               w={160}
             />
@@ -306,12 +306,12 @@ export function RuleEditor({
 
 function ConditionNodeEditor({
   node,
-  fields,
+  fieldOptions,
   onChange,
   t,
 }: {
   node: RuleCondition;
-  fields: Option[];
+  fieldOptions: GroupedFieldOptions;
   onChange: (node: RuleCondition) => void;
   t: TFunction<'rules'>;
 }) {
@@ -339,7 +339,7 @@ function ConditionNodeEditor({
             ) : null}
             <ConditionNodeEditor
               node={child}
-              fields={fields}
+              fieldOptions={fieldOptions}
               onChange={(nextChild) => patchChild(index, nextChild)}
               t={t}
             />
@@ -370,7 +370,7 @@ function ConditionNodeEditor({
                 aria-label={t('actions.addSection')}
                 onClick={() => {
                   const next = [...children];
-                  next.splice(index + 1, 0, { op: 'equals', field: fields[0]?.value ?? '', arg: '' });
+                  next.splice(index + 1, 0, { op: 'equals', field: fieldOptions[0]?.items[0]?.value ?? '', arg: '' });
                   onChange({ ...node, children: next });
                 }}
               >
@@ -400,12 +400,11 @@ function ConditionNodeEditor({
 
   return (
     <Group gap="xs" wrap="nowrap" align="flex-end">
-      <Select
+      <FieldSelect
         aria-label={t('editor.addField')}
-        data={fields}
-        value={node.field ?? null}
-        onChange={(v) => patch({ field: v ?? '' })}
-        searchable
+        value={node.field ?? ''}
+        onChange={(v) => patch({ field: v })}
+        options={fieldOptions}
         w={160}
       />
       <Select

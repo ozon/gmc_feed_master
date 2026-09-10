@@ -9,22 +9,22 @@ import { MappingTable } from './MappingTable';
 import type { RegistryAttribute, SourceField } from '../../api/types';
 
 const sourceFields: SourceField[] = [
-  { name: 'title', kind: 'scalar', sub_fields: [] },
-  { name: 'description', kind: 'scalar', sub_fields: [] },
-  { name: 'product_id', kind: 'scalar', sub_fields: [] },
-  { name: 'price_raw', kind: 'scalar', sub_fields: [] },
-  { name: 'installment_data', kind: 'structured', sub_fields: ['months', 'amount'] },
-  { name: 'synonym_field', kind: 'scalar', sub_fields: [] },
+  { name: 'title', kind: 'scalar', sub_fields: [], max_repeats: 0 },
+  { name: 'description', kind: 'scalar', sub_fields: [], max_repeats: 0 },
+  { name: 'product_id', kind: 'scalar', sub_fields: [], max_repeats: 0 },
+  { name: 'price_raw', kind: 'scalar', sub_fields: [], max_repeats: 0 },
+  { name: 'installment_data', kind: 'structured', sub_fields: ['months', 'amount'], max_repeats: 0 },
+  { name: 'synonym_field', kind: 'scalar', sub_fields: [], max_repeats: 0 },
 ];
 
 const registryAttributes: RegistryAttribute[] = [
-  { name: 'title', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [] },
-  { name: 'description', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [] },
-  { name: 'id', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [] },
+  { name: 'title', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
+  { name: 'description', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
+  { name: 'id', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
   { name: 'installment', kind: 'structured', required: 'optional', sub_fields: [
     { name: 'months', type: 'string', required: 'optional' },
     { name: 'amount', type: 'string', required: 'optional' },
-  ], enum_values: [] },
+  ], enum_values: [], max_repeats: 1 },
 ];
 
 function mappingsFixture() {
@@ -139,8 +139,9 @@ describe('MappingTable', () => {
     const select = installmentRow.querySelector('[role="combobox"]') as HTMLElement;
     await user.click(select);
 
-    expect(await screen.findByRole('option', { name: 'installment.months' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'installment.amount' })).toBeInTheDocument();
+    // labels show bare sub names, grouped under the attribute
+    expect(await screen.findByRole('option', { name: /^months$/ })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /^amount$/ })).toBeInTheDocument();
   });
 
   it('displays row-level errors', async () => {
@@ -187,7 +188,7 @@ describe('MappingTable', () => {
     const subRow = (await screen.findByText('months', { selector: 'td p' })).closest('tr')!;
     const select = subRow.querySelector('[role="combobox"]') as HTMLElement;
     await user.click(select);
-    const option = await screen.findByRole('option', { name: 'installment.months' });
+    const option = await screen.findByRole('option', { name: /^months$/ });
     await user.click(option);
     expect(onChange).toHaveBeenCalledWith('installment_data.months', 'installment.months');
   });
@@ -246,9 +247,27 @@ describe('MappingTable', () => {
     const toggle = document.querySelector('[data-sub-toggle="installment_data"]') as HTMLElement;
     await user.click(toggle);
     const subRow = (await screen.findByText('months', { selector: 'td p' })).closest('tr')!;
-    const clearButton = subRow.querySelector('.mantine-InputClearButton-root');
+    const clearButton = subRow.querySelector('.mantine-CloseButton-root');
     expect(clearButton).not.toBeNull();
     await user.click(clearButton!);
     expect(onChange).toHaveBeenCalledWith('installment_data.months', null);
+  });
+
+  it('offers indexed target options for repeated attributes', async () => {
+    const repeated: RegistryAttribute[] = [
+      ...registryAttributes,
+      { name: 'product_detail', kind: 'repeated_structured', required: 'optional',
+        sub_fields: [
+          { name: 'section_name', type: 'string', required: 'optional' },
+          { name: 'attribute_name', type: 'string', required: 'optional' },
+        ], enum_values: [], max_repeats: 2 },
+    ];
+    render(<MappingTable {...defaultProps({ registryAttributes: repeated })} />);
+    const user = userEvent.setup();
+    const select = screen.getAllByRole('combobox')[0];
+    await user.click(select);
+    await waitFor(() => {
+      expect(screen.getByText('#2 · section_name')).toBeInTheDocument();
+    });
   });
 });
