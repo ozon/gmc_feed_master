@@ -1145,3 +1145,50 @@ Closes the assignments-race deferral above. Operator decisions (brainstorming 20
 - **fetchQuery over refetchQueries** — the retry's freshen step must work even when the GET query has no active observer (surfaced by the hook unit test).
 - **Scope: all plugin scopes** — generic routes; all consumers wired (ManualTab merge semantics; RulesTab/CustomLabelsUI/PluginPage/RulesUI/FilterUI full-replace intents).
 - Double 409 surfaces the ApiError (consumer toast, draft state preserved); no third PUT.
+
+## 2026-09-10 (c)
+
+### Unified field list and indexed path grammar
+
+- **Topic:** Shared field selection (Mapping/Rules/Filter/Labelizer) + indexed
+  repetition addressing.
+- **Decision:** One shared descriptor shape
+  `{name, kind, sub_fields[{name, kind?}], max_repeats}` served by
+  `GET /feed-sources/{id}/fields` (from the persisted mapping document;
+  baselines merged as scalars) and `GET /registry/attributes?feed_source_id=N`
+  (per-request `max_repeats` from staged `processed_data` with `raw_data`
+  fallback, streamed via `yield_per=1000` — operator directive 1). Path grammar
+  is 1-based `attr | attr.sub | attr.N | attr.N.sub`, parsed only by
+  `app/mapping/indexed_path.py` (aligns with QC's existing
+  `additional_image_link.1` finding grammar). This **supersedes** the
+  2026-08-28 decision "positional paths rejected with 422": indexed targets
+  are now accepted for `repeated_*` registry kinds; scalar/structured
+  attributes still reject indices.
+- **Sub-field union clarification:** the 2026-08-25 "M4 XML kind inference"
+  entry's first-observed rule applies to kind inference only; sub-fields have
+  been the union of observed keys since the original implementation
+  (`_infer_source_fields`), now pinned by a regression test.
+- **Indexed/broadcast precedence (operator directive 5):** indexed mapping
+  targets coexist with whole/broadcast claims (kind-compatible); apply
+  evaluates non-indexed mappings first, then indexed assignments sorted by
+  target, so indexed values override broadcast values in their exact slot.
+  Exact duplicate indexed targets remain blocked.
+- **Sparse rendering (operator directive 2):** auto-extended empty dict slots
+  never emit empty XML blocks — `[{}, {}, {…}]` renders only the non-empty
+  block (regression-pinned in test_export_renderer.py).
+- **Breaking change:** `/feed-sources/{id}/fields` now returns descriptors
+  instead of `{fields: string[]}` (one-shot cutover; ProductsPage and
+  RuleValuesEditor adapted mechanically — RuleValuesEditor semantics
+  untouched per scope). Registry route is additive (optional query param +
+  new fields).
+- **Frontend:** `api/fieldOptions.ts` (adapters + `buildFieldOptions` +
+  `INDEXED_PATH_REGEX` client-side validation — operator directive 4) and
+  `components/FieldSelect.tsx` (Combobox+InputBase — Mantine Select cannot
+  accept free text) are the single option-building authority; the four
+  pickers consume registry-with-feed-context so their lists are identical.
+  Run-triggering mutations invalidate the `['registry','attributes']` prefix
+  (operator directive 3).
+- **Rationale:** Four independent option builders produced inconsistent lists
+  and no repetition addressing; the QC finding-path grammar, the
+  mapping-document source of truth, and per-request repeat derivation close
+  the gaps without schema changes or a document version bump.

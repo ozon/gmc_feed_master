@@ -219,5 +219,7 @@ cd frontend && npm run dev
 - `src/api/queryKeys.ts` — Hierarchical query key factory
 - `src/api/hooks.ts` — All data fetching + mutation hooks
 - `src/api/client.ts` — `apiGet`/`apiPost`/`apiPut`/`apiPatch`/`apiDelete` with cookie handling
+- `src/api/fieldOptions.ts` — Single option-building authority: `FieldDescriptor` adapters (`fromSourceFields`, `fromRegistryAttributes`), `buildFieldOptions` (grouped + 1-based indexed expansion for `repeated_*` kinds), `INDEXED_PATH_REGEX` (client-side free-text validation, operator directive 4)
+- `src/components/FieldSelect.tsx` — Shared field picker (Mantine Combobox + InputBase; grouped options, free-text entry with 1-based validation, clearable). All four pickers (MappingTable, MatchFieldCombobox, RulesUI/RuleEditor, FilterUI) consume it over registry-with-feed-context (`useRegistryAttributes(scope.feedSourceId)`) so their lists are identical; run-triggering mutations (`useTriggerRun`, `useRunDryRun`) invalidate the `['registry', 'attributes']` query-key prefix (operator directive 3)
 - `src/components/JsonSchemaForm.tsx` — Mantine-themed schema form renderer
 - `src/components/StateViews.tsx` — `LoadingState`, `ErrorState`, `EmptyState`

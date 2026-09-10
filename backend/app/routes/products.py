@@ -194,6 +194,7 @@ async def feed_source_fields(
     async with session.begin():
         await _require_feed_source(session, feed_source_id)
         feed_source = await session.get(FeedSource, feed_source_id)
+    assert feed_source is not None  # _require_feed_source raises 404 otherwise
     doc = MappingDocument.from_json(feed_source.field_mapping)
     fields: dict[str, dict] = {
         sf.name: _source_field_descriptor(sf) for sf in doc.source_fields
