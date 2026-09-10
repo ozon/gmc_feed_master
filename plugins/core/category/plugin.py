@@ -440,7 +440,10 @@ class CategoryPlugin:
                 tmp.write_text(csv_text, encoding="utf-8")
                 os.replace(tmp, target)
             except OSError as exc:
-                tmp.unlink(missing_ok=True)
+                try:
+                    tmp.unlink()
+                except OSError:
+                    pass
                 raise HTTPException(
                     status_code=500, detail=f"cannot write taxonomy file: {exc}"
                 ) from exc

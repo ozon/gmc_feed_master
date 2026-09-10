@@ -149,6 +149,28 @@ class TestValidateConfig:
         with pytest.raises(ValueError, match="not found"):
             cp.validate_config({"rules": [_rule(taxonomy_id="99999999")]})
 
+    def test_rejects_non_dict_rule(self):
+        with pytest.raises(ValueError, match=r"rules\[0\]: rule must be an object"):
+            cp.validate_config({"rules": ["not-a-dict"]})
+
+    def test_rejects_non_bool_is_excluded(self):
+        with pytest.raises(ValueError, match="is_excluded must be a boolean"):
+            cp.validate_config({"rules": [_rule(is_excluded="yes")]})
+
+    def test_rejects_in_list_with_non_string_entry(self):
+        with pytest.raises(ValueError, match="entries must be non-empty strings"):
+            cp.validate_config(
+                {"rules": [_rule(operator="in", source_value=["Boots", 42])]}
+            )
+
+    def test_rejects_in_list_with_empty_string_entry(self):
+        with pytest.raises(ValueError, match="entries must be non-empty strings"):
+            cp.validate_config({"rules": [_rule(operator="in", source_value=[""])]})
+
+    def test_rejects_empty_source_field(self):
+        with pytest.raises(ValueError, match="source_field must be a non-empty string"):
+            cp.validate_config({"rules": [_rule(source_field="")]})
+
 
 class TestPluginValidateConfigDelegates:
     def test_delegates(self):

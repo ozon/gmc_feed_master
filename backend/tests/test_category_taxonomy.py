@@ -100,6 +100,20 @@ class TestTaxonomyIndex:
         assert index.languages() == ["en-US", "de-DE"]
         assert index.path("53", "de-DE") == "Geschenkgutscheine"
 
+    def test_rebuilds_when_same_file_is_edited(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(cp, "_taxonomy_directory", lambda: tmp_path)
+        taxonomy_csv = tmp_path / "taxonomy-with-ids.en-US.csv"
+        taxonomy_csv.write_text("166,Apparel & Accessories,,,,,,\n", encoding="utf-8")
+        index = cp.TaxonomyIndex()
+        assert index.contains("166")
+        assert not index.contains("53")
+        taxonomy_csv.write_text(
+            "166,Apparel & Accessories,,,,,,\n53,Gift Cards,,,,,,\n",
+            encoding="utf-8",
+        )
+        assert index.contains("53")
+        assert index.path("53", "en-US") == "Gift Cards"
+
 
 class TestSingleton:
     def test_taxonomy_index_cached_and_directory_seam(self, monkeypatch, tmp_path):

@@ -1,6 +1,7 @@
 """Category plugin routes: taxonomy endpoints + draft validation."""
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -182,3 +183,71 @@ class TestFetchRoute:
         client = await logged_in_client(app_factory)
         resp = await client.post("/plugins/category/taxonomy/fetch", json={"language": "de-DE"})
         assert resp.status_code == 502
+
+
+class TestFetchRouteUnwritableDirectory:
+    async def test_fetch_unwritable_directory_500(self, app_factory, tmp_path):
+        _, _, mp = app_factory
+        not_a_dir = tmp_path / "not-a-dir.csv"
+        not_a_dir.write_text("irrelevant", encoding="utf-8")
+        mp.setattr(cp, "_taxonomy_directory", lambda: not_a_dir)
+        mp.setattr(cp, "_INDEX", None)
+        upstream = FIXTURES.joinpath("upstream.de-DE.txt").read_text(encoding="utf-8")
+
+        async def valid_fetch(url):
+            return upstream.encode("utf-8")
+
+        mp.setattr(cp, "_fetch_url", valid_fetch)
+        mp.setattr(cp, "MIN_TAXONOMY_ENTRIES", 2)
+        client = await logged_in_client(app_factory)
+        resp = await client.post("/plugins/category/taxonomy/fetch", json={"language": "de-DE"})
+        assert resp.status_code == 500
+        assert "cannot write taxonomy file" in resp.json()["detail"]
+
+
+class TestDatabaseUnavailableRoutes:
+    async def test_stats_matches_product_503_when_db_missing(
+        self, isolated_database_url
+    ):
+        from app.db import engine as db_engine
+
+        url = isolated_database_url
+        isolation_engine = create_async_engine(url, pool_size=2, max_overflow=0)
+        isolation_factory = async_sessionmaker(isolation_engine, expire_on_commit=False)
+        async with isolation_factory() as session:
+            async with session.begin():
+                from app.models.session import Session as DbSession
+
+                await session.execute(delete(DbSession))
+                await session.execute(delete(User))
+            await seed_initial_user(session, "operator", "pw")
+        settings = Settings(
+            _env_file=None,
+            session_secret="test-secret",
+            initial_username="operator",
+            initial_password="pw",
+            database_url=url,
+        )
+
+        async def none_db_session():
+            return None
+
+        app = create_app(settings=settings, db_session_factory=isolation_factory)
+        router = APIRouter()
+        with patch.object(db_engine, "get_db_session", none_db_session):
+            cp.CategoryPlugin().register_routes(router)
+        app.include_router(router, prefix="/plugins/category")
+        client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+        resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
+        assert resp.status_code == 200
+
+        resp = await client.get("/plugins/category/stats?feed_source_id=999")
+        assert resp.status_code == 503
+        assert resp.json()["detail"] == "database unavailable"
+
+        resp = await client.get("/plugins/category/matches?feed_source_id=999&rule_id=r1")
+        assert resp.status_code == 503
+
+        resp = await client.get("/plugins/category/product?feed_source_id=999&product_id=p1")
+        assert resp.status_code == 503
+        await isolation_engine.dispose()
