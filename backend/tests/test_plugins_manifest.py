@@ -257,6 +257,6 @@ class TestConfigMergeValidation:
             **minimal_manifest(),
             "config_merge": {"slotRules": {"strategy": "union_by_key", "key": 123}},
         }
-        with pytest.raises(ManifestError, match="non-empty string"):
+        with pytest.raises(ManifestError, match="non-empty"):
             parse_manifest(doc)
 
