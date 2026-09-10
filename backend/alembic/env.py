@@ -15,7 +15,7 @@ if _database_url:
     from app.config import Settings
 
     config.set_main_option(
-        "sqlalchemy.url", Settings(database_url=_database_url).async_database_url  # type: ignore[call-arg]
+        "sqlalchemy.url", Settings(database_url=_database_url).async_database_url
     )
 if config.config_file_name is not None:
     fileConfig(config.config_file_name, disable_existing_loggers=False)
