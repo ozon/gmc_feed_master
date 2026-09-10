@@ -119,11 +119,14 @@ async def list_plugins(
     result = await session.execute(select(Plugin).order_by(Plugin.id))
     from ..models.pipeline import ModuleInstance, ModulePipeline
 
-    usage = dict((await session.execute(
-        select(ModuleInstance.plugin_id, func.count(func.distinct(ModulePipeline.feed_source_id)))
-        .join(ModulePipeline, ModuleInstance.pipeline_id == ModulePipeline.id)
-        .group_by(ModuleInstance.plugin_id)
-    )).all())
+    usage: dict[int, int] = {
+        row[0]: row[1]
+        for row in (await session.execute(
+            select(ModuleInstance.plugin_id, func.count(func.distinct(ModulePipeline.feed_source_id)))
+            .join(ModulePipeline, ModuleInstance.pipeline_id == ModulePipeline.id)
+            .group_by(ModuleInstance.plugin_id)
+        )).all()
+    }
     return [
         {
             "id": plugin.name,

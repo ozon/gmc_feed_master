@@ -5,7 +5,7 @@ CI enforces the count via `backend/mypy-baseline.txt`; keep both in sync — eac
 `uv run mypy .` is configured in `pyproject.toml` (`[tool.mypy]`, target
 Python 3.10; `ignore_missing_imports` limited to the untyped third-party
 libs `jsonschema`, `apscheduler`, `asyncpg`). The command reports the
-known errors below — **19** as of 2026-09-10 (mypy 2.3.1) — and
+known errors below — **10** as of 2026-09-10 (mypy 2.3.1) — and
 exits non-zero until the baseline reaches zero. That is expected; do not
 "fix" a red exit by loosening the config.
 
@@ -25,15 +25,6 @@ exits non-zero until the baseline reaches zero. That is expected; do not
 app/config.py:45: error: Missing named argument "initial_password" for "Settings"  [call-arg]
 app/config.py:45: error: Missing named argument "initial_username" for "Settings"  [call-arg]
 app/config.py:45: error: Missing named argument "session_secret" for "Settings"  [call-arg]
-app/routes/dashboard.py:47: error: Need type annotation for "item_counts" (hint: "item_counts: dict[<type>, <type>] = ...")  [var-annotated]
-app/routes/dashboard.py:48: error: Argument 1 to "dict" has incompatible type "Sequence[Row[tuple[int, int]]]"; expected "Iterable[tuple[Never, Never]]"  [arg-type]
-app/routes/pipeline.py:120: error: Incompatible return value type (got "JSONResponse", expected "dict[Any, Any]")  [return-value]
-app/routes/pipeline.py:191: error: Argument 1 to "where" of "Select" has incompatible type "bool | Any"; expected "ColumnElement[bool] | _HasClauseElement[bool] | SQLCoreOperations[bool] | Expressi...
-app/routes/pipeline.py:191: error: Item "None" of "ModulePipeline | None" has no attribute "id"  [union-attr]
-app/routes/pipeline.py:196: error: Item "None" of "ModulePipeline | None" has no attribute "definition"  [union-attr]
-app/routes/pipeline.py:97: error: Incompatible return value type (got "JSONResponse", expected "dict[Any, Any]")  [return-value]
-app/routes/plugins.py:117: error: Argument 1 to "dict" has incompatible type "Sequence[Row[tuple[int, int]]]"; expected "Iterable[tuple[Never, Never]]"  [arg-type]
-app/routes/plugins.py:117: error: Need type annotation for "usage" (hint: "usage: dict[<type>, <type>] = ...")  [var-annotated]
 tests/test_export_token_log_redaction.py:21: error: Invalid index type "int" for "Mapping[str, object]"; expected type "str"  [index]
 tests/test_export_token_log_redaction.py:21: error: Value of type "tuple[object, ...] | Mapping[str, object] | None" is not indexable  [index]
 tests/test_export_token_log_redaction.py:28: error: Invalid index type "int" for "Mapping[str, object]"; expected type "str"  [index]
@@ -45,9 +36,6 @@ tests/test_rules_plugin.py:11: error: Cannot find implementation or library stub
 
 ## Notes on clusters
 
-- **`app/routes/pipeline.py:97/120`, `plugins.py:117`, `dashboard.py:47-48`
-  (7)** — `JSONResponse` returns on typed `dict` routes; missing dict
-  annotations for `dict(Sequence[Row[...]])` conversions.
 - **`app/config.py:45` (3)** — `Settings()` constructed with env-provided
   kwargs mypy cannot see; needs an explicit constructor call signature.
   Exception: `alembic/env.py` carries one narrowly-scoped

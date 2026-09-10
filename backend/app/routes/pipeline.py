@@ -62,7 +62,7 @@ async def put_pipeline(
     request: Request,
     _user: str = Depends(require_user),
     db_session: AsyncSession | None = Depends(get_db_session),
-) -> dict:
+) -> dict | JSONResponse:
     session = _require_db(db_session)
     plugin_registry = getattr(request.app.state, "plugin_registry", {})
 
@@ -185,6 +185,8 @@ async def patch_pipeline_instance(
         instance.enabled = payload.enabled
 
         pipeline = await session.get(ModulePipeline, feed_source.active_pipeline_id)
+        if pipeline is None:
+            raise HTTPException(status_code=404, detail="pipeline not found")
         rows = (await session.execute(
             select(ModuleInstance, Plugin)
             .join(Plugin, ModuleInstance.plugin_id == Plugin.id)

@@ -44,8 +44,9 @@ async def dashboard_summary(
             clients = [c for c in clients if c.id in allowed]
             feeds = [f for f in feeds if f.client_id in allowed]
         feed_ids = [f.id for f in feeds]
-        item_counts = dict(
-            (await session.execute(
+        item_counts: dict[int, int] = {
+            row[0]: row[1]
+            for row in (await session.execute(
                 select(StagingProduct.feed_source_id, func.count())
                 .where(
                     StagingProduct.status == "active",
@@ -54,7 +55,7 @@ async def dashboard_summary(
                 )
                 .group_by(StagingProduct.feed_source_id)
             )).all()
-        )
+        }
         total_active = (await session.execute(
             select(func.count()).select_from(StagingProduct)
             .where(
