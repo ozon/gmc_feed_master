@@ -1113,3 +1113,22 @@ binding product specification. Dates use ISO 8601 calendar dates.
   GROUP BY over `processed_data->>'_category_provenance'` /
   `->>'_category_rule_id'`; live draft evaluation is a follow-up cycle
   (Labelizer precedent).
+
+
+## 2026-09-10
+
+### M12 follow-ups micro-cycle (operator decisions)
+
+- **Validate returns all errors** (operator decision): `collect_config_errors`
+  reuses the per-rule checks but collects every error; `POST /plugins/category/validate`
+  returns the full 422 `{"errors": [...]}` list. `validate_config` becomes a thin
+  wrapper raising `ValueError("; ".join(errors))` so the pipeline/contract
+  first-error shape is preserved.
+- **MatchesModal load-more appends** (operator decision): accumulated paging with
+  product_id dedup, reset on rule change; "Load more" only while accumulated < total.
+- **De-flake via deterministic waits, not fake timers** (operator decision): global
+  RTL `asyncUtilTimeout: 5000` in `src/test/setup.ts` instead of per-file timer
+  control; fast conditions still resolve early. Stability proof: 10/10 full-suite
+  runs green, two under concurrent backend-suite CPU load.
+- **Assignments read-modify-write race deferred:** needs an optimistic-locking or
+  refetch-before-write design — separate cycle.
