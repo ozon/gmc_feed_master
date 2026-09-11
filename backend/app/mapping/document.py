@@ -24,6 +24,7 @@ class MappingDocument:
     auto_mapped: bool = False
     source_fields: list[SourceField] = field(default_factory=list)
     mappings: dict[str, MappingEntry] = field(default_factory=dict)
+    custom_fields: list[str] = field(default_factory=list)
 
     @classmethod
     def empty(cls) -> MappingDocument:
@@ -52,6 +53,7 @@ class MappingDocument:
             auto_mapped=auto_mapped,
             source_fields=_parse_source_fields(raw.get("source_fields", [])),
             mappings=_parse_mappings(raw.get("mappings", {})),
+            custom_fields=_parse_custom_fields(raw.get("custom_fields", [])),
         )
 
     def to_json(self) -> dict[str, Any]:
@@ -71,6 +73,7 @@ class MappingDocument:
                 source: {"target": entry.target, "origin": entry.origin}
                 for source, entry in self.mappings.items()
             },
+            "custom_fields": list(self.custom_fields),
         }
 
 
@@ -147,4 +150,19 @@ def _parse_mappings(raw: Any) -> dict[str, MappingEntry]:
                 f"{ALLOWED_ORIGINS}, got {origin!r}"
             )
         result[source] = MappingEntry(target=target, origin=origin)
+    return result
+
+
+def _parse_custom_fields(raw: Any) -> list[str]:
+    if not isinstance(raw, list):
+        raise MappingDocumentError(
+            f"'custom_fields' must be a list, got {type(raw).__name__}"
+        )
+    result: list[str] = []
+    for item in raw:
+        if not isinstance(item, str):
+            raise MappingDocumentError(
+                f"'custom_fields' entries must be strings, got {type(item).__name__}"
+            )
+        result.append(item)
     return result

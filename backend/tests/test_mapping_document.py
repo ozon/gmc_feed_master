@@ -66,6 +66,7 @@ def test_round_trip_preserves_content():
             "sku": {"target": "id", "origin": "synonym"},
             "title": {"target": "title", "origin": "auto"},
         },
+        "custom_fields": [],
     }
     doc = MappingDocument.from_json(raw)
     assert doc.version == 1
@@ -98,6 +99,7 @@ def test_to_json_shape():
             {"name": "sku", "kind": "scalar", "sub_fields": [], "max_repeats": 0},
         ],
         "mappings": {"sku": {"target": "id", "origin": "manual"}},
+        "custom_fields": [],
     }
 
 
@@ -150,3 +152,59 @@ def test_from_json_source_field_missing_sub_fields_defaults_empty():
 def test_from_json_corrupt_input_raises(raw):
     with pytest.raises(MappingDocumentError):
         MappingDocument.from_json(raw)
+
+
+def test_custom_fields_default_empty():
+    doc = MappingDocument.empty()
+    assert doc.custom_fields == []
+
+
+def test_custom_fields_roundtrip():
+    doc = MappingDocument.from_json({
+        "version": 1,
+        "auto_mapped": False,
+        "source_fields": [],
+        "mappings": {},
+        "custom_fields": ["my_field", "other_field"],
+    })
+    assert doc.custom_fields == ["my_field", "other_field"]
+    out = doc.to_json()
+    assert out["custom_fields"] == ["my_field", "other_field"]
+
+
+def test_custom_fields_missing_key_defaults_to_empty():
+    doc = MappingDocument.from_json({
+        "version": 1,
+        "auto_mapped": False,
+        "source_fields": [],
+        "mappings": {},
+    })
+    assert doc.custom_fields == []
+
+
+def test_custom_fields_always_emitted():
+    doc = MappingDocument.empty()
+    out = doc.to_json()
+    assert out["custom_fields"] == []
+
+
+def test_custom_fields_non_list_raises():
+    with pytest.raises(MappingDocumentError, match="custom_fields"):
+        MappingDocument.from_json({
+            "version": 1,
+            "auto_mapped": False,
+            "source_fields": [],
+            "mappings": {},
+            "custom_fields": "my_field",
+        })
+
+
+def test_custom_fields_non_string_entry_raises():
+    with pytest.raises(MappingDocumentError, match="custom_fields"):
+        MappingDocument.from_json({
+            "version": 1,
+            "auto_mapped": False,
+            "source_fields": [],
+            "mappings": {},
+            "custom_fields": ["ok_name", 42],
+        })
