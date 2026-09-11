@@ -39,4 +39,8 @@ export const queryKeys = {
   adminUsers: ['admin', 'users'] as const,
   adminSettings: ['admin', 'settings'] as const,
   adminScheduler: ['admin', 'scheduler'] as const,
+  ai: {
+    providers: ['ai', 'providers'] as const,
+    usage: (params: unknown) => ['ai', 'usage', params] as const,
+  },
 };

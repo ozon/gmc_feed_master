@@ -257,3 +257,45 @@ export type GlobalSettings = {
 };
 
 export type SchedulerJob = { id: string; trigger: string };
+
+export type AiProvider = {
+  id: number;
+  name: string;
+  provider_type: string;
+  base_url: string;
+  model: string;
+  input_price_per_mtok: string | null;
+  output_price_per_mtok: string | null;
+  max_concurrency: number;
+  timeout_s: number;
+  enabled: boolean;
+  is_default: boolean;
+};
+
+export type AiUsageGroupBy = 'client' | 'feed_source' | 'task_type' | 'day';
+
+export type AiUsageParams = {
+  group_by: AiUsageGroupBy;
+  client_id?: number;
+  feed_source_id?: number;
+  task_type?: string;
+  from?: string;
+  to?: string;
+};
+
+export type AiUsageRow = {
+  group_key: number | string | null;
+  calls: number;
+  cache_hits: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  cost_usd: string | null;
+};
+
+export type AiTestResult = {
+  status: 'ok' | 'error';
+  latency_ms?: number;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  error_code?: string;
+};

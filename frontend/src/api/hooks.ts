@@ -10,6 +10,10 @@ import {
 import { queryKeys } from './queryKeys';
 import type {
   AdminUser,
+  AiProvider,
+  AiTestResult,
+  AiUsageParams,
+  AiUsageRow,
   ClientRow,
   ClientSummary,
   DashboardSummary,
@@ -679,5 +683,74 @@ export function useSchedulerJobs() {
     queryKey: queryKeys.adminScheduler,
     queryFn: () => apiGet<SchedulerJob[]>('/admin/scheduler'),
     retry: false,
+  });
+}
+
+export function useAiProviders() {
+  return useQuery({
+    queryKey: queryKeys.ai.providers,
+    queryFn: () => apiGet<AiProvider[]>('/admin/ai/providers'),
+  });
+}
+
+export function useCreateAiProvider() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Omit<AiProvider, 'id'> & { api_key?: string }) =>
+      apiPost<AiProvider>('/admin/ai/providers', payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ai.providers });
+    },
+  });
+}
+
+export function useUpdateAiProvider() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...payload }: {
+      id: number;
+      api_key?: string;
+      name?: string;
+      base_url?: string;
+      model?: string;
+      input_price_per_mtok?: string | null;
+      output_price_per_mtok?: string | null;
+      max_concurrency?: number;
+      timeout_s?: number;
+      enabled?: boolean;
+      is_default?: boolean;
+    }) => apiPatch<AiProvider>(`/admin/ai/providers/${id}`, payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ai.providers });
+    },
+  });
+}
+
+export function useDeleteAiProvider() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => apiDelete<void>(`/admin/ai/providers/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ai.providers });
+    },
+  });
+}
+
+export function useTestAiProvider() {
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiPost<AiTestResult>(`/admin/ai/providers/${id}/test`),
+  });
+}
+
+export function useAiUsage(params: AiUsageParams) {
+  const search = new URLSearchParams(
+    Object.entries(params)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => [k, String(v)]),
+  ).toString();
+  return useQuery({
+    queryKey: queryKeys.ai.usage(params),
+    queryFn: () => apiGet<{ rows: AiUsageRow[] }>(`/admin/ai/usage?${search}`),
   });
 }
