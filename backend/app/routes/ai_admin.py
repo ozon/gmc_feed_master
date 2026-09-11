@@ -73,6 +73,7 @@ async def create_provider(
 async def update_provider(
     provider_id: int,
     payload: AiProviderUpdate,
+    request: Request,
     _admin: AdminUser,
     db_session: DbSession,
 ) -> AiProviderOut:
@@ -90,12 +91,16 @@ async def update_provider(
         if row.is_default:
             await _clear_other_defaults(session, row.id)
     await session.refresh(row)
+    service = getattr(request.app.state, "ai_service", None)
+    if service is not None:
+        service.invalidate(provider_id)
     return AiProviderOut.model_validate(row)
 
 
 @router.delete("/admin/ai/providers/{provider_id}", status_code=204)
 async def delete_provider(
     provider_id: int,
+    request: Request,
     _admin: AdminUser,
     db_session: DbSession,
 ) -> None:
@@ -105,6 +110,9 @@ async def delete_provider(
         if row is None:
             raise HTTPException(status_code=404, detail="provider not found")
         await session.delete(row)
+    service = getattr(request.app.state, "ai_service", None)
+    if service is not None:
+        service.invalidate(provider_id)
 
 
 @router.post("/admin/ai/providers/{provider_id}/test")

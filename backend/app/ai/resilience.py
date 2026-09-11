@@ -103,6 +103,6 @@ def classify_failure(exc: Exception) -> tuple[CallOutcome, bool]:
         if status >= 500:
             return CallOutcome.SERVER_ERROR, True
         return CallOutcome.CLIENT_ERROR, False
-    if isinstance(exc, (httpx.TimeoutException, httpx.ConnectError, httpx.ConnectTimeout)):
+    if isinstance(exc, (httpx.TimeoutException, httpx.ConnectError)):
         return CallOutcome.TIMEOUT, True
     return CallOutcome.CLIENT_ERROR, False

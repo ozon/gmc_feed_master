@@ -115,6 +115,16 @@ class AiService:
             self._semaphores[config.id] = semaphore
         return semaphore
 
+    def invalidate(self, provider_config_id: int) -> None:
+        """Drop cached collaborators for a config so the next call rebuilds them.
+
+        Called by the admin routes after PATCH/DELETE so runtime config edits
+        (api_key, base_url, model, max_concurrency) take effect immediately.
+        """
+        self._providers.pop(provider_config_id, None)
+        self._breakers.pop(provider_config_id, None)
+        self._semaphores.pop(provider_config_id, None)
+
     # -- public API ---------------------------------------------------------
 
     async def run_task(
@@ -208,7 +218,18 @@ class AiService:
 
         provider = self._provider_for(config)
         semaphore = self._semaphore_for(config)
-        messages = render_task(task_type, variables)
+        try:
+            messages = render_task(task_type, variables)
+        except TaskSpecError:
+            logger.exception("ai task %s could not render; falling back", task_type)
+            await self._log_usage(UsageRecord(
+                client_id=client_id, feed_source_id=feed_source_id,
+                task_type=task_type, provider_config_id=config.id, model=config.model,
+                cache_hit=False, prompt_tokens=0, completion_tokens=0,
+                cost_usd=None, latency_ms=0, error_code="invalid_task",
+            ))
+            return AiResult(value=None, status="fallback", error_code="invalid_task",
+                            prompt_tokens=0, completion_tokens=0)
         retryable_error_code: str | None = None
 
         async with semaphore:
@@ -265,7 +286,8 @@ class AiService:
                                 completion_tokens=response.completion_tokens)
 
         # Exhausted retries (or non-retryable failure).
-        assert retryable_error_code is not None
+        if retryable_error_code is None:
+            retryable_error_code = "unknown"
         await self._log_usage(UsageRecord(
             client_id=client_id, feed_source_id=feed_source_id,
             task_type=task_type, provider_config_id=config.id, model=config.model,

@@ -59,7 +59,10 @@ export function ProvidersPage() {
                     aria-label={t('ai.columns.enabled')}
                     checked={provider.enabled}
                     onChange={(event) =>
-                      updateProvider.mutate({ id: provider.id, enabled: event.currentTarget.checked })
+                      updateProvider.mutate(
+                        { id: provider.id, enabled: event.currentTarget.checked },
+                        { onError: (error) => notifyMutationError(error, t('ai.saveFailed')) },
+                      )
                     }
                   />
                 </Table.Td>
@@ -114,6 +117,7 @@ export function ProvidersPage() {
       )}
       {testResult ? <div data-testid="ai-test-result">{testResult}</div> : null}
       <ProviderModal
+        key={editing?.id ?? (creating ? 'create' : 'closed')}
         opened={creating || editing !== null}
         provider={editing}
         onClose={() => {

@@ -154,6 +154,39 @@ async def test_usage_row_written_on_ok_and_cache_hit(session_factory):
     assert rows[1].prompt_tokens == 0
 
 
+@pytest.mark.asyncio
+async def test_run_task_invalid_task_type_is_fallback(session_factory):
+    await _seed_default_config(session_factory)
+    provider = FakeProvider()
+    service = AiService(session_factory, provider_factory=lambda config: provider)
+    result = await service.run_task("nonexistent_task", {"title": "T", "description": "D"})
+    assert result.status == "fallback"
+    assert result.error_code == "invalid_task"
+    assert len(provider.calls) == 0
+
+
+@pytest.mark.asyncio
+async def test_invalidate_rebuilds_provider_on_next_call(session_factory):
+    await _seed_default_config(session_factory)
+    seen: list[str] = []
+    factory_calls: list[int] = []
+
+    def tracking_factory(config):
+        factory_calls.append(config.id)
+        provider = FakeProvider(responses=[('{"color": "blue"}', (10, 2))])
+        seen.append(f"provider-{config.id}")
+        return provider
+
+    service = AiService(session_factory, provider_factory=tracking_factory)
+    # first call builds and caches the provider
+    await service.run_task("attribute_enrichment", {"title": "A", "description": "D"})
+    assert len(factory_calls) == 1
+    # invalidate -> next call rebuilds
+    service.invalidate(1)
+    await service.run_task("attribute_enrichment", {"title": "B", "description": "D"})
+    assert len(factory_calls) == 2
+
+
 def test_default_provider_factory_builds_openai_compatible():
     from app.ai.openai_compat import OpenAICompatibleProvider
 

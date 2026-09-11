@@ -31,17 +31,22 @@ class AiResultCacheStore:
         template_version: str,
         input_hash_value: str,
     ) -> CacheEntry | None:
-        async with self._session_factory() as session:
-            result = await session.execute(
-                select(AiResultCache.output).where(
-                    AiResultCache.task_type == task_type,
-                    AiResultCache.provider_config_id == provider_config_id,
-                    AiResultCache.model == model,
-                    AiResultCache.template_version == template_version,
-                    AiResultCache.input_hash == input_hash_value,
+        try:
+            async with self._session_factory() as session:
+                result = await session.execute(
+                    select(AiResultCache.output).where(
+                        AiResultCache.task_type == task_type,
+                        AiResultCache.provider_config_id == provider_config_id,
+                        AiResultCache.model == model,
+                        AiResultCache.template_version == template_version,
+                        AiResultCache.input_hash == input_hash_value,
+                    )
                 )
-            )
-            output = result.scalar_one_or_none()
+                output = result.scalar_one_or_none()
+        except Exception:
+            # Cache read failure must never fail the AI call — treat as a miss.
+            logger.exception("ai cache: lookup failed for %s", input_hash_value)
+            return None
         if output is None:
             return None
         return CacheEntry(output=dict(output) if output else {})
