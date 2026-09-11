@@ -56,16 +56,15 @@ class AiResultCacheStore:
         output: dict[str, Any],
     ) -> None:
         try:
-            async with self._session_factory() as session:
-                async with session.begin():
-                    session.add(AiResultCache(
-                        task_type=task_type,
-                        provider_config_id=provider_config_id,
-                        model=model,
-                        template_version=template_version,
-                        input_hash=input_hash_value,
-                        output=output,
-                    ))
+            async with self._session_factory() as session, session.begin():
+                session.add(AiResultCache(
+                    task_type=task_type,
+                    provider_config_id=provider_config_id,
+                    model=model,
+                    template_version=template_version,
+                    input_hash=input_hash_value,
+                    output=output,
+                ))
         except IntegrityError:
             # Concurrent insert of the same cache key — the first writer won.
             logger.debug("ai cache: concurrent insert swallowed for %s", input_hash_value)
