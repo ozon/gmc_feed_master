@@ -127,7 +127,8 @@ async def test_field_mapping_end_to_end(app_factory, tmp_path):
                 "sku": {"target": "id"},
                 "title": {"target": "title"},
                 "ean": {"target": "gtin"},
-            }
+            },
+            "custom_fields": ["sku", "title", "ean"],
         },
     )
     assert resp.status_code == 200

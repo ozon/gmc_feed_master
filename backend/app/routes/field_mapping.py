@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +25,40 @@ router = APIRouter()
 
 _STRUCTURED_KINDS = frozenset({"structured", "repeated_structured"})
 
+_CUSTOM_FIELD_RE = re.compile(r"^[a-z_][a-z0-9_]*$")
+_CUSTOM_FIELD_MAX_LEN = 64
+
+
+def _validate_custom_fields(
+    custom_fields: list[str],
+    document: MappingDocument,
+) -> list[str]:
+    errors: list[str] = []
+    seen: set[str] = set()
+    observed = {field.name for field in document.source_fields}
+    for name in custom_fields:
+        if (
+            len(name) > _CUSTOM_FIELD_MAX_LEN
+            or _CUSTOM_FIELD_RE.fullmatch(name) is None
+        ):
+            errors.append(
+                f"{name}: custom field names must match "
+                f"'[a-z_][a-z0-9_]*' (max {_CUSTOM_FIELD_MAX_LEN} chars)"
+            )
+            continue
+        if name in seen:
+            errors.append(f"{name}: duplicate custom field")
+            continue
+        seen.add(name)
+        # Note: a custom field named like a _BASELINE_FIELDS entry
+        # (e.g. 'title', 'id') is permitted and behaves as any other
+        # custom entry — accepted behavior, documented in docs/decisions.md.
+        if name in observed:
+            errors.append(
+                f"{name}: already an observed source field"
+            )
+    return errors
+
 
 def _require_db(db_session: AsyncSession | None) -> AsyncSession:
     if db_session is None:
@@ -40,6 +76,7 @@ def _load_document(feed_source: FeedSource) -> MappingDocument:
 def _validate_mappings(
     mappings: dict[str, str],
     document: MappingDocument,
+    custom_fields: list[str] | None = None,
 ) -> list[str]:
     registry = load_registry()
     known_fields = {field.name: field for field in document.source_fields}
@@ -139,6 +176,9 @@ def _validate_mappings(
             continue
         parent, dot, sub = source.partition(".")
         if not dot or not sub:
+            if custom_fields is not None and source not in custom_fields:
+                errors.append(f"{source}: unknown source field")
+                continue
             check_target(source, target, None)
             continue
         if "." in sub:
@@ -193,9 +233,13 @@ async def update_field_mapping(
         if feed_source is None:
             raise HTTPException(status_code=404, detail="feed source not found")
         document = _load_document(feed_source)
+        custom_errors = _validate_custom_fields(payload.custom_fields, document)
+        if custom_errors:
+            return _validation_error(custom_errors)
         errors = _validate_mappings(
             {source: entry.target for source, entry in payload.mappings.items()},
             document,
+            payload.custom_fields,
         )
         if errors:
             return _validation_error(errors)
@@ -203,6 +247,7 @@ async def update_field_mapping(
             source: MappingEntry(target=entry.target, origin="manual")
             for source, entry in payload.mappings.items()
         }
+        document.custom_fields = list(payload.custom_fields)
         feed_source.field_mapping = document.to_json()
         return document
 

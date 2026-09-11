@@ -95,7 +95,12 @@ async def _make_feed(client, source_url="http://source.example/feed.tsv"):
             "condition": {"target": "condition"},
             "brand": {"target": "brand"},
             "gtin": {"target": "gtin"},
-        }},
+        },
+            "custom_fields": [
+                "id", "title", "description", "link", "image_link",
+                "availability", "price", "condition", "brand", "gtin",
+            ],
+        },
     )
     assert resp.status_code == 200
     return feed["id"]

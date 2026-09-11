@@ -108,7 +108,9 @@ async def _create_feed_source(client):
             "sku": {"target": "id"},
             "title": {"target": "title"},
             "ean": {"target": "gtin"},
-        }},
+        },
+            "custom_fields": ["sku", "title", "ean"],
+        },
     )
     assert resp.status_code == 200
     return feed_id

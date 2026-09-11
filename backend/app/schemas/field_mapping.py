@@ -9,6 +9,7 @@ class MappingEntryIn(BaseModel):
 
 class FieldMappingPut(BaseModel):
     mappings: dict[str, MappingEntryIn]
+    custom_fields: list[str] = Field(default_factory=list)
 
 
 class SourceFieldOut(BaseModel):
@@ -32,6 +33,7 @@ class FieldMappingOut(BaseModel):
     auto_mapped: bool
     source_fields: list[SourceFieldOut]
     mappings: dict[str, MappingEntryOut]
+    custom_fields: list[str] = Field(default_factory=list)
 
 
 class RegistrySubFieldOut(BaseModel):

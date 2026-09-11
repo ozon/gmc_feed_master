@@ -88,6 +88,7 @@ async def test_get_field_mapping_never_ingested_returns_empty_document(app_facto
         "auto_mapped": False,
         "source_fields": [],
         "mappings": {},
+        "custom_fields": [],
     }
 
 
@@ -111,7 +112,8 @@ async def test_put_field_mapping_stores_manual_entries(app_factory):
             "mappings": {
                 "product_name": {"target": "title"},
                 "mystery_field": {"target": "shipping.country"},
-            }
+            },
+            "custom_fields": ["mystery_field"],
         },
     )
     assert resp.status_code == 200
@@ -122,6 +124,7 @@ async def test_put_field_mapping_stores_manual_entries(app_factory):
     }
     assert body["auto_mapped"] is True
     assert body["source_fields"] == [source_field("product_name", "scalar")]
+    assert body["custom_fields"] == ["mystery_field"]
     persisted = (await client.get(f"/feed-sources/{fs_id}/field-mapping")).json()
     assert persisted == body
 
@@ -675,3 +678,131 @@ async def test_put_indexed_target_above_max_index_rejected_422(app_factory):
     })
     assert resp.status_code == 422
     assert any("invalid target path" in e for e in resp.json()["errors"])
+
+
+async def test_put_custom_fields_persists_and_get_roundtrips(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory,
+        fs_id,
+        {
+            "version": 1, "auto_mapped": False,
+            "source_fields": [source_field("title", "scalar")],
+            "mappings": {},
+        },
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={
+            "mappings": {
+                "title": {"target": "title"},
+                "my_custom_field": {"target": "product_detail.2.attribute_value"},
+            },
+            "custom_fields": ["my_custom_field"],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["custom_fields"] == ["my_custom_field"]
+    assert body["mappings"]["my_custom_field"] == {
+        "target": "product_detail.2.attribute_value", "origin": "manual",
+    }
+    persisted = (await client.get(f"/feed-sources/{fs_id}/field-mapping")).json()
+    assert persisted["custom_fields"] == ["my_custom_field"]
+
+
+async def test_put_custom_fields_default_empty(app_factory):
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping", json={"mappings": {}},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["custom_fields"] == []
+
+
+async def test_put_custom_fields_bad_grammar_422(app_factory):
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    for bad in ["has.dot", "Has-Upper", "1starts_digit", "a" * 65, ""]:
+        resp = await client.put(
+            f"/feed-sources/{fs_id}/field-mapping",
+            json={"mappings": {}, "custom_fields": [bad]},
+        )
+        assert resp.status_code == 422, bad
+        assert any(bad in e for e in resp.json()["errors"])
+
+
+async def test_put_custom_fields_duplicate_422(app_factory):
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={"mappings": {}, "custom_fields": ["dup", "dup"]},
+    )
+    assert resp.status_code == 422
+    assert any("dup" in e and "duplicate" in e for e in resp.json()["errors"])
+
+
+async def test_put_custom_fields_observed_collision_422(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory,
+        fs_id,
+        {
+            "version": 1, "auto_mapped": False,
+            "source_fields": [source_field("title", "scalar")],
+            "mappings": {},
+        },
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={"mappings": {}, "custom_fields": ["title"]},
+    )
+    assert resp.status_code == 422
+    assert any("title" in e and "already an observed source field" in e
+               for e in resp.json()["errors"])
+
+
+async def test_put_flat_mapping_key_requires_custom_or_observed_422(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory,
+        fs_id,
+        {
+            "version": 1, "auto_mapped": False,
+            "source_fields": [source_field("title", "scalar")],
+            "mappings": {},
+        },
+    )
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={"mappings": {"mystery_field": {"target": "title"}}},
+    )
+    assert resp.status_code == 422
+    assert any("mystery_field" in e and "unknown source field" in e
+               for e in resp.json()["errors"])
+
+
+async def test_put_custom_field_named_like_baseline_accepted(app_factory):
+    # Directive item 4: baseline-name collision (e.g. 'title') is permitted —
+    # accepted behavior, not a bug.
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={
+            "mappings": {"title": {"target": "title"}},
+            "custom_fields": ["title"],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["custom_fields"] == ["title"]
+    assert body["mappings"]["title"] == {"target": "title", "origin": "manual"}

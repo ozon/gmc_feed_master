@@ -101,7 +101,12 @@ async def _create_feed_source(app_factory, cron_expression=None):
             "brand": {"target": "brand"},
             "gtin": {"target": "gtin"},
             "shipping": {"target": "shipping"},
-        }},
+        },
+            "custom_fields": [
+                "id", "title", "description", "link", "image_link",
+                "availability", "price", "condition", "brand", "gtin", "shipping",
+            ],
+        },
     )
     assert resp.status_code == 200
     return feed
