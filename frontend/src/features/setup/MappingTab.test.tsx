@@ -25,6 +25,7 @@ const mappingDoc: FieldMappingDoc = {
     description: { target: 'description', origin: 'auto' },
     synonym_field: { target: 'description', origin: 'synonym' },
   },
+  custom_fields: ['my_custom_field'],
 };
 
 const registryAttrs: RegistryAttribute[] = [
@@ -593,5 +594,133 @@ describe('MappingTab', () => {
       );
       expect((body?.mappings as Record<string, unknown>)['ship.country']).toBeUndefined();
     });
+  });
+
+  it('renders custom rows from server custom_fields', async () => {
+    fetchMock = stubFetch((url) => {
+      if (url === '/feed-sources/1/field-mapping') return jsonResponse(mappingDoc);
+      if (url === '/registry/attributes') return jsonResponse(registryAttrs);
+      return jsonResponse({});
+    });
+    renderTab();
+    expect(await screen.findByText('my_custom_field')).toBeInTheDocument();
+    expect(screen.getByText('custom')).toBeInTheDocument();
+  });
+
+  it('adding a custom field then saving PUTs custom_fields', async () => {
+    const user = userEvent.setup();
+    fetchMock = stubFetch((url) => {
+      if (url === '/feed-sources/1/field-mapping') {
+        if (fetchMock.mock.calls.some(
+          ([input, init]) => String(input) === url && init?.method === 'PUT',
+        )) {
+          return jsonResponse({ ...mappingDoc, custom_fields: ['brand_extra'] });
+        }
+        return jsonResponse({ ...mappingDoc, custom_fields: [] });
+      }
+      if (url === '/registry/attributes') return jsonResponse(registryAttrs);
+      return jsonResponse({});
+    });
+
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByTestId('custom-name-input')).toBeInTheDocument();
+    });
+    await user.type(screen.getByTestId('custom-name-input'), 'brand_extra');
+    const addRow = screen.getByTestId('custom-name-input').closest('tr')!;
+    const select = addRow.querySelector('[role="combobox"]') as HTMLElement;
+    await user.click(select);
+    const option = await screen.findByRole('option', { name: /^brand$/ });
+    await user.click(option);
+    const addBtn = screen.getByTestId('add-custom-button');
+    await waitFor(() => expect(addBtn).toBeEnabled());
+    await user.click(addBtn);
+
+    const saveBtn = screen.getByRole('button', { name: /save/i });
+    await waitFor(() => expect(saveBtn).toBeEnabled());
+    await user.click(saveBtn);
+
+    await waitFor(() => {
+      const body = putBody('/feed-sources/1/field-mapping');
+      expect(body).toBeDefined();
+      expect(body?.custom_fields).toEqual(['brand_extra']);
+      expect(body?.mappings).toEqual(
+        expect.objectContaining({ brand_extra: { target: 'brand' } }),
+      );
+    });
+  });
+
+  it('removing a custom field excludes it from the PUT payload', async () => {
+    const user = userEvent.setup();
+    fetchMock = stubFetch((url) => {
+      if (url === '/feed-sources/1/field-mapping') {
+        if (fetchMock.mock.calls.some(
+          ([input, init]) => String(input) === url && init?.method === 'PUT',
+        )) {
+          return jsonResponse({ ...mappingDoc, custom_fields: [] });
+        }
+        return jsonResponse(mappingDoc);
+      }
+      if (url === '/registry/attributes') return jsonResponse(registryAttrs);
+      return jsonResponse({});
+    });
+
+    renderTab();
+    const removeBtn = await screen.findByTestId('remove-custom-my_custom_field');
+    await user.click(removeBtn);
+
+    const saveBtn = screen.getByRole('button', { name: /save/i });
+    await waitFor(() => expect(saveBtn).toBeEnabled());
+    await user.click(saveBtn);
+
+    await waitFor(() => {
+      const body = putBody('/feed-sources/1/field-mapping');
+      expect(body?.custom_fields).toEqual([]);
+      expect((body?.mappings as Record<string, unknown>)?.my_custom_field).toBeUndefined();
+    });
+  });
+
+  it('shadowed custom entry on an observed row stays removable', async () => {
+    const user = userEvent.setup();
+    const shadowDoc: FieldMappingDoc = {
+      ...mappingDoc,
+      custom_fields: ['title'],
+    };
+    fetchMock = stubFetch((url) => {
+      if (url === '/feed-sources/1/field-mapping') return jsonResponse(shadowDoc);
+      if (url === '/registry/attributes') return jsonResponse(registryAttrs);
+      return jsonResponse({});
+    });
+
+    renderTab();
+    expect(await screen.findByTestId('shadow-indicator')).toBeInTheDocument();
+    expect(screen.getAllByText('title').length).toBe(1);
+    const removeBtn = screen.getByTestId('remove-custom-title');
+    await user.click(removeBtn);
+    const saveBtn = screen.getByRole('button', { name: /save/i });
+    await waitFor(() => expect(saveBtn).toBeEnabled());
+    await user.click(saveBtn);
+    await waitFor(() => {
+      const body = putBody('/feed-sources/1/field-mapping');
+      expect(body?.custom_fields).toEqual([]);
+      expect((body?.mappings as Record<string, unknown>)?.title).toEqual({ target: 'title' });
+    });
+  });
+
+  it('shows the custom add row even when no source fields are observed', async () => {
+    const emptyDoc: FieldMappingDoc = {
+      ...mappingDoc,
+      source_fields: [],
+      mappings: {},
+      custom_fields: [],
+    };
+    fetchMock = stubFetch((url) => {
+      if (url === '/feed-sources/1/field-mapping') return jsonResponse(emptyDoc);
+      if (url === '/registry/attributes') return jsonResponse(registryAttrs);
+      return jsonResponse({});
+    });
+    renderTab();
+    expect(await screen.findByText(/no source fields observed yet/i)).toBeInTheDocument();
+    expect(screen.getByTestId('add-custom-button')).toBeInTheDocument();
   });
 });

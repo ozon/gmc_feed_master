@@ -44,6 +44,13 @@ export function MappingTab() {
 
   const [localEdits, setLocalEdits] = useState<Record<string, string | null>>({});
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
+  const [customList, setCustomList] = useState<string[] | null>(null);
+
+  const serverCustomFields = useMemo(
+    () => mappingQuery.data?.custom_fields ?? [],
+    [mappingQuery.data],
+  );
+  const effectiveCustomFields = customList ?? serverCustomFields;
 
   const effectiveMappings = useMemo(() => {
     const base: Record<string, { target: string | null; origin: string | null }> = {};
@@ -58,12 +65,19 @@ export function MappingTab() {
         base[source] = { target, origin: 'manual' };
       }
     }
+    for (const name of effectiveCustomFields) {
+      if (!base[name]) {
+        base[name] = { target: null, origin: 'manual' };
+      }
+    }
     return base;
-  }, [mappingQuery.data, localEdits]);
+  }, [mappingQuery.data, localEdits, effectiveCustomFields]);
 
   const isDirty = useMemo(() => {
-    return !deepEqual(localEdits, {});
-  }, [localEdits]);
+    if (!deepEqual(localEdits, {})) return true;
+    if (customList !== null && !deepEqual(customList, serverCustomFields)) return true;
+    return false;
+  }, [localEdits, customList, serverCustomFields]);
 
   const coveredTargets = useMemo(() => {
     const targets = new Set<string>();
@@ -116,10 +130,34 @@ export function MappingTab() {
     [],
   );
 
+  const handleAddCustom = useCallback(
+    (name: string, target: string) => {
+      setCustomList((prev) => {
+        const next = prev ?? [...serverCustomFields];
+        if (!next.includes(name)) next.push(name);
+        return [...next];
+      });
+      setLocalEdits((prev) => ({ ...prev, [name]: target }));
+    },
+    [serverCustomFields],
+  );
+
+  const handleRemoveCustom = useCallback(
+    (name: string) => {
+      setCustomList((prev) => {
+        const next = prev ?? [...serverCustomFields];
+        return next.filter((n) => n !== name);
+      });
+      setLocalEdits((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    },
+    [serverCustomFields],
+  );
+
   const handleSave = useCallback(async () => {
-    // The PUT is a full replace: send the complete effective mapping set
-    // (server mappings overlaid with local edits), not just the delta —
-    // otherwise untouched mappings are silently dropped.
     const mappingsPayload: Record<string, { target: string }> = {};
     for (const [source, entry] of Object.entries(effectiveMappings)) {
       if (entry.target) {
@@ -127,8 +165,13 @@ export function MappingTab() {
       }
     }
     try {
-      await saveMutation.mutateAsync({ id, mappings: mappingsPayload });
+      await saveMutation.mutateAsync({
+        id,
+        mappings: mappingsPayload,
+        customFields: effectiveCustomFields,
+      });
       setLocalEdits({});
+      setCustomList(null);
       setRowErrors({});
       notifySuccess(tSetup('mapping.saved'));
     } catch (error) {
@@ -137,7 +180,7 @@ export function MappingTab() {
       }
       notifyMutationError(error, tSetup('mapping.saveFailed'));
     }
-  }, [effectiveMappings, id, saveMutation, tSetup]);
+  }, [effectiveMappings, effectiveCustomFields, id, saveMutation, tSetup]);
 
   const handleAutoMap = useCallback(async () => {
     try {
@@ -203,22 +246,21 @@ export function MappingTab() {
         </Alert>
       )}
 
-      {sourceFields.length === 0 ? (
+      {sourceFields.length === 0 && (
         <Text c="dimmed" ta="center" py="xl">
           {tSetup('mapping.noSourceFields')}
         </Text>
-      ) : (
-        <MappingTable
-          sourceFields={sourceFields}
-          mappings={effectiveMappings}
-          registryAttributes={Array.isArray(registryQuery.data) ? registryQuery.data : []}
-          onChange={handleTargetChange}
-          errors={rowErrors}
-          customFields={[]}
-          onAddCustom={() => {}}
-          onRemoveCustom={() => {}}
-        />
       )}
+      <MappingTable
+        sourceFields={sourceFields}
+        mappings={effectiveMappings}
+        registryAttributes={Array.isArray(registryQuery.data) ? registryQuery.data : []}
+        onChange={handleTargetChange}
+        errors={rowErrors}
+        customFields={effectiveCustomFields}
+        onAddCustom={handleAddCustom}
+        onRemoveCustom={handleRemoveCustom}
+      />
     </Stack>
   );
 }
