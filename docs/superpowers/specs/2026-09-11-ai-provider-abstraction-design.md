@@ -160,7 +160,7 @@ Retention: extend the existing purge-job pattern — configurable `ai_usage_rete
 - `GET /admin/ai/providers` — list (api_key redacted)
 - `POST /admin/ai/providers` — create
 - `PATCH /admin/ai/providers/{id}` — update (api_key optional on update; absent = unchanged)
-- `DELETE /admin/ai/providers/{id}` — delete (blocked if config is referenced by an in-flight pipeline run? No — runs read config at call time; deletion simply makes next call fall back. Document this.)
+- `DELETE /admin/ai/providers/{id}` — delete (runs read config at call time; deleting a config makes the next AI call fall back — no in-flight-run protection needed)
 - `POST /admin/ai/providers/{id}/test` — live ping completion ("Reply with OK"), reports latency + token usage of the probe
 - `GET /admin/ai/usage?client_id=&feed_source_id=&task_type=&from=&to=&group_by=client|feed_source|task_type|day` — aggregated counts/tokens/cost
 
