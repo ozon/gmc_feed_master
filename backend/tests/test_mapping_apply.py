@@ -388,3 +388,22 @@ def test_indexed_target_on_scalar_kind_shape_mismatch(registry):
     )
     assert result == {}
     assert stats.shape_mismatches == 1
+
+
+def test_custom_field_mapping_dormant_when_key_absent(registry):
+    product = {"title": "Shirt"}
+    mappings = {
+        "title": MappingEntry("title", "manual"),
+        "my_custom_field": MappingEntry("brand", "manual"),
+    }
+    mapped, stats = apply_mapping(product, mappings, registry)
+    assert mapped == {"title": "Shirt"}
+    assert stats == ApplyStats(dropped_unmapped=0, shape_mismatches=0)
+
+
+def test_custom_field_mapping_activates_when_key_present(registry):
+    product = {"my_custom_field": "Acme"}
+    mappings = {"my_custom_field": MappingEntry("brand", "manual")}
+    mapped, stats = apply_mapping(product, mappings, registry)
+    assert mapped == {"brand": "Acme"}
+    assert stats == ApplyStats(dropped_unmapped=0, shape_mismatches=0)

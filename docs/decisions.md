@@ -1195,6 +1195,30 @@ Closes the assignments-race deferral above. Operator decisions (brainstorming 20
 
 ## 2026-09-11
 
+### Button-only auto-mapper & custom mapping source fields
+
+- **Topic:** Mapping auto-match trigger; manual mapping rows
+- **Decision:**
+  1. Implicit auto_match removed from `MappingStep` and `run_dry_run`.
+     `POST /field-mapping/auto` (the UI button) is the only trigger. Fresh
+     feed sources stay unmapped until the operator acts; QC
+     `BaselineRequired` findings flag the gap. Supersedes the M4-era
+     implicit-automatch behavior.
+  2. `MappingDocument` gains `custom_fields: list[str]` (flat grammar
+     `[a-z_][a-z0-9_]*`, ≤64, additive, no migration). PUT is full-replace;
+     flat mapping source keys must be observed or custom (422 otherwise).
+     Custom rows are dormant in `apply_mapping` until the feed supplies the
+     key. Observed keys shadow custom twins in the UI (shadow indicator +
+     reachable remove control); no kind-revalidation when ingest later
+     observes a custom key.
+  3. Accepted: a custom field named like a `_BASELINE_FIELDS` entry
+     (e.g. `'title'`, `'id'`) is permitted and maps like any custom entry —
+     `_BASELINE_FIELDS` only feeds `GET /feed-sources/{id}/fields` defaults,
+     it reserves no names on the mapping document.
+- **Rationale:** operator control and auditability — no surprise mappings after
+  pipeline runs; manual pre-provisioning of targets for fields the input
+  feed does not (yet) supply.
+
 ### Unified field list cycle — review fixes (branch `unified-field-list`, 6315235..25cefb5)
 
 Inline code review of the cycle found one critical and one important issue; both fixed before merging to main:
