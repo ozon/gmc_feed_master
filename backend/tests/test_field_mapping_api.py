@@ -790,6 +790,31 @@ async def test_put_flat_mapping_key_requires_custom_or_observed_422(app_factory)
                for e in resp.json()["errors"])
 
 
+async def test_post_auto_roundtrips_custom_fields_unchanged(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    fs_id = await create_feed_source(client)
+    await seed_field_mapping(
+        factory,
+        fs_id,
+        {
+            "version": 1, "auto_mapped": False,
+            "source_fields": [
+                source_field("product_name", "scalar"),
+                source_field("ean", "scalar"),
+            ],
+            "mappings": {"product_name": {"target": "id", "origin": "manual"}},
+            "custom_fields": ["my_custom_field"],
+        },
+    )
+    resp = await client.post(f"/feed-sources/{fs_id}/field-mapping/auto")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["custom_fields"] == ["my_custom_field"]
+    persisted = (await client.get(f"/feed-sources/{fs_id}/field-mapping")).json()
+    assert persisted["custom_fields"] == ["my_custom_field"]
+
+
 async def test_put_custom_field_named_like_baseline_accepted(app_factory):
     # Directive item 4: baseline-name collision (e.g. 'title') is permitted —
     # accepted behavior, not a bug.
