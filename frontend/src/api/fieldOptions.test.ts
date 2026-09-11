@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CUSTOM_FIELD_NAME_MAX_LEN, CUSTOM_FIELD_NAME_REGEX,
   INDEXED_PATH_REGEX, buildFieldOptions, fromRegistryAttributes,
   fromSourceFields, type FieldDescriptor,
 } from './fieldOptions';
@@ -146,5 +147,25 @@ describe('INDEXED_PATH_REGEX (directive 4)', () => {
   });
   it.each(invalid.map((v) => [v]))('rejects %s', (path) => {
     expect(INDEXED_PATH_REGEX.test(path)).toBe(false);
+  });
+});
+
+describe('CUSTOM_FIELD_NAME_REGEX', () => {
+  it.each(['my_field', 'a', 'field2', 'a_b_9'])('accepts %s', (name) => {
+    expect(CUSTOM_FIELD_NAME_REGEX.test(name)).toBe(true);
+  });
+  it.each([
+    'has.dot',
+    'Has-Upper',
+    '1starts_digit',
+    '',
+    ' spaced ',
+    'ünïcode',
+  ])('rejects %s', (name) => {
+    expect(CUSTOM_FIELD_NAME_REGEX.test(name)).toBe(false);
+  });
+  it('accepts a 64-char name and rejects 65', () => {
+    expect('a'.repeat(CUSTOM_FIELD_NAME_MAX_LEN)).toMatch(CUSTOM_FIELD_NAME_REGEX);
+    expect('a'.repeat(CUSTOM_FIELD_NAME_MAX_LEN + 1).length).toBe(65);
   });
 });

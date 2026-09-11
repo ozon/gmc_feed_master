@@ -19,6 +19,11 @@ export type GroupedFieldOptions = { group: string; items: FieldOption[] }[];
 export const INDEXED_PATH_REGEX =
   /^[a-z_][a-z0-9_]*(\.([1-9]|[1-9]\d{1,3}|10000))?(\.[a-z_][a-z0-9_]*)?$/;
 
+/** Custom mapping source-field name grammar (mirrors backend
+ * _CUSTOM_FIELD_RE: flat, single segment, <= 64 chars). */
+export const CUSTOM_FIELD_NAME_REGEX = /^[a-z_][a-z0-9_]*$/;
+export const CUSTOM_FIELD_NAME_MAX_LEN = 64;
+
 export const FIELD_GROUP_LABEL = 'Field';
 
 export function fromSourceFields(fields: SourceField[]): FieldDescriptor[] {

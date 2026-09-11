@@ -103,6 +103,7 @@ export type FieldMappingDoc = {
   auto_mapped: boolean;
   source_fields: SourceField[];
   mappings: Record<string, MappingEntry>;
+  custom_fields?: string[];
 };
 
 export type ProductListItem = {

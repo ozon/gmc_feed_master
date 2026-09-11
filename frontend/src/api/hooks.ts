@@ -345,8 +345,19 @@ export function useRotateExportToken() {
 export function useSaveFieldMapping() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, mappings }: { id: number | string; mappings: Record<string, { target: string }> }) =>
-      apiPut<FieldMappingDoc>(`/feed-sources/${id}/field-mapping`, { mappings }),
+    mutationFn: ({
+      id,
+      mappings,
+      customFields,
+    }: {
+      id: number | string;
+      mappings: Record<string, { target: string }>;
+      customFields?: string[];
+    }) =>
+      apiPut<FieldMappingDoc>(
+        `/feed-sources/${id}/field-mapping`,
+        { mappings, custom_fields: customFields ?? [] },
+      ),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.feedSource(variables.id).mapping,

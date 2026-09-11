@@ -26,6 +26,17 @@
       "auto": "auto",
       "synonym": "Vorschlag",
       "manual": "manuell"
+    },
+    "custom": {
+      "add": "Eigenes Feld hinzufügen",
+      "addName": "Feldname",
+      "addNamePlaceholder": "z. B. mein_feld",
+      "addTargetHint": "Beliebiges Ziel — skalare, strukturierte, wiederholte, indizierte",
+      "invalidName": "Namen dürfen aus Kleinbuchstaben, Ziffern und Unterstrichen bestehen (keine Punkte), max. 64 Zeichen",
+      "duplicateName": "Feld existiert bereits",
+      "remove": "Eigenes Feld entfernen",
+      "alsoCustom": "auch als eigenes Feld deklariert",
+      "title": "Eigene Felder"
     }
   },
   "fields": {

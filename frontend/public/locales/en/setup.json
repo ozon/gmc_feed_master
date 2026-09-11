@@ -26,6 +26,17 @@
       "auto": "auto",
       "synonym": "suggestion",
       "manual": "manual"
+    },
+    "custom": {
+      "add": "Add custom field",
+      "addName": "Field name",
+      "addNamePlaceholder": "e.g. my_custom_field",
+      "addTargetHint": "Map any target — scalar, structured, repeated, indexed",
+      "invalidName": "Names must be lowercase letters, digits, underscores (no dots), max 64 characters",
+      "duplicateName": "Field already exists",
+      "remove": "Remove custom field",
+      "alsoCustom": "also declared as custom field",
+      "title": "Custom fields"
     }
   },
   "fields": {
