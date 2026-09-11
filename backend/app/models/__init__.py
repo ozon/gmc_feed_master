@@ -1,4 +1,4 @@
-from .ai import AiProviderConfig, AiResultCache, AiUsageLog
+from .ai import AiProviderConfig, AiResultCache, AiUsageLog, PromptTemplate
 from .client import Client
 from .export import ExportRun, ExportVersion
 from .feed_source import FeedSource
@@ -13,4 +13,4 @@ from .staging import StagingHistory, StagingProduct
 from .user import User
 from .user_client import UserClient
 
-__all__ = ["AiProviderConfig", "AiResultCache", "AiUsageLog", "Client", "ExportRun", "ExportVersion", "FeedSource", "GlobalSetting", "ImageDimension", "IngestionRun", "ModuleInstance", "ModulePipeline", "Plugin", "PluginConfig", "PluginData", "QualityFinding", "Session", "StagingHistory", "StagingProduct", "User", "UserClient"]
+__all__ = ["AiProviderConfig", "AiResultCache", "AiUsageLog", "Client", "ExportRun", "ExportVersion", "FeedSource", "GlobalSetting", "ImageDimension", "IngestionRun", "ModuleInstance", "ModulePipeline", "Plugin", "PluginConfig", "PluginData", "PromptTemplate", "QualityFinding", "Session", "StagingHistory", "StagingProduct", "User", "UserClient"]

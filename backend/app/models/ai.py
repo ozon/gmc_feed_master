@@ -10,8 +10,10 @@ from sqlalchemy import (
     Integer,
     Numeric,
     String,
+    Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -77,3 +79,36 @@ class AiUsageLog(Base):
     latency_ms: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class PromptTemplate(Base):
+    __tablename__ = "prompt_templates"
+    __table_args__ = (
+        Index(
+            "uq_prompt_templates_global_version", "task_type", "version",
+            unique=True, postgresql_where=text("client_id IS NULL"),
+        ),
+        Index(
+            "uq_prompt_templates_client_version", "task_type", "client_id", "version",
+            unique=True, postgresql_where=text("client_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_prompt_templates_global_active", "task_type",
+            unique=True, postgresql_where=text("is_active AND client_id IS NULL"),
+        ),
+        Index(
+            "uq_prompt_templates_client_active", "task_type", "client_id",
+            unique=True, postgresql_where=text("is_active AND client_id IS NOT NULL"),
+        ),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    task_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    client_id: Mapped[int | None] = mapped_column(ForeignKey("clients.id", ondelete="CASCADE"), nullable=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    system_prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    user_prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    variables: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)

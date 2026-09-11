@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..models.ai import PromptTemplate
 from ..models.client import Client
 from ..models.export import ExportRun, ExportVersion
 from ..models.feed_source import FeedSource
@@ -39,5 +40,6 @@ async def delete_client_cascade(session: AsyncSession, client_id: int) -> list[i
         await delete_feed_source_cascade(session, feed_source_id)
     await session.execute(delete(PluginConfig).where(PluginConfig.client_id == client_id))
     await session.execute(delete(PluginData).where(PluginData.client_id == client_id))
+    await session.execute(delete(PromptTemplate).where(PromptTemplate.client_id == client_id))
     await session.execute(delete(Client).where(Client.id == client_id))
     return feed_ids

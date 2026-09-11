@@ -44,6 +44,7 @@ EXPECTED_TABLES = {
     "ai_provider_configs",
     "ai_result_cache",
     "ai_usage_logs",
+    "prompt_templates",
 }
 
 
