@@ -56,7 +56,7 @@ def _ctx(feed_source, run_state=None):
 
 class TestFirstIngestion:
     @pytest.mark.asyncio
-    async def test_auto_maps_persists_and_applies(self, registry):
+    async def test_no_implicit_automap_persists_source_fields_only(self, registry):
         source_fields = [
             SourceField("id", "scalar"),
             SourceField("title", "scalar"),
@@ -69,22 +69,42 @@ class TestFirstIngestion:
 
         result = await MappingStep(registry).execute(_ctx(feed_source, run_state))
 
-        assert feed_source.field_mapping["auto_mapped"] is True
-        assert feed_source.field_mapping["mappings"] == {
-            "id": {"target": "id", "origin": "auto"},
-            "title": {"target": "title", "origin": "auto"},
-            "ean": {"target": "gtin", "origin": "synonym"},
-        }
+        assert feed_source.field_mapping["auto_mapped"] is False
+        assert feed_source.field_mapping["mappings"] == {}
         assert feed_source.field_mapping["source_fields"] == [
             {"name": "id", "kind": "scalar", "sub_fields": [], "max_repeats": 0},
             {"name": "title", "kind": "scalar", "sub_fields": [], "max_repeats": 0},
             {"name": "ean", "kind": "scalar", "sub_fields": [], "max_repeats": 0},
             {"name": "margin", "kind": "scalar", "sub_fields": [], "max_repeats": 0},
         ]
-        assert run_state.products is products
-        assert run_state.products == [{"id": "1", "title": "Shirt", "gtin": ["123"]}]
+        # unmapped products pass through unmapped (all keys dropped)
+        assert run_state.products == [{}]
         assert result.processed_count == 1
         assert result.failed_count == 0
+        assert result.statistics["mapping"]["dropped_unmapped_fields"] == 4
+
+    @pytest.mark.asyncio
+    async def test_stored_mappings_applied_without_automatch(self, registry):
+        existing = {
+            "version": 1,
+            "auto_mapped": False,
+            "mappings": {"ean": {"target": "gtin", "origin": "manual"}},
+            "custom_fields": [],
+        }
+        feed_source = _feed_source(field_mapping=existing)
+        run_state = RunState(
+            products=[{"id": "1", "ean": "123"}],
+            source_fields=[SourceField("id", "scalar"), SourceField("ean", "scalar")],
+        )
+
+        await MappingStep(registry).execute(_ctx(feed_source, run_state))
+
+        # mappings and auto_mapped untouched by the run
+        assert feed_source.field_mapping["auto_mapped"] is False
+        assert feed_source.field_mapping["mappings"] == {
+            "ean": {"target": "gtin", "origin": "manual"}
+        }
+        assert run_state.products == [{"gtin": ["123"]}]
 
     @pytest.mark.asyncio
     async def test_missing_feed_source_raises(self, registry):

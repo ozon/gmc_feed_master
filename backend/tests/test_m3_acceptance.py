@@ -17,6 +17,18 @@ ROW_ERROR_TSV = (
     b"2\tBlue Hat\tDE:7.99 EUR\tFR:4.00 EUR\n"
 )
 
+IDENTITY_MAPPINGS = {
+    "version": 1,
+    "auto_mapped": False,
+    "source_fields": [],
+    "mappings": {
+        "id": {"target": "id", "origin": "manual"},
+        "title": {"target": "title", "origin": "manual"},
+        "price": {"target": "price", "origin": "manual"},
+    },
+    "custom_fields": [],
+}
+
 
 class StubFetcher:
     def __init__(self, data: bytes):
@@ -47,7 +59,7 @@ async def session_factory(isolated_database_url):
     await engine.dispose()
 
 
-async def _seed_feed_source(session_factory, configuration):
+async def _seed_feed_source(session_factory, configuration, field_mapping=None):
     async with session_factory() as session:
         async with session.begin():
             client = Client(name="Acme")
@@ -59,6 +71,7 @@ async def _seed_feed_source(session_factory, configuration):
                 source_format="tsv",
                 source_url="http://test.local/feed.tsv",
                 configuration=configuration,
+                field_mapping=field_mapping or IDENTITY_MAPPINGS,
             )
             session.add(feed_source)
             await session.flush()
@@ -97,7 +110,14 @@ async def test_happy_path_tsv_ingest_end_to_end(session_factory, tmp_path):
 
 
 async def test_row_errors_skipped_but_run_succeeds(session_factory, tmp_path):
-    fs_id = await _seed_feed_source(session_factory, {})
+    field_mapping = {
+        **IDENTITY_MAPPINGS,
+        "mappings": {
+            **IDENTITY_MAPPINGS["mappings"],
+            "shipping": {"target": "shipping", "origin": "manual"},
+        },
+    }
+    fs_id = await _seed_feed_source(session_factory, {}, field_mapping=field_mapping)
     fetcher = StubFetcher(ROW_ERROR_TSV)
     capture = CaptureProductsStep()
     steps = [*default_steps(fetcher, load_registry(), export_dir=tmp_path / "exports"), capture]

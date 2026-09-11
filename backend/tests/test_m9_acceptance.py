@@ -86,7 +86,25 @@ async def _create_feed_source(app_factory, cron_expression=None):
         payload["cron_expression"] = cron_expression
     resp = await client.post(f"/clients/{client_id}/feed-sources", json=payload)
     assert resp.status_code == 201
-    return resp.json()
+    feed = resp.json()
+    resp = await client.put(
+        f"/feed-sources/{feed['id']}/field-mapping",
+        json={"mappings": {
+            "id": {"target": "id"},
+            "title": {"target": "title"},
+            "description": {"target": "description"},
+            "link": {"target": "link"},
+            "image_link": {"target": "image_link"},
+            "availability": {"target": "availability"},
+            "price": {"target": "price"},
+            "condition": {"target": "condition"},
+            "brand": {"target": "brand"},
+            "gtin": {"target": "gtin"},
+            "shipping": {"target": "shipping"},
+        }},
+    )
+    assert resp.status_code == 200
+    return feed
 
 
 async def test_scheduled_entry_point_drives_full_pipeline(app_factory):

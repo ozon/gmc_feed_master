@@ -117,6 +117,21 @@ async def test_field_mapping_end_to_end(app_factory, tmp_path):
     _, factory = app_factory
     fs_id = await _seed_feed_source(factory)
 
+    # Pre-provision manual mappings via the API (button-only automap: the
+    # pipeline never auto-matches anymore).
+    client = await logged_in_client(app_factory)
+    resp = await client.put(
+        f"/feed-sources/{fs_id}/field-mapping",
+        json={
+            "mappings": {
+                "sku": {"target": "id"},
+                "title": {"target": "title"},
+                "ean": {"target": "gtin"},
+            }
+        },
+    )
+    assert resp.status_code == 200
+
     capture = CaptureProductsStep()
     runner = _build_runner(factory, capture, tmp_path)
     run_id = await runner.execute(fs_id)
@@ -132,7 +147,7 @@ async def test_field_mapping_end_to_end(app_factory, tmp_path):
         assert "margin" not in product
 
     doc = await _get_field_mapping(factory, fs_id)
-    assert doc["auto_mapped"] is True
+    assert doc["auto_mapped"] is False
     assert [field["name"] for field in doc["source_fields"]] == [
         "sku",
         "title",
@@ -140,24 +155,6 @@ async def test_field_mapping_end_to_end(app_factory, tmp_path):
         "margin",
     ]
     assert doc["mappings"] == {
-        "sku": {"target": "id", "origin": "synonym"},
-        "title": {"target": "title", "origin": "auto"},
-        "ean": {"target": "gtin", "origin": "synonym"},
-    }
-
-    client = await logged_in_client(app_factory)
-    resp = await client.put(
-        f"/feed-sources/{fs_id}/field-mapping",
-        json={
-            "mappings": {
-                "sku": {"target": "id"},
-                "title": {"target": "title"},
-                "ean": {"target": "gtin"},
-            }
-        },
-    )
-    assert resp.status_code == 200
-    assert resp.json()["mappings"] == {
         "sku": {"target": "id", "origin": "manual"},
         "title": {"target": "title", "origin": "manual"},
         "ean": {"target": "gtin", "origin": "manual"},
@@ -172,7 +169,7 @@ async def test_field_mapping_end_to_end(app_factory, tmp_path):
     assert rerun_capture.captured == []
 
     doc = await _get_field_mapping(factory, fs_id)
-    assert doc["auto_mapped"] is True
+    assert doc["auto_mapped"] is False
     assert [field["name"] for field in doc["source_fields"]] == [
         "sku",
         "title",

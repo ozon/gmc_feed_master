@@ -101,7 +101,17 @@ async def _create_feed_source(client):
         },
     )
     assert resp.status_code == 201
-    return resp.json()["id"]
+    feed_id = resp.json()["id"]
+    resp = await client.put(
+        f"/feed-sources/{feed_id}/field-mapping",
+        json={"mappings": {
+            "sku": {"target": "id"},
+            "title": {"target": "title"},
+            "ean": {"target": "gtin"},
+        }},
+    )
+    assert resp.status_code == 200
+    return feed_id
 
 
 async def _trigger_run(factory, client, feed_source_id):

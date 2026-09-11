@@ -101,6 +101,22 @@ async def _seed_client_and_feed(factory):
             return client.id, feed_source.id
 
 
+async def _seed_mappings(factory, feed_source_id):
+    async with factory() as session, session.begin():
+        fs = await session.get(FeedSource, feed_source_id)
+        fs.field_mapping = {
+            "version": 1,
+            "auto_mapped": False,
+            "source_fields": [],
+            "mappings": {
+                "sku": {"target": "id", "origin": "manual"},
+                "title": {"target": "title", "origin": "manual"},
+                "ean": {"target": "gtin", "origin": "manual"},
+            },
+            "custom_fields": [],
+        }
+
+
 # ── Scenario 1 ──────────────────────────────────────────────────────────────
 
 
@@ -198,6 +214,8 @@ async def test_end_to_end_execution_through_runner(app_factory, tmp_path):
     )
     assert resp.status_code == 201
     feed_source_id = resp.json()["id"]
+
+    await _seed_mappings(factory, feed_source_id)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_plugins = Path(tmpdir) / "plugins"
@@ -299,6 +317,8 @@ async def test_error_isolation_preserves_last_known_good(app_factory, tmp_path):
     )
     assert resp.status_code == 201
     feed_source_id = resp.json()["id"]
+
+    await _seed_mappings(factory, feed_source_id)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_plugins = Path(tmpdir) / "plugins"
@@ -410,6 +430,8 @@ async def test_drop_then_pass_reactivation(app_factory, tmp_path):
     )
     assert resp.status_code == 201
     feed_source_id = resp.json()["id"]
+
+    await _seed_mappings(factory, feed_source_id)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_plugins = Path(tmpdir) / "plugins"

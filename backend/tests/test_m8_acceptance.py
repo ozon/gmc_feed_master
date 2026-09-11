@@ -90,7 +90,25 @@ async def _create_feed_source(app_factory):
         },
     )
     assert resp.status_code == 201
-    return client, resp.json()
+    feed = resp.json()
+    resp = await client.put(
+        f"/feed-sources/{feed['id']}/field-mapping",
+        json={"mappings": {
+            "id": {"target": "id"},
+            "title": {"target": "title"},
+            "description": {"target": "description"},
+            "link": {"target": "link"},
+            "image_link": {"target": "image_link"},
+            "availability": {"target": "availability"},
+            "price": {"target": "price"},
+            "condition": {"target": "condition"},
+            "brand": {"target": "brand"},
+            "gtin": {"target": "gtin"},
+            "shipping": {"target": "shipping"},
+        }},
+    )
+    assert resp.status_code == 200
+    return client, feed
 
 
 async def _trigger_run(app_factory, feed_source_id):

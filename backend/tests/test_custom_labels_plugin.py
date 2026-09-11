@@ -370,6 +370,18 @@ class TestContentHashImmutable:
             )
             session.add(feed_source)
             await session.flush()
+            feed_source.field_mapping = {
+                "version": 1,
+                "auto_mapped": False,
+                "source_fields": [],
+                "mappings": {
+                    "sku": {"target": "id", "origin": "manual"},
+                    "title": {"target": "title", "origin": "manual"},
+                    "ean": {"target": "gtin", "origin": "manual"},
+                },
+                "custom_fields": [],
+            }
+            await session.flush()
             feed_source_id = feed_source.id
 
         import tempfile

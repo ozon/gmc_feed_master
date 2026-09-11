@@ -82,6 +82,22 @@ async def _make_feed(client, source_url="http://source.example/feed.tsv"):
     feed = (await client.post(f"/clients/{client_id}/feed-sources",
                               json={"name": "DE", "source_format": "wide_tsv",
                                     "source_url": source_url, "currency": "USD"})).json()
+    resp = await client.put(
+        f"/feed-sources/{feed['id']}/field-mapping",
+        json={"mappings": {
+            "id": {"target": "id"},
+            "title": {"target": "title"},
+            "description": {"target": "description"},
+            "link": {"target": "link"},
+            "image_link": {"target": "image_link"},
+            "availability": {"target": "availability"},
+            "price": {"target": "price"},
+            "condition": {"target": "condition"},
+            "brand": {"target": "brand"},
+            "gtin": {"target": "gtin"},
+        }},
+    )
+    assert resp.status_code == 200
     return feed["id"]
 
 
@@ -104,6 +120,16 @@ async def test_dry_run_full_pass_no_side_effects(app_factory):
         assert (await session.execute(select(func.count()).select_from(StagingProduct))).scalar_one() == 0
         assert (await session.execute(select(func.count()).select_from(ExportRun))).scalar_one() == 0
         assert (await session.execute(select(func.count()).select_from(QualityFinding))).scalar_one() == 0
+
+    # button-only automap: dry-run must not auto-match or persist mappings
+    async with factory() as session:
+        fs = await session.get(FeedSource, feed_id)
+        doc = fs.field_mapping
+        assert doc["auto_mapped"] is False
+        assert set(doc["mappings"]) == {
+            "id", "title", "description", "link", "image_link",
+            "availability", "price", "condition", "brand", "gtin",
+        }
 
 
 async def test_dry_run_limit_caps_rows(app_factory):

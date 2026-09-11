@@ -16,7 +16,7 @@ from ..clock import Clock, SystemClock
 from ..export.store import ExportFileStore
 from ..ingest import HttpFetcher, read_feed
 from ..ingest.report import SourceField
-from ..mapping import MappingDocument, apply_mapping, auto_match
+from ..mapping import MappingDocument, apply_mapping
 from ..models.feed_source import FeedSource
 from ..qc.engine import CrossProductRule, ImageProbe, PerProductRule
 from ..staging.config_resolver import resolve_config_bundle
@@ -124,13 +124,6 @@ class MappingStep:
                 if feed_source is None:
                     raise LookupError(f"feed source {ctx.feed_source_id} not found")
                 doc = MappingDocument.from_json(feed_source.field_mapping)
-                if not doc.auto_mapped:
-                    doc.mappings = auto_match(
-                        ctx.run_state.source_fields,
-                        self._registry,
-                        existing=doc.mappings,
-                    )
-                    doc.auto_mapped = True
                 doc.source_fields = list(ctx.run_state.source_fields)
                 feed_source.field_mapping = doc.to_json()
 
