@@ -110,6 +110,13 @@ async def test_dry_run_full_pass_no_side_effects(app_factory):
     app, factory, _ = app_factory
     client = await logged_in_client(app_factory)
     feed_id = await _make_feed(client)
+    # seed a genuine custom field directly in the DB (beyond the
+    # pre-provisioned ones _make_feed declares for the never-ingested feed)
+    async with factory() as session, session.begin():
+        fs = await session.get(FeedSource, feed_id)
+        doc = dict(fs.field_mapping)
+        doc["custom_fields"] = [*doc["custom_fields"], "bonus_field"]
+        fs.field_mapping = doc
     resp = await client.post(f"/feed-sources/{feed_id}/dry-run", json={})
     assert resp.status_code == 200
     body = resp.json()
@@ -127,6 +134,7 @@ async def test_dry_run_full_pass_no_side_effects(app_factory):
         assert (await session.execute(select(func.count()).select_from(QualityFinding))).scalar_one() == 0
 
     # button-only automap: dry-run must not auto-match or persist mappings
+    # and must preserve user-defined custom_fields
     async with factory() as session:
         fs = await session.get(FeedSource, feed_id)
         doc = fs.field_mapping
@@ -135,6 +143,11 @@ async def test_dry_run_full_pass_no_side_effects(app_factory):
             "id", "title", "description", "link", "image_link",
             "availability", "price", "condition", "brand", "gtin",
         }
+        assert doc["custom_fields"] == [
+            "id", "title", "description", "link", "image_link",
+            "availability", "price", "condition", "brand", "gtin",
+            "bonus_field",
+        ]
 
 
 async def test_dry_run_limit_caps_rows(app_factory):
