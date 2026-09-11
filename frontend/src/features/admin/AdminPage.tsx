@@ -1,11 +1,12 @@
 import { Stack, Tabs, Title } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
+import { AiAdminPage } from './ai/AiAdminPage';
 import { AdminClientsPage } from './AdminClientsPage';
 import { AdminSettingsPage } from './AdminSettingsPage';
 import { AdminUsersPage } from './AdminUsersPage';
 
-const TAB_VALUES = ['users', 'clients', 'settings'] as const;
+const TAB_VALUES = ['users', 'clients', 'settings', 'ai'] as const;
 type AdminTab = (typeof TAB_VALUES)[number];
 
 function tabFromPathname(pathname: string): AdminTab {
@@ -36,6 +37,7 @@ export function AdminPage() {
           <Tabs.Tab value="users">{t('tabs.users')}</Tabs.Tab>
           <Tabs.Tab value="clients">{t('tabs.clients')}</Tabs.Tab>
           <Tabs.Tab value="settings">{t('tabs.settings')}</Tabs.Tab>
+          <Tabs.Tab value="ai">{t('tabs.ai')}</Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="users" pt="md">
           <AdminUsersPage />
@@ -45,6 +47,9 @@ export function AdminPage() {
         </Tabs.Panel>
         <Tabs.Panel value="settings" pt="md">
           <AdminSettingsPage />
+        </Tabs.Panel>
+        <Tabs.Panel value="ai" pt="md">
+          <AiAdminPage />
         </Tabs.Panel>
       </Tabs>
     </Stack>

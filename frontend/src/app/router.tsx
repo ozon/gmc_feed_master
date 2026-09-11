@@ -170,6 +170,7 @@ const routes = [
               { path: 'admin/users', element: <AdminPage /> },
               { path: 'admin/clients', element: <AdminPage /> },
               { path: 'admin/settings', element: <AdminPage /> },
+              { path: 'admin/ai', element: <AdminPage /> },
             ],
           },
         ],

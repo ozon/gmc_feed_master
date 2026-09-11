@@ -2,7 +2,8 @@
   "tabs": {
     "users": "Users",
     "clients": "Clients",
-    "settings": "Settings"
+    "settings": "Settings",
+    "ai": "AI"
   },
   "users": {
     "title": "User Management",
@@ -47,5 +48,44 @@
     "plugins": "Plugins",
     "pluginName": "Plugin",
     "pluginEnabled": "Enabled"
+  },
+  "ai": {
+    "section": {
+      "providers": "Providers",
+      "usage": "Usage"
+    },
+    "providersTitle": "AI Providers",
+    "empty": "No AI providers configured",
+    "add": "Add Provider",
+    "edit": "Edit Provider",
+    "save": "Save",
+    "saved": "Provider saved",
+    "saveFailed": "Saving the provider failed",
+    "delete": "Delete",
+    "deleted": "Provider deleted",
+    "deleteFailed": "Deleting the provider failed",
+    "test": "Test connection",
+    "testOk": "Connection OK ({{latency}} ms)",
+    "testFailed": "Connection failed: {{code}}",
+    "apiKey": "API Key",
+    "apiKeyUnchanged": "unchanged — leave empty to keep",
+    "default": "Default",
+    "columns": {
+      "name": "Name",
+      "model": "Model",
+      "enabled": "Enabled",
+      "default": "Default"
+    },
+    "usage": {
+      "title": "AI Usage",
+      "empty": "No AI usage recorded yet",
+      "groupBy": "Group by",
+      "groupKey": "Group",
+      "calls": "Calls",
+      "cacheHits": "Cache hits",
+      "promptTokens": "Prompt tokens",
+      "completionTokens": "Completion tokens",
+      "cost": "Cost (USD)"
+    }
   }
 }

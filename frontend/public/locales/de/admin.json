@@ -2,7 +2,8 @@
   "tabs": {
     "users": "Benutzer",
     "clients": "Mandanten",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "ai": "KI"
   },
   "users": {
     "title": "Benutzerverwaltung",
@@ -47,5 +48,44 @@
     "plugins": "Plugins",
     "pluginName": "Plugin",
     "pluginEnabled": "Aktiviert"
+  },
+  "ai": {
+    "section": {
+      "providers": "Provider",
+      "usage": "Nutzung"
+    },
+    "providersTitle": "KI-Provider",
+    "empty": "Keine KI-Provider konfiguriert",
+    "add": "Provider hinzufügen",
+    "edit": "Provider bearbeiten",
+    "save": "Speichern",
+    "saved": "Provider gespeichert",
+    "saveFailed": "Speichern des Providers fehlgeschlagen",
+    "delete": "Löschen",
+    "deleted": "Provider gelöscht",
+    "deleteFailed": "Löschen des Providers fehlgeschlagen",
+    "test": "Verbindung testen",
+    "testOk": "Verbindung OK ({{latency}} ms)",
+    "testFailed": "Verbindung fehlgeschlagen: {{code}}",
+    "apiKey": "API-Schlüssel",
+    "apiKeyUnchanged": "unverändert — leer lassen zum Behalten",
+    "default": "Standard",
+    "columns": {
+      "name": "Name",
+      "model": "Modell",
+      "enabled": "Aktiv",
+      "default": "Standard"
+    },
+    "usage": {
+      "title": "KI-Nutzung",
+      "empty": "Noch keine KI-Nutzung aufgezeichnet",
+      "groupBy": "Gruppieren nach",
+      "groupKey": "Gruppe",
+      "calls": "Aufrufe",
+      "cacheHits": "Cache-Treffer",
+      "promptTokens": "Prompt-Tokens",
+      "completionTokens": "Completion-Tokens",
+      "cost": "Kosten (USD)"
+    }
   }
 }
