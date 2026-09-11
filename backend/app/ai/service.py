@@ -19,7 +19,8 @@ from .resilience import (
     RetryPolicy,
     classify_failure,
 )
-from .tasks import TaskSpecError, input_hash, render_task, validate_task
+from .tasks import input_hash, render_task, validate_task
+from .templates import TaskSpecError
 from .usage import UsageLogWriter, UsageRecord, estimate_cost
 
 logger = logging.getLogger(__name__)
