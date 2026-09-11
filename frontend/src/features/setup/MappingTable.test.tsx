@@ -25,6 +25,7 @@ const registryAttributes: RegistryAttribute[] = [
     { name: 'months', type: 'string', required: 'optional' },
     { name: 'amount', type: 'string', required: 'optional' },
   ], enum_values: [], max_repeats: 1 },
+  { name: 'brand', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
 ];
 
 function mappingsFixture() {
@@ -50,6 +51,9 @@ function defaultProps(overrides?: Partial<React.ComponentProps<typeof MappingTab
     registryAttributes,
     onChange: vi.fn(),
     errors: {},
+    customFields: [],
+    onAddCustom: vi.fn(),
+    onRemoveCustom: vi.fn(),
     ...overrides,
   };
 }
@@ -173,7 +177,7 @@ describe('MappingTable', () => {
     const monthsRow = (await screen.findByText('months', { selector: 'td p' })).closest('tr')!;
     expect(monthsRow).not.toBeNull();
     expect(screen.getByText('amount', { selector: 'td p' })).toBeInTheDocument();
-    expect(monthsRow.querySelectorAll('td').length).toBe(2);
+    expect(monthsRow.querySelectorAll('td').length).toBe(3);
   });
 
   it('sub-row select calls onChange with dotted key', async () => {
@@ -269,5 +273,169 @@ describe('MappingTable', () => {
     await waitFor(() => {
       expect(screen.getByText('#2 · section_name')).toBeInTheDocument();
     });
+  });
+
+  it('renders custom field rows with remove controls', async () => {
+    const onRemoveCustom = vi.fn();
+    render(
+      <MappingTable
+        {...defaultProps({
+          customFields: ['my_custom_field'],
+          onAddCustom: vi.fn(),
+          onRemoveCustom,
+        })}
+      />,
+    );
+    expect(await screen.findByText('my_custom_field')).toBeInTheDocument();
+    const removeBtn = screen.getByRole('button', {
+      name: /remove custom field/i,
+    });
+    expect(removeBtn).toBeInTheDocument();
+  });
+
+  it('remove control calls onRemoveCustom with the name', async () => {
+    const user = userEvent.setup();
+    const onRemoveCustom = vi.fn();
+    render(
+      <MappingTable
+        {...defaultProps({
+          customFields: ['my_custom_field'],
+          onAddCustom: vi.fn(),
+          onRemoveCustom,
+        })}
+      />,
+    );
+    const removeBtn = await screen.findByRole('button', {
+      name: /remove custom field/i,
+    });
+    await user.click(removeBtn);
+    expect(onRemoveCustom).toHaveBeenCalledWith('my_custom_field');
+  });
+
+  it('add row: Add disabled until valid name and target chosen', async () => {
+    render(
+      <MappingTable
+        {...defaultProps({ customFields: [], onAddCustom: vi.fn(), onRemoveCustom: vi.fn() })}
+      />,
+    );
+    const addBtn = await screen.findByRole('button', { name: /add custom field/i });
+    expect(addBtn).toBeDisabled();
+  });
+
+  it('add row: invalid name shows inline error and keeps Add disabled', async () => {
+    const user = userEvent.setup();
+    render(
+      <MappingTable
+        {...defaultProps({ customFields: [], onAddCustom: vi.fn(), onRemoveCustom: vi.fn() })}
+      />,
+    );
+    const nameInput = await screen.findByRole('textbox', { name: /field name/i });
+    await user.type(nameInput, 'Bad.Name');
+    expect(
+      await screen.findByText(/names must be lowercase/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add custom field/i })).toBeDisabled();
+  });
+
+  it('add row: valid name + target enables Add and calls onAddCustom', async () => {
+    const user = userEvent.setup();
+    const onAddCustom = vi.fn();
+    render(
+      <MappingTable
+        {...defaultProps({ customFields: [], onAddCustom, onRemoveCustom: vi.fn() })}
+      />,
+    );
+    const nameInput = await screen.findByRole('textbox', { name: /field name/i });
+    await user.type(nameInput, 'my_custom_field');
+
+    const addRow = nameInput.closest('tr')!;
+    const select = addRow.querySelector('[role="combobox"]') as HTMLElement;
+    await user.click(select);
+    const option = await screen.findByRole('option', { name: /^brand$/ });
+    await user.click(option);
+
+    const addBtn = screen.getByRole('button', { name: /add custom field/i });
+    await waitFor(() => expect(addBtn).toBeEnabled());
+    await user.click(addBtn);
+    expect(onAddCustom).toHaveBeenCalledWith('my_custom_field', 'brand');
+  });
+
+  it('add row: duplicate name (custom or observed) shows inline error', async () => {
+    const user = userEvent.setup();
+    render(
+      <MappingTable
+        {...defaultProps({ customFields: ['taken'], onAddCustom: vi.fn(), onRemoveCustom: vi.fn() })}
+      />,
+    );
+    const nameInput = await screen.findByRole('textbox', { name: /field name/i });
+    await user.type(nameInput, 'taken');
+    expect(await screen.findByText(/field already exists/i)).toBeInTheDocument();
+    // observed name too
+    await user.clear(nameInput);
+    await user.type(nameInput, 'title');
+    expect(await screen.findByText(/field already exists/i)).toBeInTheDocument();
+  });
+
+  it('custom row target select calls onChange with the custom name', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <MappingTable
+        {...defaultProps({
+          customFields: ['my_custom_field'],
+          mappings: {
+            ...mappingsFixture(),
+            my_custom_field: { target: 'title', origin: 'manual' },
+          },
+          onChange,
+          onAddCustom: vi.fn(),
+          onRemoveCustom: vi.fn(),
+        })}
+      />,
+    );
+    const row = (await screen.findByText('my_custom_field')).closest('tr')!;
+    const select = row.querySelector('[role="combobox"]') as HTMLElement;
+    await user.click(select);
+    const option = await screen.findByRole('option', { name: /^description$/ });
+    await user.click(option);
+    expect(onChange).toHaveBeenCalledWith('my_custom_field', 'description');
+  });
+
+  it('observed/custom shadow: exactly one row with indicator, remove still reachable', async () => {
+    const user = userEvent.setup();
+    const onRemoveCustom = vi.fn();
+    render(
+      <MappingTable
+        {...defaultProps({
+          customFields: ['title'],
+          onAddCustom: vi.fn(),
+          onRemoveCustom,
+        })}
+      />,
+    );
+    await waitFor(() => {
+      expect(screen.getAllByText('title')).toHaveLength(1);
+    });
+    expect(
+      screen.getByText(/also declared as custom field/i),
+    ).toBeInTheDocument();
+    const removeBtn = screen.getByRole('button', { name: /remove custom field/i });
+    await user.click(removeBtn);
+    expect(onRemoveCustom).toHaveBeenCalledWith('title');
+  });
+
+  it('renders the custom section even with zero observed fields', async () => {
+    render(
+      <MappingTable
+        {...defaultProps({
+          sourceFields: [],
+          customFields: ['solo_custom'],
+          onAddCustom: vi.fn(),
+          onRemoveCustom: vi.fn(),
+        })}
+      />,
+    );
+    expect(await screen.findByText('solo_custom')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add custom field/i })).toBeInTheDocument();
   });
 });

@@ -214,6 +214,9 @@ export function MappingTab() {
           registryAttributes={Array.isArray(registryQuery.data) ? registryQuery.data : []}
           onChange={handleTargetChange}
           errors={rowErrors}
+          customFields={[]}
+          onAddCustom={() => {}}
+          onRemoveCustom={() => {}}
         />
       )}
     </Stack>
