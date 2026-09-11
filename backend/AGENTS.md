@@ -12,7 +12,7 @@ DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed \
   uv run alembic upgrade head
 uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1
 uv run pytest                             # -n auto is the addopts default; needs TEST_DATABASE_URL
-uv run ruff check .                       # gate: exact count vs docs/ruff-baseline.txt (506), zero new errors
+uv run ruff check .                       # gate: exact count vs backend/ruff-baseline.txt (508), zero new errors
 uv run mypy .                             # gate: exit-0, hard (flipped 2026-09-10, no baseline file anymore)
 ```
 
@@ -90,13 +90,13 @@ uv run mypy .                             # gate: exit-0, hard (flipped 2026-09-
 - Mock external ingest sources in unit tests; only integration tests marked as such hit the real Postgres container.
 
 ## Python best practices (enforced via Ruff, not prose)
-Rather than restating generic rules Ruff already checks, point at the rule groups so the 506-baseline gate is the actual enforcement mechanism:
+Rather than restating generic rules Ruff already checks, point at the rule groups so the 508-baseline gate is the actual enforcement mechanism:
 - `E711`/`E712` — `is`/`is not` for `None`/`True`/`False` comparisons
 - `C4` — comprehension simplifications over manual loops
 - `SIM113` — `enumerate()` over manual counters
 - `B006`/`B008` — no mutable default arguments
 - `I` — import sorting (replaces `isort`; do not add `isort` separately)
-- New code must not add to the 506-error Ruff baseline; fixing pre-existing baseline errors is a separate, explicitly-scoped cleanup task (same model as the mypy cleanup completed 2026-09-10) — don't casually "clean up while you're in there," it inflates diffs and breaks blame history.
+- New code must not add to the 508-error Ruff baseline; fixing pre-existing baseline errors is a separate, explicitly-scoped cleanup task (same model as the mypy cleanup completed 2026-09-10) — don't casually "clean up while you're in there," it inflates diffs and breaks blame history.
 
 ## Performance
 - Profile before optimizing pipeline hot paths (`cProfile`/`py-spy`); reference the measurement in the PR/commit, matching the existing wall-time-tracking style in `docs/decisions.md`.
@@ -105,7 +105,7 @@ Rather than restating generic rules Ruff already checks, point at the rule group
 
 ## CI gate (required, in order)
 ```bash
-uv run ruff check .     # exact match against docs/ruff-baseline.txt count (506) — fails on drift in either direction
+uv run ruff check .     # exact match against backend/ruff-baseline.txt count (508) — fails on drift in either direction
 uv run mypy .            # exit-0, hard gate, no baseline file
 uv run pytest --report-log=.report.jsonl   # jq-based failure gate, see Testing above
 ```

@@ -186,7 +186,7 @@ export function useSavePipeline(feedSourceId) {
 
 ### Setup (`src/features/setup/`)
 - `SetupPage` — tabs: Feed Settings, Field Mapping, Export URL
-- `MappingTab` — `MappingTable` (TanStack Table) + auto-map button
+- `MappingTab` — `MappingTable` (TanStack Table; observed rows + custom rows with add/remove, shadow indicator for observed/custom overlap) + auto-map button (the only automap trigger — pipeline runs and dry-runs never auto-match; custom source fields are dormant until the feed supplies the key)
 
 ## Development Setup
 ```bash
