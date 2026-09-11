@@ -1606,12 +1606,6 @@ async def preview_prompt_template(
         raise HTTPException(
             status_code=422, detail="provide either template_id or an inline draft, not both"
         )
-    if payload.template_id is None and (
-        payload.system_prompt is None or payload.user_prompt is None
-    ):
-        raise HTTPException(
-            status_code=422, detail="inline draft requires system_prompt and user_prompt"
-        )
     if payload.task_type not in CANONICAL_VARIABLES:
         raise HTTPException(status_code=422, detail=f"unknown task type {payload.task_type!r}")
 
@@ -1628,6 +1622,12 @@ async def preview_prompt_template(
         user_prompt = row.user_prompt
         declared = row.variables
     else:
+        # None-check inside the branch lets mypy narrow str | None -> str
+        if payload.system_prompt is None or payload.user_prompt is None:
+            raise HTTPException(
+                status_code=422,
+                detail="inline draft requires system_prompt and user_prompt",
+            )
         system_prompt = payload.system_prompt
         user_prompt = payload.user_prompt
         declared = payload.variables or []
