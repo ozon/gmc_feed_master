@@ -132,11 +132,14 @@ describe('INDEXED_PATH_REGEX (directive 4)', () => {
     'title', 'shipping.price', 'additional_image_link.1',
     'additional_image_link.12', 'product_detail.2.attribute_value',
     'a_1.b_2', 'product_detail.7.section_name',
+    'additional_image_link.10000', 'product_detail.10000.section_name',
   ];
   const invalid = [
     'product_detail.0.attribute_name', 'product_detail.0',
     '.title', 'title.', '', 'a..b',
     'Product_Detail', 'product_detail.-1.section_name', 'a.b.c.d',
+    'additional_image_link.10001', 'product_detail.10001.section_name',
+    'additional_image_link.999999999',
   ];
   it.each(valid.map((v) => [v]))('accepts %s', (path) => {
     expect(INDEXED_PATH_REGEX.test(path)).toBe(true);

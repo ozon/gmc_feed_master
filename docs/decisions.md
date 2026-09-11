@@ -1192,3 +1192,14 @@ Closes the assignments-race deferral above. Operator decisions (brainstorming 20
   and no repetition addressing; the QC finding-path grammar, the
   mapping-document source of truth, and per-request repeat derivation close
   the gaps without schema changes or a document version bump.
+
+## 2026-09-11
+
+### Unified field list cycle — review fixes (branch `unified-field-list`, 6315235..25cefb5)
+
+Inline code review of the cycle found one critical and one important issue; both fixed before merging to main:
+
+- **Registry route RBAC scope enforcement (critical):** `registry_router` was the only feed-source-aware router registered without `enforce_scope_access` — `/registry/attributes?feed_source_id=N` existence-checked (404 unknown) but never client-scope-checked, so a client-scoped user (ADR 0009) could read another client's feed-source-derived `max_repeats`. Fixed by adding the dependency (same as every other feed-source router); scoped-user regression tests added (RED confirmed pre-fix: unassigned feed source returned 200).
+- **Indexed N cap (`MAX_INDEX = 10_000`):** `attr.100000000` passed validation and the apply-time auto-extend (`""` scalar / `{}` dict slot fill) would allocate a huge list per product. The cap is enforced in `parse_indexed_path` (central authority; field-mapping PUT → 422 "invalid target path"), in the rules plugin's plugin-local `_parse_indexed` (isolation convention — local copy, comment cross-references the app constant), and mirrored client-side in `INDEXED_PATH_REGEX` (frontend). Rules `validate_config` now parses action fields up front, so malformed/oversized paths fail config validation with a path-qualified error instead of at apply time. Read paths (filter, custom_labels) stay lenient: out-of-range reads yield empty/absent — no allocation, documented semantics.
+- **`require_feed_source` dedup:** three identical `_require_feed_source` helpers (registry/products/export_history) consolidated into `app/access.require_feed_source` (existence-only check; scope enforcement remains the router dependency's job).
+- **Rationale:** routers with feed-source params must opt into scoping symmetrically; the indexed grammar needed a write-path bound the moment apply learned auto-extend. Pre-existing `alembic check` drift in local DBs (unique-index vs constraint reflection on `export_token`, stale `ix_staging_products_removed_purge`) is environment noise, confirmed present before the cycle — flagged for a separately-scoped cleanup.

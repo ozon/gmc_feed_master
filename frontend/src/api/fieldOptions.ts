@@ -13,10 +13,11 @@ export type FieldOption = { value: string; label: string };
 
 export type GroupedFieldOptions = { group: string; items: FieldOption[] }[];
 
-/** Canonical indexed-path grammar (1-based indices) — mirrors the backend
- * parse_indexed_path; validates free-text input (operator directive 4). */
+/** Canonical indexed-path grammar (1-based indices, N <= 10 000 — mirrors
+ * the backend parse_indexed_path incl. MAX_INDEX; validates free-text
+ * input, operator directive 4). */
 export const INDEXED_PATH_REGEX =
-  /^[a-z_][a-z0-9_]*(\.([1-9]\d*))?(\.[a-z_][a-z0-9_]*)?$/;
+  /^[a-z_][a-z0-9_]*(\.([1-9]|[1-9]\d{1,3}|10000))?(\.[a-z_][a-z0-9_]*)?$/;
 
 export const FIELD_GROUP_LABEL = 'Field';
 
