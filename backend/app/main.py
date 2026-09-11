@@ -35,6 +35,7 @@ from .db.engine import create_engine, create_session_factory, get_db_session
 from .persistence.users import change_password, seed_initial_user
 from .routes import (
     admin_router,
+    ai_admin_router,
     clients_router,
     export_history_router,
     export_public_router,
@@ -201,6 +202,7 @@ def create_app(
     app.include_router(quality_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(registry_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(admin_router)
+    app.include_router(ai_admin_router)
     app.state.settings = settings
     app.state.session_store = session_store
     app.state.session_store_injected = session_store is not None
@@ -256,6 +258,11 @@ def create_app(
         app.state.lock_registry = lock_registry
         app.state.pipeline_runner = runner
         app.state.scheduler_service = scheduler_service
+        from .ai import AiService
+
+        app.state.ai_service = AiService(
+            app.state.db_session_factory, clock=app.state.clock
+        )
 
     @app.get("/health")
     def health(_settings: Settings = Depends(get_settings)) -> dict[str, str]:
