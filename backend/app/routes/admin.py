@@ -122,6 +122,8 @@ async def get_settings_row(
                 staging_removal_retention_days=90,
                 staging_history_retention_days=90,
                 ingestion_run_retention_days=90,
+                ai_usage_retention_days=90,
+                ai_cache_retention_days=90,
             )
             session.add(row)
     return row
@@ -142,11 +144,15 @@ async def put_settings_row(
                 staging_removal_retention_days=90,
                 staging_history_retention_days=90,
                 ingestion_run_retention_days=90,
+                ai_usage_retention_days=90,
+                ai_cache_retention_days=90,
             )
             session.add(row)
         row.staging_removal_retention_days = payload.staging_removal_retention_days
         row.staging_history_retention_days = payload.staging_history_retention_days
         row.ingestion_run_retention_days = payload.ingestion_run_retention_days
+        row.ai_usage_retention_days = payload.ai_usage_retention_days
+        row.ai_cache_retention_days = payload.ai_cache_retention_days
     return row
 
 

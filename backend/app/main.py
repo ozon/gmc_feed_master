@@ -157,6 +157,23 @@ def create_app(
                     INGESTION_PURGE_JOB_ID, PURGE_CRON, run_ingestion_run_purge
                 )
 
+                from .ai.purge import AI_PURGE_JOB_ID, purge_expired_ai
+
+                async def run_ai_purge() -> None:
+                    counts = await purge_expired_ai(
+                        application.state.db_session_factory,
+                        datetime.now(timezone.utc),
+                    )
+                    logging.getLogger(__name__).info(
+                        "ai purge: %s usage rows, %s cache rows",
+                        counts.usage_rows,
+                        counts.cache_rows,
+                    )
+
+                scheduler_service.register_system_job(
+                    AI_PURGE_JOB_ID, PURGE_CRON, run_ai_purge
+                )
+
                 from .pipeline.reconcile import reconcile_interrupted_runs
 
                 reconciled = await reconcile_interrupted_runs(

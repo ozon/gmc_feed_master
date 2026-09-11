@@ -60,6 +60,8 @@ async def test_get_settings_seeds_defaults(settings_app, admin_http):
         "staging_removal_retention_days": 90,
         "staging_history_retention_days": 90,
         "ingestion_run_retention_days": 90,
+        "ai_usage_retention_days": 90,
+        "ai_cache_retention_days": 90,
     }
 
 
@@ -69,11 +71,15 @@ async def test_put_settings_persists(settings_app, admin_http):
         "staging_removal_retention_days": 30,
         "staging_history_retention_days": 45,
         "ingestion_run_retention_days": 60,
+        "ai_usage_retention_days": 15,
+        "ai_cache_retention_days": 20,
     })
     assert response.status_code == 200
     assert response.json()["staging_removal_retention_days"] == 30
     follow_up = await admin_http.get("/admin/settings")
     assert follow_up.json()["staging_history_retention_days"] == 45
+    assert follow_up.json()["ai_usage_retention_days"] == 15
+    assert follow_up.json()["ai_cache_retention_days"] == 20
 
 
 @pytest.mark.asyncio
@@ -82,6 +88,8 @@ async def test_put_settings_rejects_non_positive(settings_app, admin_http):
         "staging_removal_retention_days": 0,
         "staging_history_retention_days": 90,
         "ingestion_run_retention_days": 90,
+        "ai_usage_retention_days": 90,
+        "ai_cache_retention_days": 90,
     })
     assert response.status_code == 422
 
@@ -95,6 +103,7 @@ async def test_get_scheduler_lists_system_jobs(settings_app, admin_http):
     jobs = {job["id"] for job in response.json()}
     assert "system-staging-purge" in jobs
     assert "system-ingestion-run-purge" in jobs
+    assert "system-ai-purge" in jobs
 
 
 @pytest.mark.asyncio
