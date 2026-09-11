@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..staging.hashing import canonical_json
-from .templates import TaskSpecError, render_messages
+from .templates import TaskSpecError
 
 # The authoritative variable set per task type. Templates (DB or builtin)
 # may only reference these; anything else fails validation at write time.
@@ -88,15 +88,6 @@ TASK_SPECS: dict[str, TaskSpec] = {
         validate=_validate_json,
     ),
 }
-
-
-def render_task(task_type: str, variables: dict[str, Any]) -> list[dict[str, str]]:
-    """Render the builtin prompt pair for a task through the safe engine."""
-    try:
-        spec = TASK_SPECS[task_type]
-    except KeyError as exc:
-        raise TaskSpecError("unknown task type %r" % task_type) from exc  # noqa: UP031 — %-style avoids f-string brace-escaping
-    return render_messages(spec.system, spec.user, variables)
 
 
 def validate_task(task_type: str, content: str) -> Any:

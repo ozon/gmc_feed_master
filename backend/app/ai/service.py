@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..clock import Clock
-from ..models.ai import AiProviderConfig
+from ..models.ai import AiProviderConfig, PromptTemplate
 from .cache import AiResultCacheStore
 from .openai_compat import OpenAICompatibleProvider
 from .provider import AIProvider, AiRequest
@@ -19,8 +19,8 @@ from .resilience import (
     RetryPolicy,
     classify_failure,
 )
-from .tasks import input_hash, render_task, validate_task
-from .templates import TaskSpecError
+from .tasks import TASK_SPECS, input_hash, validate_task
+from .templates import TaskSpecError, render_messages
 from .usage import UsageLogWriter, UsageRecord, estimate_cost
 
 logger = logging.getLogger(__name__)
@@ -35,6 +35,54 @@ class AiResult:
     error_code: str | None
     prompt_tokens: int
     completion_tokens: int
+
+
+@dataclass(frozen=True)
+class ResolvedTemplate:
+    system: str
+    user: str
+    version: str
+
+
+async def resolve_active_template(
+    session_factory: Callable[[], AsyncSession],
+    task_type: str,
+    client_id: int | None,
+) -> ResolvedTemplate | None:
+    """Find the active DB template (client scope first, then global).
+
+    Any DB failure is logged and returns None so callers fall back to the
+    builtin registry — template resolution must never fail a run.
+    """
+    try:
+        async with session_factory() as session:
+            row = None
+            if client_id is not None:
+                row = (await session.execute(
+                    select(PromptTemplate).where(
+                        PromptTemplate.task_type == task_type,
+                        PromptTemplate.client_id == client_id,
+                        PromptTemplate.is_active.is_(True),
+                    ).limit(1)
+                )).scalar_one_or_none()
+            if row is None:
+                row = (await session.execute(
+                    select(PromptTemplate).where(
+                        PromptTemplate.task_type == task_type,
+                        PromptTemplate.client_id.is_(None),
+                        PromptTemplate.is_active.is_(True),
+                    ).limit(1)
+                )).scalar_one_or_none()
+    except Exception:
+        logger.exception("ai template resolution failed; using builtin")
+        return None
+    if row is None:
+        return None
+    return ResolvedTemplate(
+        system=row.system_prompt,
+        user=row.user_prompt,
+        version=f"tmpl:{row.id}:v{row.version}",
+    )
 
 
 def default_provider_factory(config: AiProviderConfig) -> OpenAICompatibleProvider:
@@ -87,6 +135,21 @@ class AiService:
     async def _get_config(self, provider_config_id: int) -> AiProviderConfig | None:
         async with self._session_factory() as session:
             return await session.get(AiProviderConfig, provider_config_id)
+
+    async def _resolve_template(
+        self, task_type: str, client_id: int | None
+    ) -> ResolvedTemplate:
+        if task_type not in TASK_SPECS:
+            raise TaskSpecError(f"unknown task type {task_type!r}")
+        resolved = await resolve_active_template(
+            self._session_factory, task_type, client_id
+        )
+        if resolved is not None:
+            return resolved
+        spec = TASK_SPECS[task_type]
+        return ResolvedTemplate(
+            system=spec.system, user=spec.user, version=TEMPLATE_VERSION_BUILTIN
+        )
 
     # -- per-config collaborators -----------------------------------------
 
@@ -147,11 +210,22 @@ class AiService:
             return AiResult(value=None, status="fallback", error_code="no_provider",
                             prompt_tokens=0, completion_tokens=0)
 
+        try:
+            template = await self._resolve_template(task_type, client_id)
+        except TaskSpecError:
+            await self._log_usage(UsageRecord(
+                client_id=client_id, feed_source_id=feed_source_id,
+                task_type=task_type, provider_config_id=None, model="",
+                cache_hit=False, prompt_tokens=0, completion_tokens=0,
+                cost_usd=None, latency_ms=0, error_code="invalid_task",
+            ))
+            return AiResult(value=None, status="fallback", error_code="invalid_task",
+                            prompt_tokens=0, completion_tokens=0)
+
         hash_value = input_hash(task_type, variables)
-        template_version = TEMPLATE_VERSION_BUILTIN
 
         cache_entry = await self._cache.lookup(
-            task_type, config.id, config.model, template_version, hash_value
+            task_type, config.id, config.model, template.version, hash_value
         )
         if cache_entry is not None:
             await self._log_usage(UsageRecord(
@@ -164,7 +238,7 @@ class AiService:
                             error_code=None, prompt_tokens=0, completion_tokens=0)
 
         return await self._call_provider(
-            config, task_type, variables, hash_value,
+            config, task_type, variables, hash_value, template,
             client_id=client_id, feed_source_id=feed_source_id,
         )
 
@@ -202,6 +276,7 @@ class AiService:
         task_type: str,
         variables: dict[str, Any],
         hash_value: str,
+        template: ResolvedTemplate,
         *,
         client_id: int | None,
         feed_source_id: int | None,
@@ -220,7 +295,7 @@ class AiService:
         provider = self._provider_for(config)
         semaphore = self._semaphore_for(config)
         try:
-            messages = render_task(task_type, variables)
+            messages = render_messages(template.system, template.user, variables)
         except TaskSpecError:
             logger.exception("ai task %s could not render; falling back", task_type)
             await self._log_usage(UsageRecord(
@@ -267,7 +342,7 @@ class AiService:
                                     completion_tokens=response.completion_tokens)
                 breaker.record_success()
                 await self._cache.store(
-                    task_type, config.id, config.model, TEMPLATE_VERSION_BUILTIN,
+                    task_type, config.id, config.model, template.version,
                     hash_value, {"value": value},
                 )
                 cost = estimate_cost(

@@ -8,8 +8,9 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.ai.provider import AiRequest, AiResponse
 from app.ai.resilience import RetryPolicy
-from app.ai.service import AiService, default_provider_factory
-from app.models.ai import AiProviderConfig, AiUsageLog
+from app.ai.service import AiService, default_provider_factory, resolve_active_template
+from app.models.ai import AiProviderConfig, AiResultCache, AiUsageLog, PromptTemplate
+from app.models.client import Client
 
 
 class FakeProvider:
@@ -50,6 +51,30 @@ async def _seed_default_config(session_factory) -> int:
         session.add(config)
         await session.flush()
         return config.id
+
+
+async def _seed_client_row(session_factory, name: str) -> int:
+    async with session_factory() as session, session.begin():
+        client = Client(name=name)
+        session.add(client)
+        await session.flush()
+        return client.id
+
+
+async def _seed_template(
+    session_factory, *, task_type="attribute_enrichment", client_id=None,
+    version=1, user_prompt="Extract from: {{title}} {{description}}",
+    system_prompt="You extract attributes.", active=True,
+) -> int:
+    async with session_factory() as session, session.begin():
+        row = PromptTemplate(
+            task_type=task_type, client_id=client_id, version=version,
+            name=f"v{version}", system_prompt=system_prompt, user_prompt=user_prompt,
+            variables=["title", "description"], is_active=active, created_by="operator",
+        )
+        session.add(row)
+        await session.flush()
+        return row.id
 
 
 @pytest.mark.asyncio
@@ -198,3 +223,87 @@ def test_default_provider_factory_builds_openai_compatible():
     )
     provider = default_provider_factory(config)
     assert isinstance(provider, OpenAICompatibleProvider)
+
+
+@pytest.mark.asyncio
+async def test_run_task_uses_active_global_template_and_cache_key(session_factory):
+    await _seed_default_config(session_factory)
+    template_id = await _seed_template(session_factory)
+    provider = FakeProvider(responses=[('{"color": "blue"}', (50, 10))])
+    service = AiService(session_factory, provider_factory=lambda config: provider)
+
+    result = await service.run_task(
+        "attribute_enrichment", {"title": "T", "description": "D"}
+    )
+    assert result.status == "ok"
+    user_content = provider.calls[0].messages[1]["content"]
+    assert "Extract from:" in user_content
+    assert '<data key="title">T</data>' in user_content
+
+    async with session_factory() as session:
+        cache_row = (await session.execute(select(AiResultCache))).scalar_one()
+        assert cache_row.template_version == f"tmpl:{template_id}:v1"
+
+
+@pytest.mark.asyncio
+async def test_client_template_overrides_global(session_factory):
+    await _seed_default_config(session_factory)
+    client_id = await _seed_client_row(session_factory, "acme")
+    await _seed_template(session_factory, user_prompt="GLOBAL MARKER {{title}}")
+    await _seed_template(
+        session_factory, client_id=client_id, version=1,
+        user_prompt="CLIENT MARKER {{title}}",
+    )
+    provider = FakeProvider(responses=[('{"color": "blue"}', (50, 10))])
+    service = AiService(session_factory, provider_factory=lambda config: provider)
+
+    await service.run_task(
+        "attribute_enrichment", {"title": "T", "description": "D"}, client_id=client_id,
+    )
+    user_content = provider.calls[0].messages[1]["content"]
+    assert "CLIENT MARKER" in user_content
+    assert "GLOBAL MARKER" not in user_content
+
+
+@pytest.mark.asyncio
+async def test_new_active_version_invalidates_cache(session_factory):
+    await _seed_default_config(session_factory)
+    v1_id = await _seed_template(session_factory, version=1, active=True)
+    provider = FakeProvider(responses=[
+        ('{"color": "blue"}', (50, 10)),
+        ('{"color": "red"}', (50, 10)),
+    ])
+    service = AiService(session_factory, provider_factory=lambda config: provider)
+    variables = {"title": "T", "description": "D"}
+
+    await service.run_task("attribute_enrichment", variables)
+    assert len(provider.calls) == 1
+
+    # activate v2 (different content) directly in the DB
+    v2_id = await _seed_template(
+        session_factory, version=2,
+        user_prompt="Extract v2: {{title}} {{description}}", active=False,
+    )
+    async with session_factory() as session, session.begin():
+        v1 = await session.get(PromptTemplate, v1_id)
+        v1.is_active = False
+        v2 = await session.get(PromptTemplate, v2_id)
+        v2.is_active = True
+
+    second = await service.run_task("attribute_enrichment", variables)
+    assert second.status == "ok"
+    assert len(provider.calls) == 2  # cache miss under the new version key
+
+    async with session_factory() as session:
+        versions = {
+            row.template_version
+            for row in (await session.execute(select(AiResultCache))).scalars()
+        }
+    assert versions == {f"tmpl:{v1_id}:v1", f"tmpl:{v2_id}:v2"}
+
+
+@pytest.mark.asyncio
+async def test_resolve_active_template_db_error_returns_none():
+    async def broken_factory():
+        raise RuntimeError("db down")
+    assert await resolve_active_template(broken_factory, "policy_check", None) is None
