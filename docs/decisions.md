@@ -1227,3 +1227,18 @@ Inline code review of the cycle found one critical and one important issue; both
 - **Indexed N cap (`MAX_INDEX = 10_000`):** `attr.100000000` passed validation and the apply-time auto-extend (`""` scalar / `{}` dict slot fill) would allocate a huge list per product. The cap is enforced in `parse_indexed_path` (central authority; field-mapping PUT → 422 "invalid target path"), in the rules plugin's plugin-local `_parse_indexed` (isolation convention — local copy, comment cross-references the app constant), and mirrored client-side in `INDEXED_PATH_REGEX` (frontend). Rules `validate_config` now parses action fields up front, so malformed/oversized paths fail config validation with a path-qualified error instead of at apply time. Read paths (filter, custom_labels) stay lenient: out-of-range reads yield empty/absent — no allocation, documented semantics.
 - **`require_feed_source` dedup:** three identical `_require_feed_source` helpers (registry/products/export_history) consolidated into `app/access.require_feed_source` (existence-only check; scope enforcement remains the router dependency's job).
 - **Rationale:** routers with feed-source params must opt into scoping symmetrically; the indexed grammar needed a write-path bound the moment apply learned auto-extend. Pre-existing `alembic check` drift in local DBs (unique-index vs constraint reflection on `export_token`, stale `ix_staging_products_removed_purge`) is environment noise, confirmed present before the cycle — flagged for a separately-scoped cleanup.
+
+### 2026-09-11 — AI provider abstraction (Feature 1 of AI integration, branch `ai-provider-abstraction`)
+
+**Topic:** LLM integration foundation.
+
+**Decision:**
+- Generic `AIProvider.complete()` protocol + task registry in `app/ai/tasks.py` — task semantics (title_optimization, category_classification, policy_check, attribute_enrichment, image_quality) live in prompt templates and validators, not provider methods; adding an AI task needs zero provider changes.
+- OpenAI-compatible protocol only (self-hosted vLLM/Ollama/LM Studio via `base_url`), implemented over httpx — no vendor SDK, no new dependency.
+- Provider config incl. `api_key` lives in the `ai_provider_configs` DB table (admin CRUD, `api_key` write-only, redacted in every response) — same plaintext posture as the recorded feed-source-credentials MVP decision; runtime provider swap by admins without redeploy.
+- Hash-keyed `ai_result_cache`: key includes `template_version` and `model` so prompt edits/model swaps invalidate gracefully; no TTL (content-hash keying makes stale entries practically impossible), growth handled by retention purge.
+- In-process per-config circuit breaker (closed → open after N failures in window → half-open probe) — not DB-backed; single-instance deployment assumption consistent with in-process scheduler and LockRegistry.
+- Per-call `ai_usage_logs` (incl. cache hits at 0 tokens) with `cost_usd` estimates from per-Mtok prices; retention via `ai_usage_retention_days`/`ai_cache_retention_days` GlobalSetting columns purged by the nightly `system-ai-purge` job.
+- `AiService.run_task()` never raises on provider errors — returns `status="fallback"` with a typed `error_code`; callers own their non-AI fallback. The pipeline can never be blocked by AI failures.
+
+**Rationale:** Agency operators need runtime-swappable AI config and per-client cost attribution; prompt templates are the fast-moving surface (Feature 2 versioning), so the cache key carries `template_version` from day one to avoid mass invalidation later. The tasks.py registry is the seam Feature 2's versioned DB templates plug into without touching the provider layer.

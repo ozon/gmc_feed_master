@@ -116,7 +116,8 @@ export function useSavePipeline(feedSourceId) {
     ├── /admin                           → AdminPage (Users tab, RequireAdmin)
     │   ├── /admin/users                 → AdminPage (Users tab)
     │   ├── /admin/clients               → AdminPage (Clients tab)
-    │   └── /admin/settings              → AdminPage (Settings tab)
+    │   ├── /admin/settings              → AdminPage (Settings tab)
+    │   └── /admin/ai                    → AdminPage (AI tab: provider configs + usage view)
     └── *                                 → NotFoundPage
 ```
 

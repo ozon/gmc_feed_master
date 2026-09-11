@@ -37,8 +37,18 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 - `POST /admin/users/{user_id}/password` (204) — set new password `{new_password}` (revokes the user's sessions); 404 unknown user
 
 ### Settings
-- `GET /admin/settings` — `{staging_removal_retention_days, staging_history_retention_days, ingestion_run_retention_days}`; seeds the single `global_settings` row with 90s on first read
+- `GET /admin/settings` — `{staging_removal_retention_days, staging_history_retention_days, ingestion_run_retention_days, ai_usage_retention_days, ai_cache_retention_days}`; seeds the single `global_settings` row with 90s on first read
 - `PUT /admin/settings` — update retention days (each ≥ 1; 422 otherwise). The nightly purge jobs read these values (fallback 90 while no row exists)
+
+### AI Administration
+All routes require the admin role. `api_key` is never included in any response.
+
+- `GET /admin/ai/providers` — list provider configs `[{id, name, provider_type, base_url, model, input_price_per_mtok, output_price_per_mtok, max_concurrency, timeout_s, enabled, is_default}]`
+- `POST /admin/ai/providers` — create `{name, provider_type="openai_compatible", base_url, api_key?, model, input_price_per_mtok?, output_price_per_mtok?, max_concurrency=4, timeout_s=30, enabled=true, is_default=false}`; setting `is_default` clears the flag on all other configs
+- `PATCH /admin/ai/providers/{id}` — partial update; `api_key` absent = unchanged, explicit `""` = cleared
+- `DELETE /admin/ai/providers/{id}` (204) — delete config; runs read config at call time, so deletion just makes the next AI call fall back
+- `POST /admin/ai/providers/{id}/test` — live probe completion (`"Reply with OK"`); returns `{"status": "ok", latency_ms, prompt_tokens, completion_tokens}` or `{"status": "error", "error_code"}`
+- `GET /admin/ai/usage?group_by=client|feed_source|task_type|day&client_id=&feed_source_id=&task_type=&from=&to=` — aggregated `{"rows": [{group_key, calls, cache_hits, prompt_tokens, completion_tokens, cost_usd}]}`; 422 on other group_by values
 
 ### Scheduler
 - `GET /admin/scheduler` — registered job overview `[{id, trigger}]`; 503 when no scheduler is running (app lifespan not started)

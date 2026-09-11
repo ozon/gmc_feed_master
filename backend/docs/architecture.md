@@ -176,8 +176,18 @@ flowchart TD
 | `StagingHistory` | `global_settings.staging_history_retention_days` (default 90); removed-product rows purged with product |
 | `QualityFinding` details | Latest run per feed source only; per-severity counts in `ExportRun` |
 | `StagingProduct` (removed) | Purged `global_settings.staging_removal_retention_days` (default 90) after `removed_at` |
+| `AiUsageLog` | `global_settings.ai_usage_retention_days` (default 90) |
+| `AiResultCache` | `global_settings.ai_cache_retention_days` (default 90) |
 
 Retention days live in the single-row `global_settings` table (lazy-seeded, admin-editable via `PUT /admin/settings`); the purge jobs fall back to 90 per column when the row is absent.
+
+## AI Provider Layer (`app/ai/`)
+Swappable LLM interface shared by all AI features. `AiService.run_task(task_type, variables)` resolves a task from the registry (`app/ai/tasks.py`: title_optimization, category_classification, policy_check, attribute_enrichment, image_quality) → hash-keyed DB cache lookup (`ai_result_cache`, keyed on content hash + template_version + model) → provider call through retry/backoff + in-process circuit breaker + per-config semaphore → response validation → usage log. Constructed in the app lifespan, attached to `app.state.ai_service`; no pipeline step consumes it yet (QC/enrichment features follow).
+
+Key properties:
+- **Provider-agnostic protocol**: `AIProvider.complete(AiRequest) -> AiResponse`. The shipped implementation is `OpenAICompatibleProvider` (httpx, no vendor SDK); self-hosted servers use the same protocol via `base_url`. Task semantics live in prompt templates, not provider methods — new AI tasks need no provider changes.
+- **Never blocks the pipeline**: provider errors (timeout, rate limit, 5xx, invalid output, open circuit) return `AiResult(status="fallback", error_code=...)` — the caller decides its own non-AI fallback value.
+- **Cost tracking**: one `ai_usage_logs` row per call (including cache hits, tokens 0), aggregated by `GET /admin/ai/usage`.
 
 ## Authorization Layer (`app/access.py`)
 - Two roles on `users.role`: `admin` (unrestricted) and `user` (many-to-many client assignment via `user_clients`).

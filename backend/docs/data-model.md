@@ -57,6 +57,8 @@ Unique `(user_id, client_id)`. Many-to-many: a `user` sees only their assigned c
 | `staging_removal_retention_days` | Integer | Default 90 |
 | `staging_history_retention_days` | Integer | Default 90 |
 | `ingestion_run_retention_days` | Integer | Default 90 |
+| `ai_usage_retention_days` | Integer | Default 90 |
+| `ai_cache_retention_days` | Integer | Default 90 |
 | `updated_at` | DateTime | |
 
 Row is seeded lazily on first `GET /admin/settings` (the migration does not insert it). The nightly purge jobs read these values; fallback is 90 days per column while no row exists. Editable via `PUT /admin/settings` (admin only).
@@ -235,6 +237,56 @@ Retention: Last N per feed source (default 30, includes rollback versions).
 | `created_at` | DateTime | |
 
 **Retention**: Detail rows for latest run only; counts persisted in `ExportRun`.
+
+### AiProviderConfig
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | Integer | PK |
+| `name` | String(255) | Unique label |
+| `provider_type` | String(50) | `openai_compatible` (only value currently) |
+| `base_url` | String(1024) | OpenAI or self-hosted (vLLM/Ollama/LM Studio) |
+| `api_key` | String(1024) | Write-only via API; redacted in all responses and logs |
+| `model` | String(255) | e.g. `gpt-4o-mini` |
+| `input_price_per_mtok` | Numeric(12,6) | Nullable; cost estimation |
+| `output_price_per_mtok` | Numeric(12,6) | Nullable; cost estimation |
+| `max_concurrency` | Integer | Per-config call semaphore |
+| `timeout_s` | Integer | Per-request timeout |
+| `enabled` | Boolean | Disabled configs are skipped |
+| `is_default` | Boolean | At most one row true (enforced on write) |
+
+One default config serves all AI calls (`AiService.run_task`); swapping providers is a config-row change, not a code change.
+
+### AiResultCache
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | Integer | PK |
+| `task_type` | String(100) | One of the task registry types |
+| `provider_config_id` | Integer | FK → AiProviderConfig (CASCADE) |
+| `model` | String(255) | Part of key — model swap invalidates |
+| `template_version` | String(100) | `builtin`; versioned prompt templates (Feature 2) plug in here |
+| `input_hash` | String(64) | sha256 over canonical JSON of template variables |
+| `output` | JSONB | Validated value under the uniform `{"value": ...}` wrapper |
+| `created_at` | DateTime | |
+
+Unique key: `(task_type, provider_config_id, model, template_version, input_hash)` — unchanged product content is a cache hit with zero provider calls. No TTL: content-hash + version keying makes stale entries practically impossible. **Retention**: purged by the nightly `system-ai-purge` job after `ai_cache_retention_days`.
+
+### AiUsageLog
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | Integer | PK |
+| `client_id` | Integer | Nullable; per-tenant cost attribution |
+| `feed_source_id` | Integer | Nullable; per-feed attribution |
+| `task_type` | String(100) | |
+| `provider_config_id` | Integer | Nullable; no FK (logs outlive deleted configs) |
+| `model` | String(255) | |
+| `cache_hit` | Boolean | Cost reports can show avoided spend |
+| `prompt_tokens` / `completion_tokens` | Integer | From provider usage when available |
+| `cost_usd` | Numeric(12,6) | Nullable estimate from configured prices |
+| `latency_ms` | Integer | |
+| `error_code` | String(100) | Nullable: `no_provider`, `circuit_open`, `rate_limited`, `timeout`, `server_error`, `client_error`, `invalid_response` |
+| `created_at` | DateTime | Indexed |
+
+One row per AI call including cache hits (tokens 0). **Retention**: purged nightly after `ai_usage_retention_days`. Aggregated via `GET /admin/ai/usage`.
 
 ### Session
 | Column | Type | Notes |

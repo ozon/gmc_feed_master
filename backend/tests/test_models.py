@@ -13,6 +13,7 @@ def test_m1_table_set_is_complete():
         "staging_history", "quality_findings", "export_runs",
         "export_versions", "image_dimensions",
         "user_clients", "global_settings",
+        "ai_provider_configs", "ai_result_cache", "ai_usage_logs",
     }
 
 
