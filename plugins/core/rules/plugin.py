@@ -10,8 +10,12 @@ class ConditionError(ValueError):
     """Invalid condition node (unknown op, bad regex, malformed args)."""
 
 
+_MAX_INDEX = 10_000  # mirrors app/mapping/indexed_path.MAX_INDEX (isolation: local copy)
+
+
 def _parse_indexed(path: str) -> tuple[str, int | None, str | None]:
-    """attr | attr.sub | attr.N | attr.N.sub (N 1-based). Raises ValueError."""
+    """attr | attr.sub | attr.N | attr.N.sub (N 1-based, <= 10 000).
+    Raises ValueError."""
     parts = path.split(".")
     if not parts or not parts[0] or len(parts) > 3:
         raise ValueError(f"invalid path {path!r}")
@@ -23,6 +27,8 @@ def _parse_indexed(path: str) -> tuple[str, int | None, str | None]:
         index = int(second)
         if index < 1:
             raise ValueError(f"invalid index in {path!r}: 1-based")
+        if index > _MAX_INDEX:
+            raise ValueError(f"invalid index in {path!r}: N must be <= {_MAX_INDEX}")
         sub = parts[2] if len(parts) == 3 else None
         if sub == "":
             raise ValueError(f"invalid path {path!r}")
@@ -208,8 +214,8 @@ def apply_action(product: dict[str, Any], action: dict[str, Any]) -> dict[str, A
 
     try:
         attr, index, sub = _parse_indexed(field)
-    except ValueError:
-        raise ActionError(f"invalid field path {field!r}")
+    except ValueError as exc:
+        raise ActionError(f"invalid field path {field!r}: {exc}") from exc
 
     if index is not None:
         return _apply_indexed_action(product, attr, index, sub, action, op)
@@ -388,6 +394,10 @@ def validate_config(config: Any) -> None:
                     raise ValueError(f"{action_path}: op {op!r} requires {key}")
             if not isinstance(action.get("field"), str) or not action.get("field"):
                 raise ValueError(f"{action_path}: op {op!r} requires a non-empty field")
+            try:
+                _parse_indexed(action["field"])
+            except ValueError as exc:
+                raise ValueError(f"{action_path}: {exc}") from exc
             if op == "replace" and action.get("find") == "":
                 raise ValueError(f"{action_path}: op 'replace' requires a non-empty find")
 

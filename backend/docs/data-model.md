@@ -89,7 +89,7 @@ Row is seeded lazily on first `GET /admin/settings` (the migration does not inse
 | `history_retention_count` | Integer | Default 30 |
 | `source_url` | String(2048) | HTTP(S) fetch URL |
 | `volume_drop_threshold_pct` | Integer | Default 20 |
-| `field_mapping` | JSONB | Source field → registry attribute path |
+| `field_mapping` | JSONB | Source field → registry attribute path; targets use the 1-based indexed grammar `attr \| attr.sub \| attr.N \| attr.N.sub` (N ≤ 10 000, enforced at PUT validation) |
 | `configuration` | JSONB | Feed-specific config (e.g., basic_auth) |
 | `created_at` / `updated_at` | DateTime | Auto |
 

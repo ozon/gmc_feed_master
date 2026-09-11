@@ -194,10 +194,19 @@ Config document: `{"rules": [{id, name, isMasterRule, isActive, when, then}]}`.
   (`equals, contains, starts_with, ends_with, regex, exists, empty, gt, lt, gte, lte, between`);
   `caseSensitive` defaults `true`. Missing `arg` on a numeric op (`gt/lt/gte/lte/between`)
   raises `ConditionError` at evaluation; a non-numeric field *value* evaluates `False`.
+- **Field paths** support the 1-based indexed grammar `attr | attr.sub | attr.N | attr.N.sub`
+  in both conditions and actions (indexed reads address one list element exactly;
+  out-of-range yields `None`/empty). The parser is plugin-local (`_parse_indexed`) per
+  the plugin-isolation convention — plugins never import from `app` or each other.
+  N is capped at 10 000 (`validate_config` rejects action fields with out-of-range
+  or malformed indices up front with a path-qualified error).
 - `then`: ordered actions (`set, replace, append, prepend, remove, clear`);
   `replace` supports regex mode when `find` starts with `/pattern/` (trailing slash
   stripped, JS-style; capture groups via `$1`, backslashes in the replacement are
-  literal); empty-string `find` is rejected by `validate_config`.
+  literal); empty-string `find` is rejected by `validate_config`. Indexed targets
+  (`attr.N[.sub]`) write into the addressed slot with auto-extend (missing scalar
+  slots fill with `""`, missing dict slots with `{}`); `remove` pops the element,
+  `clear` blanks it in place (copy-on-write throughout).
 - `isMasterRule` is UI-only (badge + list pinning); engine order = array order.
 - `isActive: false` skips the rule at run time.
 - `validate_config` strictly validates the document on save (`{}` and `{"rules": []}`
@@ -211,6 +220,10 @@ Config document: `{"rules": [{id, name, isMasterRule, isActive, when, then}]}`.
 Config document: `{"isActive": true, "conditions": [{field, op, arg?, caseSensitive?}]}`.
 - Ops: `equals`, `not_equals`, `contains`, `not_contains` (text, `caseSensitive` default
   `true`), `exists`, `empty`. Conjunctive — all conditions must match.
+- **Field paths** support the 1-based indexed grammar `attr | attr.sub | attr.N | attr.N.sub`
+  (indexed reads address one list element exactly; out-of-range treats the value as
+  absent — `exists` → false, `empty` → true). Plugin-local `_parse_indexed` parser
+  (plugin-isolation convention); N is capped at 10 000.
 - Missing field: `equals`/`contains` → false; `not_equals`/`not_contains` → true;
   `exists` → false; `empty` → true.
 - `isActive: false` → pass-through; empty `conditions` → pass-all.
@@ -224,6 +237,11 @@ Config document: `{"isActive": true, "conditions": [{field, op, arg?, caseSensit
 Config document: `{"slotRules": [{id, name, isActive, targetSlot, matchField, valueTemplate, fallbackTemplate?}]}`.
 - `targetSlot`: one of `custom_label_0` through `custom_label_4`.
 - `matchField`: any registry-known attribute path (e.g. `id`, `brand`, `price.value`).
+  Supports the 1-based indexed grammar `attr | attr.sub | attr.N | attr.N.sub` —
+  indexed paths match against one list element exactly (out-of-range: no
+  candidates, rule cannot match); non-indexed paths keep the legacy broadcast
+  semantics (every element is a candidate). Plugin-local `_parse_indexed`
+  (plugin-isolation convention); N is capped at 10 000.
 - `valueTemplate`: compiled template with `{attr}` / `{attr.subfield}` tokens.
 - First-match-wins per slot; empty token in a matched rule skips to the next rule.
 - `fallbackTemplate`: applied only when a rule matched but the template resolved

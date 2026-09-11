@@ -182,3 +182,53 @@ async def test_registry_attributes_unknown_feed_source_404(app_factory):
     client = await logged_in_client(app_factory)
     resp = await client.get("/registry/attributes?feed_source_id=99999")
     assert resp.status_code == 404
+
+
+async def _scoped_client(app_factory, assigned_client_id: int) -> AsyncClient:
+    """Log in as a client-scoped 'user' role account."""
+    app, _ = app_factory
+    from app.persistence.users import create_user
+    async with app.state.db_session_factory() as session:
+        await create_user(session, "scoped", "scoped-pw", "user", [assigned_client_id])
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    resp = await client.post("/auth/login", json={"username": "scoped", "password": "scoped-pw"})
+    assert resp.status_code == 200
+    return client
+
+
+async def test_registry_attributes_scoped_user_unassigned_feed_source_404(app_factory):
+    """RBAC (ADR 0009): a client-scoped user must not read another client's
+    feed source data via the registry route's feed_source_id param."""
+    client = await logged_in_client(app_factory)
+    acme = (await client.post("/clients", json={"name": "Acme"})).json()
+    acme_feed = (await client.post(
+        f"/clients/{acme['id']}/feed-sources",
+        json={"name": "DE", "source_format": "xml"},
+    )).json()
+    other = (await client.post("/clients", json={"name": "Other Corp"})).json()
+
+    scoped = await _scoped_client(app_factory, other["id"])
+    resp = await scoped.get(f"/registry/attributes?feed_source_id={acme_feed['id']}")
+    assert resp.status_code == 404
+
+
+async def test_registry_attributes_scoped_user_assigned_feed_source_200(app_factory):
+    client = await logged_in_client(app_factory)
+    acme = (await client.post("/clients", json={"name": "Acme"})).json()
+    acme_feed = (await client.post(
+        f"/clients/{acme['id']}/feed-sources",
+        json={"name": "DE", "source_format": "xml"},
+    )).json()
+
+    scoped = await _scoped_client(app_factory, acme["id"])
+    resp = await scoped.get(f"/registry/attributes?feed_source_id={acme_feed['id']}")
+    assert resp.status_code == 200
+
+
+async def test_registry_attributes_scoped_user_bare_list_allowed(app_factory):
+    """Without feed_source_id the registry list stays readable for scoped users."""
+    client = await logged_in_client(app_factory)
+    acme = (await client.post("/clients", json={"name": "Acme"})).json()
+    scoped = await _scoped_client(app_factory, acme["id"])
+    resp = await scoped.get("/registry/attributes")
+    assert resp.status_code == 200

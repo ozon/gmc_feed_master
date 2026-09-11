@@ -7,12 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from registry.loader import load_registry
 
+from ..access import require_feed_source
 from ..auth import require_user
 from ..config import Settings, get_settings
 from ..db.engine import get_db_session
 from ..export.service import ExportService
 from ..export.store import ExportFileStore
-from ..models.feed_source import FeedSource
 from ..schemas.export import DiffOut, ExportVersionOut
 
 router = APIRouter()
@@ -33,11 +33,6 @@ def _service(request: Request, settings: Settings) -> ExportService:
     )
 
 
-async def _require_feed_source(session: AsyncSession, feed_source_id: int) -> None:
-    if await session.get(FeedSource, feed_source_id) is None:
-        raise HTTPException(status_code=404, detail="feed source not found")
-
-
 @router.get(
     "/feed-sources/{feed_source_id}/export-history",
     response_model=list[ExportVersionOut],
@@ -51,7 +46,7 @@ async def export_history(
 ) -> list:
     session = _require_db(db_session)
     async with session.begin():
-        await _require_feed_source(session, feed_source_id)
+        await require_feed_source(session, feed_source_id)
     return await _service(request, settings).list_versions(feed_source_id)
 
 
@@ -70,7 +65,7 @@ async def export_diff(
 ) -> dict:
     session = _require_db(db_session)
     async with session.begin():
-        await _require_feed_source(session, feed_source_id)
+        await require_feed_source(session, feed_source_id)
     try:
         return await _service(request, settings).diff(
             feed_source_id, version_number, against, load_registry()
@@ -94,7 +89,7 @@ async def export_rollback(
 ):
     session = _require_db(db_session)
     async with session.begin():
-        await _require_feed_source(session, feed_source_id)
+        await require_feed_source(session, feed_source_id)
     try:
         return await _service(request, settings).rollback(
             feed_source_id, version_number, load_registry()

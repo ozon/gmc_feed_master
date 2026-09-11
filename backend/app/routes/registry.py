@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from registry.loader import load_registry
 
+from ..access import require_feed_source
 from ..auth import require_user
 from ..db.engine import get_db_session
-from ..models.feed_source import FeedSource
 from ..models.staging import StagingProduct
 from ..qc.constants import BASELINE_ALTERNATIVE_PAIRS, BASELINE_REQUIRED
 from ..schemas.field_mapping import RegistryAttributeOut, RegistrySubFieldOut
@@ -23,11 +23,6 @@ def _attribute_sub_kind(parent_kind: str) -> str | None:
     if parent_kind == "repeated_structured":
         return "repeated_scalar"
     return None
-
-
-async def _require_feed_source(session: AsyncSession, feed_source_id: int) -> None:
-    if await session.get(FeedSource, feed_source_id) is None:
-        raise HTTPException(status_code=404, detail="feed source not found")
 
 
 async def compute_max_repeats(
@@ -71,7 +66,7 @@ async def list_registry_attributes(
         if db_session is None:
             raise HTTPException(status_code=503, detail="database unavailable")
         async with db_session.begin():
-            await _require_feed_source(db_session, feed_source_id)
+            await require_feed_source(db_session, feed_source_id)
             observed = await compute_max_repeats(db_session, feed_source_id)
 
     attributes: list[RegistryAttributeOut] = []

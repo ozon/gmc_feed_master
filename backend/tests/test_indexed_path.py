@@ -1,6 +1,6 @@
 import pytest
 
-from app.mapping.indexed_path import IndexedPath, parse_indexed_path
+from app.mapping.indexed_path import MAX_INDEX, IndexedPath, parse_indexed_path
 
 
 @pytest.mark.parametrize("path,expected", [
@@ -39,3 +39,15 @@ def test_empty_attr_rejected():
 def test_index_is_1_based_in_storage_grammar():
     p = parse_indexed_path("product_detail.1.section_name")
     assert p.index == 1
+
+
+def test_index_at_max_bound_accepted():
+    assert parse_indexed_path(f"additional_image_link.{MAX_INDEX}").index == MAX_INDEX
+
+
+def test_index_above_max_bound_rejected():
+    """Guards apply-time auto-extend allocation ("" / {} slot fill)."""
+    with pytest.raises(ValueError, match="must be <="):
+        parse_indexed_path(f"additional_image_link.{MAX_INDEX + 1}")
+    with pytest.raises(ValueError, match="must be <="):
+        parse_indexed_path(f"product_detail.{MAX_INDEX + 1}.section_name")

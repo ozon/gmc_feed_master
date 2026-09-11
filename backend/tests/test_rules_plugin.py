@@ -271,3 +271,22 @@ def test_action_clear_indexed_element():
     out = apply_action(product, {"op": "clear", "field": "additional_image_link.1"})
     assert out["additional_image_link"][0] == ""
     assert out["additional_image_link"][1] == "b.jpg"
+
+
+def test_action_indexed_above_max_index_rejected():
+    """Index bound mirrors app/mapping/indexed_path.MAX_INDEX: a typo'd
+    stored index must not allocate a huge auto-extend list."""
+    product = {"additional_image_link": ["a.jpg"]}
+    with pytest.raises(Exception, match="must be <="):
+        apply_action(product, {"op": "set", "field": "additional_image_link.10001",
+                               "value": "x"})
+    # validate_config rejects it up front with a path-qualified message
+    with pytest.raises(ValueError, match=r"rules\[0\].then\[0\]: .* must be <="):
+        validate_config({
+            "rules": [{
+                "id": "r1", "name": "R1",
+                "when": {"op": "exists", "field": "id"},
+                "then": [{"op": "set", "field": "additional_image_link.10001",
+                          "value": "x"}],
+            }],
+        })

@@ -657,3 +657,21 @@ async def test_put_indexed_duplicate_target_still_rejected(app_factory):
     })
     assert resp.status_code == 422
     assert any("already claimed" in e for e in resp.json()["errors"])
+
+
+async def test_put_indexed_target_above_max_index_rejected_422(app_factory):
+    """Index bound: N > 10 000 would allocate a huge auto-extend list at
+    apply time; rejected at validation."""
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    feed_id = await create_feed_source(client)
+    await seed_field_mapping(factory, feed_id, {
+        "version": 1, "auto_mapped": False,
+        "source_fields": [source_field("sn", "scalar")],
+        "mappings": {},
+    })
+    resp = await client.put(f"/feed-sources/{feed_id}/field-mapping", json={
+        "mappings": {"sn": {"target": "additional_image_link.10001"}},
+    })
+    assert resp.status_code == 422
+    assert any("invalid target path" in e for e in resp.json()["errors"])

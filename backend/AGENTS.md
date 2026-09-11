@@ -62,7 +62,7 @@ uv run mypy .                             # gate: exit-0, hard (flipped 2026-09-
 - Do not export `DATABASE_URL` while running tests; if both `DATABASE_URL` and `TEST_DATABASE_URL` are set, pytest will warn at session start
 - Async tests are marked `@pytest.mark.asyncio` explicitly (`asyncio_mode` is not set globally)
 - Tests are immune to an ambient `DATABASE_URL`: alembic callers in tests pin their URL via `config.attributes["database_url"]`, which `alembic/env.py` prefers over the env var (the var remains the fallback for the dev command)
-- The suite is large and growing fast (1019 backend tests as of the last cycle, up from 995 two cycles prior) — treat runtime and reporting ergonomics as a first-class concern, not an afterthought
+- The suite is large and growing fast (1079 backend tests as of the unified-field-list cycle, up from 1019 two cycles prior) — treat runtime and reporting ergonomics as a first-class concern, not an afterthought
 
 ### Test reporting (large-suite ergonomics)
 - Run with `uv run pytest --report-log=.report.jsonl` — JSON Lines, one event per line.

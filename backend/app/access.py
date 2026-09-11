@@ -144,3 +144,15 @@ async def ensure_feed_source_access(
     await db_session.rollback()
     if feed_client_id is None or feed_client_id not in user.client_ids:
         raise HTTPException(status_code=404, detail="feed source not found")
+
+
+async def require_feed_source(
+    db_session: AsyncSession, feed_source_id: int
+) -> None:
+    """Existence check shared by feed-source-scoped routes: raises 404 when
+    the feed source does not exist. Callers run it inside their own
+    transaction (async with session.begin()); no implicit rollback here."""
+    from .models.feed_source import FeedSource
+
+    if await db_session.get(FeedSource, feed_source_id) is None:
+        raise HTTPException(status_code=404, detail="feed source not found")

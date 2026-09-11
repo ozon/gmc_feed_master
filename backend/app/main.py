@@ -199,7 +199,7 @@ def create_app(
     app.include_router(plugins_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(products_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(quality_router, dependencies=[Depends(enforce_scope_access)])
-    app.include_router(registry_router)
+    app.include_router(registry_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(admin_router)
     app.state.settings = settings
     app.state.session_store = session_store

@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..access import require_feed_source
 from ..auth import require_user
 from ..db.engine import get_db_session
 from ..ingest.report import SourceField
@@ -78,11 +79,6 @@ def _fields_union(rows: list[StagingProduct], stage: str = "raw") -> list[str]:
     return sorted(fields)
 
 
-async def _require_feed_source(session: AsyncSession, feed_source_id: int) -> None:
-    if await session.get(FeedSource, feed_source_id) is None:
-        raise HTTPException(status_code=404, detail="feed source not found")
-
-
 @router.get("/feed-sources/{feed_source_id}/products")
 async def list_products(
     feed_source_id: int,
@@ -107,7 +103,7 @@ async def list_products(
 
     session = _require_db(db_session)
     async with session.begin():
-        await _require_feed_source(session, feed_source_id)
+        await require_feed_source(session, feed_source_id)
         filters = [StagingProduct.feed_source_id == feed_source_id]
         if status != "all":
             filters.append(StagingProduct.status == status)
@@ -148,7 +144,7 @@ async def product_detail(
 ) -> dict:
     session = _require_db(db_session)
     async with session.begin():
-        await _require_feed_source(session, feed_source_id)
+        await require_feed_source(session, feed_source_id)
         row = (await session.execute(
             select(StagingProduct).where(
                 StagingProduct.feed_source_id == feed_source_id,
@@ -192,9 +188,9 @@ async def feed_source_fields(
 ) -> dict:
     session = _require_db(db_session)
     async with session.begin():
-        await _require_feed_source(session, feed_source_id)
+        await require_feed_source(session, feed_source_id)
         feed_source = await session.get(FeedSource, feed_source_id)
-    assert feed_source is not None  # _require_feed_source raises 404 otherwise
+    assert feed_source is not None  # require_feed_source raises 404 otherwise
     doc = MappingDocument.from_json(feed_source.field_mapping)
     fields: dict[str, dict] = {
         sf.name: _source_field_descriptor(sf) for sf in doc.source_fields
@@ -279,7 +275,7 @@ async def lookup_products(
 ) -> dict:
     session = _require_db(db_session)
     async with session.begin():
-        await _require_feed_source(session, feed_source_id)
+        await require_feed_source(session, feed_source_id)
         rows = (await session.execute(
             select(StagingProduct.product_id, StagingProduct.status,
                    StagingProduct.excluded, StagingProduct.raw_data)
