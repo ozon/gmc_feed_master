@@ -211,6 +211,28 @@ async def test_dry_run_404_and_auth(app_factory):
     assert (await client.post("/feed-sources/99999/dry-run", json={})).status_code == 404
 
 
+async def test_dry_run_unmapped_source_flags_baseline_no_automap(app_factory):
+    _, factory, _ = app_factory
+    client = await logged_in_client(app_factory)
+    feed_id = await _make_feed(client)
+    async with factory() as session, session.begin():
+        fs = await session.get(FeedSource, feed_id)
+        fs.field_mapping = {
+            "version": 1, "auto_mapped": False,
+            "source_fields": [], "mappings": {}, "custom_fields": [],
+        }
+    resp = await client.post(f"/feed-sources/{feed_id}/dry-run", json={})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["sample"][0] == {}
+    critical = body["findings"]["critical"]
+    assert any(e["rule"] == "baseline_required" for e in critical)
+    async with factory() as session:
+        fs = await session.get(FeedSource, feed_id)
+        assert fs.field_mapping["auto_mapped"] is False
+        assert fs.field_mapping["mappings"] == {}
+
+
 async def test_dry_run_source_deleted_before_execution_returns_404(app_factory, monkeypatch):
     app, _, _ = app_factory
     client = await logged_in_client(app_factory)

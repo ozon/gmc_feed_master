@@ -13,7 +13,6 @@ from ..clock import Clock
 from ..ingest.fetch import HttpFetcher
 from ..mapping.apply import apply_mapping
 from ..mapping.document import MappingDocument
-from ..mapping.matcher import auto_match
 from ..models.export import ExportRun
 from ..models.feed_source import FeedSource
 from ..qc.engine import Finding, QcContext, run_engine
@@ -59,8 +58,6 @@ async def run_dry_run(
     total = len(run_state.products)
 
     doc = MappingDocument.from_json(feed_source.field_mapping)
-    if not doc.auto_mapped:
-        doc.mappings = auto_match(run_state.source_fields, registry, existing=doc.mappings)
     for index, product in enumerate(run_state.products):
         mapped, _ = apply_mapping(product, doc.mappings, registry)
         run_state.products[index] = mapped
