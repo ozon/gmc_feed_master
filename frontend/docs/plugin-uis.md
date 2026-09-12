@@ -161,6 +161,27 @@ language) that it passes to all tabs.
 - **Placeholders:** the AI and Uncategorized tabs and the Generate / Copy /
   Bulk-delete controls render as disabled-with-tooltip placeholders (spec v1 scope).
 
+### First-Party Reference: Enrichment (`plugins/core/enrichment/frontend/component.tsx`)
+
+The Enrichment module is the fifth core plugin with a custom UI
+(`src/features/enrichment/EnrichmentUI.tsx`, re-exported by the stub).
+Receives `{ pluginId, scope }`; operates on the feed-source tier
+(`scope.feedSourceId`), other tiers render the title + tier badge only.
+
+- **Scan:** limit NumberInput (1–50) + Scan button → `POST /plugins/enrichment/scan`
+  with `{feed_source_id, limit}`; success toast reports
+  `scanned / with_suggestions / failed`; invalidates the data query key.
+- **Suggestions:** grouped by product (badge) with one checkbox per
+  `field: value`; Accept selected posts the checked fields via
+  `POST /plugins/enrichment/accept` with `expected_version` from the
+  `X-Plugin-Data-Version` header; Accept all sends every suggestion field;
+  per-field Discard buttons call `/discard`.
+- **Pinned:** product-grouped accepted values with an unpin ActionIcon →
+  `POST /plugins/enrichment/unpin` (all fields of the product).
+- **State:** server state via TanStack Query (`queryKeys.pluginData`);
+  selection is local `useState`; no client-side duplication of plugin data.
+- **i18n:** `enrichment` namespace, en/de parity covered by a test.
+
 ### Error Isolation (ADR-0004)
 Error isolation via `PluginErrorBoundary` (`src/features/plugin/PluginErrorBoundary.tsx`):
 custom plugin components are wrapped with it in both `PluginPage` and the

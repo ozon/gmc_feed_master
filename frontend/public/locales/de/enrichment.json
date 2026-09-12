@@ -1,0 +1,13 @@
+{
+  "title": "Attributanreicherung",
+  "scan": "Scannen",
+  "scanLimit": "Produkte pro Scan",
+  "suggestions": "Vorschläge",
+  "pinned": "Übernommene Werte",
+  "acceptSelected": "Auswahl übernehmen",
+  "acceptAll": "Alle übernehmen",
+  "discard": "Verwerfen",
+  "unpin": "Lösen",
+  "empty": "Keine offenen Vorschläge",
+  "scanDone": "{{scanned}} Produkte gescannt, {{with_suggestions}} mit Vorschlägen, {{failed}} fehlgeschlagen"
+}

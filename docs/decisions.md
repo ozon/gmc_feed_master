@@ -1272,6 +1272,17 @@ Inline code review of the cycle found one critical and one important issue; both
 
 **Rationale:** Items 1 and 2 are deliberate semantic improvements with breaking-change implications for existing templates. Items 3–5 are operational hardening and UX polish.
 
+### 2026-09-12 — Z2 QC page cycle
+
+**Topic:** Quality overview page (severity cards with run-over-run deltas, trend chart, rule distribution, code filter).
+
+**Decision:**
+- **Run-over-run delta lives on `ExportRun`.** Three counters (`fixed_finding_count`, `new_finding_count`, `remaining_finding_count`) are computed in `persist_findings` before the feed-keyed delete, keyed by `(code, product_id, field)` — a message-only change counts as remaining. Storing counters (not the previous run's rows) keeps the quality-history endpoint cheap and survives the detail-row retention policy.
+- **Backend exposes history; frontend charts it.** `GET /feed-sources/{id}/quality-history` returns ascending per-run severity + delta counters; the existing quality-findings response gains `product_count`, `delta`, `has_previous`, `prev_counts`. The frontend renders three severity cards with delta badges, a `@mantine/charts` line chart over history, a rule-distribution bar chart, and a code filter.
+- **`@mantine/charts@9.5.2` + `recharts` added as frontend dependencies** (operator-approved) for the trend/distribution charts; recharts is the library's peer and does the actual SVG rendering.
+
+**Rationale:** The delta badges answer "is quality improving" at a glance without opening a diff; the history endpoint is the smallest thing that enables the trend chart. Charts are read-only views over existing endpoint data — no server-state duplication.
+
 ### 2026-09-12 — Z5+Z6 AI chat cycle
 
 **Topic:** Admin/user-facing AI chat assistant with scoped read-only tools.
@@ -1284,3 +1295,30 @@ Inline code review of the cycle found one critical and one important issue; both
 - **Provider protocol extension is OpenAI-shaped.** `AiRequest.tools` / `AiChatResult.tool_calls` mirror the OpenAI function-calling JSON so self-hosted OpenAI-compatible servers work unchanged; `AiService.complete_chat` reuses breaker/retry/semaphore and writes usage logs but skips the task registry and result cache (chat answers are not deterministic artifacts worth caching).
 
 **Rationale:** The chat feature's value is answering "what's wrong with my feed" from live staging/QC/export data — read-only tools over that data give the model everything it needs with zero write risk. Keeping the loop server-side and the scope check inside every tool means the security boundary survives any client.
+
+### 2026-09-12 — Z3 AI QC rules cycle
+
+**Topic:** AI-powered `policy_check` as a QC cross-product rule with per-run budget, cache-free progression, re-validate-first ordering.
+
+**Decision:**
+- **Cross-product rules receive `product_ids`.** `CrossProductRule.check(products, product_ids, ctx)` — the third argument lets a cross-product rule emit per-product findings (via `Finding.product_id`) without per-product orchestration. `QcContext` gains AI fields with defaults (`ai_service`, `client_id`, `ai_budget`, `previous_ai_product_ids`) so existing rule call sites are untouched.
+- **AI budget counts real calls only.** `AiResult.status == "ok"` spends one budget unit; `cache_hit` is free; `fallback` is a failed call. Budget exhaustion emits an info coverage finding; total failure emits `AI policy check unavailable`. The rule never aborts a run — AI degrades to findings, deterministic rules stay the only `critical` source.
+- **Re-validate previous findings first.** `previous_ai_product_ids` (loaded from the prior run's `ai_policy_check` findings) is checked before all other products, so a small budget always re-checks known problem products.
+- **Severity mapping is fixed.** Violations → `warning`, confidence < 0.5 → `info`. No AI rule can emit `critical`.
+- **Per-feed opt-in config.** `configuration.ai_qc = {enabled, budget}` (default budget 50), editable in the Feed Settings form (switch + budget input, merged into `configuration` so `basic_auth` survives). `QualityCheckStep` reads it via the extracted `_ai_qc_context` helper; the app wires `AiService` into `default_steps` before the runner is built.
+- **Plan-text defect fixed inline:** the plan's chunked `asyncio.gather` implementation would have launched the whole chunk (10 products) past a budget of 1, contradicting its own re-validate-first test. Implemented per-item budget enforcement (sequential) instead — matches both budget tests and the plan's lazy "synchronous batching" intent.
+
+**Rationale:** Budgeting real calls keeps AI cost bounded per run while cache hits stay free; revalidate-first spends the budget where it matters (known problems) before scanning new products. Keeping AI out of the `critical` path preserves the QC contract that deterministic rules are the source of blocking-quality truth.
+
+### 2026-09-12 — Z4 attribute enrichment cycle
+
+**Topic:** Core `enrichment` plugin: AI scan fills missing attributes into pending suggestions; users accept per field into pinned values; the pipeline applies pins by product id.
+
+**Decision:**
+- **Plugin, not pipeline step.** Enrichment is a core pipeline-module plugin (`plugins/core/enrichment/`) with `config: [global, client, feed_source]`, `data: [feed_source]`. Suggestions and pins live in `PluginData` JSONB — no new tables, no migration.
+- **Pinned values win over feed values.** `process()` applies `pinned[product_id]` over the mapped product (explicit user decision precedence); products without pins pass through as the same object. Suggestions are never applied automatically — only acceptance (pinning) changes output.
+- **Scan is a synchronous route with a hard limit.** `POST /plugins/enrichment/scan` queries staged products missing any `targetFields` value (JSONB `->>` NULL/empty), skips fully-pinned products, and calls `AiService.run_task("attribute_enrichment", ...)` per candidate via `asyncio.gather` with no DB session held across the AI phase. `limit` (1–50) bounds cost per request. `ponytail:` synchronous scan — a queue + background job replaces it if scans approach request timeouts.
+- **All four routes reuse the generic plugin-data helpers.** scan/accept/discard/unpin go through `_get_payload`/`_put_payload` (transactions + `expected_version` → 409 optimistic locking for free); `ensure_feed_source_access` runs first on the body-carried `feed_source_id`. Read-modify-writes roll back the autobegun read transaction before `_put_payload`'s `begin()` (brief bug fixed inline).
+- **UI is review-first.** `EnrichmentUI` (registered in `CUSTOM_COMPONENTS`): scan with limit, per-field checkboxes, accept selected/all, per-field discard, pinned list with unpin. i18n en/de. The version header (`X-Plugin-Data-Version`) feeds `expected_version` on every mutation.
+
+**Rationale:** Suggestions-then-accept keeps a human in the loop for AI-written attribute values (the same trust line as Z3's no-critical-AI rule); PluginData JSONB with OL matches how every other plugin stores its state, so the whole accept/discard/unpin surface is ~30 lines on top of shared helpers. The pipeline module is trivial (dict overlay by product id) because all the interesting logic lives in the review workflow.

@@ -179,6 +179,36 @@ describe('FeedSettingsForm', () => {
     expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
   });
 
+  it('writes ai_qc config preserving existing basic_auth', async () => {
+    const user = userEvent.setup();
+    fetchMock = stubFetch((url) => jsonResponse({}));
+
+    renderWithQuery(<FeedSettingsForm feed={feed} />);
+
+    const nameInput = await screen.findByDisplayValue('Acme Feed');
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Updated');
+
+    const aiQcSwitch = screen.getByRole('switch', { name: /ai quality check/i });
+    await user.click(aiQcSwitch);
+
+    const budgetInput = screen.getByRole('textbox', { name: /ai calls per run/i });
+    await user.clear(budgetInput);
+    await user.type(budgetInput, '25');
+
+    const saveBtn = screen.getByRole('button', { name: /save/i });
+    await waitFor(() => expect(saveBtn).toBeEnabled());
+
+    await user.click(saveBtn);
+
+    await waitFor(() => expect(putCalls('/feed-sources/1')).toBe(1));
+    const body = putBody('/feed-sources/1');
+    expect(body?.configuration).toEqual({
+      basic_auth: { username: 'admin' },
+      ai_qc: { enabled: true, budget: 25 },
+    });
+  });
+
   it('reset restores server values', async () => {
     const user = userEvent.setup();
     fetchMock = stubFetch((url) => jsonResponse({}));

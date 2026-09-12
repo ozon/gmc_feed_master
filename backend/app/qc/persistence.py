@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.export import ExportRun
@@ -20,6 +20,20 @@ async def persist_findings(
 ) -> None:
     async with session_factory() as session:
         async with session.begin():
+            # Delta vs the previous run's persisted findings (key: rule/product/field).
+            old_rows = (await session.execute(
+                select(QualityFinding.code, QualityFinding.product_id, QualityFinding.field)
+                .where(QualityFinding.feed_source_id == feed_source_id)
+            )).all()
+            old_keys = {(row.code, row.product_id, row.field) for row in old_rows}
+            new_keys = {
+                (finding.rule_id, finding.product_id or "cross_product", finding.field)
+                for finding in findings
+            }
+            fixed = len(old_keys - new_keys)
+            added = len(new_keys - old_keys)
+            remaining = len(old_keys & new_keys)
+
             # Feed-keyed delete
             await session.execute(
                 delete(QualityFinding).where(QualityFinding.feed_source_id == feed_source_id)
@@ -52,5 +66,8 @@ async def persist_findings(
                 critical_finding_count=counts["critical"],
                 warning_finding_count=counts["warning"],
                 info_finding_count=counts["info"],
+                fixed_finding_count=fixed,
+                new_finding_count=added,
+                remaining_finding_count=remaining,
                 export_version_id=None,
             ))

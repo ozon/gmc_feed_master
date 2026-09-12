@@ -1,0 +1,47 @@
+{
+  "id": "enrichment",
+  "name": "Enrichment",
+  "version": "1.0.0",
+  "extension_point": "pipeline_module",
+  "entry_point": "plugin:EnrichmentPlugin",
+  "config_scope": ["global", "client", "feed_source"],
+  "data_scope": ["feed_source"],
+  "config_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "title": "Enrichment",
+    "properties": {
+      "isActive": {"type": "boolean", "title": "Active", "default": true},
+      "targetFields": {
+        "type": "array",
+        "title": "Target fields",
+        "items": {"type": "string"},
+        "minItems": 1,
+        "default": ["color", "material", "size", "gtin"]
+      }
+    },
+    "required": ["targetFields"]
+  },
+  "data_schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "title": "Enrichment data",
+    "properties": {
+      "suggestions": {
+        "type": "object",
+        "title": "Pending suggestions",
+        "additionalProperties": {"type": "object", "additionalProperties": {"type": "string"}}
+      },
+      "pinned": {
+        "type": "object",
+        "title": "Accepted values",
+        "additionalProperties": {"type": "object", "additionalProperties": {"type": "string"}}
+      }
+    }
+  },
+  "frontend": {
+    "menu_item": "Enrichment",
+    "icon": "letter-e",
+    "component": "component.tsx"
+  }
+}

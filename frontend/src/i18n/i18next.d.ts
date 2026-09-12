@@ -6,6 +6,7 @@ import type chat from '../../public/locales/en/chat.json';
 import type common from '../../public/locales/en/common.json';
 import type customLabels from '../../public/locales/en/customLabels.json';
 import type dashboard from '../../public/locales/en/dashboard.json';
+import type enrichment from '../../public/locales/en/enrichment.json';
 import type exportNs from '../../public/locales/en/export.json';
 import type filter from '../../public/locales/en/filter.json';
 import type mapping from '../../public/locales/en/mapping.json';
@@ -28,6 +29,7 @@ declare module 'i18next' {
       chat: typeof chat;
       customLabels: typeof customLabels;
       dashboard: typeof dashboard;
+      enrichment: typeof enrichment;
       export: typeof exportNs;
       filter: typeof filter;
       mapping: typeof mapping;

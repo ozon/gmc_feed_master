@@ -49,7 +49,9 @@
     "targetLanguage": "Target language",
     "currency": "Currency",
     "volumeDropThreshold": "Volume drop threshold (%)",
-    "historyRetention": "History retention count"
+    "historyRetention": "History retention count",
+    "aiQcEnabled": "AI quality check (policy)",
+    "aiQcBudget": "AI calls per run"
   },
   "cron": {
     "presets": {

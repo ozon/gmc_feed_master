@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
-from dataclasses import dataclass, field as dc_field
+from dataclasses import dataclass
+from dataclasses import field as dc_field
 from typing import Any, Protocol, runtime_checkable
 
 from registry.model import RegistryDocument
@@ -22,6 +22,10 @@ class QcContext:
     clock: Clock
     image_probe: ImageProbe | None
     previous_export_run: ExportRun | None
+    ai_service: Any = None
+    client_id: int | None = None
+    ai_budget: int = 0
+    previous_ai_product_ids: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -45,7 +49,7 @@ class PerProductRule(Protocol):
 class CrossProductRule(Protocol):
     rule_id: str
 
-    async def check(self, products: list[dict], ctx: QcContext) -> list[Finding]: ...
+    async def check(self, products: list[dict], product_ids: list[str], ctx: QcContext) -> list[Finding]: ...
 
 
 @runtime_checkable
@@ -81,7 +85,7 @@ async def run_engine(
     # Cross-product rules — no product_id (findings apply to the feed as a whole)
     for cross_rule in cross_product_rules:
         try:
-            rule_findings = await cross_rule.check(products, ctx)
+            rule_findings = await cross_rule.check(products, product_ids, ctx)
             findings.extend(rule_findings)
         except Exception:
             logger.exception("cross-product rule %s failed", cross_rule.rule_id)

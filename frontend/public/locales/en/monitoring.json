@@ -28,7 +28,12 @@
     "empty": "No findings — all products pass quality checks.",
     "severityFilter": "Severity",
     "severityPlaceholder": "All severities",
+    "codeFilter": "Code",
+    "codePlaceholder": "All codes",
     "total": "Total: {{count}}"
+  },
+  "quality": {
+    "ofProducts": "of {{count}} products"
   },
   "dryRun": {
     "limitLabel": "Sample size",

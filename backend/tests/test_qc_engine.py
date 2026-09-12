@@ -1,7 +1,12 @@
 import pytest
-from app.qc.engine import QcContext, Finding, PerProductRule, CrossProductRule, run_engine
-from registry.model import RegistryDocument
+
 from app.clock import TestClock
+from app.qc.engine import (
+    Finding,
+    QcContext,
+    run_engine,
+)
+from registry.model import RegistryDocument
 
 pytestmark = pytest.mark.asyncio
 
@@ -23,9 +28,20 @@ class StubPerProductRule:
 class StubCrossProductRule:
     rule_id = "stub_cross"
 
-    async def check(self, products, ctx):
+    async def check(self, products, product_ids, ctx):
         if len(products) < 2:
             return [Finding(rule_id="stub_cross", severity="info", field=None, message="need more products")]
+        return []
+
+
+class RecordingCrossRule:
+    rule_id = "recording"
+
+    def __init__(self):
+        self.seen_ids = None
+
+    async def check(self, products, product_ids, ctx):
+        self.seen_ids = list(product_ids)
         return []
 
 
@@ -61,6 +77,12 @@ async def test_cross_product_rule_finds_issues():
     findings = await run_engine(products, product_ids, ctx, [], [StubCrossProductRule()])
     assert len(findings) == 1
     assert findings[0].rule_id == "stub_cross"
+
+
+async def test_cross_product_rule_receives_product_ids():
+    rule = RecordingCrossRule()
+    await run_engine([{"id": "a"}, {"id": "b"}], ["a", "b"], _make_ctx(), [], [rule])
+    assert rule.seen_ids == ["a", "b"]
 
 
 async def test_no_findings_on_clean_data():

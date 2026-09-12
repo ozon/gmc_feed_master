@@ -188,3 +188,66 @@ async def test_plugin_step_legacy_plugins_called_without_state(monkeypatch):
 
     assert result.processed_count == 1
     assert "state" not in seen_kwargs["keys"]
+
+
+@pytest.mark.asyncio
+async def test_ai_qc_context_enabled_loads_budget_and_previous_ids(isolated_database_url):
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    from app.models.client import Client
+    from app.models.feed_source import FeedSource
+    from app.models.ingestion import IngestionRun
+    from app.models.quality import QualityFinding
+    from app.pipeline.steps import _ai_qc_context
+
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    fake_ai = object()
+    async with factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        feed_source = FeedSource(
+            client_id=client.id, name="US", source_format="tsv",
+            configuration={"ai_qc": {"enabled": True, "budget": 5}},
+        )
+        session.add(feed_source)
+        await session.flush()
+        session.add(IngestionRun(id=1, feed_source_id=feed_source.id, status="completed"))
+        session.add_all([
+            QualityFinding(
+                feed_source_id=feed_source.id, ingestion_run_id=1,
+                product_id=pid, severity="warning", code="ai_policy_check",
+                field="ai_policy", message="x",
+            )
+            for pid in ("p2", "p3")
+        ])
+
+    ai_service, client_id, budget, prev = await _ai_qc_context(factory, feed_source, fake_ai)
+    assert (ai_service, client_id, budget) == (fake_ai, feed_source.client_id, 5)
+    assert prev == frozenset({"p2", "p3"})
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_ai_qc_context_disabled_returns_noop(isolated_database_url):
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+    from app.models.client import Client
+    from app.models.feed_source import FeedSource
+    from app.pipeline.steps import _ai_qc_context
+
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        feed_source = FeedSource(
+            client_id=client.id, name="US", source_format="tsv", configuration={}
+        )
+        session.add(feed_source)
+
+    ai_service, client_id, budget, prev = await _ai_qc_context(factory, feed_source, object())
+    assert (ai_service, client_id, budget, prev) == (None, feed_source.client_id, 0, frozenset())
+    await engine.dispose()

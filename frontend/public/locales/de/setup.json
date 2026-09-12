@@ -49,7 +49,9 @@
     "targetLanguage": "Zielsprache",
     "currency": "Währung",
     "volumeDropThreshold": "Schwellenwert für Mengenrückgang (%)",
-    "historyRetention": "Anzahl der zu behaltenden Verlaufsdaten"
+    "historyRetention": "Anzahl der zu behaltenden Verlaufsdaten",
+    "aiQcEnabled": "KI-Qualitätsprüfung (Richtlinien)",
+    "aiQcBudget": "KI-Aufrufe pro Run"
   },
   "cron": {
     "presets": {
