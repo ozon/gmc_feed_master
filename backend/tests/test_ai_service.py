@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.ai.provider import AiRequest, AiResponse
 from app.ai.resilience import RetryPolicy
 from app.ai.service import (
+    AiChatUnavailable,
     AiService,
     builtin_template_version,
     default_provider_factory,
@@ -322,3 +323,82 @@ def test_builtin_version_is_content_hashed():
     changed = TaskSpec(system=spec.system + "x", user=spec.user, validate=spec.validate)
     assert builtin_template_version(changed) != v1
     assert builtin_template_version(spec) == v1
+
+
+@pytest.mark.asyncio
+async def test_complete_chat_ok_returns_response_and_logs_usage(session_factory):
+    await _seed_default_config(session_factory)
+    provider = FakeProvider(responses=[("Hello!", (12, 3))])
+    service = AiService(session_factory, provider_factory=lambda config: provider)
+    messages = [{"role": "user", "content": "Hi"}]
+
+    result = await service.complete_chat(messages, client_id=1, feed_source_id=2)
+
+    assert result.content == "Hello!"
+    assert result.prompt_tokens == 12
+    assert result.completion_tokens == 3
+    assert len(provider.calls) == 1
+
+    async with session_factory() as session:
+        rows = list((await session.execute(
+            select(AiUsageLog).order_by(AiUsageLog.id)
+        )).scalars())
+    assert len(rows) == 1
+    assert rows[0].task_type == "chat"
+    assert rows[0].cache_hit is False
+    assert rows[0].prompt_tokens == 12
+    assert rows[0].error_code is None
+
+
+@pytest.mark.asyncio
+async def test_complete_chat_no_provider_raises(session_factory):
+    service = AiService(session_factory, provider_factory=lambda config: FakeProvider())
+    with pytest.raises(AiChatUnavailable) as exc_info:
+        await service.complete_chat([{"role": "user", "content": "Hi"}])
+    assert exc_info.value.error_code == "no_provider"
+
+
+@pytest.mark.asyncio
+async def test_complete_chat_retries_rate_limit_then_succeeds(session_factory):
+    await _seed_default_config(session_factory)
+    limit_error = httpx.HTTPStatusError(
+        "rate limited", request=httpx.Request("POST", "http://x"),
+        response=httpx.Response(429),
+    )
+    provider = FakeProvider(
+        errors=[limit_error, limit_error],
+        responses=[("OK", (20, 5))],
+    )
+    service = AiService(
+        session_factory,
+        provider_factory=lambda config: provider,
+        retry_policy=RetryPolicy(max_attempts=3, base_delay_s=0.0, jitter=0.0),
+    )
+
+    result = await service.complete_chat([{"role": "user", "content": "Hi"}])
+
+    assert result.content == "OK"
+    assert result.prompt_tokens == 20
+    assert len(provider.calls) == 3  # 2 failures + 1 success
+
+
+@pytest.mark.asyncio
+async def test_complete_chat_non_retryable_raises_with_breaker(session_factory):
+    await _seed_default_config(session_factory)
+    timeout = httpx.TimeoutException("timed out")
+    # Non-retryable with max_attempts=1 so it fails immediately
+    provider = FakeProvider(errors=[timeout])
+    service = AiService(
+        session_factory,
+        provider_factory=lambda config: provider,
+        retry_policy=RetryPolicy(max_attempts=1, base_delay_s=0.0, jitter=0.0),
+        breaker_failure_threshold=1, breaker_window_s=60, breaker_cooldown_s=30,
+    )
+    with pytest.raises(AiChatUnavailable) as exc_info:
+        await service.complete_chat([{"role": "user", "content": "Hi"}])
+    assert exc_info.value.error_code == "timeout"
+
+    # Breaker should have recorded the failure — next call should be circuit_open
+    with pytest.raises(AiChatUnavailable) as exc_info2:
+        await service.complete_chat([{"role": "user", "content": "Hi again"}])
+    assert exc_info2.value.error_code == "circuit_open"
