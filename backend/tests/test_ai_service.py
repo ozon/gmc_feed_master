@@ -304,6 +304,6 @@ async def test_new_active_version_invalidates_cache(session_factory):
 
 @pytest.mark.asyncio
 async def test_resolve_active_template_db_error_returns_none():
-    async def broken_factory():
+    def broken_factory():
         raise RuntimeError("db down")
     assert await resolve_active_template(broken_factory, "policy_check", None) is None
