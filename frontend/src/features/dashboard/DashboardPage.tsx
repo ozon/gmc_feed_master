@@ -5,7 +5,6 @@ import {
   Button,
   Group,
   Modal,
-  Paper,
   Select,
   SimpleGrid,
   Stack,
@@ -20,6 +19,7 @@ import { useCreateFeedSource, useDashboardSummary, useSession } from '../../api/
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import { notifyMutationError, notifySuccess } from '../../app/notifications';
 import type { ClientSummary } from '../../api/types';
+import { StatCard } from '../../components/dashboard/StatCard';
 import { FeedSourceCard } from './FeedSourceCard';
 
 const FEED_FORMATS = ['xml', 'tsv', 'csv', 'wide_tsv'] as const;
@@ -31,20 +31,6 @@ type ClientStatusKey = `clientStatus.${ClientStatus}`;
 function clientStatusKey(status: string): ClientStatusKey {
   const known = CLIENT_STATUSES.includes(status as ClientStatus);
   return `clientStatus.${known ? (status as ClientStatus) : 'active'}`;
-}
-
-function StatCard({ label, value }: { label: string; value: number }) {
-  const { i18n } = useTranslation('dashboard');
-  return (
-    <Paper withBorder p="md">
-      <Text size="sm" c="dimmed">
-        {label}
-      </Text>
-      <Text ff="monospace" size="xl" style={{ fontVariantNumeric: 'tabular-nums' }}>
-        {new Intl.NumberFormat(i18n.language).format(value)}
-      </Text>
-    </Paper>
-  );
 }
 
 function ClientSection({ client }: { client: ClientSummary }) {
