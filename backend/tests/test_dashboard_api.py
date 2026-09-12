@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 import pytest_asyncio
@@ -99,6 +99,16 @@ async def _add_export_run(factory, feed_id, status, product_count=1):
             )
 
 
+async def _add_run(factory, feed_id, status, days_ago=0, processed=10):
+    async with factory() as session, session.begin():
+        session.add(IngestionRun(
+            feed_source_id=feed_id,
+            status=status,
+            started_at=datetime.now(timezone.utc) - timedelta(days=days_ago),
+            processed_count=processed,
+        ))
+
+
 async def test_summary_requires_auth(app_factory):
     app, _ = app_factory
     client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
@@ -111,7 +121,7 @@ async def test_summary_empty(app_factory):
     assert resp.status_code == 200
     assert resp.json() == {"counts": {"clients": 0, "feed_sources": 0,
                                       "active_products": 0, "failed_last_exports": 0},
-                           "clients": []}
+                           "clients": [], "runs_by_day": []}
 
 
 async def test_summary_counts_and_per_feed_fields(app_factory):
@@ -170,3 +180,30 @@ async def test_summary_feed_without_runs_has_null_last_fields(app_factory):
     assert feed["last_export_at"] is None
     assert feed["last_export_status"] is None
     assert feed["item_count"] == 0
+
+
+async def test_summary_includes_runs_by_day(app_factory):
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    _, feed_a = await _make_feed(factory, client, "Acme")
+    await _add_run(factory, feed_a, "success", days_ago=1, processed=5)
+    await _add_run(factory, feed_a, "success", days_ago=1, processed=7)
+    await _add_run(factory, feed_a, "error", days_ago=2)
+    await _add_run(factory, feed_a, "running", days_ago=1)  # excluded
+    await _add_run(factory, feed_a, "success", days_ago=20)  # outside window
+
+    body = (await client.get("/dashboard/summary")).json()
+    runs_by_day = body["runs_by_day"]
+    assert {"date", "success", "error"} == set(runs_by_day[0].keys())
+    by_date = {row["date"]: row for row in runs_by_day}
+    today = datetime.now(timezone.utc).date()
+    assert by_date[str(today - timedelta(days=1))]["success"] == 2
+    assert by_date[str(today - timedelta(days=1))]["error"] == 0
+    assert by_date[str(today - timedelta(days=2))]["error"] == 1
+    assert str(today - timedelta(days=20)) not in by_date
+
+
+async def test_summary_runs_by_day_empty(app_factory):
+    client = await logged_in_client(app_factory)
+    body = (await client.get("/dashboard/summary")).json()
+    assert body["runs_by_day"] == []

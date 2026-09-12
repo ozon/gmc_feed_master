@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -67,6 +69,27 @@ async def dashboard_summary(
         latest_exports = await _latest_runs(session, ExportRun)
         latest_runs = await _latest_runs(session, IngestionRun)
 
+        since = datetime.now(timezone.utc) - timedelta(days=14)
+        trend_rows = (await session.execute(
+            select(
+                func.date(IngestionRun.started_at).label("day"),
+                IngestionRun.status,
+                func.count(),
+            )
+            .where(
+                IngestionRun.feed_source_id.in_(feed_ids),
+                IngestionRun.started_at >= since,
+                IngestionRun.status.in_(("success", "error")),
+            )
+            .group_by("day", IngestionRun.status)
+            .order_by("day")
+        )).all()
+        runs_by_day: dict[str, dict[str, int | str]] = {}
+        for day, status, count in trend_rows:
+            key = str(day)
+            runs_by_day.setdefault(key, {"date": key, "success": 0, "error": 0})
+            runs_by_day[key][status] = count
+
     feeds_by_client: dict[int, list[dict]] = {}
     failed_last_exports = 0
     for feed in feeds:
@@ -93,6 +116,7 @@ async def dashboard_summary(
             "active_products": total_active,
             "failed_last_exports": failed_last_exports,
         },
+        "runs_by_day": list(runs_by_day.values()),
         "clients": [
             {"id": c.id, "name": c.name, "status": c.status,
              "feed_sources": feeds_by_client.get(c.id, [])}
