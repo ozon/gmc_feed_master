@@ -1,0 +1,13 @@
+{
+  "title": "Enrichment",
+  "scan": "Scan",
+  "scanLimit": "Products per scan",
+  "suggestions": "Suggestions",
+  "pinned": "Accepted values",
+  "acceptSelected": "Accept selected",
+  "acceptAll": "Accept all",
+  "discard": "Discard",
+  "unpin": "Unpin",
+  "empty": "No pending suggestions",
+  "scanDone": "Scanned {{scanned}} products, {{with_suggestions}} with suggestions, {{failed}} failed"
+}

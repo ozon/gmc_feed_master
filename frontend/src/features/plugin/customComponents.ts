@@ -4,6 +4,7 @@ import RulesUI from '../../../../plugins/core/rules/frontend/component';
 import FilterUI from '../../../../plugins/core/filter/frontend/component';
 import { LabelizerPage } from '../customLabels/LabelizerPage';
 import CategoryUI from '../category/CategoryUI';
+import EnrichmentUI from '../enrichment/EnrichmentUI';
 
 export type CustomComponentProps = { pluginId: string; scope: PluginScope };
 
@@ -14,4 +15,5 @@ export const CUSTOM_COMPONENTS: Record<string, ComponentType<CustomComponentProp
   filter: FilterUI,
   custom_labels: LabelizerPage,
   category: CategoryUI,
+  enrichment: EnrichmentUI,
 };
