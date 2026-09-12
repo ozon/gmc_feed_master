@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import re
-from datetime import datetime, timezone
-from typing import Any
+from datetime import datetime
 
 from .constants import (
     BASELINE_REQUIRED,
@@ -10,7 +8,7 @@ from .constants import (
     IMAGE_FORMATS,
     IMAGE_SIZE_ENFORCEMENT_DATE,
 )
-from .engine import QcContext, Finding
+from .engine import Finding, QcContext
 
 
 class BaselineRequired:

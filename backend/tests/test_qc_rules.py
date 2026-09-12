@@ -1,14 +1,34 @@
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock
-from app.qc.rules import (
-    BaselineRequired, BrandRequired, GtinMpn, EnumValues,
-    ConditionalRequired, DateFormat, LengthLimits, CardinalityRule,
-    CurrencyConsistency, ImageRequirements, VariantConsistency, VolumeDrop,
-)
-from app.qc.engine import QcContext, Finding
-from registry.model import RegistryDocument, RegistryAttribute, Cardinality, Constraints, AttributeKind, RequirementStatus, FeedDomain, ExportStatus
+
+import pytest
+
 from app.clock import TestClock
+from app.qc.engine import QcContext
+from app.qc.rules import (
+    BaselineRequired,
+    BrandRequired,
+    CardinalityRule,
+    ConditionalRequired,
+    CurrencyConsistency,
+    DateFormat,
+    EnumValues,
+    GtinMpn,
+    ImageRequirements,
+    LengthLimits,
+    VariantConsistency,
+    VolumeDrop,
+)
+from registry.model import (
+    AttributeKind,
+    Cardinality,
+    Constraints,
+    ExportStatus,
+    FeedDomain,
+    RegistryAttribute,
+    RegistryDocument,
+    RequirementStatus,
+)
 
 pytestmark = pytest.mark.asyncio
 

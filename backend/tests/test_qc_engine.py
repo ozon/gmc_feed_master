@@ -1,7 +1,12 @@
 import pytest
-from app.qc.engine import QcContext, Finding, PerProductRule, CrossProductRule, run_engine
-from registry.model import RegistryDocument
+
 from app.clock import TestClock
+from app.qc.engine import (
+    Finding,
+    QcContext,
+    run_engine,
+)
+from registry.model import RegistryDocument
 
 pytestmark = pytest.mark.asyncio
 
