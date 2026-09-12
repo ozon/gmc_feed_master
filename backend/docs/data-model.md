@@ -92,7 +92,7 @@ Row is seeded lazily on first `GET /admin/settings` (the migration does not inse
 | `source_url` | String(2048) | HTTP(S) fetch URL |
 | `volume_drop_threshold_pct` | Integer | Default 20 |
 | `field_mapping` | JSONB | Source field → registry attribute path; targets use the 1-based indexed grammar `attr \| attr.sub \| attr.N \| attr.N.sub` (N ≤ 10 000, enforced at PUT validation) |
-| `configuration` | JSONB | Feed-specific config (e.g., basic_auth) |
+| `configuration` | JSONB | Feed-specific config. Known keys: `basic_auth` (`{username, password}`), `ai_qc` (`{enabled: bool, budget: int}` — enables the AI policy check QC rule, budget = real AI calls per run, default 50) |
 | `created_at` / `updated_at` | DateTime | Auto |
 
 ### ModulePipeline

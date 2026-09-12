@@ -1295,3 +1295,17 @@ Inline code review of the cycle found one critical and one important issue; both
 - **Provider protocol extension is OpenAI-shaped.** `AiRequest.tools` / `AiChatResult.tool_calls` mirror the OpenAI function-calling JSON so self-hosted OpenAI-compatible servers work unchanged; `AiService.complete_chat` reuses breaker/retry/semaphore and writes usage logs but skips the task registry and result cache (chat answers are not deterministic artifacts worth caching).
 
 **Rationale:** The chat feature's value is answering "what's wrong with my feed" from live staging/QC/export data — read-only tools over that data give the model everything it needs with zero write risk. Keeping the loop server-side and the scope check inside every tool means the security boundary survives any client.
+
+### 2026-09-12 — Z3 AI QC rules cycle
+
+**Topic:** AI-powered `policy_check` as a QC cross-product rule with per-run budget, cache-free progression, re-validate-first ordering.
+
+**Decision:**
+- **Cross-product rules receive `product_ids`.** `CrossProductRule.check(products, product_ids, ctx)` — the third argument lets a cross-product rule emit per-product findings (via `Finding.product_id`) without per-product orchestration. `QcContext` gains AI fields with defaults (`ai_service`, `client_id`, `ai_budget`, `previous_ai_product_ids`) so existing rule call sites are untouched.
+- **AI budget counts real calls only.** `AiResult.status == "ok"` spends one budget unit; `cache_hit` is free; `fallback` is a failed call. Budget exhaustion emits an info coverage finding; total failure emits `AI policy check unavailable`. The rule never aborts a run — AI degrades to findings, deterministic rules stay the only `critical` source.
+- **Re-validate previous findings first.** `previous_ai_product_ids` (loaded from the prior run's `ai_policy_check` findings) is checked before all other products, so a small budget always re-checks known problem products.
+- **Severity mapping is fixed.** Violations → `warning`, confidence < 0.5 → `info`. No AI rule can emit `critical`.
+- **Per-feed opt-in config.** `configuration.ai_qc = {enabled, budget}` (default budget 50), editable in the Feed Settings form (switch + budget input, merged into `configuration` so `basic_auth` survives). `QualityCheckStep` reads it via the extracted `_ai_qc_context` helper; the app wires `AiService` into `default_steps` before the runner is built.
+- **Plan-text defect fixed inline:** the plan's chunked `asyncio.gather` implementation would have launched the whole chunk (10 products) past a budget of 1, contradicting its own re-validate-first test. Implemented per-item budget enforcement (sequential) instead — matches both budget tests and the plan's lazy "synchronous batching" intent.
+
+**Rationale:** Budgeting real calls keeps AI cost bounded per run while cache hits stay free; revalidate-first spends the budget where it matters (known problems) before scanning new products. Keeping AI out of the `critical` path preserves the QC contract that deterministic rules are the source of blocking-quality truth.

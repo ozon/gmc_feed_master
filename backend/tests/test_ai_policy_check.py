@@ -12,7 +12,7 @@ pytestmark = pytest.mark.asyncio
 @dataclass
 class FakeAi:
     scripted: dict  # product_id -> AiResult
-    calls: list = None
+    calls: list | None = None
 
     def __post_init__(self):
         self.calls = []
