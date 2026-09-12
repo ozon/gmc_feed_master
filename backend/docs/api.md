@@ -65,6 +65,9 @@ Versioned, immutable prompt templates per task type. Editing = creating a new ve
 ### Scheduler
 - `GET /admin/scheduler` — registered job overview `[{id, trigger}]`; 503 when no scheduler is running (app lifespan not started)
 
+### Chat
+- `POST /chat` — `{messages: [{role: "user"|"assistant", content}]}` → `{content}`. Any authenticated user; tenancy is enforced inside the tools (client-scoped users only see their clients' data, admins see everything). The server prepends a fixed system prompt and runs the tool loop (max 5 rounds): the model may call `list_feed_sources`, `query_staging_products` (title search, status/limit filters), `query_qc_findings` (severity filter), `query_export_runs` — all read-only, limit ≤ 50, results truncated at 500 chars. 422 on bad payloads or a non-user last message; 502 `tool_loop_exhausted` after 5 tool rounds without a final answer; 503 when no AI provider is configured or the AI service is unavailable. Chat is stateless per request — the client sends the full conversation each time.
+
 ## Health
 - `GET /health` → `{"status": "ok"}`
 
