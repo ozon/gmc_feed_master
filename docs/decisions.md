@@ -1309,3 +1309,16 @@ Inline code review of the cycle found one critical and one important issue; both
 - **Plan-text defect fixed inline:** the plan's chunked `asyncio.gather` implementation would have launched the whole chunk (10 products) past a budget of 1, contradicting its own re-validate-first test. Implemented per-item budget enforcement (sequential) instead — matches both budget tests and the plan's lazy "synchronous batching" intent.
 
 **Rationale:** Budgeting real calls keeps AI cost bounded per run while cache hits stay free; revalidate-first spends the budget where it matters (known problems) before scanning new products. Keeping AI out of the `critical` path preserves the QC contract that deterministic rules are the source of blocking-quality truth.
+
+### 2026-09-12 — Z4 attribute enrichment cycle
+
+**Topic:** Core `enrichment` plugin: AI scan fills missing attributes into pending suggestions; users accept per field into pinned values; the pipeline applies pins by product id.
+
+**Decision:**
+- **Plugin, not pipeline step.** Enrichment is a core pipeline-module plugin (`plugins/core/enrichment/`) with `config: [global, client, feed_source]`, `data: [feed_source]`. Suggestions and pins live in `PluginData` JSONB — no new tables, no migration.
+- **Pinned values win over feed values.** `process()` applies `pinned[product_id]` over the mapped product (explicit user decision precedence); products without pins pass through as the same object. Suggestions are never applied automatically — only acceptance (pinning) changes output.
+- **Scan is a synchronous route with a hard limit.** `POST /plugins/enrichment/scan` queries staged products missing any `targetFields` value (JSONB `->>` NULL/empty), skips fully-pinned products, and calls `AiService.run_task("attribute_enrichment", ...)` per candidate via `asyncio.gather` with no DB session held across the AI phase. `limit` (1–50) bounds cost per request. `ponytail:` synchronous scan — a queue + background job replaces it if scans approach request timeouts.
+- **All four routes reuse the generic plugin-data helpers.** scan/accept/discard/unpin go through `_get_payload`/`_put_payload` (transactions + `expected_version` → 409 optimistic locking for free); `ensure_feed_source_access` runs first on the body-carried `feed_source_id`. Read-modify-writes roll back the autobegun read transaction before `_put_payload`'s `begin()` (brief bug fixed inline).
+- **UI is review-first.** `EnrichmentUI` (registered in `CUSTOM_COMPONENTS`): scan with limit, per-field checkboxes, accept selected/all, per-field discard, pinned list with unpin. i18n en/de. The version header (`X-Plugin-Data-Version`) feeds `expected_version` on every mutation.
+
+**Rationale:** Suggestions-then-accept keeps a human in the loop for AI-written attribute values (the same trust line as Z3's no-critical-AI rule); PluginData JSONB with OL matches how every other plugin stores its state, so the whole accept/discard/unpin surface is ~30 lines on top of shared helpers. The pipeline module is trivial (dict overlay by product id) because all the interesting logic lives in the review workflow.

@@ -186,6 +186,7 @@ Checks:
 | Category | `category` | `config: [global, client]`, `data: [client]` | Rules + manual assignments + taxonomy autocomplete |
 | Filter | `filter` | `config: [global, client, feed_source]`, `data: [global, client, feed_source]` | Single conjunctive condition set (6 scalar ops); drops non-matching products; live preview endpoint; `plugins/core/filter/` |
 | Custom Labels | `custom_labels` | `config: [global, client]`, `data: [client, feed_source]` | Bulk-ID slot rules: `slotRules` (global/client) config; `slotIds` keyed by rule id (client/feed_source) data; matching = registry attribute path membership in a trimmed/deduped set; first-match-wins per slot; empty token skips rule; per-slot fallback from first rule when rule matched but template empty; `plugins/core/custom_labels/` |
+| Enrichment | `enrichment` | `config: [global, client, feed_source]`, `data: [feed_source]` | AI attribute enrichment: scan fills missing `targetFields` into pending suggestions; users accept per field into pinned values; pipeline applies pins by product id (pinned wins over feed); `plugins/core/enrichment/` |
 
 ### Rules Plugin (`plugins/core/rules/`)
 
@@ -262,6 +263,41 @@ Config document: `{"slotRules": [{id, name, isActive, targetSlot, matchField, va
   first-match-wins per slot with token skip; the first rule's fallback credits
   the slot, never a rule. 404 unknown feed source; 422 `{"errors": [...]}`
   on invalid rules; 503 database unavailable.
+
+### Enrichment Plugin (`plugins/core/enrichment/`)
+
+Config document: `{"isActive": true, "targetFields": ["color", "material", "size", "gtin"]}`.
+- `targetFields`: non-empty list of non-empty strings (validated; defaults apply
+  when absent). `isActive` is the pipeline master flag (UI pinning convention).
+- Data document (feed_source scope): `{"suggestions": {pid: {field: value}},
+  "pinned": {pid: {field: value}}}` — both written through the generic plugin
+  data endpoints with optimistic locking (`expected_version` → 409).
+- `prepare_run` extracts `pinned` into run state; `process()` applies pinned
+  values by product id. **Pinned values win over feed values** (explicit user
+  decision precedence); products without pins pass through unchanged
+  (same object, no copy).
+- `POST /plugins/enrichment/scan` — `{feed_source_id, limit (1–50, default 20)}`.
+  Finds active, non-excluded staged products whose `raw_data` misses any
+  `targetFields` entry (JSONB `->>'field'` NULL or empty), skips products whose
+  missing fields are all already pinned, then calls
+  `AiService.run_task("attribute_enrichment", {title, description}, ...)` per
+  candidate via `asyncio.gather` (no DB session held across the AI phase).
+  Successful results land in `suggestions[product_id]`; fallback/invalid
+  results count as `failed`. Response `{scanned, with_suggestions, failed}`.
+  503 when no AI service is configured; 404 unknown/unassigned feed source.
+  `ponytail:` synchronous scan over `limit` products — a queue + background
+  job replaces it if scans get slow enough to hit request timeouts.
+- `POST /plugins/enrichment/accept` — `{feed_source_id, expected_version,
+  items: [{product_id, fields}]}` moves selected suggestion fields into
+  `pinned` (clearing them from suggestions; empty product keys dropped).
+- `POST /plugins/enrichment/discard` — same shape, deletes selected
+  suggestion fields.
+- `POST /plugins/enrichment/unpin` — same shape, deletes selected pinned
+  fields (empty product keys dropped).
+- All four routes call `ensure_feed_source_access` first (body-carried
+  `feed_source_id`) and read-modify-write `PluginData` via the generic
+  `_get_payload`/`_put_payload` helpers (transaction + OL managed there).
+  Unknown product/field in items: no-op, no crash.
 
 ## Example Plugin (`plugins/example_upper/`)
 
