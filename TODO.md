@@ -12,6 +12,8 @@
 
 ## Cycle log
 
+- **2026-09-12 (branch `main`, post-AI-roadmap close-out):** all 6 AI-roadmap cycles (Z1 → Z5+Z6 → Z2 → Z3 → Z4) executed and merged (`433a5e1`); plan checkboxes ticked (`4b00214`). Final TODO sweep closed the last actionable P2s: 6.1 newline-at-EOF (22 files, `064b459`), 3.5 icon registry (16 names, verified against installed tabler exports), 6.2 test-wrapper centralization (render/renderHook provide QueryClient+Mantine, ~25 files simplified, `5552975`). Remaining open items are blocked-by-construction: 9.4 (needs a second scoped plugin with a client→feed_source data tier), 9A.14 (typescript-eslint × TS 7, upstream #10940), 8.1 (owner meta-task, answered de facto by the AI roadmap). Gates at close: backend 1247/0 + ruff 490/490 zero-new + mypy exit-0; frontend 510/510 + typecheck 0 + build clean.
+
 - **2026-09-11 (branch `mapping-ui-custom-fields`, Mapping UI button-only automap + custom source fields):** 10 tasks executed via subagent-driven development (12 commits), all per-task reviewed; final whole-branch review READY. D1: implicit `auto_match` removed from `MappingStep` and `run_dry_run` — `POST /field-mapping/auto` (UI button) is the only automap trigger; fresh sources stay unmapped until click/manual save. Full-suite audit: 9 test files that silently relied on implicit automatch given explicit pre-seeding (m3/m4/m5/m6/m8/m9 acceptance, dry-run API, custom_labels hash e2e). D2: `custom_fields` member on `MappingDocument` (additive, no version bump/migration), PUT/GET with validation (grammar `^[a-z_][a-z0-9_]*$` ≤64 chars, duplicates, flat-key closure — flat mapping source keys must be in observed ∪ custom, so never-ingested feeds must declare their mapping keys as custom; `_BASELINE_FIELDS` name collisions accepted by design); custom rows dormant in `apply_mapping` until the feed supplies the key; `POST /auto` round-trips custom_fields unchanged. Frontend: MappingTable custom rows + AddCustomRow + remove controls + shadow indicator for observed/custom overlap; MappingTab customList state + save payload; en+de i18n `mapping.custom.*`. Final-review fix wave `90d7c74`: custom_fields preservation pin through dry-run; one Important finding refuted with evidence (the `_make_feed` custom declaration is the closure rule working as designed — removing it broke 6 tests with 422). Gates: backend 1097 passed, ruff 508 exact (= `backend/ruff-baseline.txt`), mypy exit-0; frontend 483 + typecheck + build clean. Docs: api.md, architecture.md, decisions.md, frontend/docs/architecture.md. Merged to main at `90d7c74`.
 
 - **2026-09-10 (branch `section9-polish`, section 9 polish cycle):** 6 tasks executed controller-inline (subagent 429s persisted), design spec `docs/superpowers/specs/2026-09-10-section9-polish-design.md`, plan `docs/superpowers/plans/2026-09-10-section9-polish.md`. (1) 9.3 — `labels_equivalence.py`: `MERGED_SLOT_RULES` rows `copy.deepcopy`-ed from `GLOBAL_SLOT_RULES`/`CLIENT_SLOT_RULES` (cross-suite mutation structurally impossible); (2) 9.5 — `manifest.py:65` error message changed from `"config_merge keys must be non-empty strings"` to `"config_merge keys must be non-empty"` (guard is `if not key:`, no type check exists; test assertion updated); (3) 9B.3 — `alembic/env.py:13` `DATABASE_URL` fallback made explicit (two-step instead of `or`), `conftest.py` session-scoped autouse fixture warns when both `DATABASE_URL` and `TEST_DATABASE_URL` are set, `AGENTS.md` sentence added; (4) 9.6 — new test asserts `sys.modules["custom_labels_plugin"]` identity is preserved across `create_app(plugins_dir=...)` lifespan startup, `docs/plugins.md` sentence documenting `sys.modules` caching; (5) 9.2 — `usePreview.test.tsx`: 1500ms real-time sleep replaced with `vi.useFakeTimers({ shouldAdvanceTime: true })` + `vi.advanceTimersByTime`; (6) 9.1 — 7 i18n keys across 3 namespaces (pipeline, rules, plugins) in en+de split from flat `{{count}}` forms into `_one`/`_other` variants (only grammatically meaningful splits). Gates: backend 1020 (1019 + 1 re-exec test), ruff 506 exact, mypy exit-0; frontend 417 + typecheck + build clean.
@@ -295,7 +297,9 @@
 
 ---
 
-### 3.5 [ ] `PluginIconMap`: real icon registry, not skeleton [P2]
+### 3.5 [x] `PluginIconMap`: real icon registry, not skeleton [P2] — done 2026-09-12
+
+**Done:** MAP expanded to 16 names — the 5 previously shipped plus `cog`→`IconSettings`, `database`, `tag`, `wand`, `shield`, `lock`, `link`, `mail`, `chart`→`IconChartBar`, `transform`, `list-check` (used by the rules plugin manifest). Every name verified against the installed `@tabler/icons-react` export map (`IconCog` does not exist in this version; `IconSettings` is the tabler equivalent). Unknown names keep the `IconCircle` fallback; best-effort registry decision recorded in `docs/decisions.md` (2026-09-12 (b)). Test asserts every registry name maps to a distinct icon and the fallback holds.
 
 **Why:** Current `PluginIconMap.ts` has 4 letter icons + a circle fallback. Plugins can declare any icon string; the spec implies a broader registry. The plan flagged this in M10-b.
 
@@ -336,7 +340,9 @@
 
 ## Section 6 — Test hygiene (carried from M10-d final review)
 
-### 6.1 [ ] Newline-at-EOF pass for all new files in M10-d [P2]
+### 6.1 [x] Newline-at-EOF pass for all new files in M10-d [P2] — done 2026-09-12
+
+**Done:** Swept repo-wide, not just M10-d: 22 files gained trailing newlines (monitoring/export frontend sources + tests, `backend/app/routes/plugins.py`, `backend/app/qc/ai_rules.py`). `git diff --check` clean. No content changes.
 
 **Why:** Vite/ESLint convention; the diff footer shows `\ No newline at end of file` on many new files. Not load-bearing, but visible to reviewers.
 
@@ -350,7 +356,9 @@
 
 ---
 
-### 6.2 [ ] Centralize QueryClientProvider in test wrapper (fix double-wrap) [P2]
+### 6.2 [x] Centralize QueryClientProvider in test wrapper (fix double-wrap) [P2] — done 2026-09-12
+
+**Done:** `src/test/render.tsx` now exports `render` and `renderHook` that always wrap with a fresh `QueryClient` (retry:false) + `MantineProvider`; tests needing a specific client pass `{ queryClient }` (invalidation spies, OL pre-seeding, cross-observer probes). ~25 test files lost their local `withQueryClient`/`withClient`/`Wrapper` helpers and manual `<QueryClientProvider>` wraps (net −111 lines). Router-only wrappers (PluginConfigPanel) became plain `MemoryRouter` element wraps. Full gates: typecheck 0, vitest 510/510, build clean.
 
 **Why:** `frontend/src/test/render.tsx` was extended in Task 1 to accept a `RenderOptions.wrapper`. Several test files manually wrap with `QueryClientProvider` AND pass it via the `wrapper` option — double-wrapping. Functionally fine (nested providers share state via the same `QueryClient` instance) but noisy.
 
