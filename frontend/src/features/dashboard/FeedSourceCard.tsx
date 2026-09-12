@@ -83,7 +83,9 @@ export function FeedSourceCard({
       style={{ cursor: 'pointer', display: 'block' }}
       onClick={() => navigate(`/clients/${clientId}/feeds/${feed.id}`)}
       onKeyDown={(event) => {
-        if (event.key === 'Enter') navigate(`/clients/${clientId}/feeds/${feed.id}`);
+        if (event.key === 'Enter' && event.target === event.currentTarget) {
+          navigate(`/clients/${clientId}/feeds/${feed.id}`);
+        }
       }}
     >
       <Group justify="space-between" wrap="nowrap">
