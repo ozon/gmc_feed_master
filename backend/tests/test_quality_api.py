@@ -132,3 +132,37 @@ async def test_returns_findings(app_factory):
     assert data["findings"][0]["severity"] == "critical"
     assert data["findings"][0]["field"] == "availability"
     assert data["findings"][0]["product_id"] == "SKU-1"
+
+
+async def test_quality_history_returns_rows_ascending(app_factory):
+    _, factory = app_factory
+    _, feed_source_id = await _seed_feed_source(app_factory)
+
+    async with factory() as session, session.begin():
+            ingestion_run = IngestionRun(feed_source_id=feed_source_id, status="completed")
+            session.add(ingestion_run)
+            await session.flush()
+            for fixed, new, remaining in ((0, 3, 0), (2, 1, 1)):
+                session.add(ExportRun(
+                    feed_source_id=feed_source_id,
+                    ingestion_run_id=ingestion_run.id,
+                    status="completed",
+                    product_count=5,
+                    critical_finding_count=1,
+                    warning_finding_count=1,
+                    info_finding_count=0,
+                    fixed_finding_count=fixed,
+                    new_finding_count=new,
+                    remaining_finding_count=remaining,
+                ))
+
+    client = await logged_in_client(app_factory)
+    resp = await client.get(f"/feed-sources/{feed_source_id}/quality-history")
+    assert resp.status_code == 200
+    rows = resp.json()["rows"]
+    assert len(rows) == 2
+    assert rows[0]["id"] < rows[1]["id"]  # ascending: oldest first
+    assert rows[0]["fixed"] == 0 and rows[0]["new"] == 3 and rows[0]["remaining"] == 0
+    assert rows[1]["fixed"] == 2 and rows[1]["new"] == 1 and rows[1]["remaining"] == 1
+    assert rows[0]["product_count"] == 5
+    assert "started_at" in rows[0] and "critical" in rows[0] and "warning" in rows[0] and "info" in rows[0]

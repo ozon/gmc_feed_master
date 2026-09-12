@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -74,3 +74,36 @@ async def get_quality_findings(
         },
         "findings": findings,
     }
+
+
+@router.get("/feed-sources/{feed_source_id}/quality-history")
+async def get_quality_history(
+    feed_source_id: int,
+    limit: int = Query(default=30, ge=1, le=100),
+    _user: str = Depends(require_user),
+    db_session: AsyncSession | None = Depends(get_db_session),
+):
+    session = _require_db(db_session)
+    feed_source = await session.get(FeedSource, feed_source_id)
+    if feed_source is None:
+        raise HTTPException(status_code=404, detail="feed source not found")
+    rows = list((await session.execute(
+        select(ExportRun)
+        .where(ExportRun.feed_source_id == feed_source_id)
+        .order_by(ExportRun.id.desc())
+        .limit(limit)
+    )).scalars().all())
+    return {"rows": [
+        {
+            "id": row.id,
+            "started_at": row.started_at.isoformat(),
+            "product_count": row.product_count,
+            "critical": row.critical_finding_count,
+            "warning": row.warning_finding_count,
+            "info": row.info_finding_count,
+            "fixed": row.fixed_finding_count,
+            "new": row.new_finding_count,
+            "remaining": row.remaining_finding_count,
+        }
+        for row in reversed(rows)
+    ]}
