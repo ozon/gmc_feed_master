@@ -267,7 +267,7 @@ class VariantConsistency:
     rule_id = "variant_consistency"
     _BASE_ATTRS = ("id", "title", "description", "link", "image_link", "availability", "condition", "price")
 
-    async def check(self, products: list[dict], ctx: QcContext) -> list[Finding]:
+    async def check(self, products: list[dict], product_ids: list[str], ctx: QcContext) -> list[Finding]:
         groups: dict[str, list[dict]] = {}
         for p in products:
             gid = p.get("item_group_id")
@@ -292,7 +292,7 @@ class VariantConsistency:
 class VolumeDrop:
     rule_id = "volume_drop"
 
-    async def check(self, products: list[dict], ctx: QcContext) -> list[Finding]:
+    async def check(self, products: list[dict], product_ids: list[str], ctx: QcContext) -> list[Finding]:
         if ctx.previous_export_run is None:
             return []
         prev_count = ctx.previous_export_run.product_count

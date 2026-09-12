@@ -358,7 +358,7 @@ async def test_variant_consistency_inconsistent():
         {"item_group_id": "G1", "title": "A"},
         {"item_group_id": "G1", "title": "B"},
     ]
-    findings = await rule.check(products, _make_ctx())
+    findings = await rule.check(products, [], _make_ctx())
     assert len(findings) == 1
 
 
@@ -368,14 +368,14 @@ async def test_variant_consistent():
         {"item_group_id": "G1", "title": "Same", "price": "10 USD"},
         {"item_group_id": "G1", "title": "Same", "price": "10 USD"},
     ]
-    findings = await rule.check(products, _make_ctx())
+    findings = await rule.check(products, [], _make_ctx())
     assert findings == []
 
 
 async def test_variant_single_no_issue():
     rule = VariantConsistency()
     products = [{"item_group_id": "G1", "title": "Solo"}]
-    findings = await rule.check(products, _make_ctx())
+    findings = await rule.check(products, [], _make_ctx())
     assert findings == []
 
 
@@ -386,14 +386,14 @@ async def test_volume_drop_fires():
     prev = type("Prev", (), {"product_count": 100})()
     ctx = _make_ctx(previous_export_run=prev)
     products = [{"id": str(i)} for i in range(70)]
-    findings = await rule.check(products, ctx)
+    findings = await rule.check(products, [], ctx)
     assert len(findings) == 1
     assert findings[0].severity == "warning"
 
 
 async def test_volume_drop_skipped_without_prior():
     rule = VolumeDrop()
-    findings = await rule.check([{"id": "1"}], _make_ctx())
+    findings = await rule.check([{"id": "1"}], [], _make_ctx())
     assert findings == []
 
 
@@ -402,5 +402,5 @@ async def test_volume_drop_no_issue_small_drop():
     prev = type("Prev", (), {"product_count": 100})()
     ctx = _make_ctx(previous_export_run=prev, volume_drop_threshold_pct=20)
     products = [{"id": str(i)} for i in range(90)]
-    findings = await rule.check(products, ctx)
+    findings = await rule.check(products, [], ctx)
     assert findings == []
