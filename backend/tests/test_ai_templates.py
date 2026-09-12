@@ -80,3 +80,31 @@ def test_render_missing_variable_raises():
 def test_render_lenient_renders_missing_as_empty():
     messages = render_messages("s {{brand}}", "u {{title}}", {"brand": "b"}, lenient=True)
     assert '<data key="title"></data>' in messages[1]["content"]
+
+
+def test_malformed_brace_warns():
+    result = validate_template(["title"], "Say {{title}} and {{Title}}", "", ["title"])
+    assert result.errors == []
+    assert any("{{Title}}" in w for w in result.warnings)
+
+
+def test_valid_braces_do_not_warn():
+    result = validate_template(["title"], "Say {{ title }}", "", ["title"])
+    assert result.warnings == []
+
+
+def test_empty_braces_warn():
+    result = validate_template(["title"], "Say {{}}", "", ["title"])
+    assert any("{{}}" in w for w in result.warnings)
+
+
+def test_declared_non_canonical_is_error():
+    result = validate_template(["title"], "{{title}}", "", ["title", "bogus"])
+    assert "declared variable 'bogus' is not a canonical variable of this task type" in result.errors
+    assert result.warnings == []
+
+
+def test_declared_unused_canonical_still_warns():
+    result = validate_template(["title", "brand"], "{{title}}", "", ["title", "brand"])
+    assert result.errors == []
+    assert "declared variable 'brand' is not used in the template" in result.warnings
