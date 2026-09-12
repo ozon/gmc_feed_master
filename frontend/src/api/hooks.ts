@@ -20,6 +20,7 @@ import type {
   DashboardSummary,
   DiffOut,
   ExportVersionOut,
+  FeedDashboardData,
   FeedSourceFieldsResponse,
   FeedSourceRow,
   FeedSourceSummary,
@@ -37,6 +38,7 @@ import type {
   QualityFindingsResponse,
   QualityHistoryRow,
   RegistryAttribute,
+  RunsByDayRow,
   SchedulerJob,
 } from './types';
 
@@ -186,6 +188,31 @@ export function useIngestionRuns(feedSourceId: number | string, active: boolean)
     queryFn: () => apiGet<IngestionRunRow[]>(`/feed-sources/${feedSourceId}/ingestion-runs?limit=50`),
     refetchInterval: active ? 5000 : false,
   });
+}
+
+export function useFeedDashboard(feedSourceId: number | string) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId).feedDashboard,
+    queryFn: () => apiGet<FeedDashboardData>(`/feed-sources/${feedSourceId}/dashboard`),
+    enabled: Boolean(feedSourceId),
+  });
+}
+
+// Zero-fill missing days so charts show continuous time axis.
+export function fillChartDates(
+  rows: RunsByDayRow[],
+  days: number,
+): RunsByDayRow[] {
+  if (rows.length === 0) return [];
+  const byDate = new Map(rows.map((r) => [r.date, r]));
+  const out: RunsByDayRow[] = [];
+  const first = new Date(`${rows[0].date}T00:00:00Z`);
+  for (let i = 0; i < days; i += 1) {
+    const d = new Date(first.getTime() + i * 86_400_000);
+    const key = d.toISOString().slice(0, 10);
+    out.push(byDate.get(key) ?? { date: key, success: 0, error: 0 });
+  }
+  return out;
 }
 
 export function useQualityFindings(feedSourceId: number | string, active: boolean) {

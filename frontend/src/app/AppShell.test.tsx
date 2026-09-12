@@ -47,6 +47,7 @@ const summary = {
       ],
     },
   ],
+  runs_by_day: [],
 };
 
 const plugins = [

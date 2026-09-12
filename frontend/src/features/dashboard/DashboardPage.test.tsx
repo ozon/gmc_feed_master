@@ -66,16 +66,22 @@ const summary: DashboardSummary = {
       ],
     },
   ],
+  runs_by_day: [
+    { date: '2026-08-26', success: 3, error: 1 },
+    { date: '2026-08-27', success: 2, error: 0 },
+  ],
 };
 
 const deletedSummary: DashboardSummary = {
   counts: { clients: 1, feed_sources: 1, active_products: 4200, failed_last_exports: 0 },
   clients: [summary.clients[0]],
+  runs_by_day: [],
 };
 
 const emptySummary: DashboardSummary = {
   counts: { clients: 0, feed_sources: 0, active_products: 0, failed_last_exports: 0 },
   clients: [],
+  runs_by_day: [],
 };
 
 const plugins = [
