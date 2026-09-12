@@ -41,6 +41,7 @@ export const queryKeys = {
   adminScheduler: ['admin', 'scheduler'] as const,
   ai: {
     providers: ['ai', 'providers'] as const,
+    promptTemplates: ['ai', 'prompt-templates'] as const,
     usage: (params: unknown) => ['ai', 'usage', params] as const,
   },
 };

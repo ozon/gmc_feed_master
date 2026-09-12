@@ -52,7 +52,8 @@
   "ai": {
     "section": {
       "providers": "Providers",
-      "usage": "Usage"
+      "usage": "Usage",
+      "templates": "Prompt Library"
     },
     "providersTitle": "AI Providers",
     "empty": "No AI providers configured",
@@ -86,6 +87,50 @@
       "promptTokens": "Prompt tokens",
       "completionTokens": "Completion tokens",
       "cost": "Cost (USD)"
+    }
+  },
+  "promptLibrary": {
+    "title": "Prompt Library",
+    "new": "New Template",
+    "edit": "New Version from Template",
+    "scope": "Scope",
+    "globalScope": "Global",
+    "empty": "No prompt templates in this scope yet",
+    "active": "Active",
+    "activate": "Activate",
+    "activated": "Template activated",
+    "activateFailed": "Activation failed",
+    "columns": {
+      "version": "Version",
+      "name": "Name",
+      "status": "Status",
+      "created": "Created by"
+    },
+    "editor": {
+      "taskType": "Task type",
+      "name": "Name",
+      "systemPrompt": "System prompt",
+      "userPrompt": "User prompt",
+      "variables": "Variables (comma-separated)",
+      "unknownPlaceholder": "Unknown placeholder {{variable}} — not a canonical variable of this task type",
+      "unusedVariable": "Declared variable \"{{variable}}\" does not appear in the template text",
+      "save": "Save as new version",
+      "saved": "Template saved",
+      "saveFailed": "Saving the template failed",
+      "pickTaskType": "Pick a task type to preview"
+    },
+    "preview": {
+      "title": "Preview (dry run)",
+      "dryRun": "Dry-run preview (no AI call)",
+      "feedSource": "Feed source (sample product)",
+      "run": "Render preview",
+      "usedVariables": "Used variables"
+    },
+    "diff": {
+      "title": "Version diff",
+      "versionA": "Version A",
+      "versionB": "Version B",
+      "needTwo": "Need at least two versions to compare."
     }
   }
 }

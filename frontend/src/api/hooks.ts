@@ -31,6 +31,8 @@ import type {
   ProductDetail,
   ProductLookupResponse,
   ProductsPageResponse,
+  PromptPreviewResult,
+  PromptTemplate,
   QualityFindingsResponse,
   RegistryAttribute,
   SchedulerJob,
@@ -752,5 +754,48 @@ export function useAiUsage(params: AiUsageParams) {
   return useQuery({
     queryKey: queryKeys.ai.usage(params),
     queryFn: () => apiGet<{ rows: AiUsageRow[] }>(`/admin/ai/usage?${search}`),
+  });
+}
+
+export function usePromptTemplates() {
+  return useQuery({
+    queryKey: queryKeys.ai.promptTemplates,
+    queryFn: () => apiGet<PromptTemplate[]>('/admin/ai/prompt-templates'),
+  });
+}
+
+export function useCreatePromptTemplate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: {
+      task_type: string;
+      client_id?: number | null;
+      name: string;
+      system_prompt: string;
+      user_prompt: string;
+      variables: string[];
+      activate?: boolean;
+    }) => apiPost<PromptTemplate>('/admin/ai/prompt-templates', payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ai.promptTemplates });
+    },
+  });
+}
+
+export function useActivatePromptTemplate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiPost<PromptTemplate>(`/admin/ai/prompt-templates/${id}/activate`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ai.promptTemplates });
+    },
+  });
+}
+
+export function usePreviewPromptTemplate() {
+  return useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiPost<PromptPreviewResult>('/admin/ai/prompt-templates/preview', payload),
   });
 }

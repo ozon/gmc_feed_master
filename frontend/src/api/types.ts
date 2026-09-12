@@ -299,3 +299,24 @@ export type AiTestResult = {
   completion_tokens?: number;
   error_code?: string;
 };
+
+export type PromptTemplate = {
+  id: number;
+  task_type: string;
+  client_id: number | null;
+  version: number;
+  name: string;
+  system_prompt: string;
+  user_prompt: string;
+  variables: string[];
+  is_active: boolean;
+  created_at: string;
+  created_by: string | null;
+};
+
+export type PromptPreviewResult = {
+  messages: { role: string; content: string }[];
+  used_variables: string[];
+  warnings: string[];
+  errors: string[];
+};

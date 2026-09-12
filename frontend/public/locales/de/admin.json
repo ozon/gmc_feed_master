@@ -52,7 +52,8 @@
   "ai": {
     "section": {
       "providers": "Provider",
-      "usage": "Nutzung"
+      "usage": "Nutzung",
+      "templates": "Prompt-Bibliothek"
     },
     "providersTitle": "KI-Provider",
     "empty": "Keine KI-Provider konfiguriert",
@@ -86,6 +87,50 @@
       "promptTokens": "Prompt-Tokens",
       "completionTokens": "Completion-Tokens",
       "cost": "Kosten (USD)"
+    }
+  },
+  "promptLibrary": {
+    "title": "Prompt-Bibliothek",
+    "new": "Neues Template",
+    "edit": "Neue Version aus Template",
+    "scope": "Geltungsbereich",
+    "globalScope": "Global",
+    "empty": "Noch keine Prompt-Templates in diesem Geltungsbereich",
+    "active": "Aktiv",
+    "activate": "Aktivieren",
+    "activated": "Template aktiviert",
+    "activateFailed": "Aktivierung fehlgeschlagen",
+    "columns": {
+      "version": "Version",
+      "name": "Name",
+      "status": "Status",
+      "created": "Erstellt von"
+    },
+    "editor": {
+      "taskType": "Aufgabentyp",
+      "name": "Name",
+      "systemPrompt": "System-Prompt",
+      "userPrompt": "User-Prompt",
+      "variables": "Variablen (kommagetrennt)",
+      "unknownPlaceholder": "Unbekannter Platzhalter {{variable}} — keine kanonische Variable dieses Aufgabentyps",
+      "unusedVariable": "Deklarierte Variable „{{variable}}“ kommt im Template-Text nicht vor",
+      "save": "Als neue Version speichern",
+      "saved": "Template gespeichert",
+      "saveFailed": "Speichern des Templates fehlgeschlagen",
+      "pickTaskType": "Aufgabentyp wählen, um eine Vorschau zu sehen"
+    },
+    "preview": {
+      "title": "Vorschau (Dry-Run)",
+      "dryRun": "Dry-Run-Vorschau (kein KI-Aufruf)",
+      "feedSource": "Feed-Quelle (Beispielprodukt)",
+      "run": "Vorschau rendern",
+      "usedVariables": "Verwendete Variablen"
+    },
+    "diff": {
+      "title": "Versions-Diff",
+      "versionA": "Version A",
+      "versionB": "Version B",
+      "needTwo": "Zum Vergleich sind mindestens zwei Versionen nötig."
     }
   }
 }
