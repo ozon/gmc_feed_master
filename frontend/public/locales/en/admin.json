@@ -116,6 +116,7 @@
       "variables": "Variables (comma-separated)",
       "unknownPlaceholder": "Unknown placeholder {{variable}} — not a canonical variable of this task type",
       "unusedVariable": "Declared variable \"{{variable}}\" does not appear in the template text",
+      "malformedBrace": "Malformed placeholder {{brace}} — variables must be lowercase identifiers",
       "save": "Save as new version",
       "saved": "Template saved",
       "saveFailed": "Saving the template failed",

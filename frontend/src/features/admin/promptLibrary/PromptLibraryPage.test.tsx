@@ -86,6 +86,25 @@ describe('TemplateEditor warnings', () => {
     await user.type(variablesInput, 'brand, title');
     expect(await screen.findByTestId('unused-variable-brand')).toBeInTheDocument();
   });
+
+  it('shows a malformed-brace warning for {{Title}}', async () => {
+    const user = userEvent.setup();
+    render(
+      <TemplateEditor
+        opened
+        template={null}
+        clientId={null}
+        feedOptions={[]}
+        onClose={() => {}}
+      />,
+      { wrapper: withQueryClient() },
+    );
+    const [, userInput] = screen
+      .getAllByRole('textbox')
+      .filter((el) => (el as HTMLTextAreaElement).value === '');
+    await user.type(userInput, 'Check {{{{Title}}}}');
+    expect(screen.getByTestId('malformed-brace-{{Title}}')).toBeInTheDocument();
+  });
 });
 
 describe('HighlightedTextarea', () => {

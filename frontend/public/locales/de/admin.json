@@ -116,6 +116,7 @@
       "variables": "Variablen (kommagetrennt)",
       "unknownPlaceholder": "Unbekannter Platzhalter {{variable}} — keine kanonische Variable dieses Aufgabentyps",
       "unusedVariable": "Deklarierte Variable „{{variable}}“ kommt im Template-Text nicht vor",
+      "malformedBrace": "Ungültiger Platzhalter {{brace}} — Variablen müssen Kleinbuchstaben-Bezeichner sein",
       "save": "Als neue Version speichern",
       "saved": "Template gespeichert",
       "saveFailed": "Speichern des Templates fehlgeschlagen",
