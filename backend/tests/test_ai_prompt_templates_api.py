@@ -193,3 +193,175 @@ async def test_routes_forbidden_for_non_admin(settings_app):
     assert (await client.get("/admin/ai/prompt-templates")).status_code == 403
     assert (await client.post("/admin/ai/prompt-templates", json=_payload())).status_code == 403
     await client.aclose()
+
+
+async def _seed_staged_product(factory, title="Blue Shoe", description="A shoe") -> int:
+    from app.models.feed_source import FeedSource
+    from app.models.ingestion import IngestionRun
+    from app.models.staging import StagingProduct
+    from app.staging.hashing import content_hash
+
+    async with factory() as session, session.begin():
+        client = Client(name="sample-client")
+        session.add(client)
+        await session.flush()
+        feed = FeedSource(client_id=client.id, name="sample-feed", source_format="xml")
+        session.add(feed)
+        await session.flush()
+        run = IngestionRun(feed_source_id=feed.id, status="completed")
+        session.add(run)
+        await session.flush()
+        product = {"id": "p1", "title": title, "description": description}
+        session.add(StagingProduct(
+            feed_source_id=feed.id, ingestion_run_id=run.id, product_id="p1",
+            content_hash=content_hash(product), config_hash="x" * 64,
+            status="active", raw_data=product,
+        ))
+        return feed.id
+
+
+@pytest.mark.asyncio
+async def test_preview_inline_draft_with_inline_product(admin_http):
+    response = await admin_http.post("/admin/ai/prompt-templates/preview", json={
+        "task_type": "policy_check",
+        "system_prompt": "Check {{title}}.",
+        "user_prompt": "{{title}} — {{description}}",
+        "variables": ["title", "description"],
+        "product": {"title": "Blue Shoe", "description": "A shoe"},
+    })
+    assert response.status_code == 200
+    body = response.json()
+    assert body["errors"] == []
+    assert '<data key="title">Blue Shoe</data>' in body["messages"][1]["content"]
+    assert sorted(body["used_variables"]) == ["description", "title"]
+
+
+@pytest.mark.asyncio
+async def test_preview_writes_no_usage_rows(settings_app, admin_http):
+    _, factory = settings_app
+    from sqlalchemy import select
+
+    from app.models.ai import AiUsageLog
+
+    await admin_http.post("/admin/ai/prompt-templates/preview", json={
+        "task_type": "policy_check",
+        "system_prompt": "Check {{title}}.",
+        "user_prompt": "{{title}}",
+        "variables": ["title"],
+        "product": {"title": "T"},
+    })
+    async with factory() as session:
+        assert list((await session.execute(select(AiUsageLog))).scalars()) == []
+
+
+@pytest.mark.asyncio
+async def test_preview_from_staging_sample(settings_app, admin_http):
+    _, factory = settings_app
+    feed_id = await _seed_staged_product(factory)
+    response = await admin_http.post("/admin/ai/prompt-templates/preview", json={
+        "task_type": "policy_check",
+        "system_prompt": "Check {{title}}.",
+        "user_prompt": "{{title}} — {{description}}",
+        "variables": ["title", "description"],
+        "feed_source_id": feed_id,
+    })
+    assert response.status_code == 200
+    assert '<data key="title">Blue Shoe</data>' in response.json()["messages"][1]["content"]
+
+
+@pytest.mark.asyncio
+async def test_preview_staging_specific_product_id(settings_app, admin_http):
+    _, factory = settings_app
+    feed_id = await _seed_staged_product(factory, title="Red Hat")
+    response = await admin_http.post("/admin/ai/prompt-templates/preview", json={
+        "task_type": "policy_check",
+        "system_prompt": "s {{title}}",
+        "user_prompt": "{{title}}",
+        "variables": ["title"],
+        "feed_source_id": feed_id,
+        "product_id": "p1",
+    })
+    assert response.status_code == 200
+    assert '<data key="title">Red Hat</data>' in response.json()["messages"][1]["content"]
+
+
+@pytest.mark.asyncio
+async def test_preview_staging_no_sample_404(settings_app, admin_http):
+    _, factory = settings_app
+    feed_id = await _seed_staged_product(factory)
+    response = await admin_http.post("/admin/ai/prompt-templates/preview", json={
+        "task_type": "policy_check",
+        "system_prompt": "s {{title}}",
+        "user_prompt": "{{title}}",
+        "variables": ["title"],
+        "feed_source_id": feed_id,
+        "product_id": "nope",
+    })
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_preview_rejects_both_template_sources(admin_http):
+    created = (await admin_http.post("/admin/ai/prompt-templates", json=_payload())).json()
+    response = await admin_http.post("/admin/ai/prompt-templates/preview", json={
+        "task_type": "policy_check",
+        "template_id": created["id"],
+        "system_prompt": "s {{title}}",
+        "user_prompt": "{{title}}",
+        "variables": ["title"],
+        "product": {"title": "T"},
+    })
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_preview_rejects_missing_product_source(admin_http):
+    response = await admin_http.post("/admin/ai/prompt-templates/preview", json={
+        "task_type": "policy_check",
+        "system_prompt": "s {{title}}",
+        "user_prompt": "{{title}}",
+        "variables": ["title"],
+    })
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_preview_validation_errors_422(admin_http):
+    response = await admin_http.post("/admin/ai/prompt-templates/preview", json={
+        "task_type": "policy_check",
+        "system_prompt": "s {{secret}}",
+        "user_prompt": "{{title}}",
+        "variables": ["title", "secret"],
+        "product": {"title": "T"},
+    })
+    assert response.status_code == 422
+    assert any("not a canonical variable" in e for e in response.json()["detail"]["errors"])
+
+
+@pytest.mark.asyncio
+async def test_preview_missing_product_field_warns_and_renders_empty(admin_http):
+    response = await admin_http.post("/admin/ai/prompt-templates/preview", json={
+        "task_type": "policy_check",
+        "system_prompt": "s {{title}}",
+        "user_prompt": "{{title}} — {{description}}",
+        "variables": ["title", "description"],
+        "product": {"title": "T"},  # no description
+    })
+    assert response.status_code == 200
+    body = response.json()
+    assert '<data key="description"></data>' in body["messages"][1]["content"]
+    assert any("description" in w for w in body["warnings"])
+
+
+@pytest.mark.asyncio
+async def test_preview_by_template_id(admin_http):
+    created = (await admin_http.post(
+        "/admin/ai/prompt-templates", json=_payload(system_prompt="Stored {{title}}.")
+    )).json()
+    response = await admin_http.post("/admin/ai/prompt-templates/preview", json={
+        "task_type": "policy_check",
+        "template_id": created["id"],
+        "product": {"title": "T", "description": "D"},
+    })
+    assert response.status_code == 200
+    assert "Stored" in response.json()["messages"][0]["content"]

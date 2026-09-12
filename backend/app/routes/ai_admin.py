@@ -10,17 +10,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..access import CurrentUser, require_admin
 from ..ai.tasks import CANONICAL_VARIABLES
-from ..ai.templates import validate_template
+from ..ai.templates import parse_placeholders, render_messages, validate_template
 from ..ai.usage import aggregate_usage
 from ..db.engine import get_db_session
 from ..models.ai import AiProviderConfig, PromptTemplate
 from ..models.client import Client
+from ..models.staging import StagingProduct
 from ..schemas.ai_admin import (
     AiProviderCreate,
     AiProviderOut,
     AiProviderUpdate,
     PromptTemplateCreate,
     PromptTemplateOut,
+    PromptTemplatePreviewRequest,
 )
 
 router = APIRouter()
@@ -292,3 +294,93 @@ async def activate_prompt_template(
         ) from exc
     await session.refresh(row)
     return PromptTemplateOut.model_validate(row)
+
+
+@router.post("/admin/ai/prompt-templates/preview")
+async def preview_prompt_template(
+    payload: PromptTemplatePreviewRequest,
+    _admin: AdminUser,
+    db_session: DbSession,
+) -> dict[str, Any]:
+    session = _require_db(db_session)
+
+    # -- template source: template_id XOR inline draft -----------------------
+    has_draft = (
+        payload.system_prompt is not None
+        or payload.user_prompt is not None
+        or payload.variables is not None
+    )
+    if payload.template_id is not None and has_draft:
+        raise HTTPException(
+            status_code=422, detail="provide either template_id or an inline draft, not both"
+        )
+    if payload.task_type not in CANONICAL_VARIABLES:
+        raise HTTPException(status_code=422, detail=f"unknown task type {payload.task_type!r}")
+
+    if payload.template_id is not None:
+        row = await session.get(PromptTemplate, payload.template_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="prompt template not found")
+        if row.task_type != payload.task_type:
+            raise HTTPException(
+                status_code=422,
+                detail=f"template {row.id} belongs to task type {row.task_type!r}",
+            )
+        system_prompt = row.system_prompt
+        user_prompt = row.user_prompt
+        declared = row.variables
+    else:
+        # None-check inside the branch lets mypy narrow str | None -> str
+        if payload.system_prompt is None or payload.user_prompt is None:
+            raise HTTPException(
+                status_code=422,
+                detail="inline draft requires system_prompt and user_prompt",
+            )
+        system_prompt = payload.system_prompt
+        user_prompt = payload.user_prompt
+        declared = payload.variables or []
+
+    # -- product source: inline XOR staging sample ---------------------------
+    if payload.product is not None and payload.feed_source_id is not None:
+        raise HTTPException(
+            status_code=422, detail="provide either product or feed_source_id, not both"
+        )
+    if payload.product is None and payload.feed_source_id is None:
+        raise HTTPException(status_code=422, detail="product or feed_source_id is required")
+    if payload.product is not None:
+        product = payload.product
+    else:
+        statement = select(StagingProduct).where(
+            StagingProduct.feed_source_id == payload.feed_source_id,
+            StagingProduct.status == "active",
+            StagingProduct.excluded.is_(False),
+        )
+        if payload.product_id is not None:
+            statement = statement.where(StagingProduct.product_id == payload.product_id)
+        statement = statement.order_by(StagingProduct.id).limit(1)
+        staged = (await session.execute(statement)).scalar_one_or_none()
+        if staged is None:
+            raise HTTPException(status_code=404, detail="no sample product found")
+        product = staged.raw_data or {}
+
+    # -- validate + lenient render (dry run: no AI call, no usage rows) -------
+    canonical = CANONICAL_VARIABLES[payload.task_type]
+    validation = validate_template(canonical, system_prompt, user_prompt, declared)
+    if validation.errors:
+        raise HTTPException(
+            status_code=422,
+            detail={"errors": validation.errors, "warnings": validation.warnings},
+        )
+    values = {name: product.get(name) for name in canonical}
+    warnings = list(validation.warnings)
+    for name in canonical:
+        if values[name] is None:
+            warnings.append(f"variable {name!r} is missing in the sample product; rendered empty")
+    messages = render_messages(system_prompt, user_prompt, values, lenient=True)
+    used = parse_placeholders(system_prompt) | parse_placeholders(user_prompt)
+    return {
+        "messages": messages,
+        "used_variables": sorted(used),
+        "warnings": warnings,
+        "errors": [],
+    }

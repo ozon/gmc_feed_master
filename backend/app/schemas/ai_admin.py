@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -75,3 +75,14 @@ class PromptTemplateCreate(BaseModel):
     user_prompt: str = Field(min_length=1)
     variables: list[str] = Field(default_factory=list)
     activate: bool = True
+
+
+class PromptTemplatePreviewRequest(BaseModel):
+    task_type: str = Field(min_length=1, max_length=100)
+    template_id: int | None = None
+    system_prompt: str | None = None
+    user_prompt: str | None = None
+    variables: list[str] | None = None
+    product: dict[str, Any] | None = None
+    feed_source_id: int | None = None
+    product_id: str | None = None
