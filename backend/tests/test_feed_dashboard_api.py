@@ -111,8 +111,10 @@ async def test_dashboard_aggregates_run_statistics(app_factory):
     client = await logged_in_client(app_factory)
     _, feed_id = await _make_feed(factory, client, "Acme")
 
+    # Runner-shaped statistics: row_errors at top level (IngestStep), mapping.applied
+    # is the honest ingested count; processed_count accumulates across steps.
     stats = {
-        "ingest": {"row_errors": []},
+        "row_errors": [{"line": 3, "message": "bad row"}],
         "mapping": {"applied": 100, "dropped_unmapped_fields": 4, "shape_mismatches": 0},
         "staging": {"enqueue": 96, "failed": 2},
         "plugins": {"processed": 94, "dropped": 2, "errored": 0},
@@ -174,11 +176,13 @@ async def test_dashboard_aggregates_run_statistics(app_factory):
         "ingest", "mapping", "staging", "run_plugins", "quality_check", "export",
     ]
     assert funnel["ingest"]["passed"] == 100
-    assert funnel["ingest"]["dropped"] == 0  # row_errors empty list
+    assert funnel["ingest"]["dropped"] == 1  # top-level row_errors length
     assert funnel["mapping"]["dropped"] == 4
     assert funnel["staging"]["dropped"] == 2
     assert funnel["run_plugins"]["dropped"] == 2
-    assert funnel["run_plugins"]["passed"] == 100 - 4 - 2  # cumulative
+    assert funnel["run_plugins"]["passed"] == 100 - 1 - 4 - 2  # cumulative
+    assert funnel["quality_check"]["passed"] == 100 - 1 - 4 - 2 - 2
+    assert funnel["quality_check"]["dropped"] == 0
     assert funnel["export"]["passed"] == 90
 
     assert len(body["recent_runs"]) == 1
@@ -205,3 +209,29 @@ async def test_dashboard_readiness_zero_products(app_factory):
             ))
     body = (await client.get(f"/feed-sources/{feed_id}/dashboard")).json()
     assert body["kpi"]["readiness_rate"] == 1.0
+
+
+async def test_dashboard_raw_items_falls_back_to_processed_count(app_factory):
+    # Legacy run with empty statistics: raw_items falls back to processed_count.
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    _, feed_id = await _make_feed(factory, client, "Acme")
+    await _add_run(factory, feed_id, processed=37, statistics={})
+    body = (await client.get(f"/feed-sources/{feed_id}/dashboard")).json()
+    assert body["kpi"]["raw_items"] == 37
+    assert body["stage_funnel"] == []  # no statistics → no funnel
+    assert body["volume_trend"][0]["raw"] == 37
+
+
+async def test_dashboard_raw_items_ignores_accumulated_processed(app_factory):
+    # processed_count accumulates across steps (3-4x ingested); mapping.applied wins.
+    app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    _, feed_id = await _make_feed(factory, client, "Acme")
+    stats = {"mapping": {"applied": 100, "dropped_unmapped_fields": 0}}
+    await _add_run(factory, feed_id, processed=394, statistics=stats)
+    body = (await client.get(f"/feed-sources/{feed_id}/dashboard")).json()
+    assert body["kpi"]["raw_items"] == 100
+    funnel = {row["stage"]: row for row in body["stage_funnel"]}
+    assert funnel["ingest"]["passed"] == 100
+    assert body["volume_trend"][0]["raw"] == 100
