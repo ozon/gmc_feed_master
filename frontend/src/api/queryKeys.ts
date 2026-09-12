@@ -15,6 +15,7 @@ export const queryKeys = {
     pipeline: ['feed-source', id, 'pipeline'] as const,
     runs: ['feed-source', id, 'runs'] as const,
     findings: ['feed-source', id, 'findings'] as const,
+    qualityHistory: ['feed-source', id, 'quality-history'] as const,
     exportHistory: ['feed-source', id, 'export-history'] as const,
     exportDiff: (params: { version: number; against: number } | undefined) =>
       ['feed-source', id, 'export-diff', params ?? { disabled: true }] as const,

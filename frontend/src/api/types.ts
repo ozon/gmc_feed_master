@@ -164,6 +164,18 @@ export type QualityFinding = {
   details: Record<string, unknown>;
 };
 
+export type QualityHistoryRow = {
+  id: number;
+  started_at: string;
+  product_count: number;
+  critical: number;
+  warning: number;
+  info: number;
+  fixed: number;
+  new: number;
+  remaining: number;
+};
+
 export type QualityFindingsResponse = {
   ingestion_run_id: number | null;
   counts: {
@@ -171,6 +183,10 @@ export type QualityFindingsResponse = {
     warning: number;
     info: number;
   };
+  product_count: number;
+  delta: { fixed: number; new: number; remaining: number };
+  has_previous: boolean;
+  prev_counts: { critical: number; warning: number; info: number } | null;
   findings: QualityFinding[];
 };
 

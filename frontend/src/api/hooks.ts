@@ -35,6 +35,7 @@ import type {
   PromptPreviewResult,
   PromptTemplate,
   QualityFindingsResponse,
+  QualityHistoryRow,
   RegistryAttribute,
   SchedulerJob,
 } from './types';
@@ -59,6 +60,7 @@ export type {
   ProductDetail,
   ProductsPageResponse,
   QualityFindingsResponse,
+  QualityHistoryRow,
   RegistryAttribute,
   SchedulerJob,
 } from './types';
@@ -192,6 +194,16 @@ export function useQualityFindings(feedSourceId: number | string, active: boolea
     queryFn: () =>
       apiGet<QualityFindingsResponse>(`/feed-sources/${feedSourceId}/quality-findings`),
     refetchInterval: active ? 5000 : false,
+  });
+}
+
+export function useQualityHistory(feedSourceId: number | string, limit = 30) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId).qualityHistory,
+    queryFn: () =>
+      apiGet<{ rows: QualityHistoryRow[] }>(
+        `/feed-sources/${feedSourceId}/quality-history?limit=${limit}`,
+      ),
   });
 }
 
