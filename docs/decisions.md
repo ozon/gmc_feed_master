@@ -1242,3 +1242,11 @@ Inline code review of the cycle found one critical and one important issue; both
 - `AiService.run_task()` never raises on provider errors — returns `status="fallback"` with a typed `error_code`; callers own their non-AI fallback. The pipeline can never be blocked by AI failures.
 
 **Rationale:** Agency operators need runtime-swappable AI config and per-client cost attribution; prompt templates are the fast-moving surface (Feature 2 versioning), so the cache key carries `template_version` from day one to avoid mass invalidation later. The tasks.py registry is the seam Feature 2's versioned DB templates plug into without touching the provider layer.
+
+### 2026-09-11 — Prompt template library (Feature 2 of AI integration)
+
+**Topic:** Versioned prompt templates with injection-safe rendering.
+
+**Decision:** `prompt_templates` stores immutable version rows (no PATCH/DELETE — rollback = activate an old version); `client_id` nullable from day one with resolution chain client-scoped active → global active → builtin. Rendering is centralized in `app/ai/templates.py`: `{{var}}` placeholders, XML-escaped `<data>` tag wrapping, engine-appended anti-injection system clause — `str.format` removed entirely, builtin prompts rewritten to the same syntax so one render path serves everything. Cache key carries `tmpl:{id}:v{version}` (explicit identity chosen over content hash: traceability from cache rows to template rows; rollback re-spend accepted). Placeholders validated against per-task canonical variable sets at write time; preview endpoint renders dry-run against inline products or staging samples with zero AI cost. Admin-only RBAC for now; Feature 3 may relax to client-scoped users without schema changes.
+
+**Rationale:** Prompt edits are the fast-moving surface of the AI stack — versioning keeps old runs explainable and makes bad prompts rollbackable in one click. Injection isolation cannot depend on template authors, so escaping + guard live in the engine, not the templates.

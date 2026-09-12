@@ -50,6 +50,18 @@ All routes require the admin role. `api_key` is never included in any response.
 - `POST /admin/ai/providers/{id}/test` — live probe completion (`"Reply with OK"`); returns `{"status": "ok", latency_ms, prompt_tokens, completion_tokens}` or `{"status": "error", "error_code"}`
 - `GET /admin/ai/usage?group_by=client|feed_source|task_type|day&client_id=&feed_source_id=&task_type=&from=&to=` — aggregated `{"rows": [{group_key, calls, cache_hits, prompt_tokens, completion_tokens, cost_usd}]}`; 422 on other group_by values
 
+### Prompt Templates (admin only)
+
+Versioned, immutable prompt templates per task type. Editing = creating a new version; old versions stay queryable. No PATCH/DELETE — deactivation happens only by activating another version. Placeholder syntax is `{{variable}}`; values are XML-escaped into `<data>` tags at render time (prompt-injection isolation), and placeholders must be canonical variables of the task type and declared in the template's `variables` list.
+
+- `GET /admin/ai/prompt-templates?task_type=&client_id=` — all versions (ordered task_type, client_id, version desc)
+- `GET /admin/ai/prompt-templates/{id}` — single version
+- `POST /admin/ai/prompt-templates` — create new version `{task_type, client_id?, name, system_prompt, user_prompt, variables, activate=true}`; 422 with `{errors, warnings}` on placeholder violations; 404 unknown client; `activate` flips the single-active flag per (task_type, scope)
+- `POST /admin/ai/prompt-templates/{id}/activate` — switch/rollback the active version in the template's scope
+- `POST /admin/ai/prompt-templates/preview` — dry-run render, zero AI cost: `{task_type, template_id? | (system_prompt, user_prompt, variables?), product? | (feed_source_id, product_id?)}` → `{messages, used_variables, warnings, errors}`; 422 on validation errors; 404 when no staging sample matches
+
+`AiService.run_task` resolves client-scoped active → global active → builtin registry default; the resolved version (`tmpl:{id}:v{version}` / `builtin`) is part of the AI result-cache key, so new versions invalidate and rollbacks resume old cache entries.
+
 ### Scheduler
 - `GET /admin/scheduler` — registered job overview `[{id, trigger}]`; 503 when no scheduler is running (app lifespan not started)
 

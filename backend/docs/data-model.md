@@ -288,6 +288,21 @@ Unique key: `(task_type, provider_config_id, model, template_version, input_hash
 
 One row per AI call including cache hits (tokens 0). **Retention**: purged nightly after `ai_usage_retention_days`. Aggregated via `GET /admin/ai/usage`.
 
+### PromptTemplate
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | Integer | PK |
+| `task_type` | String(100) | One of the registry task types |
+| `client_id` | Integer, nullable | FK → clients (CASCADE); null = global |
+| `version` | Integer | Monotonic per (task_type, client_id); max+1 on create |
+| `name` | String(255) | Display label |
+| `system_prompt` / `user_prompt` | Text | `{{var}}` placeholder syntax |
+| `variables` | JSONB | Declared variable list, validated against the task's canonical set |
+| `is_active` | Boolean | One active per (task_type, scope) via partial unique indexes |
+| `created_at` / `created_by` | DateTime / String(255) | |
+
+Rows are immutable — edits create new versions. NULL-safe uniqueness via four partial unique indexes (`uq_prompt_templates_global_version`, `uq_prompt_templates_client_version`, `uq_prompt_templates_global_active`, `uq_prompt_templates_client_active`). Client deletion cascades to client-scoped templates only. The active version feeds the AI result-cache key as `tmpl:{id}:v{version}`.
+
 ### Session
 | Column | Type | Notes |
 |--------|------|-------|
