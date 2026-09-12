@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
@@ -48,3 +49,29 @@ class AiProviderUpdate(BaseModel):
     timeout_s: int | None = Field(default=None, ge=1, le=600)
     enabled: bool | None = None
     is_default: bool | None = None
+
+
+class PromptTemplateOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    task_type: str
+    client_id: int | None
+    version: int
+    name: str
+    system_prompt: str
+    user_prompt: str
+    variables: list[str]
+    is_active: bool
+    created_at: datetime
+    created_by: str | None
+
+
+class PromptTemplateCreate(BaseModel):
+    task_type: str = Field(min_length=1, max_length=100)
+    client_id: int | None = None
+    name: str = Field(min_length=1, max_length=255)
+    system_prompt: str = Field(min_length=1)
+    user_prompt: str = Field(min_length=1)
+    variables: list[str] = Field(default_factory=list)
+    activate: bool = True
