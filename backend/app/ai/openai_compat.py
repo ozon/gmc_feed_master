@@ -45,6 +45,9 @@ class OpenAICompatibleProvider:
         }
         if request.response_format is not None:
             payload["response_format"] = request.response_format
+        if request.tools is not None:
+            payload["tools"] = request.tools
+            payload["tool_choice"] = request.tool_choice or "auto"
         headers = {"Authorization": f"Bearer {self._api_key}"} if self._api_key else {}
         started = time.monotonic()
         response = await self._client.post(
@@ -55,10 +58,14 @@ class OpenAICompatibleProvider:
         response.raise_for_status()
         data = response.json()
         latency_ms = int((time.monotonic() - started) * 1000)
+        choice = data["choices"][0]
+        message = choice.get("message") or {}
         return AiResponse(
-            content=data["choices"][0]["message"]["content"],
+            content=message.get("content") or "",
             prompt_tokens=data.get("usage", {}).get("prompt_tokens", 0),
             completion_tokens=data.get("usage", {}).get("completion_tokens", 0),
             model=data.get("model", self._model),
             latency_ms=latency_ms,
+            tool_calls=message.get("tool_calls"),
+            finish_reason=choice.get("finish_reason", "stop"),
         )

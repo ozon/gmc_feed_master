@@ -148,10 +148,17 @@ export function useSavePipeline(feedSourceId) {
 | Quality findings | TanStack Query (`useQualityFindings`) | — (read-only from QC) |
 | Export history | TanStack Query (`useExportHistory`) | `useRollbackToVersion` |
 | Pipeline builder workspace | **Local React state** (`PipelinePage` `LocalInstance[]`) | Drag/drop reorder, add/remove instances, config edits, toggles on unsaved instances (saved instances persist via PATCH immediately) |
+| Chat conversation | **Local React state** (`ChatWidget` `ChatMessage[]`) | `useChat` mutation — the client sends the full conversation array on every request (server is stateless) |
 | Form drafts (plugin UIs) | **Local React state** (`PluginPage`) | `onChange` → local, `onSubmit` → mutation |
 | Notifications | `src/app/notifications.ts` (Mantine `Notifications` provider) | `notifySuccess` / `notifyApiError` |
 
 ## Key Components
+
+### Chat Widget (`src/features/chat/ChatWidget.tsx`)
+- Mounted in the `AppShell` header (between color-scheme toggle and user menu) — available on every page for any authenticated user
+- Mantine `Drawer` opened by the header icon; scope badge shows admin vs client-scoped data visibility from `useSession`
+- Conversation history is component-local `useState` (client state — not server state, not cached); `useChat` posts the full array to `POST /chat` per turn; clear button resets it
+- Enter sends (Shift+Enter = newline); mutation errors render as an inline `Alert`, never a blocking modal
 
 ### Pipeline Builder (`src/features/pipeline/`) — master-detail layout
 - `PipelinePage` — container; local instance state (`LocalInstance` = `PipelineInstance` + position-based `clientId`), dirty tracking (`isInstancesEqual` vs server snapshot), `useBlocker` navigation guard with `ConfirmModal`

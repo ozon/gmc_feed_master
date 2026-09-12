@@ -85,3 +85,47 @@ async def test_complete_rate_limit_raises_http_status_error():
             task_type="title_optimization",
             messages=[{"role": "user", "content": "u"}],
         ))
+
+
+@pytest.mark.asyncio
+async def test_complete_passes_tools_and_parses_tool_calls():
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.read())
+        assert "tools" in payload
+        assert payload["tool_choice"] == "auto"
+        return httpx.Response(200, json={
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [{
+                        "id": "call_1",
+                        "type": "function",
+                        "function": {
+                            "name": "list_feed_sources",
+                            "arguments": "{}",
+                        },
+                    }],
+                },
+                "finish_reason": "tool_calls",
+            }],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+        })
+
+    provider = OpenAICompatibleProvider(
+        base_url="http://x", api_key="key", model="m",
+        client=_mock_client(handler),
+    )
+    response = await provider.complete(AiRequest(
+        task_type="chat",
+        messages=[{"role": "user", "content": "hi"}],
+        tools=[{
+            "type": "function",
+            "function": {
+                "name": "list_feed_sources",
+                "parameters": {"type": "object", "properties": {}},
+            },
+        }],
+    ))
+    assert response.tool_calls[0]["function"]["name"] == "list_feed_sources"
+    assert response.finish_reason == "tool_calls"

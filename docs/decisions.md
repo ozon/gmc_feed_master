@@ -1271,3 +1271,16 @@ Inline code review of the cycle found one critical and one important issue; both
 - **Template editor malformed-brace warning:** live non-blocking warning in the frontend template editor for malformed `{{braces}}`.
 
 **Rationale:** Items 1 and 2 are deliberate semantic improvements with breaking-change implications for existing templates. Items 3–5 are operational hardening and UX polish.
+
+### 2026-09-12 — Z5+Z6 AI chat cycle
+
+**Topic:** Admin/user-facing AI chat assistant with scoped read-only tools.
+
+**Decision:**
+- **Tool loop lives in the route, not the provider or the service.** `POST /chat` iterates up to 5 rounds: model response with `tool_calls` → execute each tool server-side → append `role: "tool"` results → re-call `complete_chat`. 502 `tool_loop_exhausted` when no final content arrives in 5 rounds. The loop is deliberately server-side so tenancy enforcement cannot be bypassed by the client.
+- **No streaming, no server-side history in Phase 1.** The endpoint returns one `{content}` string; the client sends the full conversation array every request (stateless server, ≤ 50 messages, ≤ 8000 chars each). Streaming (SSE) and persisted conversations are deferred until the basic loop proves out.
+- **Scope is enforced inside the tools, not the route.** The route mounts no `enforce_scope_access` (chat has no path/query scope params); every tool takes `CurrentUser` and filters by `client_ids` — cross-client `feed_source_id` returns `{"error": "feed source not found"}` to the model (indistinguishable from a missing ID, so no existence oracle).
+- **Injection guard is prompt-level + structural.** The fixed system prompt declares the assistant read-only and instructs it to ignore directives inside tool results; structurally, tool output is JSON-serialized into `role: "tool"` messages and truncated at 500 chars. Residual risk: a determined prompt-injection via product titles remains possible against weaker models — accepted for Phase 1, revisit with output filtering if it bites.
+- **Provider protocol extension is OpenAI-shaped.** `AiRequest.tools` / `AiChatResult.tool_calls` mirror the OpenAI function-calling JSON so self-hosted OpenAI-compatible servers work unchanged; `AiService.complete_chat` reuses breaker/retry/semaphore and writes usage logs but skips the task registry and result cache (chat answers are not deterministic artifacts worth caching).
+
+**Rationale:** The chat feature's value is answering "what's wrong with my feed" from live staging/QC/export data — read-only tools over that data give the model everything it needs with zero write risk. Keeping the loop server-side and the scope check inside every tool means the security boundary survives any client.

@@ -14,7 +14,7 @@ from ..clock import Clock
 from ..models.ai import AiProviderConfig, PromptTemplate
 from .cache import AiResultCacheStore
 from .openai_compat import OpenAICompatibleProvider
-from .provider import AIProvider, AiRequest
+from .provider import AIProvider, AiRequest, AiResponse
 from .resilience import (
     CircuitBreaker,
     RetryPolicy,
@@ -101,6 +101,14 @@ def default_provider_factory(config: AiProviderConfig) -> OpenAICompatibleProvid
         model=config.model,
         timeout_s=config.timeout_s,
     )
+
+
+class AiChatUnavailable(Exception):
+    """Raised when a chat completion cannot be served (no provider, breaker open, provider failure)."""
+
+    def __init__(self, error_code: str) -> None:
+        super().__init__(error_code)
+        self.error_code = error_code
 
 
 class AiService:
@@ -250,6 +258,70 @@ class AiService:
             config, task_type, variables, hash_value, template,
             client_id=client_id, feed_source_id=feed_source_id,
         )
+
+    async def complete_chat(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]] | None = None,
+        *,
+        client_id: int | None = None,
+        feed_source_id: int | None = None,
+    ) -> AiResponse:
+        config = await self._default_config()
+        if config is None:
+            await self._log_usage(UsageRecord(
+                client_id=client_id, feed_source_id=feed_source_id,
+                task_type="chat", provider_config_id=None, model="",
+                cache_hit=False, prompt_tokens=0, completion_tokens=0,
+                cost_usd=None, latency_ms=0, error_code="no_provider",
+            ))
+            raise AiChatUnavailable("no_provider")
+        breaker = self._breaker_for(config)
+        if not breaker.allow_call():
+            await self._log_usage(UsageRecord(
+                client_id=client_id, feed_source_id=feed_source_id,
+                task_type="chat", provider_config_id=config.id, model=config.model,
+                cache_hit=False, prompt_tokens=0, completion_tokens=0,
+                cost_usd=None, latency_ms=0, error_code="circuit_open",
+            ))
+            raise AiChatUnavailable("circuit_open")
+        provider = self._provider_for(config)
+        semaphore = self._semaphore_for(config)
+        error_code: str | None = None
+        async with semaphore:
+            for attempt in range(1, self._retry_policy.max_attempts + 1):
+                try:
+                    response = await provider.complete(AiRequest(
+                        task_type="chat", messages=messages, tools=tools,
+                    ))
+                except Exception as exc:  # noqa: BLE001 — chat degrades to 502, never aborts
+                    outcome, retryable = classify_failure(exc)
+                    if not retryable or attempt == self._retry_policy.max_attempts:
+                        error_code = outcome.value
+                        breaker.record_failure()
+                        break
+                    await asyncio.sleep(self._retry_policy.delay_for_attempt(attempt))
+                    continue
+                breaker.record_success()
+                cost = estimate_cost(
+                    response.prompt_tokens, response.completion_tokens,
+                    config.input_price_per_mtok, config.output_price_per_mtok,
+                )
+                await self._log_usage(UsageRecord(
+                    client_id=client_id, feed_source_id=feed_source_id,
+                    task_type="chat", provider_config_id=config.id, model=response.model,
+                    cache_hit=False, prompt_tokens=response.prompt_tokens,
+                    completion_tokens=response.completion_tokens,
+                    cost_usd=cost, latency_ms=response.latency_ms, error_code=None,
+                ))
+                return response
+        await self._log_usage(UsageRecord(
+            client_id=client_id, feed_source_id=feed_source_id,
+            task_type="chat", provider_config_id=config.id, model=config.model,
+            cache_hit=False, prompt_tokens=0, completion_tokens=0,
+            cost_usd=None, latency_ms=0, error_code=error_code or "unknown",
+        ))
+        raise AiChatUnavailable(error_code or "unknown")
 
     async def test_provider(self, config_id: int) -> dict[str, Any]:
         config = await self._get_config(config_id)

@@ -1,0 +1,12 @@
+{
+  "open": "Open AI chat",
+  "title": "AI Chat",
+  "adminScope": "Admin — all clients",
+  "clientScope": "Your client's data",
+  "clear": "Clear",
+  "empty": "Ask about your products, quality findings, or export runs.",
+  "thinking": "Thinking…",
+  "failed": "The assistant is unavailable right now.",
+  "inputLabel": "Message",
+  "send": "Send"
+}

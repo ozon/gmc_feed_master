@@ -35,6 +35,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
 import { useChangePassword, useDashboardSummary, useLogout, usePlugins, useSession } from '../api/hooks';
 import { getPluginIcon } from '../components/PluginIconMap';
+import { ChatWidget } from '../features/chat/ChatWidget';
 import { LanguageSwitcher } from '../i18n/LanguageSwitcher';
 import { notifyError, notifyMutationError, notifySuccess } from './notifications';
 
@@ -253,6 +254,7 @@ export function AppShell() {
           <Group gap="sm" wrap="nowrap">
             <LanguageSwitcher />
             <ColorSchemeToggle />
+            <ChatWidget />
             <UserMenu />
           </Group>
         </Group>
