@@ -60,7 +60,7 @@ Versioned, immutable prompt templates per task type. Editing = creating a new ve
 - `POST /admin/ai/prompt-templates/{id}/activate` — switch/rollback the active version in the template's scope; 409 on concurrent activation (integrity conflict or DB deadlock)
 - `POST /admin/ai/prompt-templates/preview` — dry-run render, zero AI cost: `{task_type, template_id? | (system_prompt, user_prompt, variables?), product? | (feed_source_id, product_id?)}` → `{messages, used_variables, warnings, errors}`; 422 on validation errors; 404 when no staging sample matches
 
-`AiService.run_task` resolves client-scoped active → global active → builtin registry default; the resolved version (`tmpl:{id}:v{version}` / `builtin`) is part of the AI result-cache key, so new versions invalidate and rollbacks resume old cache entries.
+`AiService.run_task` resolves client-scoped active → global active → builtin registry default; the resolved version (`tmpl:{id}:v{version}` / `builtin:<12 hex>` content hash) is part of the AI result-cache key, so new versions invalidate and rollbacks resume old cache entries.
 
 ### Scheduler
 - `GET /admin/scheduler` — registered job overview `[{id, trigger}]`; 503 when no scheduler is running (app lifespan not started)
