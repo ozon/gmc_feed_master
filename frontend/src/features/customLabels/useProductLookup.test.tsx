@@ -1,17 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {QueryClient} from '@tanstack/react-query';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
 import { useProductLookup } from '../../api/hooks';
 
-function withClient() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
-}
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -62,8 +55,7 @@ describe('useProductLookup', () => {
       }
       return jsonResponse({});
     });
-    const Wrapper = withClient();
-    render(<Wrapper><Probe feedSourceId={3} values={['a1', 'zz']} extraFields={['price']} /></Wrapper>);
+    render(<Probe feedSourceId={3} values={['a1', 'zz']} extraFields={['price']} />);
     expect(await waitFor(
       () => expect(document.querySelector('[data-testid="count"]')?.textContent).toBe('1'),
       { timeout: 5000 },
@@ -79,10 +71,8 @@ describe('useProductLookup', () => {
       calls.push(url);
       return jsonResponse({});
     });
-    const A = withClient();
-    render(<A><Probe values={['a1']} /></A>);
-    const B = withClient();
-    render(<B><Probe feedSourceId={3} values={[]} /></B>);
+    render(<Probe values={['a1']} />);
+    render(<Probe feedSourceId={3} values={[]} />);
     await new Promise((resolve) => setTimeout(resolve, 700));
     expect(calls.some((u) => u.includes('/products/lookup'))).toBe(false);
   });

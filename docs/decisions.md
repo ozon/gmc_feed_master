@@ -1322,3 +1322,14 @@ Inline code review of the cycle found one critical and one important issue; both
 - **UI is review-first.** `EnrichmentUI` (registered in `CUSTOM_COMPONENTS`): scan with limit, per-field checkboxes, accept selected/all, per-field discard, pinned list with unpin. i18n en/de. The version header (`X-Plugin-Data-Version`) feeds `expected_version` on every mutation.
 
 **Rationale:** Suggestions-then-accept keeps a human in the loop for AI-written attribute values (the same trust line as Z3's no-critical-AI rule); PluginData JSONB with OL matches how every other plugin stores its state, so the whole accept/discard/unpin surface is ~30 lines on top of shared helpers. The pipeline module is trivial (dict overlay by product id) because all the interesting logic lives in the review workflow.
+
+### 2026-09-12 (b) — TODO backlog close-out (3.5, 6.1, 6.2)
+
+**Topic:** Final TODO.md sweep after the Z-cycle roadmap completed.
+
+**Decision:**
+- **3.5 Icon registry is best-effort.** `PluginIconMap` now maps 16 names (letters, sitemap, list-check, cog→`IconSettings`, database, tag, wand, shield, lock, link, mail, chart→`IconChartBar`, transform) — all verified against the installed `@tabler/icons-react` export map. Unknown manifest icon strings keep the `IconCircle` fallback; the registry grows on demand when a plugin actually declares a new name.
+- **6.1 Newline-at-EOF** swept repo-wide (22 files: monitoring/export frontend, `routes/plugins.py`, `qc/ai_rules.py`) — `git diff --check` clean.
+- **6.2 Test wrapper centralization** — see its entry; `render()` now always wraps with a fresh `QueryClient` + `MantineProvider`, manual double-wraps deleted from test files.
+
+**Rationale:** These were the last actionable P2s; 9.4 stays blocked (needs a second scoped plugin with a client→feed_source data tier — enrichment is feed_source-only, so the derived-vs-hardcoded badge ambiguity persists by construction), 9A.14 stays blocked on typescript-eslint × TS 7 (tracking issue #10940), 8.1 was answered by the operator (Category → M12, then the AI roadmap Z-cycles).

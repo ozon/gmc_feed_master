@@ -3,13 +3,12 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { notifications, Notifications } from '@mantine/notifications';
 import { createMemoryRouter, MemoryRouter, Route, Routes, RouterProvider } from 'react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {QueryClient} from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
 import { PluginPage } from './PluginPage';
 import { queryClient } from '../../api/queryClient';
-import type { ReactNode } from 'react';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -42,12 +41,6 @@ beforeEach(() => {
   notifications.clean();
 });
 
-function withQueryClient() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
-}
 
 function renderAt(path: string) {
   return render(
@@ -58,7 +51,6 @@ function renderAt(path: string) {
         <Route path="/clients/:clientId/plugins/:pluginId" element={<PluginPage />} />
       </Routes>
     </MemoryRouter>,
-    { wrapper: withQueryClient() },
   );
 }
 
@@ -76,7 +68,6 @@ function renderWithDataRouter(path: string) {
       <Notifications position="top-right" limit={1} />
       <RouterProvider router={router} />
     </>,
-    { wrapper: withQueryClient() },
   );
 }
 

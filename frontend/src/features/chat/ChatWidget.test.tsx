@@ -1,7 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import {QueryClient} from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
@@ -14,12 +13,6 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function withQueryClient() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
-}
 
 beforeAll(async () => {
   await i18n.loadNamespaces('chat');
@@ -39,14 +32,14 @@ beforeEach(() => {
 
 describe('ChatWidget', () => {
   it('opens the drawer on icon click and shows the admin scope badge', async () => {
-    render(<ChatWidget />, { wrapper: withQueryClient() });
+    render(<ChatWidget />);
     fireEvent.click(screen.getByLabelText(/open ai chat/i));
     expect(await screen.findByText(/ai chat/i)).toBeInTheDocument();
     expect(await screen.findByText(/admin — all clients/i)).toBeInTheDocument();
   });
 
   it('sends on Enter, clears input, and appends the assistant reply', async () => {
-    render(<ChatWidget />, { wrapper: withQueryClient() });
+    render(<ChatWidget />);
     fireEvent.click(screen.getByLabelText(/open ai chat/i));
     const input = await screen.findByLabelText(/message/i);
     fireEvent.change(input, { target: { value: 'what feed sources do I have?' } });
@@ -70,7 +63,7 @@ describe('ChatWidget', () => {
       }
       return jsonResponse({});
     });
-    render(<ChatWidget />, { wrapper: withQueryClient() });
+    render(<ChatWidget />);
     fireEvent.click(screen.getByLabelText(/open ai chat/i));
     const input = await screen.findByLabelText(/message/i);
     fireEvent.change(input, { target: { value: 'hello' } });

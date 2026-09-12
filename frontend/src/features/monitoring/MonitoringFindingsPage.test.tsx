@@ -3,8 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { notifications, Notifications } from '@mantine/notifications';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {QueryClient} from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
@@ -54,12 +53,6 @@ beforeEach(() => {
   notifications.clean();
 });
 
-function withQueryClient() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
-}
 
 function renderAt() {
   return render(
@@ -69,7 +62,6 @@ function renderAt() {
         <Route path="/clients/:clientId/feeds/:feedSourceId/monitoring/findings" element={<MonitoringFindingsPage />} />
       </Routes>
     </MemoryRouter>,
-    { wrapper: withQueryClient() },
   );
 }
 

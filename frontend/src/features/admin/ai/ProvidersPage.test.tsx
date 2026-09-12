@@ -1,7 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import {QueryClient} from '@tanstack/react-query';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
 import { stubFetch } from '../../../test/fetch';
@@ -34,16 +33,10 @@ beforeEach(() => {
   });
 });
 
-function withQueryClient() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
-}
 
 describe('ProvidersPage', () => {
   it('renders the provider table with rows and default badge', async () => {
-    render(<ProvidersPage />, { wrapper: withQueryClient() });
+    render(<ProvidersPage />);
     await waitFor(() => expect(screen.getByTestId('ai-providers-table')).toBeInTheDocument());
     expect(screen.getByText('primary')).toBeInTheDocument();
     expect(screen.getByText('gpt-4o-mini')).toBeInTheDocument();
@@ -55,7 +48,7 @@ describe('ProvidersPage', () => {
       if (url === '/admin/ai/providers') return jsonResponse([]);
       return jsonResponse({});
     });
-    render(<ProvidersPage />, { wrapper: withQueryClient() });
+    render(<ProvidersPage />);
     await waitFor(() =>
       expect(screen.getByText('No AI providers configured')).toBeInTheDocument(),
     );

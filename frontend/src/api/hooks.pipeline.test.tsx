@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { waitFor } from '@testing-library/react';
-import { renderHook } from '@testing-library/react';
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { render, renderHook } from '../test/render';
+import { QueryClient, useQuery } from '@tanstack/react-query';
 import { usePatchPipelineInstance } from './hooks';
 import { stubFetch } from '../test/fetch';
 
@@ -42,15 +41,10 @@ describe('usePatchPipelineInstance', () => {
 
   it('PATCHes the instance and invalidates the pipeline query', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={client}>
-        <Probe />
-        {children}
-      </QueryClientProvider>
-    );
 
     // Number 7 on BOTH the hook and the Probe's query key so the keys hash identically.
-    const { result } = renderHook(() => usePatchPipelineInstance(7), { wrapper });
+    render(<Probe />, { queryClient: client });
+    const { result } = renderHook(() => usePatchPipelineInstance(7), { queryClient: client });
     result.current.mutate({ instanceId: 42, enabled: false });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

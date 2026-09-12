@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { waitFor } from '@testing-library/react';
+import { renderHook } from '../test/render';
+import {QueryClient} from '@tanstack/react-query';
 import { useQualityHistory } from './hooks';
 import { queryClient as defaultClient } from './queryClient';
 import { stubFetch } from '../test/fetch';
@@ -13,12 +13,6 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function withClient() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
-}
 
 beforeEach(() => {
   defaultClient.clear();
@@ -47,7 +41,7 @@ describe('useQualityHistory', () => {
       return jsonResponse({});
     });
 
-    const { result } = renderHook(() => useQualityHistory(1), { wrapper: withClient() });
+    const { result } = renderHook(() => useQualityHistory(1));
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(capturedUrl).toBe('/feed-sources/1/quality-history?limit=30');

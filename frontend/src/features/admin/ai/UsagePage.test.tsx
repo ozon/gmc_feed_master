@@ -1,7 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import {QueryClient} from '@tanstack/react-query';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
 import { stubFetch } from '../../../test/fetch';
@@ -25,16 +24,10 @@ beforeEach(() => {
   });
 });
 
-function withQueryClient() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
-}
 
 describe('UsagePage', () => {
   it('renders from/to DateInputs and group-by select', async () => {
-    render(<UsagePage />, { wrapper: withQueryClient() });
+    render(<UsagePage />);
     await waitFor(() => {
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     });

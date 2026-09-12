@@ -1,8 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import {QueryClient} from '@tanstack/react-query';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
 import { stubFetch } from '../../../test/fetch';
@@ -44,16 +43,10 @@ beforeEach(() => {
   });
 });
 
-function withQueryClient() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
-}
 
 describe('PromptLibraryPage', () => {
   it('groups versions by task type with active badge and activate button', async () => {
-    render(<PromptLibraryPage />, { wrapper: withQueryClient() });
+    render(<PromptLibraryPage />);
     expect(await screen.findByTestId('template-group-policy_check')).toBeInTheDocument();
     expect(screen.getByText('Default')).toBeInTheDocument();
     expect(screen.getByText('Stricter')).toBeInTheDocument();
@@ -74,7 +67,6 @@ describe('TemplateEditor warnings', () => {
         feedOptions={[]}
         onClose={() => {}}
       />,
-      { wrapper: withQueryClient() },
     );
     await user.click(screen.getByRole('combobox', { name: /task type/i }));
     await user.click(screen.getByRole('option', { name: 'title_optimization' }));
@@ -97,7 +89,6 @@ describe('TemplateEditor warnings', () => {
         feedOptions={[]}
         onClose={() => {}}
       />,
-      { wrapper: withQueryClient() },
     );
     const [, userInput] = screen
       .getAllByRole('textbox')
@@ -116,7 +107,6 @@ describe('HighlightedTextarea', () => {
         onChange={() => {}}
         known={new Set(['title'])}
       />,
-      { wrapper: withQueryClient() },
     );
     const marks = container.querySelectorAll('mark');
     expect(marks).toHaveLength(2);

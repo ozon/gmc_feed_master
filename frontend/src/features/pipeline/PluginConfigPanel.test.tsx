@@ -183,12 +183,13 @@ describe('PluginConfigPanel', () => {
 
   it('CUSTOM-only plugin shows the plugin-page hint and link, no instance form', () => {
     render(
-      <PluginConfigPanel
-        instance={labelizerInstance} plugin={labelizerPlugin}
-        clientId="3" feedSourceId="9"
-        onChange={vi.fn()} onRemove={vi.fn()}
-      />,
-      { wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter> },
+      <MemoryRouter>
+        <PluginConfigPanel
+          instance={labelizerInstance} plugin={labelizerPlugin}
+          clientId="3" feedSourceId="9"
+          onChange={vi.fn()} onRemove={vi.fn()}
+        />
+      </MemoryRouter>,
     );
     expect(screen.getByText(/configured on its plugin page/i)).toBeInTheDocument();
     const link = screen.getByRole('link', { name: /open plugin page/i });
@@ -199,12 +200,13 @@ describe('PluginConfigPanel', () => {
 
   it('dual-registry plugin renders the setup embed and instance settings, no page hint', () => {
     render(
-      <PluginConfigPanel
-        instance={bothInstance} plugin={bothPlugin}
-        clientId="3" feedSourceId="9"
-        onChange={vi.fn()} onRemove={vi.fn()}
-      />,
-      { wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter> },
+      <MemoryRouter>
+        <PluginConfigPanel
+          instance={bothInstance} plugin={bothPlugin}
+          clientId="3" feedSourceId="9"
+          onChange={vi.fn()} onRemove={vi.fn()}
+        />
+      </MemoryRouter>,
     );
     expect(screen.getByTestId('probe-component')).toBeInTheDocument();
     expect(screen.getByText(/instance settings/i)).toBeInTheDocument();

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { waitFor } from '@testing-library/react';
+import { renderHook } from '../test/render';
+import {QueryClient} from '@tanstack/react-query';
 import { useExportVersionDiff, useRollbackToVersion } from './hooks';
 import { queryClient as defaultClient } from './queryClient';
 import { queryKeys } from './queryKeys';
@@ -14,12 +14,6 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function withClient() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
-}
 
 beforeEach(() => {
   defaultClient.clear();
@@ -37,7 +31,7 @@ describe('useExportVersionDiff', () => {
       return jsonResponse({});
     });
 
-    const { result } = renderHook(() => useExportVersionDiff(1, 3, 2), { wrapper: withClient() });
+    const { result } = renderHook(() => useExportVersionDiff(1, 3, 2));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(captured).toBe('/feed-sources/1/export-history/3/diff?against=2');
   });
@@ -48,19 +42,16 @@ describe('useExportVersionDiff', () => {
       if (url.includes('/diff')) called = true;
       return jsonResponse({});
     });
-    renderHook(() => useExportVersionDiff(1, undefined, 2), { wrapper: withClient() });
+    renderHook(() => useExportVersionDiff(1, undefined, 2));
     expect(called).toBe(false);
   });
 
   it('shares one disabled key across undefined-argument states', async () => {
     stubFetch(() => jsonResponse({}));
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-    const first = renderHook(() => useExportVersionDiff(1, undefined, 2), { wrapper });
+    const first = renderHook(() => useExportVersionDiff(1, undefined, 2), { queryClient: client });
     first.unmount();
-    renderHook(() => useExportVersionDiff(1, 3, undefined), { wrapper });
+    renderHook(() => useExportVersionDiff(1, 3, undefined), { queryClient: client });
 
     const keys = client.getQueryCache().getAll().map((q) => q.queryKey);
     expect(keys).toEqual([['feed-source', 1, 'export-diff', { disabled: true }]]);
@@ -79,10 +70,7 @@ describe('useRollbackToVersion', () => {
     });
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
-    const { result } = renderHook(() => useRollbackToVersion(1), { wrapper });
+    const { result } = renderHook(() => useRollbackToVersion(1), { queryClient: client });
     result.current.mutate(5);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(captured).toBe('/feed-sources/1/export-history/5/rollback');

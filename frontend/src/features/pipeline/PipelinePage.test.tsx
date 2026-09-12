@@ -3,8 +3,7 @@ import { screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider, Link } from 'react-router';
 import { Notifications, notifications } from '@mantine/notifications';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import {QueryClient} from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
@@ -83,16 +82,11 @@ function renderAt(initialEntry: string = '/clients/1/feeds/1/pipeline') {
     ],
     { initialEntries: [initialEntry] },
   );
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
   return render(
-    <Wrapper>
+    <>
       <Notifications position="top-right" limit={1} />
       <RouterProvider router={router} />
-    </Wrapper>,
-    { wrapper: Wrapper },
+    </>,
   );
 }
 

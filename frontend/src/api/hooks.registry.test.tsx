@@ -1,6 +1,6 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { QueryClient } from '@tanstack/react-query';
+import { waitFor } from '@testing-library/react';
+import { renderHook } from '../test/render';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useFeedSourceFields, useRegistryAttributes, useTriggerRun } from './hooks';
 import { stubFetch } from '../test/fetch';
@@ -14,9 +14,6 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function wrapper({ children }: { children: ReactNode }) {
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-}
 
 const registryFixture = [
   { name: 'title', kind: 'scalar', required: 'required', sub_fields: [],
@@ -50,7 +47,7 @@ describe('registry/fields hooks', () => {
       if (url === '/registry/attributes?feed_source_id=5') return jsonResponse(registryFixture);
       return jsonResponse([]);
     });
-    const { result } = renderHook(() => useRegistryAttributes(5), { wrapper });
+    const { result } = renderHook(() => useRegistryAttributes(5), { queryClient });
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(result.current.data![1].max_repeats).toBe(2);
   });
@@ -60,7 +57,7 @@ describe('registry/fields hooks', () => {
       expect(String(input)).toBe('/registry/attributes');
       return jsonResponse(registryFixture.map((a) => ({ ...a, max_repeats: 0 })));
     });
-    const { result } = renderHook(() => useRegistryAttributes(), { wrapper });
+    const { result } = renderHook(() => useRegistryAttributes(), { queryClient });
     await waitFor(() => expect(result.current.data).toBeDefined());
   });
 
@@ -69,7 +66,7 @@ describe('registry/fields hooks', () => {
       expect(String(input)).toBe('/feed-sources/7/fields');
       return jsonResponse(fieldsFixture);
     });
-    const { result } = renderHook(() => useFeedSourceFields(7), { wrapper });
+    const { result } = renderHook(() => useFeedSourceFields(7), { queryClient });
     await waitFor(() => expect(result.current.data?.fields).toBeDefined());
     expect(result.current.data!.fields[1].max_repeats).toBe(3);
   });
@@ -81,11 +78,11 @@ describe('registry/fields hooks', () => {
       if (url === '/feed-sources/5/run') return jsonResponse({ run_id: 1 });
       return jsonResponse({});
     });
-    const registry = renderHook(() => useRegistryAttributes(5), { wrapper });
+    const registry = renderHook(() => useRegistryAttributes(5), { queryClient });
     await waitFor(() => expect(registry.result.current.data).toBeDefined());
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    const run = renderHook(() => useTriggerRun(5), { wrapper });
+    const run = renderHook(() => useTriggerRun(5), { queryClient });
     await run.result.current.mutateAsync();
 
     const called = spy.mock.calls.some((call) => {

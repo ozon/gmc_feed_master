@@ -2,8 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Notifications, notifications } from '@mantine/notifications';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import {QueryClient} from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { queryClient } from '../../api/queryClient';
 import { render } from '../../test/render';
@@ -55,16 +54,11 @@ beforeEach(async () => {
 });
 
 function renderPage() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
   return render(
     <>
       <Notifications position="top-right" limit={1} />
       <AdminSettingsPage />
     </>,
-    { wrapper: Wrapper },
   );
 }
 

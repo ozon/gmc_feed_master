@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { waitFor } from '@testing-library/react';
+import { renderHook } from '../test/render';
+import {QueryClient} from '@tanstack/react-query';
 import { useRunDryRun } from './hooks';
 import { queryClient as defaultClient } from './queryClient';
 import { queryKeys } from './queryKeys';
@@ -14,12 +14,6 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function withClient() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
-}
 
 beforeEach(() => {
   defaultClient.clear();
@@ -37,7 +31,7 @@ describe('useRunDryRun', () => {
       return jsonResponse({});
     });
 
-    const { result } = renderHook(() => useRunDryRun(1), { wrapper: withClient() });
+    const { result } = renderHook(() => useRunDryRun(1));
     result.current.mutate({ limit: 100 });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -54,11 +48,8 @@ describe('useRunDryRun', () => {
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const runsSpy = vi.spyOn(client, 'invalidateQueries');
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
 
-    const { result } = renderHook(() => useRunDryRun(1), { wrapper });
+    const { result } = renderHook(() => useRunDryRun(1), { queryClient: client });
     result.current.mutate({ limit: 100 });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { waitFor } from '@testing-library/react';
+import { renderHook } from '../test/render';
+import {QueryClient} from '@tanstack/react-query';
 import { useUpdatePluginEnabled, usePluginConfig, useSavePluginConfig, usePluginData, useSavePluginData } from './hooks';
 import { ApiError } from './client';
 import { queryClient as defaultClient } from './queryClient';
@@ -15,12 +15,6 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function withClient() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
-}
 
 beforeEach(() => {
   defaultClient.clear();
@@ -40,11 +34,8 @@ describe('useUpdatePluginEnabled', () => {
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
 
-    const { result } = renderHook(() => useUpdatePluginEnabled(), { wrapper });
+    const { result } = renderHook(() => useUpdatePluginEnabled(), { queryClient: client });
     result.current.mutate({ id: 'example_upper', enabled: false });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -70,7 +61,6 @@ describe('usePluginConfig', () => {
 
     const { result } = renderHook(
       () => usePluginConfig('example_upper', { clientId: 7 }),
-      { wrapper: withClient() },
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -93,11 +83,8 @@ describe('useSavePluginConfig', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
     const scope = {};
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
 
-    const { result } = renderHook(() => useSavePluginConfig('example_upper', scope), { wrapper });
+    const { result } = renderHook(() => useSavePluginConfig('example_upper', scope), { queryClient: client });
     result.current.mutate(() => ({ suffix: 'X' }));
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -122,9 +109,7 @@ describe('usePluginData', () => {
       return jsonResponse({});
     });
 
-    const { result } = renderHook(() => usePluginData('custom_labels', { feedSourceId: 7 }), {
-      wrapper: withClient(),
-    });
+    const { result } = renderHook(() => usePluginData('custom_labels', { feedSourceId: 7 }));
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(capturedUrl).toBe('/plugins/custom_labels/data?feed_source_id=7');
@@ -145,13 +130,8 @@ describe('useSavePluginData', () => {
 
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    );
 
-    const { result } = renderHook(() => useSavePluginData('custom_labels', { feedSourceId: 7 }), {
-      wrapper,
-    });
+    const { result } = renderHook(() => useSavePluginData('custom_labels', { feedSourceId: 7 }), { queryClient: client });
     result.current.mutate(() => ({ slotIds: { r1: 'a' } }));
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -170,11 +150,7 @@ describe('useSavePluginData', () => {
 });
 describe('optimistic locking', () => {
   function withVersionedData(client?: QueryClient) {
-    const queryClient = client ?? new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-    return { queryClient, wrapper };
+    return client ?? new QueryClient({ defaultOptions: { queries: { retry: false } } });
   }
 
   function versionedJson(body: unknown, version: number | null, status = 200) {
@@ -195,7 +171,7 @@ describe('optimistic locking', () => {
 
     const { result } = renderHook(
       () => usePluginData('custom_labels', { feedSourceId: 7 }),
-      { wrapper: withVersionedData().wrapper },
+      { queryClient: withVersionedData() },
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -204,7 +180,7 @@ describe('optimistic locking', () => {
   });
 
   it('save hook attaches expected_version and retries once on 409 with fresh version', async () => {
-    const { queryClient, wrapper } = withVersionedData();
+    const queryClient = withVersionedData();
     queryClient.setQueryData(queryKeys.pluginData('custom_labels', { feedSourceId: 7 }), {
       payload: { assignments: {} },
       version: 10,
@@ -231,7 +207,7 @@ describe('optimistic locking', () => {
 
     const { result } = renderHook(
       () => useSavePluginData('custom_labels', { feedSourceId: 7 }),
-      { wrapper },
+      { queryClient },
     );
     result.current.mutate(() => ({ assignments: { mine: '42' } }));
 
@@ -242,7 +218,7 @@ describe('optimistic locking', () => {
   });
 
   it('save hook surfaces the 409 after a double conflict without a third PUT', async () => {
-    const { queryClient, wrapper } = withVersionedData();
+    const queryClient = withVersionedData();
     queryClient.setQueryData(queryKeys.pluginData('custom_labels', { feedSourceId: 7 }), {
       payload: { assignments: {} },
       version: 10,
@@ -266,7 +242,7 @@ describe('optimistic locking', () => {
 
     const { result } = renderHook(
       () => useSavePluginData('custom_labels', { feedSourceId: 7 }),
-      { wrapper },
+      { queryClient },
     );
     result.current.mutate(() => ({ assignments: { mine: '42' } }));
 
@@ -276,7 +252,6 @@ describe('optimistic locking', () => {
   });
 
   it('save hook without cached version PUTs without expected_version (legacy)', async () => {
-    const { wrapper } = withVersionedData();
     let putUrl: string | null = null;
     stubFetch((url) => {
       if (url.startsWith('/plugins/custom_labels/data')) {
@@ -288,7 +263,6 @@ describe('optimistic locking', () => {
 
     const { result } = renderHook(
       () => useSavePluginData('custom_labels', { feedSourceId: 7 }),
-      { wrapper },
     );
     result.current.mutate(() => ({ assignments: { a: '1' } }));
 
