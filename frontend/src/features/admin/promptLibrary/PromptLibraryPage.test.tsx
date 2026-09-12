@@ -8,6 +8,7 @@ import { render } from '../../../test/render';
 import { stubFetch } from '../../../test/fetch';
 import { PromptLibraryPage } from './PromptLibraryPage';
 import { TemplateEditor } from './TemplateEditor';
+import { HighlightedTextarea } from './HighlightedTextarea';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -84,5 +85,25 @@ describe('TemplateEditor warnings', () => {
     const variablesInput = screen.getByRole('textbox', { name: /variables/i });
     await user.type(variablesInput, 'brand, title');
     expect(await screen.findByTestId('unused-variable-brand')).toBeInTheDocument();
+  });
+});
+
+describe('HighlightedTextarea', () => {
+  it('marks placeholders: yellow for known, red for unknown', () => {
+    const { container } = render(
+      <HighlightedTextarea
+        label="System prompt"
+        value="Check {{title}} and {{secret}}"
+        onChange={() => {}}
+        known={new Set(['title'])}
+      />,
+      { wrapper: withQueryClient() },
+    );
+    const marks = container.querySelectorAll('mark');
+    expect(marks).toHaveLength(2);
+    expect(marks[0].textContent).toBe('{{title}}');
+    expect(marks[0].style.background).toContain('yellow');
+    expect(marks[1].textContent).toBe('{{secret}}');
+    expect(marks[1].style.background).toContain('red');
   });
 });

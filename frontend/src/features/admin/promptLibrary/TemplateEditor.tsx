@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Button, Divider, Modal, Select, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Button, Divider, Modal, Select, Stack, Text, TextInput } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { useCreatePromptTemplate } from '../../../api/hooks';
 import { notifyMutationError, notifySuccess } from '../../../app/notifications';
 import type { PromptTemplate } from '../../../api/types';
+import { HighlightedTextarea, PLACEHOLDER_RE } from './HighlightedTextarea';
 import { PreviewPanel, previewDetailErrors } from './PreviewPanel';
 
 export const TASK_TYPES = [
@@ -23,8 +24,6 @@ export const CANONICAL_VARIABLES: Record<string, string[]> = {
   attribute_enrichment: ['title', 'description'],
   image_quality: ['image_link'],
 };
-
-const PLACEHOLDER_RE = /\{\{\s*([a-z_][a-z0-9_]*)\s*\}\}/g;
 
 function placeholders(text: string): Set<string> {
   return new Set([...text.matchAll(PLACEHOLDER_RE)].map((m) => m[1]));
@@ -75,19 +74,17 @@ export function TemplateEditor({ opened, template, clientId, feedOptions, onClos
           value={name}
           onChange={(e) => setName(e.currentTarget.value)}
         />
-        <Textarea
+        <HighlightedTextarea
           label={t('promptLibrary.editor.systemPrompt')}
-          autosize
-          minRows={3}
           value={system}
-          onChange={(e) => setSystem(e.currentTarget.value)}
+          onChange={setSystem}
+          known={new Set(canonical)}
         />
-        <Textarea
+        <HighlightedTextarea
           label={t('promptLibrary.editor.userPrompt')}
-          autosize
-          minRows={3}
           value={user}
-          onChange={(e) => setUser(e.currentTarget.value)}
+          onChange={setUser}
+          known={new Set(canonical)}
         />
         <TextInput
           label={t('promptLibrary.editor.variables')}
