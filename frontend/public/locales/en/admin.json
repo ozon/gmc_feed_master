@@ -81,6 +81,8 @@
       "title": "AI Usage",
       "empty": "No AI usage recorded yet",
       "groupBy": "Group by",
+      "from": "From",
+      "to": "To",
       "groupKey": "Group",
       "calls": "Calls",
       "cacheHits": "Cache hits",

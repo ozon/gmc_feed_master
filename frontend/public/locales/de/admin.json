@@ -81,6 +81,8 @@
       "title": "KI-Nutzung",
       "empty": "Noch keine KI-Nutzung aufgezeichnet",
       "groupBy": "Gruppieren nach",
+      "from": "Von",
+      "to": "Bis",
       "groupKey": "Gruppe",
       "calls": "Aufrufe",
       "cacheHits": "Cache-Treffer",
