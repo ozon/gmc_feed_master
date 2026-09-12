@@ -18,6 +18,7 @@ from ..ingest import HttpFetcher, read_feed
 from ..ingest.report import SourceField
 from ..mapping import MappingDocument, apply_mapping
 from ..models.feed_source import FeedSource
+from ..plugins.runtime import RunContext
 from ..qc.engine import CrossProductRule, ImageProbe, PerProductRule
 from ..staging.config_resolver import resolve_config_bundle
 from ..staging.delta import classify
@@ -28,7 +29,6 @@ from ..staging.persistence import (
     apply_staging_delta,
     load_stored_rows,
 )
-from ..plugins.runtime import RunContext
 
 
 @dataclass
@@ -73,9 +73,8 @@ class IngestStep:
         self._registry = registry
 
     async def execute(self, ctx: StepContext) -> StepResult:
-        async with ctx.session_factory() as session:
-            async with session.begin():
-                feed_source = await session.get(FeedSource, ctx.feed_source_id)
+        async with ctx.session_factory() as session, session.begin():
+            feed_source = await session.get(FeedSource, ctx.feed_source_id)
         if feed_source is None:
             raise LookupError(f"feed source {ctx.feed_source_id} not found")
         if not feed_source.source_url:
@@ -118,14 +117,13 @@ class MappingStep:
         self._registry = registry
 
     async def execute(self, ctx: StepContext) -> StepResult:
-        async with ctx.session_factory() as session:
-            async with session.begin():
-                feed_source = await session.get(FeedSource, ctx.feed_source_id)
-                if feed_source is None:
-                    raise LookupError(f"feed source {ctx.feed_source_id} not found")
-                doc = MappingDocument.from_json(feed_source.field_mapping)
-                doc.source_fields = list(ctx.run_state.source_fields)
-                feed_source.field_mapping = doc.to_json()
+        async with ctx.session_factory() as session, session.begin():
+            feed_source = await session.get(FeedSource, ctx.feed_source_id)
+            if feed_source is None:
+                raise LookupError(f"feed source {ctx.feed_source_id} not found")
+            doc = MappingDocument.from_json(feed_source.field_mapping)
+            doc.source_fields = list(ctx.run_state.source_fields)
+            feed_source.field_mapping = doc.to_json()
 
         dropped_unmapped = 0
         shape_mismatches = 0
@@ -154,9 +152,8 @@ class StagingStep:
         self._chunk_size = chunk_size
 
     async def execute(self, ctx: StepContext) -> StepResult:
-        async with ctx.session_factory() as session:
-            async with session.begin():
-                feed_source = await session.get(FeedSource, ctx.feed_source_id)
+        async with ctx.session_factory() as session, session.begin():
+            feed_source = await session.get(FeedSource, ctx.feed_source_id)
         if feed_source is None:
             raise LookupError(f"feed source {ctx.feed_source_id} not found")
 
@@ -318,15 +315,16 @@ class QualityCheckStep:
         registry: RegistryDocument,
         clock: Clock,
         image_probe: ImageProbe | None = None,
+        ai_service: Any = None,
     ) -> None:
         self._registry = registry
         self._clock = clock
         self._image_probe = image_probe
+        self._ai_service = ai_service
 
     async def execute(self, ctx: StepContext) -> StepResult:
-        async with ctx.session_factory() as session:
-            async with session.begin():
-                feed_source = await session.get(FeedSource, ctx.feed_source_id)
+        async with ctx.session_factory() as session, session.begin():
+            feed_source = await session.get(FeedSource, ctx.feed_source_id)
 
         if feed_source is None:
             raise LookupError(f"feed source {ctx.feed_source_id} not found")
@@ -338,7 +336,8 @@ class QualityCheckStep:
         products = [product for _, product in bound]
 
         async with ctx.session_factory() as session:
-            from sqlalchemy import select, desc
+            from sqlalchemy import desc, select
+
             from ..models.export import ExportRun
             result = await session.execute(
                 select(ExportRun).where(
@@ -348,12 +347,25 @@ class QualityCheckStep:
             previous_export_run = result.scalar_one_or_none()
 
         from ..qc.engine import QcContext, run_engine
-        from ..qc.rules import (
-            BaselineRequired, BrandRequired, GtinMpn, EnumValues,
-            ConditionalRequired, DateFormat, LengthLimits, CardinalityRule,
-            CurrencyConsistency, ImageRequirements, VariantConsistency, VolumeDrop,
-        )
         from ..qc.persistence import persist_findings
+        from ..qc.rules import (
+            BaselineRequired,
+            BrandRequired,
+            CardinalityRule,
+            ConditionalRequired,
+            CurrencyConsistency,
+            DateFormat,
+            EnumValues,
+            GtinMpn,
+            ImageRequirements,
+            LengthLimits,
+            VariantConsistency,
+            VolumeDrop,
+        )
+
+        ai_service, client_id, ai_budget, previous_ai_ids = await _ai_qc_context(
+            ctx.session_factory, feed_source, self._ai_service
+        )
 
         qc_ctx = QcContext(
             feed_source_id=ctx.feed_source_id,
@@ -363,6 +375,10 @@ class QualityCheckStep:
             clock=self._clock,
             image_probe=self._image_probe,
             previous_export_run=previous_export_run,
+            ai_service=ai_service,
+            client_id=client_id,
+            ai_budget=ai_budget,
+            previous_ai_product_ids=previous_ai_ids,
         )
 
         per_product_rules: list[PerProductRule] = [
@@ -371,6 +387,10 @@ class QualityCheckStep:
             CurrencyConsistency(), ImageRequirements(),
         ]
         cross_product_rules: list[CrossProductRule] = [VariantConsistency(), VolumeDrop()]
+        if ai_service is not None:
+            from ..qc.ai_rules import AiPolicyCheck
+
+            cross_product_rules.append(AiPolicyCheck())
 
         findings = await run_engine(products, product_ids, qc_ctx, per_product_rules, cross_product_rules)
 
@@ -390,6 +410,30 @@ class QualityCheckStep:
             processed_count=0,
             statistics={"qc": {"products": len(products), **counts}},
         )
+
+
+async def _ai_qc_context(
+    session_factory: Callable[[], AsyncSession],
+    feed_source: FeedSource,
+    ai_service: Any,
+) -> tuple[Any, int | None, int, frozenset[str]]:
+    """Returns (ai_service_or_None, client_id, budget, previous_ai_product_ids)."""
+    cfg = (feed_source.configuration or {}).get("ai_qc") or {}
+    if not cfg.get("enabled") or ai_service is None:
+        return None, feed_source.client_id, 0, frozenset()
+    from sqlalchemy import select as sa_select
+
+    from ..models.quality import QualityFinding
+
+    async with session_factory() as session:
+        ids = frozenset((await session.execute(
+            sa_select(QualityFinding.product_id).where(
+                QualityFinding.feed_source_id == feed_source.id,
+                QualityFinding.code == "ai_policy_check",
+            )
+        )).scalars())
+    budget = max(1, int(cfg.get("budget", 50)))
+    return ai_service, feed_source.client_id, budget, ids
 
 
 class ExportStep:
@@ -439,6 +483,7 @@ def default_steps(
     image_probe: ImageProbe | None = None,
     export_dir: Path | str | None = None,
     public_base_url: str | None = None,
+    ai_service: Any = None,
 ) -> tuple[PipelineStep, ...]:
     if clock is None:
         clock = SystemClock()
@@ -451,6 +496,6 @@ def default_steps(
         MappingStep(registry),
         StagingStep(),
         PluginStep(plugin_registry),
-        QualityCheckStep(registry, clock, image_probe),
+        QualityCheckStep(registry, clock, image_probe, ai_service),
         ExportStep(registry, store, clock, base_url),
     )

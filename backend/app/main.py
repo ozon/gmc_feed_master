@@ -263,6 +263,9 @@ def create_app(
         image_probe = ImageProbeImpl(app.state.db_session_factory, image_http_client)
         app.state.image_probe = image_probe
         lock_registry = LockRegistry()
+        from .ai import AiService
+
+        ai_service = AiService(app.state.db_session_factory, clock=app.state.clock)
         steps = default_steps(
             active_fetcher,
             load_registry(),
@@ -271,17 +274,14 @@ def create_app(
             image_probe=image_probe,
             export_dir=settings.export_dir if settings is not None else None,
             public_base_url=settings.public_base_url if settings is not None else None,
+            ai_service=ai_service,
         )
         runner = PipelineRunner(lock_registry, app.state.db_session_factory, list(steps))
         scheduler_service = SchedulerService(runner)
         app.state.lock_registry = lock_registry
         app.state.pipeline_runner = runner
         app.state.scheduler_service = scheduler_service
-        from .ai import AiService
-
-        app.state.ai_service = AiService(
-            app.state.db_session_factory, clock=app.state.clock
-        )
+        app.state.ai_service = ai_service
 
     @app.get("/health")
     def health(_settings: Settings = Depends(get_settings)) -> dict[str, str]:
