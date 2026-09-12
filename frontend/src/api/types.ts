@@ -320,3 +320,5 @@ export type PromptPreviewResult = {
   warnings: string[];
   errors: string[];
 };
+
+export type ChatMessage = { role: "user" | "assistant"; content: string };

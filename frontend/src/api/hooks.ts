@@ -14,6 +14,7 @@ import type {
   AiTestResult,
   AiUsageParams,
   AiUsageRow,
+  ChatMessage,
   ClientRow,
   ClientSummary,
   DashboardSummary,
@@ -40,6 +41,7 @@ import type {
 
 export type {
   AdminUser,
+  ChatMessage,
   ClientRow,
   ClientSummary,
   DashboardSummary,
@@ -797,5 +799,12 @@ export function usePreviewPromptTemplate() {
   return useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
       apiPost<PromptPreviewResult>('/admin/ai/prompt-templates/preview', payload),
+  });
+}
+
+export function useChat() {
+  return useMutation({
+    mutationFn: (messages: ChatMessage[]) =>
+      apiPost<{ content: string }>('/chat', { messages }),
   });
 }
