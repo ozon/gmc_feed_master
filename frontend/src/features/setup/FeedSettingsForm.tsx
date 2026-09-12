@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, Group, NumberInput, PasswordInput, Select, Stack, TextInput } from '@mantine/core';
+import { Button, Group, NumberInput, PasswordInput, Select, Stack, Switch, TextInput } from '@mantine/core';
 import { useForm } from '@tanstack/react-form';
 import { useTranslation } from 'react-i18next';
 import { useUpdateFeedSource } from '../../api/hooks';
@@ -39,6 +39,10 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
   });
   const [password, setPassword] = useState('');
   const [serverError, setServerError] = useState<string | null>(null);
+  const aiQcCfg =
+    (feed.configuration as Record<string, unknown> | undefined)?.ai_qc as Record<string, unknown> | undefined;
+  const [aiQcEnabled, setAiQcEnabled] = useState(Boolean(aiQcCfg?.enabled));
+  const [aiQcBudget, setAiQcBudget] = useState<number>(Number(aiQcCfg?.budget ?? 50));
 
   const form = useForm({
     defaultValues: {
@@ -66,17 +70,21 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
 
       const originalUsername =
         ((feed.configuration as Record<string, unknown> | undefined)?.basic_auth as Record<string, unknown> | undefined)?.username as string | undefined ?? '';
+      const existingCfg = (feed.configuration ?? {}) as Record<string, unknown>;
+      const cfgUpdate: Record<string, unknown> = {};
       if (username !== originalUsername || password) {
-        const existingCfg = (feed.configuration ?? {}) as Record<string, unknown>;
         const existingBa = (existingCfg.basic_auth ?? {}) as Record<string, unknown>;
-        payload.configuration = {
-          ...existingCfg,
-          basic_auth: {
-            ...existingBa,
-            username,
-            ...(password ? { password } : {}),
-          },
+        cfgUpdate.basic_auth = {
+          ...existingBa,
+          username,
+          ...(password ? { password } : {}),
         };
+      }
+      if (aiQcEnabled !== Boolean(aiQcCfg?.enabled) || aiQcBudget !== Number(aiQcCfg?.budget ?? 50)) {
+        cfgUpdate.ai_qc = { enabled: aiQcEnabled, budget: aiQcBudget };
+      }
+      if (Object.keys(cfgUpdate).length > 0) {
+        payload.configuration = { ...existingCfg, ...cfgUpdate };
       }
 
       try {
@@ -99,6 +107,9 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
     const ba = cfg?.basic_auth as Record<string, unknown> | undefined;
     setUsername((ba?.username as string) ?? '');
     setPassword('');
+    const aiQc = cfg?.ai_qc as Record<string, unknown> | undefined;
+    setAiQcEnabled(Boolean(aiQc?.enabled));
+    setAiQcBudget(Number(aiQc?.budget ?? 50));
     setServerError(null);
   }, [feed]);
 
@@ -174,6 +185,19 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
               form.setFieldValue('cron_expression', value);
             }
           }}
+        />
+        <Switch
+          label={t('fields.aiQcEnabled')}
+          checked={aiQcEnabled}
+          onChange={(event) => setAiQcEnabled(event.currentTarget.checked)}
+        />
+        <NumberInput
+          label={t('fields.aiQcBudget')}
+          value={aiQcBudget}
+          onChange={(v) => setAiQcBudget(typeof v === 'number' ? v : 50)}
+          min={1}
+          max={1000}
+          disabled={!aiQcEnabled}
         />
         <form.Field name="target_country">
           {(field) => (
