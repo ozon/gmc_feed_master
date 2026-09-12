@@ -1,0 +1,30 @@
+{
+  "title": "Feed-Übersicht",
+  "runPipeline": "Pipeline starten",
+  "editPipeline": "Pipeline bearbeiten",
+  "copyExportUrl": "Export-URL kopieren",
+  "kpi": {
+    "rawItems": "Rohdaten",
+    "validItems": "Gültige Produkte",
+    "excludedItems": "Ausgeschlossene Produkte",
+    "duration": "Verarbeitungsdauer",
+    "readiness": "GMC-Bereitschaft"
+  },
+  "charts": {
+    "volumeTitle": "Volumen & Durchlauf (30 Tage)",
+    "volumeEmpty": "Keine Läufe in den letzten 30 Tagen.",
+    "funnelTitle": "Pipeline-Stufen",
+    "funnelEmpty": "Keine Lauf-Statistiken vorhanden.",
+    "qualityTitle": "Qualitätsverteilung",
+    "qualityEmpty": "Noch keine Qualitätsbefunde."
+  },
+  "runs": {
+    "title": "Letzte Läufe",
+    "empty": "Noch keine Läufe.",
+    "duration": "{{seconds}}s"
+  },
+  "badge": {
+    "active": "AKTIV",
+    "target": "Google Merchant Center"
+  }
+}

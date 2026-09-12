@@ -335,6 +335,38 @@ describe('route error boundary', () => {
   });
 });
 
+describe('feed index and placeholder routes', () => {
+  function stubSession(handler: (url: string) => Response) {
+    stubFetch((url) => {
+      if (url === '/auth/me') return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
+      if (url === '/dashboard/summary') return jsonResponse(emptySummary);
+      if (url === '/plugins') return jsonResponse([]);
+      return handler(url);
+    });
+  }
+
+  it('renders FeedDashboardPage at /clients/:clientId/feeds/:feedSourceId', async () => {
+    stubSession(() => jsonResponse({}));
+    window.history.replaceState({}, '', '/clients/1/feeds/2');
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'Feed dashboard' })).toBeInTheDocument();
+  });
+
+  it('renders SystemLogsPage at /logs', async () => {
+    stubSession(() => jsonResponse({}));
+    window.history.replaceState({}, '', '/logs');
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'System Logs' })).toBeInTheDocument();
+  });
+
+  it('renders GlobalRulesPage at /rules', async () => {
+    stubSession(() => jsonResponse({}));
+    window.history.replaceState({}, '', '/rules');
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'Global Rules' })).toBeInTheDocument();
+  });
+});
+
 describe('unknown routes', () => {
   it('shows a not-found page with a link home instead of a silent redirect', async () => {
     stubFetch((url) => {

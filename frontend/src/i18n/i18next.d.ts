@@ -8,7 +8,9 @@ import type customLabels from '../../public/locales/en/customLabels.json';
 import type dashboard from '../../public/locales/en/dashboard.json';
 import type enrichment from '../../public/locales/en/enrichment.json';
 import type exportNs from '../../public/locales/en/export.json';
+import type feedDashboard from '../../public/locales/en/feedDashboard.json';
 import type filter from '../../public/locales/en/filter.json';
+import type globalRules from '../../public/locales/en/globalRules.json';
 import type mapping from '../../public/locales/en/mapping.json';
 import type monitoring from '../../public/locales/en/monitoring.json';
 import type pipeline from '../../public/locales/en/pipeline.json';
@@ -16,6 +18,7 @@ import type plugins from '../../public/locales/en/plugins.json';
 import type products from '../../public/locales/en/products.json';
 import type rules from '../../public/locales/en/rules.json';
 import type setup from '../../public/locales/en/setup.json';
+import type systemLogs from '../../public/locales/en/systemLogs.json';
 import type notifications from '../../public/locales/en/notifications.json';
 
 declare module 'i18next' {
@@ -31,7 +34,9 @@ declare module 'i18next' {
       dashboard: typeof dashboard;
       enrichment: typeof enrichment;
       export: typeof exportNs;
+      feedDashboard: typeof feedDashboard;
       filter: typeof filter;
+      globalRules: typeof globalRules;
       mapping: typeof mapping;
       monitoring: typeof monitoring;
       notifications: typeof notifications;
@@ -40,6 +45,7 @@ declare module 'i18next' {
       products: typeof products;
       rules: typeof rules;
       setup: typeof setup;
+      systemLogs: typeof systemLogs;
     };
   }
 }
