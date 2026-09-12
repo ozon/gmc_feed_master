@@ -25,6 +25,17 @@ export const CANONICAL_VARIABLES: Record<string, string[]> = {
   image_quality: ['image_link'],
 };
 
+const ANCHORED_PLACEHOLDER = /\{\{\s*([a-z_][a-z0-9_]*)\s*\}\}/; // non-global: safe .test()
+const MALFORMED_RE = /\{\{[^{}]*\}\}/g;
+
+function malformedBraces(text: string): string[] {
+  const out: string[] = [];
+  for (const m of text.matchAll(MALFORMED_RE)) {
+    if (!ANCHORED_PLACEHOLDER.test(m[0])) out.push(m[0]);
+  }
+  return [...new Set(out)];
+}
+
 function placeholders(text: string): Set<string> {
   return new Set([...text.matchAll(PLACEHOLDER_RE)].map((m) => m[1]));
 }
@@ -51,6 +62,7 @@ export function TemplateEditor({ opened, template, clientId, feedOptions, onClos
   const canonical = taskType ? CANONICAL_VARIABLES[taskType] ?? [] : [];
   const unknown = [...used].filter((v) => !canonical.includes(v));
   const unusedDeclared = declared.filter((v) => !used.has(v));
+  const malformed = [...new Set([...malformedBraces(system), ...malformedBraces(user)])];
 
   const canSave = Boolean(taskType && name && system && user && unknown.length === 0);
 
@@ -100,6 +112,11 @@ export function TemplateEditor({ opened, template, clientId, feedOptions, onClos
         {unusedDeclared.map((v) => (
           <Text key={v} c="orange" size="sm" data-testid={`unused-variable-${v}`}>
             {t('promptLibrary.editor.unusedVariable', { variable: v })}
+          </Text>
+        ))}
+        {malformed.map((b) => (
+          <Text key={b} c="orange" size="sm" data-testid={`malformed-brace-${b}`}>
+            {t('promptLibrary.editor.malformedBrace', { brace: b })}
           </Text>
         ))}
         {create.error ? (

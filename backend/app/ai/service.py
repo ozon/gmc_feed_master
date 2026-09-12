@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -19,13 +20,21 @@ from .resilience import (
     RetryPolicy,
     classify_failure,
 )
-from .tasks import TASK_SPECS, input_hash, validate_task
+from .tasks import TASK_SPECS, TaskSpec, input_hash, validate_task
 from .templates import TaskSpecError, render_messages
 from .usage import UsageLogWriter, UsageRecord, estimate_cost
 
 logger = logging.getLogger(__name__)
 
 TEMPLATE_VERSION_BUILTIN = "builtin"
+
+
+def builtin_template_version(spec: TaskSpec) -> str:
+    """Content-hash the builtin prompts so any code change auto-invalidates cache rows."""
+    digest = hashlib.sha256(
+        (spec.system + "\x00" + spec.user).encode("utf-8")
+    ).hexdigest()[:12]
+    return f"{TEMPLATE_VERSION_BUILTIN}:{digest}"
 
 
 @dataclass(frozen=True)
@@ -148,7 +157,7 @@ class AiService:
             return resolved
         spec = TASK_SPECS[task_type]
         return ResolvedTemplate(
-            system=spec.system, user=spec.user, version=TEMPLATE_VERSION_BUILTIN
+            system=spec.system, user=spec.user, version=builtin_template_version(spec)
         )
 
     # -- per-config collaborators -----------------------------------------

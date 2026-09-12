@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Select, Stack, Table, Title } from '@mantine/core';
+import { Group, Select, Stack, Table, Title } from '@mantine/core';
+import { DateInput } from '@mantine/dates';
 import { useTranslation } from 'react-i18next';
 import { useAiUsage } from '../../../api/hooks';
 import { EmptyState, ErrorState, LoadingState } from '../../../components/StateViews';
 import type { AiUsageGroupBy } from '../../../api/types';
+import { usageDateParams } from './usageDates';
 
 const GROUP_OPTIONS: { value: AiUsageGroupBy; label: string }[] = [
   { value: 'client', label: 'Client' },
@@ -15,7 +17,9 @@ const GROUP_OPTIONS: { value: AiUsageGroupBy; label: string }[] = [
 export function UsagePage() {
   const { t } = useTranslation('admin');
   const [groupBy, setGroupBy] = useState<AiUsageGroupBy>('client');
-  const usageQuery = useAiUsage({ group_by: groupBy });
+  const [fromDate, setFromDate] = useState<Date | null>(null);
+  const [toDate, setToDate] = useState<Date | null>(null);
+  const usageQuery = useAiUsage({ group_by: groupBy, ...usageDateParams(fromDate, toDate) });
 
   if (usageQuery.isPending) return <LoadingState />;
   if (usageQuery.isError) return <ErrorState onRetry={() => void usageQuery.refetch()} />;
@@ -24,12 +28,26 @@ export function UsagePage() {
   return (
     <Stack gap="md">
       <Title order={4}>{t('ai.usage.title')}</Title>
-      <Select
-        label={t('ai.usage.groupBy')}
-        data={GROUP_OPTIONS}
-        value={groupBy}
-        onChange={(v) => setGroupBy((v as AiUsageGroupBy) ?? 'client')}
-      />
+      <Group align="end">
+        <Select
+          label={t('ai.usage.groupBy')}
+          data={GROUP_OPTIONS}
+          value={groupBy}
+          onChange={(v) => setGroupBy((v as AiUsageGroupBy) ?? 'client')}
+        />
+        <DateInput
+          label={t('ai.usage.from')}
+          clearable
+          value={fromDate}
+          onChange={(v) => setFromDate(v ? new Date(v) : null)}
+        />
+        <DateInput
+          label={t('ai.usage.to')}
+          clearable
+          value={toDate}
+          onChange={(v) => setToDate(v ? new Date(v) : null)}
+        />
+      </Group>
       {rows.length === 0 ? (
         <EmptyState message={t('ai.usage.empty')} />
       ) : (

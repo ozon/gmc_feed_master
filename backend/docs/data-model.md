@@ -263,7 +263,7 @@ One default config serves all AI calls (`AiService.run_task`); swapping provider
 | `task_type` | String(100) | One of the task registry types |
 | `provider_config_id` | Integer | FK → AiProviderConfig (CASCADE) |
 | `model` | String(255) | Part of key — model swap invalidates |
-| `template_version` | String(100) | `builtin`; versioned prompt templates (Feature 2) plug in here |
+| `template_version` | String(100) | `builtin:<12 hex>` for builtins (sha256 of system+\x00+user; content changes auto-invalidate cache rows); versioned prompt templates use `tmpl:{id}:v{version}` |
 | `input_hash` | String(64) | sha256 over canonical JSON of template variables |
 | `output` | JSONB | Validated value under the uniform `{"value": ...}` wrapper |
 | `created_at` | DateTime | |
