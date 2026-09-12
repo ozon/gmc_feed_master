@@ -31,7 +31,7 @@
 - Produces: `EnrichmentPlugin` with `validate_config(config)`, `prepare_run(config, data, ctx) -> {"pinned": dict}`, `process(product, config, data, ctx, state=None)`; data shape `{"suggestions": {pid: {field: value}}, "pinned": {pid: {field: value}}}`.
 - Consumes: plugin runtime contract (see `plugins/core/custom_labels/plugin.py`).
 
-- [ ] **Step 1: Write failing tests** — `backend/tests/test_enrichment_plugin.py`:
+- [x] **Step 1: Write failing tests** — `backend/tests/test_enrichment_plugin.py`:
 
 ```python
 import pytest
@@ -63,9 +63,9 @@ async def test_process_passthrough_without_pin():
     assert out is product
 ```
 
-- [ ] **Step 2: Run** `uv run pytest tests/test_enrichment_plugin.py -v` — FAIL (import error).
+- [x] **Step 2: Run** `uv run pytest tests/test_enrichment_plugin.py -v` — FAIL (import error).
 
-- [ ] **Step 3: Implement.** `plugins/core/enrichment/plugin.json`:
+- [x] **Step 3: Implement.** `plugins/core/enrichment/plugin.json`:
 
 ```json
 {
@@ -166,9 +166,9 @@ class EnrichmentPlugin:
         return result
 ```
 
-- [ ] **Step 4: Run** `uv run pytest tests/test_enrichment_plugin.py tests/test_plugin_contract.py -v` — pass.
+- [x] **Step 4: Run** `uv run pytest tests/test_enrichment_plugin.py tests/test_plugin_contract.py -v` — pass.
 
-- [ ] **Step 5: Commit** `git add plugins/core/enrichment backend/tests/test_enrichment_plugin.py && git commit -m "feat: enrichment plugin skeleton (manifest, config, pin application)"`
+- [x] **Step 5: Commit** `git add plugins/core/enrichment backend/tests/test_enrichment_plugin.py && git commit -m "feat: enrichment plugin skeleton (manifest, config, pin application)"`
 
 ---
 
@@ -182,16 +182,16 @@ class EnrichmentPlugin:
 - Consumes: `app.routes.plugins._get_payload` / `_put_payload` (signatures: see `backend/app/routes/plugins.py:249` and `:321`); `AiService.run_task("attribute_enrichment", {title, description}, client_id, feed_source_id)`; `ensure_feed_source_access`.
 - Produces: `POST /plugins/enrichment/scan {feed_source_id, limit}` → `{scanned, with_suggestions, failed}`; writes `suggestions[product_id]` into PluginData.
 
-- [ ] **Step 1: Write failing tests** — `backend/tests/test_enrichment_routes.py`, mirroring the app/client fixture setup of `backend/tests/test_custom_labels_preview.py` plus a fake `ai_service` on `app.state` (scripted `run_task` returning `AiResult(value={"color": "blue"}, status="ok", ...)`). Tests:
+- [x] **Step 1: Write failing tests** — `backend/tests/test_enrichment_routes.py`, mirroring the app/client fixture setup of `backend/tests/test_custom_labels_preview.py` plus a fake `ai_service` on `app.state` (scripted `run_task` returning `AiResult(value={"color": "blue"}, status="ok", ...)`). Tests:
   1. Seed a feed source + staging products where `color` missing in raw_data; POST scan → 200, plugin data `suggestions` contains the product with `{"color": "blue"}`; response counts right.
   2. Product whose missing fields are all pinned → skipped (`scanned` excludes it).
   3. AI fallback for a product → `failed: 1`, no suggestion stored.
   4. No `app.state.ai_service` → 503.
   5. Client user without scope on the feed source → 404 (ensure_feed_source_access).
 
-- [ ] **Step 2: Run** — FAIL (route missing).
+- [x] **Step 2: Run** — FAIL (route missing).
 
-- [ ] **Step 3: Implement** — add to `EnrichmentPlugin`:
+- [x] **Step 3: Implement** — add to `EnrichmentPlugin`:
 
 ```python
     def register_routes(self, router: Any) -> None:
@@ -311,9 +311,9 @@ class EnrichmentPlugin:
 
 Note: `_get_payload` reads config at the feed_source tier only (`ponytail:` global/client config tiers resolve later via the pipeline's config resolver; the scan route uses the feed tier or defaults).
 
-- [ ] **Step 4: Run** `uv run pytest tests/test_enrichment_routes.py tests/test_plugin_contract.py -v` — pass.
+- [x] **Step 4: Run** `uv run pytest tests/test_enrichment_routes.py tests/test_plugin_contract.py -v` — pass.
 
-- [ ] **Step 5: Commit** `git add plugins/core/enrichment backend/tests/test_enrichment_routes.py && git commit -m "feat: enrichment scan route (missing-field query, batched ai, ol write)"`
+- [x] **Step 5: Commit** `git add plugins/core/enrichment backend/tests/test_enrichment_routes.py && git commit -m "feat: enrichment scan route (missing-field query, batched ai, ol write)"`
 
 ---
 
@@ -326,16 +326,16 @@ Note: `_get_payload` reads config at the feed_source tier only (`ponytail:` glob
 **Interfaces:**
 - Produces: `POST /plugins/enrichment/{accept,discard,unpin}` with `{feed_source_id, expected_version, items: [{product_id, fields: [str]}]}` → `{"status": "ok"}` or 409/422 from the shared helpers.
 
-- [ ] **Step 1: Write failing tests**:
+- [x] **Step 1: Write failing tests**:
   1. accept moves selected fields suggestions→pinned and clears them from suggestions (empty product keys dropped)
   2. discard deletes selected suggestion fields
   3. unpin deletes selected pinned fields
   4. stale `expected_version` → 409
   5. accept for unknown product/field → no crash, no change
 
-- [ ] **Step 2: Run** — FAIL.
+- [x] **Step 2: Run** — FAIL.
 
-- [ ] **Step 3: Implement** — inside `register_routes`, after `scan`:
+- [x] **Step 3: Implement** — inside `register_routes`, after `scan`:
 
 ```python
         class ItemsRequest(BaseModel):
@@ -412,9 +412,9 @@ Note: `_get_payload` reads config at the feed_source tier only (`ponytail:` glob
 
 (Import `JSONResponse` once at the top of `register_routes` together with the other route imports.)
 
-- [ ] **Step 4: Run** `uv run pytest tests/test_enrichment_routes.py tests/test_plugin_contract.py -v` — pass.
+- [x] **Step 4: Run** `uv run pytest tests/test_enrichment_routes.py tests/test_plugin_contract.py -v` — pass.
 
-- [ ] **Step 5: Commit** `git add plugins/core/enrichment backend/tests/test_enrichment_routes.py && git commit -m "feat: enrichment accept/discard/unpin routes with ol"`
+- [x] **Step 5: Commit** `git add plugins/core/enrichment backend/tests/test_enrichment_routes.py && git commit -m "feat: enrichment accept/discard/unpin routes with ol"`
 
 ---
 
@@ -429,15 +429,15 @@ Note: `_get_payload` reads config at the feed_source tier only (`ponytail:` glob
 - Consumes: plugin component prop contract — READ `plugins/core/category/frontend/component.tsx` FIRST and mirror its props exactly (plugin id + scope); `apiGetWithHeaders`/`apiPost` from `frontend/src/api/client.ts`; `queryKeys.pluginData`, `buildScopeQuery` (export from `frontend/src/api/hooks.ts` if not exported — it is module-private, so either request export or inline the 6-line helper in the component; inline it).
 - Produces: `EnrichmentUI` — scan button + limit, suggestion checkboxes per product, accept selected / accept all / discard per field, pinned list with unpin.
 
-- [ ] **Step 1: Study the contract** — read `plugins/core/category/frontend/component.tsx` and its registration in the plugin-page discovery (`frontend/src/features/plugin/PluginPage.tsx` + `frontend/docs/plugin-uis.md`). Note the exact props (likely `{ pluginId, scope }`-shaped) and the i18n namespace pattern.
+- [x] **Step 1: Study the contract** — read `plugins/core/category/frontend/component.tsx` and its registration in the plugin-page discovery (`frontend/src/features/plugin/PluginPage.tsx` + `frontend/docs/plugin-uis.md`). Note the exact props (likely `{ pluginId, scope }`-shaped) and the i18n namespace pattern.
 
-- [ ] **Step 2: Write failing test** — mirror the CategoryUI test setup: render `EnrichmentUI` with stubbed `GET /plugins/enrichment/data` (returning `{suggestions: {p1: {color: "blue"}}, pinned: {p2: {size: "42"}}}` + version header) and stubbed POST routes; assert:
+- [x] **Step 2: Write failing test** — mirror the CategoryUI test setup: render `EnrichmentUI` with stubbed `GET /plugins/enrichment/data` (returning `{suggestions: {p1: {color: "blue"}}, pinned: {p2: {size: "42"}}}` + version header) and stubbed POST routes; assert:
   - suggestion row renders `color: blue` with a checkbox
   - checking it and clicking accept posts `{items: [{product_id: "p1", fields: ["color"]}], expected_version: ...}` to `/plugins/enrichment/accept?feed_source_id=...`
   - pinned row shows `size: 42` with an unpin action
   - i18n parity en/de
 
-- [ ] **Step 3: Implement** `component.tsx`:
+- [x] **Step 3: Implement** `component.tsx`:
 
 ```tsx
 import { useState } from 'react';
@@ -474,9 +474,9 @@ function useEnrichmentData(pluginId: string, feedSourceId: number | undefined) {
 - render: scan controls, suggestions grouped by product (Checkbox per field, label `{field}: {value}`), pinned list (Text + unpin ActionIcon)
 - i18n: create `enrichment.json` for en+de with keys `title, scan, scanLimit, suggestions, pinned, acceptSelected, acceptAll, discard, unpin, empty`; register the namespace in `i18next.d.ts` exactly like `category`
 
-- [ ] **Step 4: Run** `npx vitest run` (new test + full suite) and `npm run typecheck` — pass. Also `npm run build` (build-time plugin discovery must pick the component up).
+- [x] **Step 4: Run** `npx vitest run` (new test + full suite) and `npm run typecheck` — pass. Also `npm run build` (build-time plugin discovery must pick the component up).
 
-- [ ] **Step 5: Commit** `git add plugins/core/enrichment/frontend frontend/src frontend/public/locales && git commit -m "feat: enrichment plugin ui (scan, review, accept, unpin)"`
+- [x] **Step 5: Commit** `git add plugins/core/enrichment/frontend frontend/src frontend/public/locales && git commit -m "feat: enrichment plugin ui (scan, review, accept, unpin)"`
 
 ---
 
@@ -485,8 +485,8 @@ function useEnrichmentData(pluginId: string, feedSourceId: number | undefined) {
 **Files:**
 - Modify: `backend/docs/plugins.md` (new core plugin + its 4 routes), `backend/docs/api.md` (plugin routes under the reserved-routes section), `docs/decisions.md` (Z4 entry: plugin architecture, pinned precedence, synchronous scan ceiling), `frontend/docs/plugin-uis.md` (new component).
 
-- [ ] **Step 1: Docs updates** (same commit rule).
+- [x] **Step 1: Docs updates** (same commit rule).
 
-- [ ] **Step 2: Full gates** — backend ruff/mypy/pytest incl. `tests/test_plugin_contract.py`; frontend typecheck/vitest/build. `uv run alembic check` (no migration expected).
+- [x] **Step 2: Full gates** — backend ruff/mypy/pytest incl. `tests/test_plugin_contract.py`; frontend typecheck/vitest/build. `uv run alembic check` (no migration expected).
 
-- [ ] **Step 3: Commit** `git add -A && git commit -m "docs: z4 attribute enrichment cycle notes"`
+- [x] **Step 3: Commit** `git add -A && git commit -m "docs: z4 attribute enrichment cycle notes"`

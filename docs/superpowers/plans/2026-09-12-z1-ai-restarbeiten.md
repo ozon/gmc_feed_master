@@ -30,7 +30,7 @@
 **Interfaces:**
 - Produces: `malformed_placeholders(text: str) -> list[str]` (module-level); `validate_template` gains one error class and one warning class.
 
-- [ ] **Step 1: Write failing tests** — append to `backend/tests/test_ai_templates.py`:
+- [x] **Step 1: Write failing tests** — append to `backend/tests/test_ai_templates.py`:
 
 ```python
 def test_malformed_brace_warns():
@@ -61,9 +61,9 @@ def test_declared_unused_canonical_still_warns():
     assert "declared variable 'brand' is not used in the template" in result.warnings
 ```
 
-- [ ] **Step 2: Run** `uv run pytest tests/test_ai_templates.py -k "malformed or declared" -v` — expect the new tests FAIL (no malformed warning; bogus only warns today).
+- [x] **Step 2: Run** `uv run pytest tests/test_ai_templates.py -k "malformed or declared" -v` — expect the new tests FAIL (no malformed warning; bogus only warns today).
 
-- [ ] **Step 3: Implement** in `backend/app/ai/templates.py`:
+- [x] **Step 3: Implement** in `backend/app/ai/templates.py`:
 
 Add after `PLACEHOLDER_RE`:
 
@@ -105,9 +105,9 @@ And append before `return`:
         )
 ```
 
-- [ ] **Step 4: Run** `uv run pytest tests/test_ai_templates.py -v` — ALL pass (existing tests too; if an existing test asserted non-canonical-declared as warning, update it to the new error expectation).
+- [x] **Step 4: Run** `uv run pytest tests/test_ai_templates.py -v` — ALL pass (existing tests too; if an existing test asserted non-canonical-declared as warning, update it to the new error expectation).
 
-- [ ] **Step 5: Commit** `git add backend/app/ai/templates.py backend/tests/test_ai_templates.py && git commit -m "feat: malformed-brace warning and non-canonical declared variables as errors"`
+- [x] **Step 5: Commit** `git add backend/app/ai/templates.py backend/tests/test_ai_templates.py && git commit -m "feat: malformed-brace warning and non-canonical declared variables as errors"`
 
 ---
 
@@ -120,7 +120,7 @@ And append before `return`:
 **Interfaces:**
 - Produces: `_is_deadlock(exc: OperationalError) -> bool` in `ai_admin.py`.
 
-- [ ] **Step 1: Write failing tests** — create `backend/tests/test_ai_admin_conflicts.py`:
+- [x] **Step 1: Write failing tests** — create `backend/tests/test_ai_admin_conflicts.py`:
 
 ```python
 from sqlalchemy.exc import OperationalError
@@ -138,9 +138,9 @@ def test_is_deadlock_ignores_other_operational_errors():
     assert _is_deadlock(exc) is False
 ```
 
-- [ ] **Step 2: Run** `uv run pytest tests/test_ai_admin_conflicts.py -v` — FAIL (import error: `_is_deadlock` missing).
+- [x] **Step 2: Run** `uv run pytest tests/test_ai_admin_conflicts.py -v` — FAIL (import error: `_is_deadlock` missing).
 
-- [ ] **Step 3: Implement** in `backend/app/routes/ai_admin.py`:
+- [x] **Step 3: Implement** in `backend/app/routes/ai_admin.py`:
 
 Change import: `from sqlalchemy.exc import IntegrityError, OperationalError`.
 
@@ -168,9 +168,9 @@ In `create_prompt_template`, extend the except clause:
 
 In `activate_prompt_template`, same pattern with detail `"concurrent activation; retry"`.
 
-- [ ] **Step 4: Run** `uv run pytest tests/test_ai_admin_conflicts.py tests/test_ai_admin_api.py -v` — pass.
+- [x] **Step 4: Run** `uv run pytest tests/test_ai_admin_conflicts.py tests/test_ai_admin_api.py -v` — pass.
 
-- [ ] **Step 5: Commit** `git add backend/app/routes/ai_admin.py backend/tests/test_ai_admin_conflicts.py && git commit -m "feat: map activation deadlock to 409"`
+- [x] **Step 5: Commit** `git add backend/app/routes/ai_admin.py backend/tests/test_ai_admin_conflicts.py && git commit -m "feat: map activation deadlock to 409"`
 
 ---
 
@@ -183,7 +183,7 @@ In `activate_prompt_template`, same pattern with detail `"concurrent activation;
 **Interfaces:**
 - Produces: `builtin_template_version(spec: TaskSpec) -> str` (module-level in service.py); format `"builtin:<12 hex>"`.
 
-- [ ] **Step 1: Write failing test** — append to `backend/tests/test_ai_service.py`:
+- [x] **Step 1: Write failing test** — append to `backend/tests/test_ai_service.py`:
 
 ```python
 from app.ai.service import builtin_template_version
@@ -199,9 +199,9 @@ def test_builtin_version_is_content_hashed():
     assert builtin_template_version(spec) == v1
 ```
 
-- [ ] **Step 2: Run** `uv run pytest tests/test_ai_service.py -k builtin_version -v` — FAIL (import error).
+- [x] **Step 2: Run** `uv run pytest tests/test_ai_service.py -k builtin_version -v` — FAIL (import error).
 
-- [ ] **Step 3: Implement** in `backend/app/ai/service.py`:
+- [x] **Step 3: Implement** in `backend/app/ai/service.py`:
 
 Add `import hashlib` at the top. Extend the tasks import: `from .tasks import TASK_SPECS, TaskSpec, input_hash, validate_task`.
 
@@ -224,9 +224,9 @@ In `_resolve_template`, change the fallback:
         )
 ```
 
-- [ ] **Step 4: Run** `uv run pytest tests/test_ai_service.py tests/test_ai_cache_usage.py -v` — if any existing test asserts the literal version `"builtin"`, update it to the new `builtin:<hash>` shape (grep: `rg '"builtin"' tests/`).
+- [x] **Step 4: Run** `uv run pytest tests/test_ai_service.py tests/test_ai_cache_usage.py -v` — if any existing test asserts the literal version `"builtin"`, update it to the new `builtin:<hash>` shape (grep: `rg '"builtin"' tests/`).
 
-- [ ] **Step 5: Commit** `git add backend/app/ai/service.py backend/tests/test_ai_service.py && git commit -m "feat: content-hashed builtin template version (cache auto-invalidation)"`
+- [x] **Step 5: Commit** `git add backend/app/ai/service.py backend/tests/test_ai_service.py && git commit -m "feat: content-hashed builtin template version (cache auto-invalidation)"`
 
 ---
 
@@ -241,7 +241,7 @@ In `_resolve_template`, change the fallback:
 **Interfaces:**
 - Produces: `usageDateParams(from: Date | null, to: Date | null) -> { from?: string; to?: string }` — `from` = picked date 00:00 ISO, `to` = picked date 23:59:59 ISO.
 
-- [ ] **Step 1: Write failing tests**:
+- [x] **Step 1: Write failing tests**:
 
 `usageDates.test.ts`:
 
@@ -272,9 +272,9 @@ import { render, screen } from '../../test-utils/render'; // use the project's r
 
 Write the render assertions concretely: after rendering `<UsagePage />` with stubbed `GET /admin/ai/usage`, `screen.getByLabelText(/from/i)` and `screen.getByLabelText(/to/i)` exist.
 
-- [ ] **Step 2: Run** `npx vitest run src/features/admin/ai` — FAIL (files missing).
+- [x] **Step 2: Run** `npx vitest run src/features/admin/ai` — FAIL (files missing).
 
-- [ ] **Step 3: Implement** `usageDates.ts`:
+- [x] **Step 3: Implement** `usageDates.ts`:
 
 ```ts
 export function usageDateParams(from: Date | null, to: Date | null): { from?: string; to?: string } {
@@ -289,9 +289,9 @@ In `UsagePage.tsx`: import `DateInput` from `@mantine/dates` and `usageDateParam
 
 Add i18n keys to `en/admin.json` under `ai.usage`: `"from": "From"`, `"to": "To"`; German: `"from": "Von"`, `"to": "Bis"`.
 
-- [ ] **Step 4: Run** `npx vitest run src/features/admin/ai && npm run typecheck` — pass.
+- [x] **Step 4: Run** `npx vitest run src/features/admin/ai && npm run typecheck` — pass.
 
-- [ ] **Step 5: Commit** `git add frontend/src/features/admin/ai frontend/public/locales && git commit -m "feat: usage page time-range filters"`
+- [x] **Step 5: Commit** `git add frontend/src/features/admin/ai frontend/public/locales && git commit -m "feat: usage page time-range filters"`
 
 ---
 
@@ -305,7 +305,7 @@ Add i18n keys to `en/admin.json` under `ai.usage`: `"from": "From"`, `"to": "To"
 **Interfaces:**
 - Consumes: `PLACEHOLDER_RE` from `./HighlightedTextarea` (global regex — do NOT use `.test()` on it; use a local anchored regex).
 
-- [ ] **Step 1: Write failing test** — append to the `TemplateEditor` describe in `PromptLibraryPage.test.tsx`:
+- [x] **Step 1: Write failing test** — append to the `TemplateEditor` describe in `PromptLibraryPage.test.tsx`:
 
 ```tsx
 it('shows a malformed-brace warning for {{Title}}', async () => {
@@ -317,9 +317,9 @@ it('shows a malformed-brace warning for {{Title}}', async () => {
 
 (Use the same render + `userEvent` plumbing the existing editor tests in this file already use; type into the user-prompt textarea which is the second `HighlightedTextarea`.)
 
-- [ ] **Step 2: Run** `npx vitest run src/features/admin/promptLibrary` — FAIL.
+- [x] **Step 2: Run** `npx vitest run src/features/admin/promptLibrary` — FAIL.
 
-- [ ] **Step 3: Implement** in `TemplateEditor.tsx`:
+- [x] **Step 3: Implement** in `TemplateEditor.tsx`:
 
 ```tsx
 const ANCHORED_PLACEHOLDER = /\{\{\s*([a-z_][a-z0-9_]*)\s*\}\}/; // non-global: safe .test()
@@ -346,9 +346,9 @@ In the component: `const malformed = [...new Set([...malformedBraces(system), ..
 
 i18n en: `"malformedBrace": "Malformed placeholder {{brace}} — variables must be lowercase identifiers"`; de: `"malformedBrace": "Ungültiger Platzhalter {{brace}} — Variablen müssen Kleinbuchstaben-Bezeichner sein"`.
 
-- [ ] **Step 4: Run** `npx vitest run src/features/admin/promptLibrary && npm run typecheck` — pass (all existing tests too).
+- [x] **Step 4: Run** `npx vitest run src/features/admin/promptLibrary && npm run typecheck` — pass (all existing tests too).
 
-- [ ] **Step 5: Commit** `git add frontend/src/features/admin/promptLibrary frontend/public/locales && git commit -m "feat: live malformed-brace warning in template editor"`
+- [x] **Step 5: Commit** `git add frontend/src/features/admin/promptLibrary frontend/public/locales && git commit -m "feat: live malformed-brace warning in template editor"`
 
 ---
 
@@ -359,9 +359,9 @@ i18n en: `"malformedBrace": "Malformed placeholder {{brace}} — variables must 
 - Modify: `backend/docs/data-model.md` (builtin template_version is content-hashed)
 - Modify: `docs/decisions.md` (Z1 entry: non-canonical → error is a deliberate breaking change; content-hash chosen over delete-on-activate)
 
-- [ ] **Step 1: Update the three docs** — append a dated Z1 entry to decisions.md (Topic/Decision/Rationale format used in that file).
+- [x] **Step 1: Update the three docs** — append a dated Z1 entry to decisions.md (Topic/Decision/Rationale format used in that file).
 
-- [ ] **Step 2: Run all gates**:
+- [x] **Step 2: Run all gates**:
 
 ```bash
 # backend/
@@ -373,4 +373,4 @@ npm run typecheck && npx vitest run && npm run build
 
 Expected: ruff ≤ baseline with zero new, mypy exit-0, pytest 0 failed, vitest all pass, build clean.
 
-- [ ] **Step 3: Commit** `git add -A && git commit -m "docs: z1 ai restarbeiten cycle notes"`
+- [x] **Step 3: Commit** `git add -A && git commit -m "docs: z1 ai restarbeiten cycle notes"`

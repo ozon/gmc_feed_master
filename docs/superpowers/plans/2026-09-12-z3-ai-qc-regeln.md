@@ -28,7 +28,7 @@
 **Interfaces:**
 - Produces: `CrossProductRule.check(self, products: list[dict], product_ids: list[str], ctx: QcContext) -> list[Finding]`; `QcContext` gains `ai_service: Any = None`, `client_id: int | None = None`, `ai_budget: int = 0`, `previous_ai_product_ids: frozenset[str] = frozenset()` (all defaulted — existing constructors unaffected).
 
-- [ ] **Step 1: Write failing test** — a dummy cross rule asserting it receives product_ids:
+- [x] **Step 1: Write failing test** — a dummy cross rule asserting it receives product_ids:
 
 ```python
 class RecordingCrossRule:
@@ -42,9 +42,9 @@ class RecordingCrossRule:
 
 `run_engine(products, ["a", "b"], ctx, [], [rule])` → `rule.seen_ids == ["a", "b"]`.
 
-- [ ] **Step 2: Run** — FAIL (TypeError: check() takes 3 positional args).
+- [x] **Step 2: Run** — FAIL (TypeError: check() takes 3 positional args).
 
-- [ ] **Step 3: Implement** — in `engine.py`: extend the Protocol and `run_engine`:
+- [x] **Step 3: Implement** — in `engine.py`: extend the Protocol and `run_engine`:
 
 ```python
 @runtime_checkable
@@ -80,9 +80,9 @@ class QcContext:
 
 In `rules.py`: change `VariantConsistency.check` and `VolumeDrop.check` signatures to `(self, products: list[dict], product_ids: list[str], ctx: QcContext)` (params otherwise unused).
 
-- [ ] **Step 4: Run** `uv run pytest tests/ -k "qc or quality or volume or variant" -x` — pass (update any cross-rule test call sites to the new signature).
+- [x] **Step 4: Run** `uv run pytest tests/ -k "qc or quality or volume or variant" -x` — pass (update any cross-rule test call sites to the new signature).
 
-- [ ] **Step 5: Commit** `git add backend/app/qc && git commit -m "refactor: cross-product rules receive product_ids; qc context ai fields"`
+- [x] **Step 5: Commit** `git add backend/app/qc && git commit -m "refactor: cross-product rules receive product_ids; qc context ai fields"`
 
 ---
 
@@ -96,7 +96,7 @@ In `rules.py`: change `VariantConsistency.check` and `VolumeDrop.check` signatur
 - Consumes: `ctx.ai_service.run_task(task_type, variables, client_id=..., feed_source_id=...) -> AiResult` (status `ok|cache_hit|fallback`, `value` = parsed JSON).
 - Produces: `AiPolicyCheck` with `rule_id = "ai_policy_check"`; findings `code="ai_policy_check"`, `details={ai_rule, confidence}`.
 
-- [ ] **Step 1: Write failing tests** — create `backend/tests/test_ai_policy_check.py` with a fake service:
+- [x] **Step 1: Write failing tests** — create `backend/tests/test_ai_policy_check.py` with a fake service:
 
 ```python
 from dataclasses import dataclass
@@ -194,9 +194,9 @@ async def test_disabled_when_no_service_or_budget():
     assert await AiPolicyCheck().check([{"title": "x"}], ["x"], make_ctx(None)) == []
 ```
 
-- [ ] **Step 2: Run** `uv run pytest tests/test_ai_policy_check.py -v` — FAIL (module missing).
+- [x] **Step 2: Run** `uv run pytest tests/test_ai_policy_check.py -v` — FAIL (module missing).
 
-- [ ] **Step 3: Implement** `backend/app/qc/ai_rules.py`:
+- [x] **Step 3: Implement** `backend/app/qc/ai_rules.py`:
 
 ```python
 from __future__ import annotations
@@ -299,9 +299,9 @@ class AiPolicyCheck:
         return result.status, out
 ```
 
-- [ ] **Step 4: Run** `uv run pytest tests/test_ai_policy_check.py -v` — pass.
+- [x] **Step 4: Run** `uv run pytest tests/test_ai_policy_check.py -v` — pass.
 
-- [ ] **Step 5: Commit** `git add backend/app/qc/ai_rules.py backend/tests/test_ai_policy_check.py && git commit -m "feat: ai policy check rule (budget, progression, re-validation)"`
+- [x] **Step 5: Commit** `git add backend/app/qc/ai_rules.py backend/tests/test_ai_policy_check.py && git commit -m "feat: ai policy check rule (budget, progression, re-validation)"`
 
 ---
 
@@ -315,7 +315,7 @@ class AiPolicyCheck:
 - Consumes: `AiPolicyCheck` from Task 2; `FeedSource.configuration["ai_qc"] = {enabled: bool, budget: int}`.
 - Produces: `QualityCheckStep(registry, clock, image_probe, ai_service=None)`; `default_steps(..., ai_service=None)`.
 
-- [ ] **Step 1: Write failing test** — in `test_pipeline_steps.py`, a test building `QualityCheckStep(registry, clock, ai_service=fake)` whose execute (against a seeded feed source with `configuration={"ai_qc": {"enabled": True, "budget": 5}}`) populates the QcContext passed to rules: assert via a recording cross rule injected... simpler: assert the step's `_load_ai_context` helper output. Prefer a small extracted helper:
+- [x] **Step 1: Write failing test** — in `test_pipeline_steps.py`, a test building `QualityCheckStep(registry, clock, ai_service=fake)` whose execute (against a seeded feed source with `configuration={"ai_qc": {"enabled": True, "budget": 5}}`) populates the QcContext passed to rules: assert via a recording cross rule injected... simpler: assert the step's `_load_ai_context` helper output. Prefer a small extracted helper:
 
 ```python
 async def _ai_qc_context(session_factory, feed_source_id, ai_service) -> tuple[Any, int | None, int, frozenset[str]]:
@@ -324,9 +324,9 @@ async def _ai_qc_context(session_factory, feed_source_id, ai_service) -> tuple[A
 
 Test the helper directly: enabled config → budget from config + previous ids loaded from seeded findings; disabled → `(None, client_id, 0, frozenset())`.
 
-- [ ] **Step 2: Run** — FAIL.
+- [x] **Step 2: Run** — FAIL.
 
-- [ ] **Step 3: Implement** in `steps.py`:
+- [x] **Step 3: Implement** in `steps.py`:
 
 ```python
 class QualityCheckStep:
@@ -398,9 +398,9 @@ Pass into QcContext and append the rule:
 
 In `backend/app/main.py`: the block at ~line 264 builds `steps = default_steps(...)` BEFORE `app.state.ai_service = AiService(...)` (~line 280). Move the AiService construction above the `default_steps` call and pass `ai_service=ai_service` to it (keep the later `app.state.ai_service = ai_service` assignment).
 
-- [ ] **Step 4: Run** `uv run pytest tests/test_pipeline_steps.py tests/test_ai_policy_check.py -x` then the full backend suite.
+- [x] **Step 4: Run** `uv run pytest tests/test_pipeline_steps.py tests/test_ai_policy_check.py -x` then the full backend suite.
 
-- [ ] **Step 5: Commit** `git add backend/app/pipeline/steps.py backend/app/main.py backend/tests/test_pipeline_steps.py && git commit -m "feat: wire ai policy check into qc step with per-feed config"`
+- [x] **Step 5: Commit** `git add backend/app/pipeline/steps.py backend/app/main.py backend/tests/test_pipeline_steps.py && git commit -m "feat: wire ai policy check into qc step with per-feed config"`
 
 ---
 
@@ -415,11 +415,11 @@ In `backend/app/main.py`: the block at ~line 264 builds `steps = default_steps(.
 - Consumes: `useUpdateFeedSource` (already accepts `configuration`); FeedSourceRow.configuration.
 - Produces: `configuration.ai_qc = {enabled: boolean, budget: number}` written on change.
 
-- [ ] **Step 1: Write failing test** — render the form for a feed with `configuration: {}`; toggle the AI-QC switch, set budget 25, submit; assert the PUT body contains `configuration: {ai_qc: {enabled: true, budget: 25}}` (and that a pre-existing `basic_auth` key is preserved — mirror the existing test's fetch spy).
+- [x] **Step 1: Write failing test** — render the form for a feed with `configuration: {}`; toggle the AI-QC switch, set budget 25, submit; assert the PUT body contains `configuration: {ai_qc: {enabled: true, budget: 25}}` (and that a pre-existing `basic_auth` key is preserved — mirror the existing test's fetch spy).
 
-- [ ] **Step 2: Run** — FAIL.
+- [x] **Step 2: Run** — FAIL.
 
-- [ ] **Step 3: Implement** in `FeedSettingsForm.tsx`:
+- [x] **Step 3: Implement** in `FeedSettingsForm.tsx`:
 
 ```tsx
 const aiQcCfg = (feed.configuration as Record<string, unknown> | undefined)?.ai_qc as Record<string, unknown> | undefined;
@@ -468,9 +468,9 @@ UI in the form Stack (after the cron field):
 
 i18n en: `"aiQcEnabled": "AI quality check (policy)", "aiQcBudget": "AI calls per run"`; de: `"aiQcEnabled": "KI-Qualitätsprüfung (Richtlinien)", "aiQcBudget": "KI-Aufrufe pro Run"`.
 
-- [ ] **Step 4: Run** `npx vitest run src/features/setup && npm run typecheck` — pass.
+- [x] **Step 4: Run** `npx vitest run src/features/setup && npm run typecheck` — pass.
 
-- [ ] **Step 5: Commit** `git add frontend/src/features/setup frontend/public/locales && git commit -m "feat: ai-qc config section in feed settings"`
+- [x] **Step 5: Commit** `git add frontend/src/features/setup frontend/public/locales && git commit -m "feat: ai-qc config section in feed settings"`
 
 ---
 
@@ -479,8 +479,8 @@ i18n en: `"aiQcEnabled": "AI quality check (policy)", "aiQcBudget": "AI calls pe
 **Files:**
 - Modify: `backend/docs/architecture.md` (QC section: AI rules, budget/progression semantics), `backend/docs/data-model.md` (`configuration.ai_qc` key), `docs/decisions.md` (Z3 entry: cross-rule interface for per-product findings, image_quality deferral), `frontend/docs/architecture.md` (setup section).
 
-- [ ] **Step 1: Docs** — dated decisions.md entry (Topic/Decision/Rationale).
+- [x] **Step 1: Docs** — dated decisions.md entry (Topic/Decision/Rationale).
 
-- [ ] **Step 2: Full gates** — backend ruff/mypy/pytest; frontend typecheck/vitest/build. No migration this cycle: run `uv run alembic check` to prove it.
+- [x] **Step 2: Full gates** — backend ruff/mypy/pytest; frontend typecheck/vitest/build. No migration this cycle: run `uv run alembic check` to prove it.
 
-- [ ] **Step 3: Commit** `git add -A && git commit -m "docs: z3 ai qc rules cycle notes"`
+- [x] **Step 3: Commit** `git add -A && git commit -m "docs: z3 ai qc rules cycle notes"`
