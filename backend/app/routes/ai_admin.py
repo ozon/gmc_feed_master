@@ -5,7 +5,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, select, update
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..access import CurrentUser, require_admin
@@ -38,6 +38,10 @@ def _require_db(db_session: AsyncSession | None) -> AsyncSession:
     if db_session is None:
         raise HTTPException(status_code=503, detail="database unavailable")
     return db_session
+
+
+def _is_deadlock(exc: OperationalError) -> bool:
+    return "deadlock" in str(getattr(exc, "orig", exc)).lower()
 
 
 def _ai_service(request: Request):
@@ -267,6 +271,12 @@ async def create_prompt_template(
         raise HTTPException(
             status_code=409, detail="concurrent template modification; retry"
         ) from exc
+    except OperationalError as exc:
+        if not _is_deadlock(exc):
+            raise
+        raise HTTPException(
+            status_code=409, detail="concurrent template modification; retry"
+        ) from exc
     return PromptTemplateOut.model_validate(row)
 
 
@@ -289,6 +299,12 @@ async def activate_prompt_template(
             )
             row.is_active = True
     except IntegrityError as exc:
+        raise HTTPException(
+            status_code=409, detail="concurrent activation; retry"
+        ) from exc
+    except OperationalError as exc:
+        if not _is_deadlock(exc):
+            raise
         raise HTTPException(
             status_code=409, detail="concurrent activation; retry"
         ) from exc
