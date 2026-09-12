@@ -47,6 +47,7 @@ from .routes import (
 )
 from .routes.dashboard import router as dashboard_router
 from .routes.dry_run import router as dry_run_router
+from .routes.feed_dashboard import router as feed_dashboard_router
 from .routes.pipeline import router as pipeline_router
 from .routes.products import router as products_router
 
@@ -213,6 +214,7 @@ def create_app(
     app.include_router(dry_run_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(export_history_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(export_public_router)
+    app.include_router(feed_dashboard_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(field_mapping_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(pipeline_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(plugins_router, dependencies=[Depends(enforce_scope_access)])
