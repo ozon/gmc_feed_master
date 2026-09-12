@@ -1,0 +1,12 @@
+{
+  "open": "KI-Chat öffnen",
+  "title": "KI-Chat",
+  "adminScope": "Admin — alle Clients",
+  "clientScope": "Daten Ihrer Clients",
+  "clear": "Verlauf leeren",
+  "empty": "Fragen Sie nach Produkten, Qualitätsbefunden oder Export-Runs.",
+  "thinking": "Denkt nach…",
+  "failed": "Der Assistent ist derzeit nicht verfügbar.",
+  "inputLabel": "Nachricht",
+  "send": "Senden"
+}
