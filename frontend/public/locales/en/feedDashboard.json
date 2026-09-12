@@ -21,10 +21,15 @@
   "runs": {
     "title": "Recent runs",
     "empty": "No runs yet.",
-    "duration": "{{seconds}}s"
+    "duration": "{{seconds}}s",
+    "started": "Started",
+    "status": "Status",
+    "failed": "Failed"
   },
   "badge": {
     "active": "ACTIVE",
     "target": "Google Merchant Center"
-  }
+  },
+  "breadcrumbClients": "Clients",
+  "copied": "Copied"
 }

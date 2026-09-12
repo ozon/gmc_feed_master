@@ -346,10 +346,20 @@ describe('feed index and placeholder routes', () => {
   }
 
   it('renders FeedDashboardPage at /clients/:clientId/feeds/:feedSourceId', async () => {
-    stubSession(() => jsonResponse({}));
+    stubSession((url) => {
+      if (url === '/feed-sources/2/dashboard') {
+        return jsonResponse({
+          kpi: { raw_items: 0, valid_items: 0, excluded_items: 0, last_duration_s: null, readiness_rate: 1 },
+          volume_trend: [], stage_funnel: [],
+          quality: { critical: 0, warning: 0, info: 0, readiness_rate: 1 },
+          recent_runs: [],
+        });
+      }
+      return jsonResponse({});
+    });
     window.history.replaceState({}, '', '/clients/1/feeds/2');
     render(<App />);
-    expect(await screen.findByRole('heading', { name: 'Feed dashboard' })).toBeInTheDocument();
+    expect(await screen.findByText('Raw items')).toBeInTheDocument();
   });
 
   it('renders SystemLogsPage at /logs', async () => {

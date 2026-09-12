@@ -12,10 +12,12 @@ export function StatCard({
   label,
   value,
   variant = 'neutral',
+  suffix,
 }: {
   label: ReactNode;
   value: number;
   variant?: 'neutral' | 'warning' | 'critical';
+  suffix?: string;
 }) {
   const { i18n } = useTranslation();
   return (
@@ -30,6 +32,7 @@ export function StatCard({
         style={{ fontVariantNumeric: 'tabular-nums' }}
       >
         {new Intl.NumberFormat(i18n.language).format(value)}
+        {suffix}
       </Text>
     </Paper>
   );

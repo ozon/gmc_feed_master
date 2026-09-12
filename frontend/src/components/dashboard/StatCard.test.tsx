@@ -17,4 +17,9 @@ describe('StatCard', () => {
       'critical',
     );
   });
+
+  it('renders optional suffix after the value', () => {
+    render(<StatCard label="Processing duration" value={42.5} suffix="s" />);
+    expect(screen.getByText('42.5s')).toBeInTheDocument();
+  });
 });
