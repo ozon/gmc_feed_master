@@ -255,6 +255,40 @@ describe('DashboardPage', () => {
     expect(window.location.pathname).toBe('/');
   });
 
+  it('renders the fleet chart titles on the dashboard', async () => {
+    fetchMock = stubFetch((url) => {
+      if (url === '/auth/me') return jsonResponse({ username: 'operator' });
+      if (url === '/dashboard/summary') return jsonResponse(summary);
+      if (url === '/plugins') return jsonResponse(plugins);
+      return jsonResponse({});
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(screen.getByText('Catalog volume by feed')).toBeInTheDocument();
+    expect(screen.getByText('Pipeline health (14 days)')).toBeInTheDocument();
+  });
+
+  it('navigates to the feed dashboard when clicking a feed card', async () => {
+    const user = userEvent.setup();
+    fetchMock = stubFetch((url) => {
+      if (url === '/auth/me') return jsonResponse({ username: 'operator' });
+      if (url === '/dashboard/summary') return jsonResponse(summary);
+      if (url === '/plugins') return jsonResponse(plugins);
+      return jsonResponse({});
+    });
+
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Dashboard' });
+
+    await user.click(screen.getByText('Acme DE'));
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/clients/1/feeds/2');
+    });
+  });
+
   it('renders the empty state and the error state with retry', async () => {
     const user = userEvent.setup();
     let failing = true;

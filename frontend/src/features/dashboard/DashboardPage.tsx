@@ -21,6 +21,7 @@ import { notifyMutationError, notifySuccess } from '../../app/notifications';
 import type { ClientSummary } from '../../api/types';
 import { StatCard } from '../../components/dashboard/StatCard';
 import { FeedSourceCard } from './FeedSourceCard';
+import { FleetCharts } from './FleetCharts';
 
 const FEED_FORMATS = ['xml', 'tsv', 'csv', 'wide_tsv'] as const;
 const CLIENT_STATUSES = ['active', 'paused'] as const;
@@ -161,16 +162,19 @@ export function DashboardPage() {
         <StatCard label={t('stats.products')} value={summary.counts.active_products} />
         <StatCard label={t('stats.failedExports')} value={summary.counts.failed_last_exports} />
       </SimpleGrid>
+      <FleetCharts summary={summary} />
       {hasClients ? (
-        <Accordion
-          multiple={false}
-          chevronPosition="right"
-          defaultValue={String(summary.clients[0].id)}
-        >
-          {summary.clients.map((client) => (
-            <ClientSection key={client.id} client={client} />
-          ))}
-        </Accordion>
+        <div id="clients">
+          <Accordion
+            multiple={false}
+            chevronPosition="right"
+            defaultValue={String(summary.clients[0].id)}
+          >
+            {summary.clients.map((client) => (
+              <ClientSection key={client.id} client={client} />
+            ))}
+          </Accordion>
+        </div>
       ) : (
         <EmptyState message={t('empty')} />
       )}

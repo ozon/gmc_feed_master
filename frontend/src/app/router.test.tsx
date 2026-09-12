@@ -20,6 +20,7 @@ function jsonResponse(body: unknown, status = 200) {
 const emptySummary = {
   counts: { clients: 0, feed_sources: 0, active_products: 0, failed_last_exports: 0 },
   clients: [],
+  runs_by_day: [],
 };
 
 beforeEach(() => {

@@ -74,7 +74,18 @@ export function FeedSourceCard({
   }
 
   return (
-    <Paper withBorder p="md">
+    <Paper
+      withBorder
+      p="md"
+      component="a"
+      role="button"
+      tabIndex={0}
+      style={{ cursor: 'pointer', display: 'block' }}
+      onClick={() => navigate(`/clients/${clientId}/feeds/${feed.id}`)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') navigate(`/clients/${clientId}/feeds/${feed.id}`);
+      }}
+    >
       <Group justify="space-between" wrap="nowrap">
         <Group gap="sm" wrap="nowrap" miw={0}>
           <Text fw={500} truncate="end">
@@ -86,7 +97,10 @@ export function FeedSourceCard({
           <ActionIcon
             variant="subtle"
             aria-label={t('openSettings')}
-            onClick={() => navigate(`/clients/${clientId}/feeds/${feed.id}/setup`)}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/clients/${clientId}/feeds/${feed.id}/setup`);
+            }}
           >
             <IconSettings size={16} />
           </ActionIcon>
@@ -94,7 +108,10 @@ export function FeedSourceCard({
             variant="subtle"
             color="red"
             aria-label={t('deleteFeed')}
-            onClick={() => setDeleteOpened(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteOpened(true);
+            }}
           >
             <IconTrash size={16} />
           </ActionIcon>

@@ -52,5 +52,12 @@
   "duplicateName": "Ein Mandant mit diesem Namen existiert bereits.",
   "typeToConfirm": "Geben Sie {{name}} ein, um zu bestätigen",
   "empty": "Noch keine Mandanten. Legen Sie den ersten Mandanten an, um zu starten.",
-  "manageClients": "Mandanten verwalten"
+  "manageClients": "Mandanten verwalten",
+  "charts": {
+    "volumeTitle": "Katalogvolumen je Feed",
+    "volumeEmpty": "Noch keine bereitgestellten Produkte.",
+    "healthTitle": "Pipeline-Status (14 Tage)",
+    "healthEmpty": "Keine Läufe in den letzten 14 Tagen.",
+    "other": "Weitere"
+  }
 }
