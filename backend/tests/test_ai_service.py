@@ -8,7 +8,13 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.ai.provider import AiRequest, AiResponse
 from app.ai.resilience import RetryPolicy
-from app.ai.service import AiService, default_provider_factory, resolve_active_template
+from app.ai.service import (
+    AiService,
+    builtin_template_version,
+    default_provider_factory,
+    resolve_active_template,
+)
+from app.ai.tasks import TASK_SPECS, TaskSpec
 from app.models.ai import AiProviderConfig, AiResultCache, AiUsageLog, PromptTemplate
 from app.models.client import Client
 
@@ -307,3 +313,12 @@ async def test_resolve_active_template_db_error_returns_none():
     def broken_factory():
         raise RuntimeError("db down")
     assert await resolve_active_template(broken_factory, "policy_check", None) is None
+
+
+def test_builtin_version_is_content_hashed():
+    spec = TASK_SPECS["title_optimization"]
+    v1 = builtin_template_version(spec)
+    assert v1.startswith("builtin:")
+    changed = TaskSpec(system=spec.system + "x", user=spec.user, validate=spec.validate)
+    assert builtin_template_version(changed) != v1
+    assert builtin_template_version(spec) == v1
