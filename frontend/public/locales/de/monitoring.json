@@ -28,7 +28,12 @@
     "empty": "Keine Befunde — alle Produkte bestehen die Qualitätsprüfung.",
     "severityFilter": "Schweregrad",
     "severityPlaceholder": "Alle Schweregrade",
+    "codeFilter": "Code",
+    "codePlaceholder": "Alle Codes",
     "total": "Gesamt: {{count}}"
+  },
+  "quality": {
+    "ofProducts": "von {{count}} Produkten"
   },
   "dryRun": {
     "limitLabel": "Stichprobengröße",
