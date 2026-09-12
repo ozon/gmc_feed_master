@@ -163,3 +163,79 @@ class EnrichmentPlugin:
             "db_session": Any, "return": dict[str, Any] | JSONResponse,
         })
         router.post("/scan", response_model=None)(scan)
+
+        class ItemsRequest(BaseModel):
+            feed_source_id: int
+            expected_version: str | None = None
+            items: list[dict[str, Any]] = Field(default_factory=list)
+
+        def _apply_items(data: dict[str, Any], items: list[dict[str, Any]], mode: str) -> None:
+            for item in items:
+                pid = str(item.get("product_id", ""))
+                fields = set(item.get("fields") or [])
+                if not pid or not fields:
+                    continue
+                if mode in ("accept", "discard"):
+                    sug = dict(data["suggestions"].get(pid) or {})
+                    if mode == "accept":
+                        pin = dict(data["pinned"].get(pid) or {})
+                        for f in fields:
+                            if f in sug:
+                                pin[f] = sug.pop(f)
+                        if pin:
+                            data["pinned"][pid] = pin
+                    else:
+                        for f in fields:
+                            sug.pop(f, None)
+                    if sug:
+                        data["suggestions"][pid] = sug
+                    else:
+                        data["suggestions"].pop(pid, None)
+                else:  # unpin
+                    pin = dict(data["pinned"].get(pid) or {})
+                    for f in fields:
+                        pin.pop(f, None)
+                    if pin:
+                        data["pinned"][pid] = pin
+                    else:
+                        data["pinned"].pop(pid, None)
+
+        async def _mutate(payload: ItemsRequest, mode: str,
+                          user: CurrentUser, db_session: Any) -> dict[str, Any] | JSONResponse:
+            if db_session is None:
+                raise HTTPException(status_code=503, detail="database unavailable")
+            await ensure_feed_source_access(db_session, user, payload.feed_source_id)
+            data, _version = await _get_payload(
+                "enrichment", None, payload.feed_source_id,
+                PluginData, "data", "data_scope", db_session, user,
+            )
+            if isinstance(data, JSONResponse):
+                return data
+            # close the autobegun read transaction before _put_payload's begin()
+            await db_session.rollback()
+            new_data = {
+                "suggestions": dict((data or {}).get("suggestions") or {}),
+                "pinned": dict((data or {}).get("pinned") or {}),
+            }
+            _apply_items(new_data, payload.items, mode)
+            outcome = await _put_payload(
+                "enrichment", new_data, None, payload.feed_source_id,
+                PluginData, "data", "data_scope", "data_schema",
+                payload.expected_version, db_session, user,
+            )
+            if isinstance(outcome, JSONResponse):
+                return outcome
+            return {"status": "ok"}
+
+        for mode in ("accept", "discard", "unpin"):
+            async def endpoint(payload: ItemsRequest,
+                               user: CurrentUser = Depends(get_current_user),  # noqa: B008 — plugin-route convention
+                               db_session: Any = Depends(get_db_session),  # noqa: B008
+                               _mode: str = mode):
+                return await _mutate(payload, _mode, user, db_session)
+
+            endpoint.__annotations__.update({
+                "payload": ItemsRequest, "user": CurrentUser,
+                "db_session": Any, "return": dict[str, Any] | JSONResponse,
+            })
+            router.post(f"/{mode}", response_model=None)(endpoint)

@@ -285,3 +285,116 @@ class TestScanRoute:
         })
         assert resp.status_code == 404
         await rclient.aclose()
+
+
+class TestMutateRoutes:
+    async def _seed_data(self, factory, feed_source_id, data):
+        from app.models.plugin import PluginData
+
+        async with factory() as session, session.begin():
+            plugin = (await session.execute(
+                select_plugin_row()
+            )).scalar_one()
+            session.add(PluginData(
+                plugin_id=plugin.id, scope="feed_source",
+                feed_source_id=feed_source_id, key="default", data=data,
+            ))
+
+    async def _data(self, factory, feed_source_id):
+        return await _plugin_data(factory, feed_source_id)
+
+    async def test_accept_moves_suggestions_to_pinned(self, app_factory):
+        _app, factory, _install = app_factory
+        client = await logged_in_client(app_factory)
+        feed = await _setup_feed(factory, client, [])
+        await self._seed_data(factory, feed["id"], {
+            "suggestions": {"p1": {"color": "blue", "material": "cotton"},
+                            "p2": {"size": "L"}},
+            "pinned": {},
+        })
+        resp = await client.post("/plugins/enrichment/accept", json={
+            "feed_source_id": feed["id"],
+            "items": [{"product_id": "p1", "fields": ["color"]}],
+        })
+        assert resp.status_code == 200
+        data = await self._data(factory, feed["id"])
+        assert data["pinned"]["p1"] == {"color": "blue"}
+        assert data["suggestions"]["p1"] == {"material": "cotton"}
+        assert data["suggestions"]["p2"] == {"size": "L"}
+
+    async def test_discard_deletes_suggestion_fields(self, app_factory):
+        _app, factory, _install = app_factory
+        client = await logged_in_client(app_factory)
+        feed = await _setup_feed(factory, client, [])
+        await self._seed_data(factory, feed["id"], {
+            "suggestions": {"p1": {"color": "blue", "material": "cotton"}},
+            "pinned": {},
+        })
+        resp = await client.post("/plugins/enrichment/discard", json={
+            "feed_source_id": feed["id"],
+            "items": [{"product_id": "p1", "fields": ["color"]}],
+        })
+        assert resp.status_code == 200
+        data = await self._data(factory, feed["id"])
+        assert data["suggestions"]["p1"] == {"material": "cotton"}
+        assert "pinned" not in data or data.get("pinned") == {}
+
+    async def test_discard_drops_empty_product_keys(self, app_factory):
+        _app, factory, _install = app_factory
+        client = await logged_in_client(app_factory)
+        feed = await _setup_feed(factory, client, [])
+        await self._seed_data(factory, feed["id"], {
+            "suggestions": {"p1": {"color": "blue"}},
+            "pinned": {},
+        })
+        resp = await client.post("/plugins/enrichment/discard", json={
+            "feed_source_id": feed["id"],
+            "items": [{"product_id": "p1", "fields": ["color"]}],
+        })
+        assert resp.status_code == 200
+        data = await self._data(factory, feed["id"])
+        assert "p1" not in data["suggestions"]
+
+    async def test_unpin_deletes_pinned_fields(self, app_factory):
+        _app, factory, _install = app_factory
+        client = await logged_in_client(app_factory)
+        feed = await _setup_feed(factory, client, [])
+        await self._seed_data(factory, feed["id"], {
+            "suggestions": {},
+            "pinned": {"p1": {"color": "blue", "material": "cotton"}},
+        })
+        resp = await client.post("/plugins/enrichment/unpin", json={
+            "feed_source_id": feed["id"],
+            "items": [{"product_id": "p1", "fields": ["color"]}],
+        })
+        assert resp.status_code == 200
+        data = await self._data(factory, feed["id"])
+        assert data["pinned"]["p1"] == {"material": "cotton"}
+
+    async def test_stale_expected_version_409(self, app_factory):
+        _app, factory, _install = app_factory
+        client = await logged_in_client(app_factory)
+        feed = await _setup_feed(factory, client, [])
+        await self._seed_data(factory, feed["id"], {
+            "suggestions": {"p1": {"color": "blue"}}, "pinned": {},
+        })
+        resp = await client.post("/plugins/enrichment/accept", json={
+            "feed_source_id": feed["id"], "expected_version": "999",
+            "items": [{"product_id": "p1", "fields": ["color"]}],
+        })
+        assert resp.status_code == 409
+
+    async def test_accept_unknown_product_no_change(self, app_factory):
+        _app, factory, _install = app_factory
+        client = await logged_in_client(app_factory)
+        feed = await _setup_feed(factory, client, [])
+        original = {"suggestions": {"p1": {"color": "blue"}}, "pinned": {}}
+        await self._seed_data(factory, feed["id"], original)
+        resp = await client.post("/plugins/enrichment/accept", json={
+            "feed_source_id": feed["id"],
+            "items": [{"product_id": "nope", "fields": ["color"]}],
+        })
+        assert resp.status_code == 200
+        data = await self._data(factory, feed["id"])
+        assert data["suggestions"] == {"p1": {"color": "blue"}}
+        assert data["pinned"] == {}
