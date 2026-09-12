@@ -202,6 +202,9 @@ Retention: 90 days.
 | `critical_finding_count` | Integer | |
 | `warning_finding_count` | Integer | |
 | `info_finding_count` | Integer | |
+| `fixed_finding_count` | Integer | Findings present in the prior run, absent in this one (delta key `(code, product_id, field)`) |
+| `new_finding_count` | Integer | Findings absent in the prior run, present in this one |
+| `remaining_finding_count` | Integer | Findings present in both runs (a message-only change counts as remaining) |
 | `options` | JSONB | Export options |
 | `started_at` | DateTime | |
 | `completed_at` | DateTime | Nullable; set when run finishes |

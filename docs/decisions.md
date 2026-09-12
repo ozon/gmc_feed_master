@@ -1272,6 +1272,17 @@ Inline code review of the cycle found one critical and one important issue; both
 
 **Rationale:** Items 1 and 2 are deliberate semantic improvements with breaking-change implications for existing templates. Items 3–5 are operational hardening and UX polish.
 
+### 2026-09-12 — Z2 QC page cycle
+
+**Topic:** Quality overview page (severity cards with run-over-run deltas, trend chart, rule distribution, code filter).
+
+**Decision:**
+- **Run-over-run delta lives on `ExportRun`.** Three counters (`fixed_finding_count`, `new_finding_count`, `remaining_finding_count`) are computed in `persist_findings` before the feed-keyed delete, keyed by `(code, product_id, field)` — a message-only change counts as remaining. Storing counters (not the previous run's rows) keeps the quality-history endpoint cheap and survives the detail-row retention policy.
+- **Backend exposes history; frontend charts it.** `GET /feed-sources/{id}/quality-history` returns ascending per-run severity + delta counters; the existing quality-findings response gains `product_count`, `delta`, `has_previous`, `prev_counts`. The frontend renders three severity cards with delta badges, a `@mantine/charts` line chart over history, a rule-distribution bar chart, and a code filter.
+- **`@mantine/charts@9.5.2` + `recharts` added as frontend dependencies** (operator-approved) for the trend/distribution charts; recharts is the library's peer and does the actual SVG rendering.
+
+**Rationale:** The delta badges answer "is quality improving" at a glance without opening a diff; the history endpoint is the smallest thing that enables the trend chart. Charts are read-only views over existing endpoint data — no server-state duplication.
+
 ### 2026-09-12 — Z5+Z6 AI chat cycle
 
 **Topic:** Admin/user-facing AI chat assistant with scoped read-only tools.

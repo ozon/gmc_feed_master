@@ -186,8 +186,10 @@ export function useSavePipeline(feedSourceId) {
 
 ### Quality Dashboard (`src/features/monitoring/`)
 - `MonitoringRunsPage` — `IngestionRunsTable` with polling
-- `MonitoringFindingsPage` — `FindingsTable` grouped by severity/rule
+- `MonitoringFindingsPage` — quality overview: `QualitySummaryCards` (severity counts with run-over-run `↓ fixed` / `↑ new` delta badges when a previous run exists), `QualityTrendChart` (`@mantine/charts` line chart over `useQualityHistory`), `RuleDistributionChart` (horizontal bar chart of findings by code), severity MultiSelect + code Select filters, then `FindingsTable`
 - `MonitoringDryRunPage` — trigger dry run, show `DryRunResults`
+
+Charts use `@mantine/charts@9.5.2` (peer `recharts`); styles imported in `src/App.tsx`. The delta counters come from the extended `quality-findings` response; the trend chart consumes `GET /feed-sources/{id}/quality-history` via `useQualityHistory`.
 
 ### Export (`src/features/export/`)
 - `ExportPage` — `ExportVersionList` + `ExportVersionDiff` + `RollbackConfirmModal`
