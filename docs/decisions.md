@@ -1259,15 +1259,15 @@ Inline code review of the cycle found one critical and one important issue; both
 
 **Rationale:** The backend (Feature 2) already enforces everything; the UI's only real jobs are grouping, the declared-variable warning, and wiring. Every extra client-side engine would be a second copy of server logic.
 
-## 2026-09-12
+### 2026-09-12 — Z1 AI-Restarbeiten cycle
 
-### Z1 AI-Restarbeiten cycle
+**Topic:** AI integration hardening (validate_template semantics, deadlock handling, builtin cache invalidation).
 
-- **Topic:** AI integration hardening (validate_template semantics, deadlock handling, builtin cache invalidation)
-- **Decision:**
-  1. **Non-canonical declared variables → error** (breaking change): declared variables not in the task's canonical set are now ERRORS (previously warnings). Declared-but-unused canonical variables remain warnings. Malformed-brace placeholders are non-blocking warnings. The rationale is that non-canonical variables are silently ignored at render time, so accepting them at write time produces broken prompts that appear valid.
-  2. **Content-hash for builtin cache invalidation:** the builtin `template_version` in `ai_result_cache` is now `builtin:<12 hex>` (sha256 of `system + \x00 + user`), so code changes to builtin prompts auto-invalidate cache rows. Content hash was chosen over delete-on-activate because it requires no explicit invalidation step — the cache key changes naturally when prompts change.
-  3. **AB-BA deadlock → 409:** concurrent prompt-template create/activate operations that hit an AB-BA deadlock (asyncpg `OperationalError` wrapping "deadlock detected") now map to HTTP 409 with a retry message instead of 500.
-  4. **Usage page time filters:** `from`/`to` query params on `GET /admin/ai/usage` are wired through to the frontend DateInputs.
-  5. **Template editor malformed-brace warning:** live non-blocking warning in the frontend template editor for malformed `{{braces}}`.
-- **Rationale:** Items 1 and 2 are deliberate semantic improvements with breaking-change implications for existing templates. Items 3–5 are operational hardening and UX polish.
+**Decision:**
+- **Non-canonical declared variables → error** (breaking change): declared variables not in the task's canonical set are now ERRORS (previously warnings). Declared-but-unused canonical variables remain warnings. Malformed-brace placeholders are non-blocking warnings. The rationale is that non-canonical variables are silently ignored at render time, so accepting them at write time produces broken prompts that appear valid.
+- **Content-hash for builtin cache invalidation:** the builtin `template_version` in `ai_result_cache` is now `builtin:<12 hex>` (sha256 of `system + \x00 + user`), so code changes to builtin prompts auto-invalidate cache rows. Content hash was chosen over delete-on-activate because it requires no explicit invalidation step — the cache key changes naturally when prompts change.
+- **AB-BA deadlock → 409:** concurrent prompt-template create/activate operations that hit an AB-BA deadlock (asyncpg `OperationalError` wrapping "deadlock detected") now map to HTTP 409 with a retry message instead of 500.
+- **Usage page time filters:** `from`/`to` query params on `GET /admin/ai/usage` are wired through to the frontend DateInputs.
+- **Template editor malformed-brace warning:** live non-blocking warning in the frontend template editor for malformed `{{braces}}`.
+
+**Rationale:** Items 1 and 2 are deliberate semantic improvements with breaking-change implications for existing templates. Items 3–5 are operational hardening and UX polish.
