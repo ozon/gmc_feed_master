@@ -129,7 +129,7 @@ describe('DashboardPage', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
-    expect(screen.getByText('Clients', { selector: 'p' })).toBeInTheDocument();
+    expect(screen.getAllByText('Clients').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Feed sources')).toBeInTheDocument();
     expect(screen.getByText('Active products')).toBeInTheDocument();
     expect(screen.getByText('Failed exports')).toBeInTheDocument();

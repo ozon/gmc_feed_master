@@ -232,6 +232,7 @@ export function AppShell() {
 
   function isActive(to: string): boolean {
     if (to === '/') return location.pathname === '/';
+    if (to === '/#clients') return location.pathname === '/' && location.hash === '#clients';
     return location.pathname.startsWith(to);
   }
 

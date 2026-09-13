@@ -16,6 +16,7 @@ import { IconPlayerPlay, IconSettings } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import {
+  fillDates,
   useDashboardSummary,
   useFeedDashboard,
   useFeedSource,
@@ -28,18 +29,6 @@ import { StatCard } from '../../components/dashboard/StatCard';
 import { chartColors } from '../../components/dashboard/dashboardColors';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import { RecentRunsTable } from './RecentRunsTable';
-
-function fillVolumeTrend(rows: FeedDashboardData['volume_trend'], days = 30): FeedDashboardData['volume_trend'] {
-  if (rows.length === 0) return [];
-  const byDate = new Map(rows.map((r) => [r.date, r]));
-  const out: FeedDashboardData['volume_trend'] = [];
-  const first = new Date(`${rows[0].date}T00:00:00Z`);
-  for (let i = 0; i < days; i += 1) {
-    const key = new Date(first.getTime() + i * 86_400_000).toISOString().slice(0, 10);
-    out.push(byDate.get(key) ?? { date: key, raw: 0, exportable: 0 });
-  }
-  return out;
-}
 
 export function FeedDashboardPage() {
   const { t } = useTranslation('feedDashboard');
@@ -138,7 +127,7 @@ export function FeedDashboardPage() {
       <ChartCard title={t('charts.volumeTitle')} isEmpty={data.volume_trend.length === 0} emptyMessage={t('charts.volumeEmpty')}>
         <AreaChart
           h={240}
-          data={fillVolumeTrend(data.volume_trend)}
+          data={fillDates(data.volume_trend, 30, (date) => ({ date, raw: 0, exportable: 0 }))}
           dataKey="date"
           curveType="natural"
           withLegend

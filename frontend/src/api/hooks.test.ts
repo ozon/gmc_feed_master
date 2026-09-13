@@ -1,5 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { fillChartDates } from './hooks';
+import { fillChartDates, fillDates } from './hooks';
+
+describe('fillDates', () => {
+  it('zero-fills missing days with factory default', () => {
+    type Row = { date: string; raw: number; exportable: number };
+    const rows: Row[] = [
+      { date: '2026-09-01', raw: 5, exportable: 3 },
+      { date: '2026-09-04', raw: 8, exportable: 6 },
+    ];
+    const filled = fillDates(rows, 4, (date) => ({ date, raw: 0, exportable: 0 }));
+    expect(filled.map((r) => r.date)).toEqual([
+      '2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04',
+    ]);
+    expect(filled[1]).toEqual({ date: '2026-09-02', raw: 0, exportable: 0 });
+  });
+
+  it('returns empty array for empty input', () => {
+    expect(fillDates([], 14, (date) => ({ date }))).toEqual([]);
+  });
+});
 
 describe('fillChartDates', () => {
   it('zero-fills missing days between first and last row', () => {

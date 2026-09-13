@@ -199,20 +199,27 @@ export function useFeedDashboard(feedSourceId: number | string) {
 }
 
 // Zero-fill missing days so charts show continuous time axis.
+export function fillDates<T extends { date: string }>(
+  rows: T[],
+  days: number,
+  defaultFor: (date: string) => T,
+): T[] {
+  if (rows.length === 0) return [];
+  const byDate = new Map(rows.map((r) => [r.date, r]));
+  const out: T[] = [];
+  const first = new Date(`${rows[0].date}T00:00:00Z`);
+  for (let i = 0; i < days; i += 1) {
+    const key = new Date(first.getTime() + i * 86_400_000).toISOString().slice(0, 10);
+    out.push(byDate.get(key) ?? defaultFor(key));
+  }
+  return out;
+}
+
 export function fillChartDates(
   rows: RunsByDayRow[],
   days: number,
 ): RunsByDayRow[] {
-  if (rows.length === 0) return [];
-  const byDate = new Map(rows.map((r) => [r.date, r]));
-  const out: RunsByDayRow[] = [];
-  const first = new Date(`${rows[0].date}T00:00:00Z`);
-  for (let i = 0; i < days; i += 1) {
-    const d = new Date(first.getTime() + i * 86_400_000);
-    const key = d.toISOString().slice(0, 10);
-    out.push(byDate.get(key) ?? { date: key, success: 0, error: 0 });
-  }
-  return out;
+  return fillDates(rows, days, (date) => ({ date, success: 0, error: 0 }));
 }
 
 export function useQualityFindings(feedSourceId: number | string, active: boolean) {
@@ -254,6 +261,7 @@ export function useTriggerRun(feedSourceId: number | string) {
       apiPost<{ run_id: number }>(`/feed-sources/${feedSourceId}/run`),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).runs });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).feedDashboard });
       void queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary });
       void queryClient.invalidateQueries({ queryKey: ['registry', 'attributes'] });
     },
