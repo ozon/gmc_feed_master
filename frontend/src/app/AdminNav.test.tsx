@@ -14,6 +14,7 @@ vi.mock('../api/client', async () => {
 const summary = {
   counts: { clients: 0, feed_sources: 0, active_products: 0, failed_last_exports: 0 },
   clients: [],
+  runs_by_day: [],
 };
 
 function handler(url: string): Response {
