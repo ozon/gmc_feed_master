@@ -56,11 +56,13 @@ async def test_create_list_providers_api_key_redacted(admin_http):
         "base_url": "https://api.openai.com/v1",
         "api_key": "sk-secret-value",
         "model": "gpt-4o-mini",
-        "is_default": True,
+        "tier": "bulk",
     })
     assert create.status_code == 201
     body = create.json()
     assert body["id"] > 0
+    assert body["tier"] == "bulk"
+    assert "is_default" not in body
     assert "api_key" not in body
 
     listing = await admin_http.get("/admin/ai/providers")
@@ -97,20 +99,28 @@ async def test_patch_api_key_semantics(settings_app, admin_http):
 
 
 @pytest.mark.asyncio
-async def test_only_one_default_provider(admin_http):
+async def test_providers_group_by_tier(admin_http):
     await admin_http.post("/admin/ai/providers", json={
-        "name": "first", "base_url": "https://api.openai.com/v1",
-        "api_key": "k1", "model": "m1", "is_default": True,
+        "name": "bulk-1", "base_url": "https://api.openai.com/v1",
+        "api_key": "k1", "model": "gpt-4o-mini", "tier": "bulk",
     })
     second = await admin_http.post("/admin/ai/providers", json={
-        "name": "second", "base_url": "https://api.openai.com/v1",
-        "api_key": "k2", "model": "m2", "is_default": True,
+        "name": "precision-1", "base_url": "https://api.openai.com/v1",
+        "api_key": "k2", "model": "gpt-4o", "tier": "precision",
     })
     assert second.status_code == 201
-    listing = {row["id"]: row for row in (await admin_http.get("/admin/ai/providers")).json()}
-    defaults = [row for row in listing.values() if row["is_default"]]
-    assert len(defaults) == 1
-    assert defaults[0]["name"] == "second"  # newest default wins
+    rows = (await admin_http.get("/admin/ai/providers")).json()
+    assert sorted(row["tier"] for row in rows) == ["bulk", "precision"]
+    assert all("is_default" not in row for row in rows)
+
+
+@pytest.mark.asyncio
+async def test_provider_rejects_unknown_tier(admin_http):
+    response = await admin_http.post("/admin/ai/providers", json={
+        "name": "p", "base_url": "https://api.openai.com/v1",
+        "model": "gpt-4o-mini", "tier": "platinum",
+    })
+    assert response.status_code == 422
 
 
 @pytest.mark.asyncio

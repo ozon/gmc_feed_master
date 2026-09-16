@@ -208,7 +208,13 @@ class AiService:
 
         cfg = self._router_settings or await load_router_settings(self._session_factory)
         if self._router is None:
-            self._ensure_built(rows, cfg)
+            try:
+                self._ensure_built(rows, cfg)
+            except Exception as exc:
+                logger.warning("ai router build failed: %s", exc, exc_info=True)
+                await self._log_error(task_type, client_id, feed_source_id, "provider_error")
+                return AiResult(value=None, status="fallback", error_code="provider_error",
+                                prompt_tokens=0, completion_tokens=0)
         await self._ensure_cache()
 
         response_model = TASK_SPECS[task_type].response_model
@@ -275,7 +281,12 @@ class AiService:
             raise AiChatUnavailable("no_provider")
         cfg = self._router_settings or await load_router_settings(self._session_factory)
         if self._router is None:
-            self._ensure_built(rows, cfg)
+            try:
+                self._ensure_built(rows, cfg)
+            except Exception as exc:
+                logger.warning("ai router build failed: %s", exc, exc_info=True)
+                await self._log_error("chat", client_id, feed_source_id, "provider_error")
+                raise AiChatUnavailable("provider_error") from exc
         started = time.monotonic()
         try:
             response = await self._router.acompletion(
@@ -312,9 +323,9 @@ class AiService:
         if config is None:
             return {"status": "error", "error_code": "no_provider"}
         cfg = self._router_settings or await load_router_settings(self._session_factory)
-        router = build_router([config], cfg)
         started = time.monotonic()
         try:
+            router = build_router([config], cfg)
             response = await router.acompletion(
                 model=config.tier,
                 messages=[

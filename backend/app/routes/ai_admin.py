@@ -51,14 +51,6 @@ def _ai_service(request: Request):
     return service
 
 
-async def _clear_other_defaults(session: AsyncSession, keep_id: int) -> None:
-    await session.execute(
-        update(AiProviderConfig)
-        .where(AiProviderConfig.id != keep_id)
-        .values(is_default=False)
-    )
-
-
 @router.get("/admin/ai/providers", response_model=list[AiProviderOut])
 async def list_providers(
     _admin: AdminUser,
@@ -72,6 +64,7 @@ async def list_providers(
 @router.post("/admin/ai/providers", status_code=201, response_model=AiProviderOut)
 async def create_provider(
     payload: AiProviderCreate,
+    request: Request,
     _admin: AdminUser,
     db_session: DbSession,
 ) -> AiProviderOut:
@@ -80,8 +73,9 @@ async def create_provider(
         row = AiProviderConfig(**payload.model_dump())
         session.add(row)
         await session.flush()
-        if row.is_default:
-            await _clear_other_defaults(session, row.id)
+    service = getattr(request.app.state, "ai_service", None)
+    if service is not None:
+        service.invalidate()
     return AiProviderOut.model_validate(row)
 
 
@@ -104,8 +98,6 @@ async def update_provider(
         for key, value in updates.items():
             setattr(row, key, value)
         await session.flush()
-        if row.is_default:
-            await _clear_other_defaults(session, row.id)
     await session.refresh(row)
     service = getattr(request.app.state, "ai_service", None)
     if service is not None:
