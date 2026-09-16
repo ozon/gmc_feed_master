@@ -114,3 +114,7 @@ class AiSettingsUpdate(BaseModel):
     ai_router_cooldown_s: int = Field(ge=0, le=3600)
     ai_instructor_max_retries: int = Field(ge=0, le=10)
     ai_usage_retention_days: int = Field(ge=1)
+
+
+class CacheClearRequest(BaseModel):
+    namespace: str | None = Field(default=None, max_length=100)

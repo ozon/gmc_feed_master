@@ -134,3 +134,29 @@ async def test_aggregate_usage_group_by_client(session_factory):
     assert by_key[7]["calls"] == 2
     assert by_key[9]["calls"] == 1
     assert by_key[7]["prompt_tokens"] == 200
+
+
+@pytest.mark.asyncio
+async def test_summarize_usage_totals_and_savings(session_factory):
+    from app.ai.usage import summarize_usage
+
+    writer = UsageLogWriter(session_factory)
+    await writer.write(UsageRecord(
+        client_id=None, feed_source_id=None, task_type="title_optimization",
+        provider_config_id=None, model="bulk", cache_hit=False,
+        prompt_tokens=100, completion_tokens=20,
+        cost_usd=Decimal("0.0010"), latency_ms=10, error_code=None,
+    ))
+    await writer.write(UsageRecord(
+        client_id=None, feed_source_id=None, task_type="title_optimization",
+        provider_config_id=None, model="bulk", cache_hit=True,
+        prompt_tokens=100, completion_tokens=20,
+        cost_usd=Decimal("0.0010"), latency_ms=0, error_code=None,
+    ))
+    async with session_factory() as session:
+        summary = await summarize_usage(session)
+    assert summary["calls"] == 2
+    assert summary["cache_hits"] == 1
+    assert summary["hit_ratio"] == 0.5
+    assert summary["cost_saved_usd"] == Decimal("0.0010")
+    assert summary["saved_prompt_tokens"] == 100

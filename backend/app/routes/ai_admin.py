@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..access import CurrentUser, require_admin
 from ..ai.tasks import CANONICAL_VARIABLES
 from ..ai.templates import parse_placeholders, render_messages, validate_template
-from ..ai.usage import aggregate_usage
+from ..ai.usage import aggregate_usage, summarize_usage
 from ..config import get_settings
 from ..db.engine import get_db_session
 from ..models.ai import AiProviderConfig, PromptTemplate
@@ -24,6 +24,7 @@ from ..schemas.ai_admin import (
     AiProviderUpdate,
     AiSettingsOut,
     AiSettingsUpdate,
+    CacheClearRequest,
     PromptTemplateCreate,
     PromptTemplateOut,
     PromptTemplatePreviewRequest,
@@ -474,3 +475,64 @@ async def put_ai_settings(
                 raise HTTPException(status_code=422, detail=str(exc)) from exc
     settings = get_settings()
     return _settings_out(row, bool(settings.redis_url or settings.redis_host))
+
+
+@router.get("/admin/ai/usage/summary")
+async def usage_summary(
+    _admin: AdminUser,
+    db_session: DbSession,
+    client_id: int | None = None,
+    feed_source_id: int | None = None,
+    task_type: str | None = None,
+    from_dt: UsageFrom = None,
+    to_dt: UsageTo = None,
+) -> dict[str, Any]:
+    session = _require_db(db_session)
+    return await summarize_usage(
+        session,
+        client_id=client_id,
+        feed_source_id=feed_source_id,
+        task_type=task_type,
+        from_dt=from_dt,
+        to_dt=to_dt,
+    )
+
+
+@router.get("/admin/ai/usage/timeseries")
+async def usage_timeseries(
+    _admin: AdminUser,
+    db_session: DbSession,
+    from_dt: UsageFrom = None,
+    to_dt: UsageTo = None,
+) -> dict[str, Any]:
+    session = _require_db(db_session)
+    rows = await aggregate_usage(session, from_dt=from_dt, to_dt=to_dt, group_by="day")
+    return {"rows": rows}
+
+
+@router.get("/admin/ai/cache")
+async def cache_status(request: Request, _admin: AdminUser) -> dict[str, Any]:
+    service = _ai_service(request)
+    return await service.cache_status()
+
+
+@router.get("/admin/ai/cache/stats")
+async def cache_stats(
+    _admin: AdminUser,
+    db_session: DbSession,
+    from_dt: UsageFrom = None,
+    to_dt: UsageTo = None,
+) -> dict[str, Any]:
+    session = _require_db(db_session)
+    return await summarize_usage(session, from_dt=from_dt, to_dt=to_dt)
+
+
+@router.post("/admin/ai/cache/clear")
+async def cache_clear(
+    payload: CacheClearRequest,
+    request: Request,
+    _admin: AdminUser,
+) -> dict[str, int]:
+    service = _ai_service(request)
+    removed = await service.clear_cache(payload.namespace)
+    return {"removed": removed}

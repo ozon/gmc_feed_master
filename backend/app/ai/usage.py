@@ -112,3 +112,53 @@ async def aggregate_usage(
         statement = statement.where(AiUsageLog.created_at < to_dt)
     result = await session.execute(statement)
     return [dict(row._mapping) for row in result.all()]
+
+
+async def summarize_usage(
+    session: AsyncSession,
+    *,
+    client_id: int | None = None,
+    feed_source_id: int | None = None,
+    task_type: str | None = None,
+    from_dt: datetime | None = None,
+    to_dt: datetime | None = None,
+) -> dict[str, Any]:
+    statement = select(
+        func.count().label("calls"),
+        func.coalesce(
+            func.sum(case((AiUsageLog.cache_hit.is_(True), 1), else_=0)), 0
+        ).label("cache_hits"),
+        func.coalesce(func.sum(AiUsageLog.prompt_tokens), 0).label("prompt_tokens"),
+        func.coalesce(func.sum(AiUsageLog.completion_tokens), 0).label("completion_tokens"),
+        func.coalesce(func.sum(AiUsageLog.cost_usd), 0).label("cost_usd"),
+        func.coalesce(
+            func.sum(
+                case((AiUsageLog.cache_hit.is_(True), AiUsageLog.prompt_tokens), else_=0)
+            ),
+            0,
+        ).label("saved_prompt_tokens"),
+        func.coalesce(
+            func.sum(
+                case((AiUsageLog.cache_hit.is_(True), AiUsageLog.completion_tokens), else_=0)
+            ),
+            0,
+        ).label("saved_completion_tokens"),
+        func.coalesce(
+            func.sum(case((AiUsageLog.cache_hit.is_(True), AiUsageLog.cost_usd), else_=0)),
+            0,
+        ).label("cost_saved_usd"),
+    )
+    if client_id is not None:
+        statement = statement.where(AiUsageLog.client_id == client_id)
+    if feed_source_id is not None:
+        statement = statement.where(AiUsageLog.feed_source_id == feed_source_id)
+    if task_type is not None:
+        statement = statement.where(AiUsageLog.task_type == task_type)
+    if from_dt is not None:
+        statement = statement.where(AiUsageLog.created_at >= from_dt)
+    if to_dt is not None:
+        statement = statement.where(AiUsageLog.created_at < to_dt)
+    result: dict[str, Any] = dict((await session.execute(statement)).one()._mapping)
+    calls = result["calls"] or 0
+    result["hit_ratio"] = (result["cache_hits"] / calls) if calls else 0.0
+    return result

@@ -16,5 +16,14 @@ services:
       timeout: 5s
       retries: 5
 
+  # Opt-in: docker compose --profile ai-cache up -d redis
+  # Required only when REDIS_URL / REDIS_HOST points at it; never a default.
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    profiles: ["ai-cache"]
+    ports:
+      - "6379:6379"
+
 volumes:
   postgres_data:

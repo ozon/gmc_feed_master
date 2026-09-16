@@ -218,3 +218,14 @@ async def test_provider_test_endpoint_reports_error(settings_app, admin_http):
     body = response.json()
     assert body["status"] == "error"
     assert "error_code" in body
+
+
+@pytest.mark.asyncio
+async def test_ai_cache_and_usage_endpoints(admin_http) -> None:
+    assert (await admin_http.get("/admin/ai/cache")).status_code == 200
+    assert (await admin_http.get("/admin/ai/cache/stats")).status_code == 200
+    assert (await admin_http.get("/admin/ai/usage/summary")).status_code == 200
+    assert (await admin_http.get("/admin/ai/usage/timeseries")).status_code == 200
+    cleared = await admin_http.post("/admin/ai/cache/clear", json={})
+    assert cleared.status_code == 200
+    assert "removed" in cleared.json()
