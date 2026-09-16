@@ -5,6 +5,13 @@ Method: doc claims verified against code (code = ground truth); endpoint sets di
 
 Binding rule (root AGENTS.md): *documentation that contradicts `gmc-feed-engine-spec.md` is a bug — fix the doc, never the spec, and flag the conflict to the operator.* Two findings below (D2, D3) are **spec-internal or spec-vs-shipped conflicts** — the operator must amend the spec; the docs are correct per code in those cases.
 
+> **Re-verification (2026-09-16, M14 hardening cycle 2):** every finding below was re-checked against the code.
+> All fourteen doc findings (D1, D4–D16) were **already resolved** by the time of the re-check except two residual
+> items, both fixed in M14: D13's `ExportRun` table listed a nonexistent `created_at` and omitted `export_version_id`,
+> and D1/D10's ADRs still declared `Accepted` at the top of the file despite shipping closing notes from 2026-09-08.
+> **D2 and D3 remain open and are operator-owned** (they are spec amendments, not doc fixes); see `TODO.md` §8.2.
+> Lesson: this report is a point-in-time artifact — re-derive from code before acting on it.
+
 Severity legend: Important (will actively mislead) · Medium · Minor.
 
 ## Operator flags (spec changes required — do not "fix" docs to match)
@@ -112,13 +119,13 @@ Severity legend: Important (will actively mislead) · Medium · Minor.
 - Severity: Minor
 - Location: `README.md:64` (duplicate of tooling T9; fixed here for doc ownership)
 - Suggestion: update to the full 9-prefix proxy list.
-- Status: NEW
+- Status: ALREADY CORRECT (verified 2026-09-16, M14) — README already lists all nine proxy prefixes, matching `vite.config.ts`.
 
 ### [D16] docs/makefile.md omits the `prod` and `dev-caddy` targets
 - Severity: Minor
 - Location: `docs/makefile.md:61-69` vs `Makefile:141-147`
 - Suggestion: add a Caddy section (makefile.md otherwise matches the Makefile accurately).
-- Status: NEW
+- Status: ALREADY CORRECT (verified 2026-09-16, M14) — `docs/makefile.md` already documents both `make prod` and `make dev-caddy`. M14 additionally recorded the `DEV_HOST` variable as part of its dev-env work.
 
 ## Endpoint coverage appendix
 
