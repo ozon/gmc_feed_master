@@ -1,7 +1,7 @@
 # LiteLLM + Instructor AI Core Replacement (AI Reintegration) — Design
 
 Date: 2026-09-16
-Status: Approved in brainstorming (operator)
+Status: Approved in brainstorming (operator); phase A implemented 2026-09-16 on branch `litellm-instructor-core` (see ADR-0010)
 Baseline: `main` at `0272bb0`
 
 ## Purpose and premise correction
@@ -76,10 +76,10 @@ def invalidate(provider_config_id) -> None
 
 ### Phasing (strangler order, each phase green on `ruff` / `mypy` / `pytest`)
 
-- **A — AI core replacement (transport, structured output, native cache, provider tiers).** Add `litellm` + `instructor` via `uv add`; build `router.py`, `schemas.py`, `taxonomy.py`, `cache_config.py`; `AiService` calls Router + Instructor with validated-only native caching; implement cache-hit detection and usage logging. Provider model change rides along (Router needs it): add `tier`, drop `is_default`, widen `provider_type` to `litellm` with backward-compatible mapping for existing `openai_compatible` rows, group deployments by tier, and rebuild the Router on provider/settings changes. Add the `global_settings` AI columns and drop `ai_result_cache`. Validate the mypy override here, before anything depends on it. *(Native cache is merged into A rather than a separate phase: the existing DB cache key embeds `provider_config_id`/`model`, which tier routing invalidates, so a transport-only phase would rework a table the very next phase drops.)*
+- **A — AI core replacement (transport, structured output, native cache, provider tiers).** Add `litellm` + `instructor` via `uv add`; build `router.py`, `schemas.py`, `taxonomy.py`, `cache_config.py`; `AiService` calls Router + Instructor with validated-only native caching; implement cache-hit detection and usage logging. Provider model change rides along (Router needs it): **add `tier`** (additive), widen `provider_type` to `litellm` with backward-compatible mapping for existing `openai_compatible` rows, group deployments by tier, and rebuild the Router on provider/settings changes. **Add the `global_settings` AI columns** (additive). Phase A stops *using* `is_default`, `ai_result_cache`, and `ai_cache_retention_days` but does **not** drop them — the physical drops move to phase D so every phase-A commit stays green while `service.py`/`cache.py`/`ai_admin.py` still reference them. Validate the mypy override here, before anything depends on it. *(Native cache is merged into A rather than a separate phase: the existing DB cache key embeds `provider_config_id`/`model`, which tier routing invalidates, so a transport-only phase would rework a table the very next phase drops.)*
 - **B — Enrichment step.** `EnrichmentStep` + dry-run path + per-feed opt-in config; generates suggestions into the existing review store.
 - **C — Admin settings & telemetry surface.** `GET/PUT /admin/ai/settings` (hot-apply), usage summary/timeseries, cache status/stats/clear; build `AiSettingsPage`, update `AiAdminPage` sections, update `ProvidersPage` (tier, no default), and the UsagePage KPI row.
-- **D — Cleanup.** Delete `openai_compat.py`, `cache.py`, `resilience.py`, retire the `AIProvider` Protocol and `default_provider_factory` from `provider.py` (keeping `AiRequest`/`AiResponse` as chat DTOs); docs + ADR; final gates.
+- **D — Cleanup.** Delete `openai_compat.py`, `cache.py`, `resilience.py`, retire the `AIProvider` Protocol and `default_provider_factory` from `provider.py` (keeping `AiRequest`/`AiResponse` as chat DTOs); **drop the now-unused `ai_result_cache` table, `ai_provider_configs.is_default` column, and `global_settings.ai_cache_retention_days`**; docs + ADR; final gates.
 
 **Implementation plan shape:** the work is decomposed per phase — each phase A–E is one implementation plan / PR that leaves `ruff`, `mypy`, and `pytest` green on its own. Phase A is planned and executed first; phases B–E are planned when their predecessor merges, so later plans build on verified behavior rather than assumptions.
 

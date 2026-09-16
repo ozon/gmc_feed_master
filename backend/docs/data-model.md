@@ -246,7 +246,7 @@ Retention: Last N per feed source (default 30, includes rollback versions).
 |--------|------|-------|
 | `id` | Integer | PK |
 | `name` | String(255) | Unique label |
-| `provider_type` | String(50) | `openai_compatible` (only value currently) |
+| `provider_type` | String(50) | `litellm` or legacy `openai_compatible` (mapped to `openai/<model>` at Router build) |
 | `base_url` | String(1024) | OpenAI or self-hosted (vLLM/Ollama/LM Studio) |
 | `api_key` | String(1024) | Write-only via API; redacted in all responses and logs |
 | `model` | String(255) | LiteLLM model id, e.g. `openai/gpt-4o-mini`, `anthropic/claude-3-5-sonnet` |

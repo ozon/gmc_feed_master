@@ -8,6 +8,8 @@
 
 **Tech Stack:** Python 3.10+, FastAPI, SQLAlchemy 2.0 async, PostgreSQL, Alembic, `litellm`, `instructor`, pytest (`asyncio_mode` not global — mark `@pytest.mark.asyncio` explicitly).
 
+**Status:** Phase A complete (2026-09-16, branch `litellm-instructor-core`). Executed in a re-ordered green sequence (7/8 before the 5+9 cutover) and with phase A's DB changes made additive; see the spec's phase notes and ADR-0010. Gates at close: backend 1287 passed, ruff 490/490 (zero new), mypy exit-0, frontend 538 passed.
+
 ## Global Constraints
 
 - Run everything from `backend/`.
