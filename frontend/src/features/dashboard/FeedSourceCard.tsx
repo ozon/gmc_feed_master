@@ -59,6 +59,12 @@ export function FeedSourceCard({
       ? RUN_DOT_COLORS[feed.last_run_status]
       : 'var(--mantine-color-gray-6)';
   const numberFormat = new Intl.NumberFormat(i18n.language);
+  const qualityBadge =
+    feed.quality.critical > 0
+      ? { color: 'red', count: feed.quality.critical }
+      : feed.quality.warning > 0
+        ? { color: 'yellow', count: feed.quality.warning }
+        : null;
 
   function confirmDelete() {
     deleteFeedSource.mutate(feed.id, {
@@ -97,6 +103,21 @@ export function FeedSourceCard({
           <Badge variant="light">{feed.source_format.toUpperCase()}</Badge>
         </Group>
         <Group gap="xs" wrap="nowrap">
+          {qualityBadge ? (
+            <Badge
+              color={qualityBadge.color}
+              variant="light"
+              data-testid={`feed-quality-badge-${feed.id}`}
+              style={{ cursor: 'pointer' }}
+              aria-label={t('qualityBadge', { count: qualityBadge.count })}
+              onClick={(event) => {
+                event.stopPropagation();
+                navigate(`/clients/${clientId}/feeds/${feed.id}/monitoring/findings`);
+              }}
+            >
+              {t('qualityBadge', { count: qualityBadge.count })}
+            </Badge>
+          ) : null}
           <ActionIcon
             variant="subtle"
             aria-label={t('openSettings')}

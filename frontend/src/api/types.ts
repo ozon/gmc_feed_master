@@ -8,6 +8,7 @@ export type FeedSourceSummary = {
   last_export_status: string | null;
   last_run_at: string | null;
   last_run_status: string | null;
+  quality: { critical: number; warning: number; info: number };
 };
 
 export type ClientSummary = {

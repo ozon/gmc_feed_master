@@ -3,6 +3,7 @@
   "runPipeline": "Pipeline starten",
   "editPipeline": "Pipeline bearbeiten",
   "copyExportUrl": "Export-URL kopieren",
+  "viewFindings": "Befunde anzeigen",
   "kpi": {
     "rawItems": "Rohdaten",
     "validItems": "Gültige Produkte",

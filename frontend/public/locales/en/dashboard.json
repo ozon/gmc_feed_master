@@ -32,6 +32,7 @@
   },
   "openSettings": "Open settings",
   "deleteFeed": "Delete feed",
+  "qualityBadge": "{{count}} findings",
   "addFeedModal": {
     "title": "Add feed source",
     "name": "Name",

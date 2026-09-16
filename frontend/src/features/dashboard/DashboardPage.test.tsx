@@ -33,6 +33,7 @@ const summary: DashboardSummary = {
           last_export_status: 'failed',
           last_run_at: '2026-08-27T09:00:00Z',
           last_run_status: 'error',
+          quality: { critical: 3, warning: 1, info: 0 },
         },
         {
           id: 5,
@@ -44,6 +45,7 @@ const summary: DashboardSummary = {
           last_export_status: 'completed',
           last_run_at: '2026-08-27T09:30:00Z',
           last_run_status: 'success',
+          quality: { critical: 0, warning: 0, info: 0 },
         },
       ],
     },
@@ -62,6 +64,7 @@ const summary: DashboardSummary = {
           last_export_status: null,
           last_run_at: null,
           last_run_status: null,
+          quality: { critical: 0, warning: 0, info: 0 },
         },
       ],
     },
@@ -150,6 +153,19 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Never exported')).toBeInTheDocument();
     expect(screen.getByText('4,200')).toBeInTheDocument();
     expect(screen.getByText('120')).toBeInTheDocument();
+  });
+
+  it('shows a quality badge on feeds with findings', async () => {
+    fetchMock = stubFetch((url) => {
+      if (url === '/auth/me') return jsonResponse({ username: 'operator' });
+      if (url === '/dashboard/summary') return jsonResponse(summary);
+      if (url === '/plugins') return jsonResponse(plugins);
+      return jsonResponse({});
+    });
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(screen.getByTestId('feed-quality-badge-2')).toHaveTextContent('3 findings');
+    expect(screen.queryByTestId('feed-quality-badge-5')).not.toBeInTheDocument();
   });
 
   it('shows the manage-clients link for admins and hides it for users', async () => {

@@ -3,6 +3,7 @@
   "runPipeline": "Run pipeline",
   "editPipeline": "Edit pipeline",
   "copyExportUrl": "Copy export URL",
+  "viewFindings": "View findings",
   "kpi": {
     "rawItems": "Raw items",
     "validItems": "Valid items",

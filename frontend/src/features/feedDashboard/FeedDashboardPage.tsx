@@ -164,6 +164,11 @@ export function FeedDashboardPage() {
           withTooltip
           mx="auto"
         />
+        <Group justify="center" mt="sm">
+          <Anchor component={Link} to={`/clients/${clientId}/feeds/${id}/monitoring/findings`} size="sm">
+            {t('viewFindings')}
+          </Anchor>
+        </Group>
       </ChartCard>
 
       <Stack gap="xs">

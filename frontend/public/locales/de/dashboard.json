@@ -32,6 +32,7 @@
   },
   "openSettings": "Einstellungen öffnen",
   "deleteFeed": "Feed löschen",
+  "qualityBadge": "{{count}} Befunde",
   "addFeedModal": {
     "title": "Feedquelle hinzufügen",
     "name": "Name",
