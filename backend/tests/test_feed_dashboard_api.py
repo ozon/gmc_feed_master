@@ -14,7 +14,6 @@ from app.models.staging import StagingProduct
 from app.models.user import User
 from app.persistence.users import seed_initial_user
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -68,9 +67,8 @@ async def _make_feed(factory, http_client, name):
 async def _add_run(factory, feed_id, status="success", processed=100, statistics=None,
                    started_days_ago=0, duration_s=None):
     start = datetime.now(timezone.utc) - timedelta(days=started_days_ago)
-    async with factory() as session:
-        async with session.begin():
-            session.add(IngestionRun(
+    async with factory() as session, session.begin():
+        session.add(IngestionRun(
                 feed_source_id=feed_id,
                 status=status,
                 started_at=start,
@@ -78,6 +76,16 @@ async def _add_run(factory, feed_id, status="success", processed=100, statistics
                 processed_count=processed,
                 statistics=statistics or {},
             ))
+
+
+async def _add_export_run(factory, feed_id, product_count, started_days_ago=0):
+    async with factory() as session, session.begin():
+        session.add(ExportRun(
+            feed_source_id=feed_id,
+            status="pending_export",
+            product_count=product_count,
+            started_at=datetime.now(timezone.utc) - timedelta(days=started_days_ago),
+        ))
 
 
 async def test_dashboard_requires_auth(app_factory):
@@ -92,7 +100,7 @@ async def test_dashboard_404_unknown_feed(app_factory):
 
 
 async def test_dashboard_empty_feed(app_factory):
-    app, factory = app_factory
+    _, factory = app_factory
     client = await logged_in_client(app_factory)
     _, feed_id = await _make_feed(factory, client, "Acme")
     resp = await client.get(f"/feed-sources/{feed_id}/dashboard")
@@ -107,7 +115,7 @@ async def test_dashboard_empty_feed(app_factory):
 
 
 async def test_dashboard_aggregates_run_statistics(app_factory):
-    app, factory = app_factory
+    _, factory = app_factory
     client = await logged_in_client(app_factory)
     _, feed_id = await _make_feed(factory, client, "Acme")
 
@@ -123,43 +131,42 @@ async def test_dashboard_aggregates_run_statistics(app_factory):
     }
     await _add_run(factory, feed_id, processed=100, statistics=stats,
                    started_days_ago=0, duration_s=42)
-    async with factory() as session:
-        async with session.begin():
-            run = (await session.execute(
-                select(IngestionRun)
-                .where(IngestionRun.feed_source_id == feed_id)
-            )).scalars().first()
-            session.add(ExportRun(
-                feed_source_id=feed_id,
-                ingestion_run_id=run.id,
-                status="pending_export",
-                product_count=90,
-                critical_finding_count=3,
-                warning_finding_count=12,
-                info_finding_count=40,
-                started_at=datetime.now(timezone.utc),
-            ))
-            for pid in ("a", "b", "c"):
-                session.add(StagingProduct(
-                    feed_source_id=feed_id,
-                    ingestion_run_id=run.id,
-                    product_id=pid,
-                    content_hash="h",
-                    config_hash="c",
-                    status="active",
-                    excluded=False,
-                    raw_data={"id": pid},
-                ))
+    async with factory() as session, session.begin():
+        run = (await session.execute(
+            select(IngestionRun)
+            .where(IngestionRun.feed_source_id == feed_id)
+        )).scalars().first()
+        session.add(ExportRun(
+            feed_source_id=feed_id,
+            ingestion_run_id=run.id,
+            status="pending_export",
+            product_count=90,
+            critical_finding_count=3,
+            warning_finding_count=12,
+            info_finding_count=40,
+            started_at=datetime.now(timezone.utc),
+        ))
+        for pid in ("a", "b", "c"):
             session.add(StagingProduct(
                 feed_source_id=feed_id,
                 ingestion_run_id=run.id,
-                product_id="x",
+                product_id=pid,
                 content_hash="h",
                 config_hash="c",
                 status="active",
-                excluded=True,
-                raw_data={"id": "x"},
+                excluded=False,
+                raw_data={"id": pid},
             ))
+        session.add(StagingProduct(
+            feed_source_id=feed_id,
+            ingestion_run_id=run.id,
+            product_id="x",
+            content_hash="h",
+            config_hash="c",
+            status="active",
+            excluded=True,
+            raw_data={"id": "x"},
+        ))
 
     body = (await client.get(f"/feed-sources/{feed_id}/dashboard")).json()
     kpi = body["kpi"]
@@ -196,24 +203,23 @@ async def test_dashboard_aggregates_run_statistics(app_factory):
 
 
 async def test_dashboard_readiness_zero_products(app_factory):
-    app, factory = app_factory
+    _, factory = app_factory
     client = await logged_in_client(app_factory)
     _, feed_id = await _make_feed(factory, client, "Acme")
-    async with factory() as session:
-        async with session.begin():
-            session.add(ExportRun(
-                feed_source_id=feed_id,
-                status="pending_export",
-                product_count=0,
-                started_at=datetime.now(timezone.utc),
-            ))
+    async with factory() as session, session.begin():
+        session.add(ExportRun(
+            feed_source_id=feed_id,
+            status="pending_export",
+            product_count=0,
+            started_at=datetime.now(timezone.utc),
+        ))
     body = (await client.get(f"/feed-sources/{feed_id}/dashboard")).json()
     assert body["kpi"]["readiness_rate"] == 1.0
 
 
 async def test_dashboard_raw_items_falls_back_to_processed_count(app_factory):
     # Legacy run with empty statistics: raw_items falls back to processed_count.
-    app, factory = app_factory
+    _, factory = app_factory
     client = await logged_in_client(app_factory)
     _, feed_id = await _make_feed(factory, client, "Acme")
     await _add_run(factory, feed_id, processed=37, statistics={})
@@ -225,7 +231,7 @@ async def test_dashboard_raw_items_falls_back_to_processed_count(app_factory):
 
 async def test_dashboard_raw_items_ignores_accumulated_processed(app_factory):
     # processed_count accumulates across steps (3-4x ingested); mapping.applied wins.
-    app, factory = app_factory
+    _, factory = app_factory
     client = await logged_in_client(app_factory)
     _, feed_id = await _make_feed(factory, client, "Acme")
     stats = {"mapping": {"applied": 100, "dropped_unmapped_fields": 0}}
@@ -235,3 +241,49 @@ async def test_dashboard_raw_items_ignores_accumulated_processed(app_factory):
     funnel = {row["stage"]: row for row in body["stage_funnel"]}
     assert funnel["ingest"]["passed"] == 100
     assert body["volume_trend"][0]["raw"] == 100
+
+
+async def test_dashboard_trend_not_capped_at_30_export_runs(app_factory):
+    # A feed exporting >1x/day must not lose export data to a row cap:
+    # 35 runs over 3 days (12/day) → every day keeps exportable=5.
+    _, factory = app_factory
+    client = await logged_in_client(app_factory)
+    _, feed_id = await _make_feed(factory, client, "Acme")
+    stats = {"mapping": {"applied": 10}}
+    for day in (0, 1, 2):
+        for _ in range(12):
+            await _add_export_run(factory, feed_id, product_count=5, started_days_ago=day)
+        await _add_run(factory, feed_id, processed=10, statistics=stats, started_days_ago=day)
+    body = (await client.get(f"/feed-sources/{feed_id}/dashboard")).json()
+    assert len(body["volume_trend"]) == 3
+    for row in body["volume_trend"]:
+        assert row["raw"] == 10
+        assert row["exportable"] == 5
+
+
+async def test_dashboard_denies_cross_tenant_access(app_factory):
+    app, factory = app_factory
+    admin = await logged_in_client(app_factory)
+    _, other_feed_id = await _make_feed(factory, admin, "Other Tenant")
+    own_client_id, own_feed_id = await _make_feed(factory, admin, "Own Tenant")
+
+    from app.models.user import User as UserModel
+    from app.models.user_client import UserClient
+    from app.security.passwords import hash_password
+    async with factory() as session, session.begin():
+        restricted = UserModel(
+            username="bob", password_hash=hash_password("bob-pass"), role="user",
+        )
+        session.add(restricted)
+        await session.flush()
+        session.add(UserClient(user_id=restricted.id, client_id=own_client_id))
+
+    restricted_client = AsyncClient(
+        transport=ASGITransport(app=app), base_url="https://testserver",
+    )
+    resp = await restricted_client.post(
+        "/auth/login", json={"username": "bob", "password": "bob-pass"}
+    )
+    assert resp.status_code == 200
+    assert (await restricted_client.get(f"/feed-sources/{other_feed_id}/dashboard")).status_code == 404
+    assert (await restricted_client.get(f"/feed-sources/{own_feed_id}/dashboard")).status_code == 200

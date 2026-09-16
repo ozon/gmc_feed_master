@@ -11,7 +11,7 @@ const runs: FeedDashboardData['recent_runs'] = [
 ];
 
 beforeAll(async () => {
-  await i18n.loadNamespaces('feedDashboard');
+  await i18n.loadNamespaces(['feedDashboard', 'monitoring']);
 });
 
 describe('RecentRunsTable', () => {
@@ -21,6 +21,8 @@ describe('RecentRunsTable', () => {
     expect(screen.getByTestId('run-row-1')).toBeInTheDocument();
     expect(screen.getByText('42.5s')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByText('Success')).toBeInTheDocument();
+    expect(screen.getByText('Error')).toBeInTheDocument();
   });
 
   it('renders the empty state when no runs', () => {

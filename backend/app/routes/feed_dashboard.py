@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
@@ -60,8 +61,8 @@ STAGES = ["ingest", "mapping", "staging", "run_plugins", "quality_check", "expor
 @router.get("/feed-sources/{feed_source_id}/dashboard")
 async def feed_dashboard(
     feed_source_id: int,
-    _user: str = Depends(require_user),
-    db_session: AsyncSession | None = Depends(get_db_session),
+    _user: Annotated[str, Depends(require_user)],
+    db_session: Annotated[AsyncSession | None, Depends(get_db_session)],
 ) -> dict:
     session = _require_db(db_session)
     feed_source = await session.get(FeedSource, feed_source_id)
@@ -87,11 +88,16 @@ async def feed_dashboard(
     )).scalars())
     latest_run = runs[0] if runs else None
 
+    # Volume trend: per-day raw (honest ingested count) vs exportable (export count).
+    since = datetime.now(timezone.utc) - timedelta(days=30)
+
     export_runs = list((await session.execute(
         select(ExportRun)
-        .where(ExportRun.feed_source_id == feed_source_id)
+        .where(
+            ExportRun.feed_source_id == feed_source_id,
+            ExportRun.started_at >= since,
+        )
         .order_by(ExportRun.id.desc())
-        .limit(30)
     )).scalars())
     latest_export = export_runs[0] if export_runs else None
 
@@ -116,8 +122,6 @@ async def feed_dashboard(
             stage_funnel.append({"stage": stage, "passed": passed, "dropped": dropped})
             passed = max(0, passed - dropped)
 
-    # Volume trend: per-day raw (honest ingested count) vs exportable (export count).
-    since = datetime.now(timezone.utc) - timedelta(days=30)
     trend_runs = list((await session.execute(
         select(IngestionRun)
         .where(
