@@ -204,6 +204,7 @@ Retention: 90 days.
 |--------|------|-------|
 | `id` | Integer | PK |
 | `feed_source_id` | Integer | FK → FeedSource |
+| `export_version_id` | Integer | FK → ExportVersion, nullable (SET NULL on purge) |
 | `ingestion_run_id` | Integer | FK → IngestionRun, nullable (SET NULL on purge) |
 | `status` | String(50) | Run status |
 | `product_count` | Integer | Exported products |
@@ -216,7 +217,6 @@ Retention: 90 days.
 | `options` | JSONB | Export options |
 | `started_at` | DateTime | |
 | `completed_at` | DateTime | Nullable; set when run finishes |
-| `created_at` | DateTime | |
 
 ### ExportVersion
 | Column | Type | Notes |

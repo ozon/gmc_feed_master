@@ -39,20 +39,20 @@ Severity legend: Important (will actively mislead) · Medium · Minor.
 - Evidence: doc says `id String(64)` PK (random token) + `last_accessed_at`/`expires_at`; code has Integer PK, `token_hash` (hashed, not raw), `last_interaction_at`, dual `idle_expires_at`/`absolute_expires_at`, `revocation_generation`, `revoked_at`.
 - Impact: wrong PK and missing security-relevant columns mislead anyone reasoning about session revocation.
 - Suggestion: rewrite the Session table to mirror the model.
-- Status: NEW
+- Status: ALREADY CORRECT (verified 2026-09-16, M14) — the Session table matches `app/models/session.py` column-for-column; the finding was stale.
 
 ### [D5] data-model.md ExportVersion lists a nonexistent `xml_path` and omits shipped columns
 - Severity: Medium
 - Location: `backend/docs/data-model.md:200-210` vs `backend/app/models/export.py:41-44`
 - Evidence: doc: `xml_path String(512)`; code: `file_hash`, `product_count`, `source` (default `"run"`), `source_version_id` (rollback lineage, SET NULL) — no `xml_path`.
 - Suggestion: replace with the real columns; note the 2-value source enum status (TODO 2.2) if documenting `source`.
-- Status: NEW
+- Status: ALREADY CORRECT (verified 2026-09-16, M14) — the ExportVersion table matches `app/models/export.py`: no `xml_path`, and `source` is documented with the shipped 3-value enum and `manual` default. **Report correction:** this finding claimed `source` defaults to `"run"` with a 2-value enum; both were wrong.
 
 ### [D6] data-model.md StagingHistory says `created_at`; code has `recorded_at`
 - Severity: Medium
 - Location: `backend/docs/data-model.md:168` vs `backend/app/models/staging.py` and `backend/app/staging/purge.py` (`StagingHistory.recorded_at < history_cutoff`)
 - Suggestion: rename the doc column.
-- Status: NEW
+- Status: ALREADY CORRECT (verified 2026-09-16, M14) — the StagingHistory table already says `recorded_at`.
 
 ### [D7] api.md documents `GET /clients/{id}` which does not exist
 - Severity: Medium
@@ -92,21 +92,21 @@ Severity legend: Important (will actively mislead) · Medium · Minor.
 - Severity: Minor
 - Location: `backend/docs/data-model.md:177` vs `backend/app/routes/clients.py:321` (creates `status="pending"`), `backend/app/pipeline/reconcile.py:26` (reconciles `("running", "pending")`)
 - Suggestion: document `pending` (manual-trigger 202 response, reconciled to `error` "interrupted by restart").
-- Status: NEW
+- Status: ALREADY CORRECT (verified 2026-09-16, M14) — the IngestionRun status enum already lists `pending`.
 
 ### [D13] data-model.md ExportRun omits shipped columns
 - Severity: Minor
 - Location: `backend/docs/data-model.md:188-198` vs `backend/app/models/export.py:16-28`
 - Evidence: code also has `status`, `options` JSONB, `started_at`, `completed_at`, nullable `ingestion_run_id`/`export_version_id` (SET NULL) — the purge-detachment nullability is undocumented.
 - Suggestion: extend the table; note FK nullability (ties into the 90-day purge behavior).
-- Status: NEW
+- Status: FIXED (2026-09-16, M14) — removed the nonexistent `created_at` row and added `export_version_id` (FK → ExportVersion, SET NULL).
 
 ### [D14] data-model.md column-level drift: User, Client, PluginConfig
 - Severity: Minor
 - Location: `backend/docs/data-model.md:35,63-70,129-139` vs `backend/app/models/*`
 - Evidence: User `password_hash` is `String(512)` in code, doc says 255; Client has `settings` JSONB + `updated_at` (undocumented); PluginConfig has **no** `created_at` while the doc claims PluginConfig/PluginData are structurally identical.
 - Suggestion: correct lengths and column lists; drop or qualify the "identical structure" claim.
-- Status: NEW
+- Status: ALREADY CORRECT (verified 2026-09-16, M14) — `password_hash` is documented as String(512), Client's `settings`/`status`/`updated_at` are present, and the table already says PluginData-only `created_at`.
 
 ### [D15] README understates the Vite proxy scope
 - Severity: Minor
