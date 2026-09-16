@@ -147,7 +147,7 @@ def parse_xml(data: bytes, registry: RegistryDocument) -> IngestReport:
         try:
             product = _parse_item(item)
             products.append(product)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             row_errors.append(RowError(line=idx, message=str(exc)))
 
     return IngestReport(

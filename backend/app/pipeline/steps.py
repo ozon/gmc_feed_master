@@ -260,7 +260,7 @@ class PluginStep:
                             instance["resolved_data"],
                             rctx,
                         )
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     ctx.logger.warning(
                         "plugin %s errored on product %s: %s",
                         instance["plugin"], pid, exc,

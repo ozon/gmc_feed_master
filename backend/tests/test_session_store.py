@@ -87,7 +87,7 @@ def test_test_clock_normalizes_aware_times_to_utc():
 
 def test_test_clock_rejects_naive_times():
     with pytest.raises(ValueError, match="timezone-aware"):
-        InjectableTestClock(datetime(2026, 1, 1))
+        InjectableTestClock(datetime(2026, 1, 1))  # noqa: DTZ001
 
 
 @pytest.mark.asyncio

@@ -17,56 +17,55 @@ async def persist_findings(
     findings: list[Finding],
     product_count: int,
 ) -> None:
-    async with session_factory() as session:
-        async with session.begin():
-            # Delta vs the previous run's persisted findings (key: rule/product/field).
-            old_rows = (await session.execute(
-                select(QualityFinding.code, QualityFinding.product_id, QualityFinding.field)
-                .where(QualityFinding.feed_source_id == feed_source_id)
-            )).all()
-            old_keys = {(row.code, row.product_id, row.field) for row in old_rows}
-            new_keys = {
-                (finding.rule_id, finding.product_id or "cross_product", finding.field)
-                for finding in findings
-            }
-            fixed = len(old_keys - new_keys)
-            added = len(new_keys - old_keys)
-            remaining = len(old_keys & new_keys)
+    async with session_factory() as session, session.begin():
+        # Delta vs the previous run's persisted findings (key: rule/product/field).
+        old_rows = (await session.execute(
+            select(QualityFinding.code, QualityFinding.product_id, QualityFinding.field)
+            .where(QualityFinding.feed_source_id == feed_source_id)
+        )).all()
+        old_keys = {(row.code, row.product_id, row.field) for row in old_rows}
+        new_keys = {
+            (finding.rule_id, finding.product_id or "cross_product", finding.field)
+            for finding in findings
+        }
+        fixed = len(old_keys - new_keys)
+        added = len(new_keys - old_keys)
+        remaining = len(old_keys & new_keys)
 
-            # Feed-keyed delete
-            await session.execute(
-                delete(QualityFinding).where(QualityFinding.feed_source_id == feed_source_id)
-            )
+        # Feed-keyed delete
+        await session.execute(
+            delete(QualityFinding).where(QualityFinding.feed_source_id == feed_source_id)
+        )
 
-            # Insert findings (product_id already attached by engine)
-            for finding in findings:
-                session.add(QualityFinding(
-                    feed_source_id=feed_source_id,
-                    ingestion_run_id=ingestion_run_id,
-                    product_id=finding.product_id or "cross_product",
-                    severity=finding.severity,
-                    code=finding.rule_id,
-                    field=finding.field,
-                    message=finding.message,
-                    details=finding.details,
-                ))
-
-            # Count by severity
-            counts: dict[str, int] = {"critical": 0, "warning": 0, "info": 0}
-            for f in findings:
-                counts[f.severity] = counts.get(f.severity, 0) + 1
-
-            # Write ExportRun
-            session.add(ExportRun(
+        # Insert findings (product_id already attached by engine)
+        for finding in findings:
+            session.add(QualityFinding(
                 feed_source_id=feed_source_id,
                 ingestion_run_id=ingestion_run_id,
-                status="pending_export",
-                product_count=product_count,
-                critical_finding_count=counts["critical"],
-                warning_finding_count=counts["warning"],
-                info_finding_count=counts["info"],
-                fixed_finding_count=fixed,
-                new_finding_count=added,
-                remaining_finding_count=remaining,
-                export_version_id=None,
+                product_id=finding.product_id or "cross_product",
+                severity=finding.severity,
+                code=finding.rule_id,
+                field=finding.field,
+                message=finding.message,
+                details=finding.details,
             ))
+
+        # Count by severity
+        counts: dict[str, int] = {"critical": 0, "warning": 0, "info": 0}
+        for f in findings:
+            counts[f.severity] = counts.get(f.severity, 0) + 1
+
+        # Write ExportRun
+        session.add(ExportRun(
+            feed_source_id=feed_source_id,
+            ingestion_run_id=ingestion_run_id,
+            status="pending_export",
+            product_count=product_count,
+            critical_finding_count=counts["critical"],
+            warning_finding_count=counts["warning"],
+            info_finding_count=counts["info"],
+            fixed_finding_count=fixed,
+            new_finding_count=added,
+            remaining_finding_count=remaining,
+            export_version_id=None,
+        ))

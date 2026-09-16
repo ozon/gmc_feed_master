@@ -67,43 +67,42 @@ async def test_downgrade_reverses_all_three(isolated_database_url):
 async def test_removal_deletes_history_via_cascade(isolated_database_url):
     engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
-    async with factory() as session:
-        async with session.begin():
-            client = (await session.execute(
-                text(
-                    "INSERT INTO clients (name, settings, contact_details) "
-                    "VALUES ('C', '{}', '{}') RETURNING id"
-                )
-            )).scalar_one()
-            fs = (await session.execute(
-                text(
-                    "INSERT INTO feed_sources "
-                    "(client_id, name, source_format, field_mapping, configuration, export_token) "
-                    "VALUES (:cid, 'F', 'tsv', '{}', '{}', 'tok-m5-cascade') RETURNING id"
-                ),
-                {"cid": client},
-            )).scalar_one()
-            run = (await session.execute(
-                text(
-                    "INSERT INTO ingestion_runs "
-                    "(feed_source_id, status, processed_count, failed_count, statistics) "
-                    "VALUES (:fid, 'running', 0, 0, '{}') RETURNING id"
-                ),
-                {"fid": fs},
-            )).scalar_one()
-            await session.execute(
-                text(
-                    "INSERT INTO staging_products "
-                    "(feed_source_id, ingestion_run_id, product_id, content_hash, "
-                    "config_hash, status, raw_data) "
-                    "VALUES (:fid, :rid, 'p1', 'h', 'c', 'active', '{}')"
-                ),
-                {"fid": fs, "rid": run},
+    async with factory() as session, session.begin():
+        client = (await session.execute(
+            text(
+                "INSERT INTO clients (name, settings, contact_details) "
+                "VALUES ('C', '{}', '{}') RETURNING id"
             )
-            await session.execute(text(
-                "INSERT INTO staging_history (staging_product_id, snapshot) "
-                "SELECT id, '{}' FROM staging_products"
-            ))
+        )).scalar_one()
+        fs = (await session.execute(
+            text(
+                "INSERT INTO feed_sources "
+                "(client_id, name, source_format, field_mapping, configuration, export_token) "
+                "VALUES (:cid, 'F', 'tsv', '{}', '{}', 'tok-m5-cascade') RETURNING id"
+            ),
+            {"cid": client},
+        )).scalar_one()
+        run = (await session.execute(
+            text(
+                "INSERT INTO ingestion_runs "
+                "(feed_source_id, status, processed_count, failed_count, statistics) "
+                "VALUES (:fid, 'running', 0, 0, '{}') RETURNING id"
+            ),
+            {"fid": fs},
+        )).scalar_one()
+        await session.execute(
+            text(
+                "INSERT INTO staging_products "
+                "(feed_source_id, ingestion_run_id, product_id, content_hash, "
+                "config_hash, status, raw_data) "
+                "VALUES (:fid, :rid, 'p1', 'h', 'c', 'active', '{}')"
+            ),
+            {"fid": fs, "rid": run},
+        )
+        await session.execute(text(
+            "INSERT INTO staging_history (staging_product_id, snapshot) "
+            "SELECT id, '{}' FROM staging_products"
+        ))
 
     async with factory() as session, session.begin():
         await session.execute(text("DELETE FROM staging_products"))

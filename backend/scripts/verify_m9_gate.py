@@ -14,7 +14,7 @@ from pathlib import Path
 
 
 def _run(cmd: list[str], timeout: int = 900, **kw) -> subprocess.CompletedProcess:
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, **kw)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, check=False, **kw)
     if result.returncode != 0:
         print(f"FAILED: {' '.join(cmd)}", file=sys.stderr)
         print(result.stdout, file=sys.stderr)

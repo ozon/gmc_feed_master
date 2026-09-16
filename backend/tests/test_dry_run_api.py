@@ -174,22 +174,21 @@ async def test_dry_run_records_plugin_drops(app_factory):
             return product
 
     app.state.plugin_registry["example_upper"] = _Upper()
-    async with factory() as session:
-        async with session.begin():
-            plugin = Plugin(name="example_upper", version="1.0.0", enabled=True,
-                            manifest={"id": "example_upper", "name": "Example Upper",
-                                      "version": "1.0.0", "extension_point": "pipeline_module",
-                                      "config_schema": {"type": "object"},
-                                      "data_schema": {"type": "object"}})
-            session.add(plugin)
-            await session.flush()
-            pipeline = ModulePipeline(feed_source_id=feed_id, name="p", version="1", definition={})
-            session.add(pipeline)
-            await session.flush()
-            session.add(ModuleInstance(pipeline_id=pipeline.id, plugin_id=plugin.id,
-                                       position=0, name="upper", configuration={"suffix": "!"}))
-            fs = await session.get(FeedSource, feed_id)
-            fs.active_pipeline_id = pipeline.id
+    async with factory() as session, session.begin():
+        plugin = Plugin(name="example_upper", version="1.0.0", enabled=True,
+                        manifest={"id": "example_upper", "name": "Example Upper",
+                                  "version": "1.0.0", "extension_point": "pipeline_module",
+                                  "config_schema": {"type": "object"},
+                                  "data_schema": {"type": "object"}})
+        session.add(plugin)
+        await session.flush()
+        pipeline = ModulePipeline(feed_source_id=feed_id, name="p", version="1", definition={})
+        session.add(pipeline)
+        await session.flush()
+        session.add(ModuleInstance(pipeline_id=pipeline.id, plugin_id=plugin.id,
+                                   position=0, name="upper", configuration={"suffix": "!"}))
+        fs = await session.get(FeedSource, feed_id)
+        fs.active_pipeline_id = pipeline.id
 
     body = (await client.post(f"/feed-sources/{feed_id}/dry-run", json={})).json()
     assert body["processed"] == 2

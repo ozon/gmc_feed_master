@@ -87,59 +87,58 @@ class ExportService:
         version_number: int | None = None
 
         try:
-            async with self._session_factory() as session:
-                async with session.begin():
-                    locked = (
-                        await session.execute(
-                            select(FeedSource)
-                            .where(FeedSource.id == feed_source_id)
-                            .with_for_update()
-                        )
-                    ).scalar_one_or_none()
-                    if locked is None:
-                        raise LookupError(f"feed source {feed_source_id} not found")
+            async with self._session_factory() as session, session.begin():
+                locked = (
+                    await session.execute(
+                        select(FeedSource)
+                        .where(FeedSource.id == feed_source_id)
+                        .with_for_update()
+                    )
+                ).scalar_one_or_none()
+                if locked is None:
+                    raise LookupError(f"feed source {feed_source_id} not found")
 
-                    latest = (
-                        await session.execute(
-                            select(ExportVersion)
-                            .where(ExportVersion.feed_source_id == feed_source_id)
-                            .order_by(ExportVersion.version_number.desc())
-                            .limit(1)
+                latest = (
+                    await session.execute(
+                        select(ExportVersion)
+                        .where(ExportVersion.feed_source_id == feed_source_id)
+                        .order_by(ExportVersion.version_number.desc())
+                        .limit(1)
+                    )
+                ).scalar_one_or_none()
+                run = (
+                    await session.execute(
+                        select(ExportRun).where(
+                            ExportRun.feed_source_id == feed_source_id,
+                            ExportRun.ingestion_run_id == ingestion_run_id,
                         )
-                    ).scalar_one_or_none()
-                    run = (
-                        await session.execute(
-                            select(ExportRun).where(
-                                ExportRun.feed_source_id == feed_source_id,
-                                ExportRun.ingestion_run_id == ingestion_run_id,
-                            )
-                        )
-                    ).scalar_one_or_none()
-                    if run is None:
-                        raise LookupError(
-                            f"export run for ingestion run {ingestion_run_id} not found"
-                        )
+                    )
+                ).scalar_one_or_none()
+                if run is None:
+                    raise LookupError(
+                        f"export run for ingestion run {ingestion_run_id} not found"
+                    )
 
-                    if latest is not None and latest.file_hash == file_hash:
-                        deduplicated = True
-                        version_number = latest.version_number
-                        run.export_version_id = latest.id
-                    else:
-                        version_number = (latest.version_number + 1) if latest is not None else 1
-                        self._store.write_version(feed_source_id, version_number, data)
-                        new_version = ExportVersion(
-                            feed_source_id=feed_source_id,
-                            export_run_id=run.id,
-                            version_number=version_number,
-                            file_hash=file_hash,
-                            product_count=len(products),
-                            source=source,
-                        )
-                        session.add(new_version)
-                        await session.flush()
-                        run.export_version_id = new_version.id
-                    run.status = "completed"
-                    run.completed_at = self._clock.now()
+                if latest is not None and latest.file_hash == file_hash:
+                    deduplicated = True
+                    version_number = latest.version_number
+                    run.export_version_id = latest.id
+                else:
+                    version_number = (latest.version_number + 1) if latest is not None else 1
+                    self._store.write_version(feed_source_id, version_number, data)
+                    new_version = ExportVersion(
+                        feed_source_id=feed_source_id,
+                        export_run_id=run.id,
+                        version_number=version_number,
+                        file_hash=file_hash,
+                        product_count=len(products),
+                        source=source,
+                    )
+                    session.add(new_version)
+                    await session.flush()
+                    run.export_version_id = new_version.id
+                run.status = "completed"
+                run.completed_at = self._clock.now()
         except Exception:
             if not deduplicated and version_number is not None:
                 self._store.delete_version_file(feed_source_id, version_number)

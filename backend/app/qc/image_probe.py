@@ -58,7 +58,7 @@ class ImageProbeImpl:
                 error = f"HTTP {e.response.status_code}"
                 await self._cache_error(url, error)
                 return None, None, error
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 error = str(e)[:500]
                 await self._cache_error(url, error)
                 return None, None, error

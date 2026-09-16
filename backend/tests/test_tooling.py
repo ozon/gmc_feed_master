@@ -82,6 +82,7 @@ def test_asgi_import_is_safe_without_settings_environment():
         env=environment,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0, result.stderr
 
@@ -112,6 +113,7 @@ def test_default_asgi_app_resolves_configured_settings_and_postgres_persistence(
         env=environment,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0, result.stderr
 

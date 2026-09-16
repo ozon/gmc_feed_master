@@ -121,8 +121,7 @@ async def test_m1_acceptance(m1_app, isolated_database_url):
     await fresh.aclose()
 
 
-@pytest.mark.asyncio
-async def test_m1_registry_artifact_is_fresh():
+def test_m1_registry_artifact_is_fresh():
     result = subprocess.run(
         [
             sys.executable,
@@ -133,6 +132,7 @@ async def test_m1_registry_artifact_is_fresh():
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0, f"registry check failed: {result.stderr}"
     data = json.loads((__import__("pathlib").Path("registry/attributes.json")).read_text())

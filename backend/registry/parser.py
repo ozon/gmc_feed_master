@@ -68,9 +68,11 @@ def _constraints(description: str) -> tuple[Constraints, Cardinality]:
         max_length = min_length = val
 
     # Fallback max_length: only match "max N" when followed by char/letter context
-    if max_length is None:
-        if (m := re.search(r"max\.?\s*(\d+)\s*(?:char|letter)", description, re.IGNORECASE)) or (m := re.search(r"max\.\s*(\d+)\s+(?=[A-Z])(?!MB\b|s\b|px\b|year\b|chars?\b)", description)):
-            max_length = int(m.group(1))
+    if max_length is None and (
+        (m := re.search(r"max\.?\s*(\d+)\s*(?:char|letter)", description, re.IGNORECASE))
+        or (m := re.search(r"max\.\s*(\d+)\s+(?=[A-Z])(?!MB\b|s\b|px\b|year\b|chars?\b)", description))
+    ):
+        max_length = int(m.group(1))
 
     # Format detection
     if re.search(r"ISO\s*3166(?:-1)?", description, re.IGNORECASE):

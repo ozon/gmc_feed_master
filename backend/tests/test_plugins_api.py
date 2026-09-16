@@ -358,42 +358,41 @@ async def test_plugins_list_includes_usage_count(app_factory):
     _, factory = app_factory
     client = await logged_in_client(app_factory)
 
-    async with factory() as session:
-        async with session.begin():
-            used = Plugin(name="used_plugin", version="1.0.0", enabled=True,
-                          manifest=make_manifest(id="used_plugin"))
-            unused = Plugin(name="unused_plugin", version="1.0.0", enabled=True,
-                            manifest=make_manifest(id="unused_plugin"))
-            session.add_all([used, unused])
-            await session.flush()
-            acme = Client(name="Acme")
-            session.add(acme)
-            await session.flush()
-            feed = FeedSource(client_id=acme.id, name="DE", source_format="wide_tsv")
-            session.add(feed)
-            await session.flush()
-            pipeline = ModulePipeline(feed_source_id=feed.id, name="p", version="1", definition={})
-            session.add(pipeline)
-            await session.flush()
-            session.add_all([
-                ModuleInstance(pipeline_id=pipeline.id, plugin_id=used.id,
-                               position=0, name="a", configuration={}),
-                ModuleInstance(pipeline_id=pipeline.id, plugin_id=used.id,
-                               position=1, name="b", configuration={}),
-            ])
-            beta = Client(name="Beta")
-            session.add(beta)
-            await session.flush()
-            feed2 = FeedSource(client_id=beta.id, name="FR", source_format="wide_tsv")
-            session.add(feed2)
-            await session.flush()
-            pipeline2 = ModulePipeline(feed_source_id=feed2.id, name="p2", version="1", definition={})
-            session.add(pipeline2)
-            await session.flush()
-            session.add(
-                ModuleInstance(pipeline_id=pipeline2.id, plugin_id=used.id,
-                               position=0, name="c", configuration={}),
-            )
+    async with factory() as session, session.begin():
+        used = Plugin(name="used_plugin", version="1.0.0", enabled=True,
+                      manifest=make_manifest(id="used_plugin"))
+        unused = Plugin(name="unused_plugin", version="1.0.0", enabled=True,
+                        manifest=make_manifest(id="unused_plugin"))
+        session.add_all([used, unused])
+        await session.flush()
+        acme = Client(name="Acme")
+        session.add(acme)
+        await session.flush()
+        feed = FeedSource(client_id=acme.id, name="DE", source_format="wide_tsv")
+        session.add(feed)
+        await session.flush()
+        pipeline = ModulePipeline(feed_source_id=feed.id, name="p", version="1", definition={})
+        session.add(pipeline)
+        await session.flush()
+        session.add_all([
+            ModuleInstance(pipeline_id=pipeline.id, plugin_id=used.id,
+                           position=0, name="a", configuration={}),
+            ModuleInstance(pipeline_id=pipeline.id, plugin_id=used.id,
+                           position=1, name="b", configuration={}),
+        ])
+        beta = Client(name="Beta")
+        session.add(beta)
+        await session.flush()
+        feed2 = FeedSource(client_id=beta.id, name="FR", source_format="wide_tsv")
+        session.add(feed2)
+        await session.flush()
+        pipeline2 = ModulePipeline(feed_source_id=feed2.id, name="p2", version="1", definition={})
+        session.add(pipeline2)
+        await session.flush()
+        session.add(
+            ModuleInstance(pipeline_id=pipeline2.id, plugin_id=used.id,
+                           position=0, name="c", configuration={}),
+        )
 
     resp = await client.get("/plugins")
     assert resp.status_code == 200

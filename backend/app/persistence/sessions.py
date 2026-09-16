@@ -25,14 +25,13 @@ class PostgresSessionStore(SessionStore):
         nonce = secrets.token_urlsafe(32)
         token = f"{nonce}.{self._signature(nonce)}"
         absolute = now + self._absolute
-        async with self._session_factory() as session:
-            async with session.begin():
-                user = (await session.execute(select(User).where(User.username == user_id).with_for_update())).scalar_one()
-                session.add(Session(user_id=user.id, token_hash=_token_hash(token),
-                                    created_at=now, last_interaction_at=now,
-                                    idle_expires_at=min(now + self._idle, absolute),
-                                    absolute_expires_at=absolute,
-                                    revocation_generation=user.revocation_generation))
+        async with self._session_factory() as session, session.begin():
+            user = (await session.execute(select(User).where(User.username == user_id).with_for_update())).scalar_one()
+            session.add(Session(user_id=user.id, token_hash=_token_hash(token),
+                                created_at=now, last_interaction_at=now,
+                                idle_expires_at=min(now + self._idle, absolute),
+                                absolute_expires_at=absolute,
+                                revocation_generation=user.revocation_generation))
         return token
 
     async def validate(self, session_id: str, now: datetime, renew_idle: bool) -> str | None:
@@ -40,31 +39,29 @@ class PostgresSessionStore(SessionStore):
         if parsed is None or not hmac.compare_digest(parsed[1], self._signature(parsed[0])):
             return None
         now = _utc(now)
-        async with self._session_factory() as session:
-            async with session.begin():
-                row = (await session.execute(
-                    select(Session, User).join(User, User.id == Session.user_id)
-                    .where(Session.token_hash == _token_hash(session_id)).with_for_update()
-                )).one_or_none()
-                if row is None:
-                    return None
-                record, user = row
-                if (record.revoked_at is not None or record.revocation_generation != user.revocation_generation
-                        or now >= record.idle_expires_at or now >= record.absolute_expires_at):
-                    await session.execute(delete(Session).where(Session.id == record.id))
-                    return None
-                if renew_idle:
-                    record.last_interaction_at = now
-                    record.idle_expires_at = min(now + self._idle, record.absolute_expires_at)
-                return user.username
+        async with self._session_factory() as session, session.begin():
+            row = (await session.execute(
+                select(Session, User).join(User, User.id == Session.user_id)
+                .where(Session.token_hash == _token_hash(session_id)).with_for_update()
+            )).one_or_none()
+            if row is None:
+                return None
+            record, user = row
+            if (record.revoked_at is not None or record.revocation_generation != user.revocation_generation
+                    or now >= record.idle_expires_at or now >= record.absolute_expires_at):
+                await session.execute(delete(Session).where(Session.id == record.id))
+                return None
+            if renew_idle:
+                record.last_interaction_at = now
+                record.idle_expires_at = min(now + self._idle, record.absolute_expires_at)
+            return user.username
 
     async def invalidate(self, session_id: str) -> None:
         parsed = self._parse(session_id)
         if parsed is None or not hmac.compare_digest(parsed[1], self._signature(parsed[0])):
             return
-        async with self._session_factory() as session:
-            async with session.begin():
-                await session.execute(delete(Session).where(Session.token_hash == _token_hash(session_id)))
+        async with self._session_factory() as session, session.begin():
+            await session.execute(delete(Session).where(Session.token_hash == _token_hash(session_id)))
 
     def _signature(self, nonce: str) -> str:
         digest = hmac.new(self._secret, nonce.encode("ascii"), hashlib.sha256).digest()

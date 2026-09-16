@@ -31,13 +31,12 @@ async def db(isolated_database_url):
 
 async def test_startup_registers_valid_cron_jobs(db):
     factory, url = db
-    async with factory() as session:
-        async with session.begin():
-            client = Client(name="Acme")
-            session.add(client)
-            await session.flush()
-            session.add(FeedSource(client_id=client.id, name="Scheduled", source_format="xml", cron_expression="0 * * * *"))
-            session.add(FeedSource(client_id=client.id, name="Manual", source_format="xml"))
+    async with factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        session.add(FeedSource(client_id=client.id, name="Scheduled", source_format="xml", cron_expression="0 * * * *"))
+        session.add(FeedSource(client_id=client.id, name="Manual", source_format="xml"))
 
     settings = Settings(_env_file=None, session_secret="test-s", initial_username="operator", initial_password="pw", database_url=url)
     app = create_app(settings=settings, db_session_factory=factory)
@@ -72,13 +71,12 @@ async def test_qc_step_wired_with_app_clock_and_image_probe(db):
 
 async def test_startup_skips_invalid_cron(db):
     factory, url = db
-    async with factory() as session:
-        async with session.begin():
-            client = Client(name="Acme")
-            session.add(client)
-            await session.flush()
-            session.add(FeedSource(client_id=client.id, name="Bad", source_format="xml", cron_expression="not-cron"))
-            session.add(FeedSource(client_id=client.id, name="Good", source_format="xml", cron_expression="15 3 * * *"))
+    async with factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        session.add(FeedSource(client_id=client.id, name="Bad", source_format="xml", cron_expression="not-cron"))
+        session.add(FeedSource(client_id=client.id, name="Good", source_format="xml", cron_expression="15 3 * * *"))
 
     settings = Settings(_env_file=None, session_secret="test-s", initial_username="operator", initial_password="pw", database_url=url)
     app = create_app(settings=settings, db_session_factory=factory)

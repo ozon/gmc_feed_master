@@ -46,10 +46,9 @@ async def test_postgres_session_survives_store_restart_and_stores_only_hash(post
 async def test_postgres_session_revocation_generation_invalidates_all_sessions(postgres_store):
     first = await postgres_store.create("operator", now())
     second = await postgres_store.create("operator", now())
-    async with postgres_store._session_factory() as session:
-        async with session.begin():
-            user = (await session.execute(select(User).where(User.username == "operator").with_for_update())).scalar_one()
-            user.revocation_generation += 1
+    async with postgres_store._session_factory() as session, session.begin():
+        user = (await session.execute(select(User).where(User.username == "operator").with_for_update())).scalar_one()
+        user.revocation_generation += 1
     assert await postgres_store.validate(first, now(), renew_idle=False) is None
     assert await postgres_store.validate(second, now(), renew_idle=False) is None
 

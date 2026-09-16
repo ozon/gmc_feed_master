@@ -134,11 +134,10 @@ async def test_m2_acceptance(app_factory):
     assert resp.status_code == 200
     assert app.state.scheduler_service.has_job(fs_id)
 
-    async with factory() as session:
-        async with session.begin():
-            await session.execute(delete(ExportVersion))
-            await session.execute(delete(ExportRun))
-            await session.execute(delete(IngestionRun).where(IngestionRun.feed_source_id == fs_id))
+    async with factory() as session, session.begin():
+        await session.execute(delete(ExportVersion))
+        await session.execute(delete(ExportRun))
+        await session.execute(delete(IngestionRun).where(IngestionRun.feed_source_id == fs_id))
 
     resp = await client.delete(f"/feed-sources/{fs_id}")
     assert resp.status_code == 204

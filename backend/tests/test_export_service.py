@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import ClassVar
 
 import pytest
 import pytest_asyncio
@@ -55,18 +56,17 @@ async def env(isolated_database_url, tmp_path):
 
 async def _start_run(env):
     factory = env["factory"]
-    async with factory() as session:
-        async with session.begin():
-            ingestion_run = IngestionRun(feed_source_id=env["feed_source_id"], status="running")
-            session.add(ingestion_run)
-            await session.flush()
-            session.add(ExportRun(
-                feed_source_id=env["feed_source_id"],
-                ingestion_run_id=ingestion_run.id,
-                status="pending_export",
-                product_count=len(PRODUCTS),
-            ))
-            return ingestion_run.id
+    async with factory() as session, session.begin():
+        ingestion_run = IngestionRun(feed_source_id=env["feed_source_id"], status="running")
+        session.add(ingestion_run)
+        await session.flush()
+        session.add(ExportRun(
+            feed_source_id=env["feed_source_id"],
+            ingestion_run_id=ingestion_run.id,
+            status="pending_export",
+            product_count=len(PRODUCTS),
+        ))
+        return ingestion_run.id
 
 
 async def _versions(factory, feed_source_id):
@@ -96,7 +96,7 @@ def test_generate_export_token_shape():
 def test_channel_metadata_for_uses_config_then_fallbacks():
     class FS:
         name = "Feed name"
-        configuration = {}
+        configuration: ClassVar[dict] = {}
 
     meta = channel_metadata_for(FS(), "Client name", "http://base")
     assert meta == ChannelMetadata(title="Feed name", link="http://base", description="Client name")

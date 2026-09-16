@@ -39,7 +39,7 @@ def _check_process(candidate: Candidate) -> list[str]:
     data: dict[str, Any] = {}
     try:
         result = candidate.instance.process(product, config, data, rctx)
-    except Exception:
+    except Exception:  # noqa: BLE001
         return ["process() raised an unexpected exception"]
 
     if result is not None and not isinstance(result, dict):
@@ -60,7 +60,7 @@ def _check_validate_config(candidate: Candidate) -> list[str]:
         payload = {k: "x" for k in schema.get("properties", {}) if k != name}
         try:
             candidate.instance.validate_config(payload)
-        except Exception:
+        except Exception:  # noqa: BLE001, S112
             continue
         return [f"validate_config() did not reject missing required property {name!r}"]
     return []
@@ -78,7 +78,7 @@ def _check_prepare_run(candidate: Candidate) -> list[str]:
     )
     try:
         prepare({}, {}, rctx)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         return [f"prepare_run() raised: {exc}"]
     return []
 
@@ -107,7 +107,7 @@ def contract_violations(candidate: Candidate) -> list[str]:
     config_gated = False
     try:
         candidate.instance.validate_config({})
-    except Exception:
+    except Exception:  # noqa: BLE001
         config_gated = True
 
     if not config_gated:

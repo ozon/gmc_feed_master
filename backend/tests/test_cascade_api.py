@@ -85,41 +85,40 @@ async def _full_tree(factory, client):
     created = (await client.post("/clients", json={"name": "Acme"})).json()
     feed = (await client.post(f"/clients/{created['id']}/feed-sources",
                               json={"name": "DE", "source_format": "wide_tsv"})).json()
-    async with factory() as session:
-        async with session.begin():
-            run = IngestionRun(feed_source_id=feed["id"], status="success",
-                               started_at=datetime.now(timezone.utc))
-            session.add(run); await session.flush()
-            product = StagingProduct(feed_source_id=feed["id"], ingestion_run_id=run.id,
-                                     product_id="p1", content_hash="h", config_hash="c",
-                                     status="active", raw_data={"id": "p1"})
-            session.add(product); await session.flush()
-            session.add(StagingHistory(staging_product_id=product.id, snapshot={"id": "p1"}))
-            session.add(QualityFinding(feed_source_id=feed["id"], ingestion_run_id=run.id,
-                                       code="r", severity="warning", field="title",
-                                       message="m", product_id="p1"))
-            export_run = ExportRun(feed_source_id=feed["id"], ingestion_run_id=run.id,
-                                   status="completed", product_count=1)
-            session.add(export_run); await session.flush()
-            version = ExportVersion(feed_source_id=feed["id"], export_run_id=export_run.id,
-                                    version_number=1, file_hash="x" * 64, product_count=1)
-            session.add(version); await session.flush()
-            export_run.export_version_id = version.id
-            pipeline = ModulePipeline(feed_source_id=feed["id"], name="p", version="1", definition={})
-            session.add(pipeline); await session.flush()
-            plugin = Plugin(name="example_upper", version="1.0.0", enabled=True,
-                            manifest={"id": "example_upper", "extension_point": "pipeline_module"})
-            session.add(plugin); await session.flush()
-            session.add(ModuleInstance(pipeline_id=pipeline.id, plugin_id=plugin.id,
-                                       position=0, name="i", configuration={}))
-            session.add(PluginConfig(plugin_id=plugin.id, scope="feed_source",
-                                     feed_source_id=feed["id"], key="default", config={"a": 1}))
-            session.add(PluginConfig(plugin_id=plugin.id, scope="client",
-                                     client_id=created["id"], key="default", config={"b": 2}))
-            session.add(PluginData(plugin_id=plugin.id, scope="feed_source",
-                                   feed_source_id=feed["id"], key="default", data={"c": 3}))
-            fs = await session.get(FeedSource, feed["id"])
-            fs.active_pipeline_id = pipeline.id
+    async with factory() as session, session.begin():
+        run = IngestionRun(feed_source_id=feed["id"], status="success",
+                           started_at=datetime.now(timezone.utc))
+        session.add(run); await session.flush()
+        product = StagingProduct(feed_source_id=feed["id"], ingestion_run_id=run.id,
+                                 product_id="p1", content_hash="h", config_hash="c",
+                                 status="active", raw_data={"id": "p1"})
+        session.add(product); await session.flush()
+        session.add(StagingHistory(staging_product_id=product.id, snapshot={"id": "p1"}))
+        session.add(QualityFinding(feed_source_id=feed["id"], ingestion_run_id=run.id,
+                                   code="r", severity="warning", field="title",
+                                   message="m", product_id="p1"))
+        export_run = ExportRun(feed_source_id=feed["id"], ingestion_run_id=run.id,
+                               status="completed", product_count=1)
+        session.add(export_run); await session.flush()
+        version = ExportVersion(feed_source_id=feed["id"], export_run_id=export_run.id,
+                                version_number=1, file_hash="x" * 64, product_count=1)
+        session.add(version); await session.flush()
+        export_run.export_version_id = version.id
+        pipeline = ModulePipeline(feed_source_id=feed["id"], name="p", version="1", definition={})
+        session.add(pipeline); await session.flush()
+        plugin = Plugin(name="example_upper", version="1.0.0", enabled=True,
+                        manifest={"id": "example_upper", "extension_point": "pipeline_module"})
+        session.add(plugin); await session.flush()
+        session.add(ModuleInstance(pipeline_id=pipeline.id, plugin_id=plugin.id,
+                                   position=0, name="i", configuration={}))
+        session.add(PluginConfig(plugin_id=plugin.id, scope="feed_source",
+                                 feed_source_id=feed["id"], key="default", config={"a": 1}))
+        session.add(PluginConfig(plugin_id=plugin.id, scope="client",
+                                 client_id=created["id"], key="default", config={"b": 2}))
+        session.add(PluginData(plugin_id=plugin.id, scope="feed_source",
+                               feed_source_id=feed["id"], key="default", data={"c": 3}))
+        fs = await session.get(FeedSource, feed["id"])
+        fs.active_pipeline_id = pipeline.id
     return created["id"], feed["id"]
 
 

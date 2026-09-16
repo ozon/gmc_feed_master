@@ -91,7 +91,7 @@ async def put_pipeline(
             if plugin_obj is not None and hasattr(plugin_obj, "validate_config"):
                 try:
                     plugin_obj.validate_config(item.configuration)
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001
                     errors.append(f"instance {index}: invalid configuration: {exc}")
         if errors:
             return _validation_error(errors)

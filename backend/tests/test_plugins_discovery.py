@@ -217,30 +217,29 @@ class TestRegisterCandidatesIntegration:
         engine, factory = _make(isolated_database_url)
         write_plugin(tmp_path / "upper")
         candidates, _ = discover(tmp_path)
-        async with factory() as session:
-            async with session.begin():
-                pk_map = await register_candidates(session, candidates)
-                plugin_pk = pk_map["example_upper"]
+        async with factory() as session, session.begin():
+            pk_map = await register_candidates(session, candidates)
+            plugin_pk = pk_map["example_upper"]
 
-                client = Client(name="Acme")
-                session.add(client)
-                await session.flush()
-                feed_source = FeedSource(client_id=client.id, name="US feed", source_format="tsv")
-                session.add(feed_source)
-                await session.flush()
-                pipeline = ModulePipeline(
-                    feed_source_id=feed_source.id, name="pipe", version="1", definition={}
-                )
-                session.add(pipeline)
-                await session.flush()
-                instance = ModuleInstance(
-                    pipeline_id=pipeline.id,
-                    plugin_id=plugin_pk,
-                    position=0,
-                    name="lbl",
-                    configuration={"slot": "custom_label_0"},
-                )
-                session.add(instance)
+            client = Client(name="Acme")
+            session.add(client)
+            await session.flush()
+            feed_source = FeedSource(client_id=client.id, name="US feed", source_format="tsv")
+            session.add(feed_source)
+            await session.flush()
+            pipeline = ModulePipeline(
+                feed_source_id=feed_source.id, name="pipe", version="1", definition={}
+            )
+            session.add(pipeline)
+            await session.flush()
+            instance = ModuleInstance(
+                pipeline_id=pipeline.id,
+                plugin_id=plugin_pk,
+                position=0,
+                name="lbl",
+                configuration={"slot": "custom_label_0"},
+            )
+            session.add(instance)
 
         bumped = dict(MANIFEST, version="9.9.9")
         write_plugin(tmp_path / "upper", manifest=bumped)

@@ -1,5 +1,7 @@
 """Scope merge + config_hash sensitivity for custom_labels config/data edits."""
 
+from typing import ClassVar
+
 from app.staging.config_resolver import _resolve_declared
 from app.staging.hashing import content_hash
 
@@ -45,11 +47,11 @@ def _bundle(resolved_config: dict, resolved_data: dict) -> dict:
 
 
 class TestConfigHashSensitivity:
-    BASE_CONFIG = {"slotRules": [
+    BASE_CONFIG: ClassVar[dict] = {"slotRules": [
         {"id": "r1", "name": "Mid", "isActive": True, "targetSlot": "custom_label_1",
          "matchField": "id", "valueTemplate": "{brand} - Mid"},
     ]}
-    BASE_DATA = {"slotIds": {"r1": "a\nb"}}
+    BASE_DATA: ClassVar[dict] = {"slotIds": {"r1": "a\nb"}}
 
     def test_unchanged_config_and_data_hash_equal(self):
         assert content_hash(_bundle(self.BASE_CONFIG, self.BASE_DATA)) == content_hash(
