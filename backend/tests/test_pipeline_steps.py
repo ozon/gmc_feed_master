@@ -5,6 +5,7 @@ import pytest
 
 from app.config import DEFAULT_EXPORT_DIR
 from app.pipeline import (
+    EnrichmentStep,
     ExportStep,
     IngestStep,
     MappingStep,
@@ -67,7 +68,7 @@ def test_default_steps_export_dir_fallback_matches_settings_default():
 
 def test_step_names_are_distinct(_steps):
     names = [step.name for step in _steps]
-    assert len(set(names)) == 6
+    assert len(set(names)) == 7
 
 
 def test_default_steps_order(_steps):
@@ -76,6 +77,7 @@ def test_default_steps_order(_steps):
         MappingStep,
         StagingStep,
         PluginStep,
+        EnrichmentStep,
         QualityCheckStep,
         ExportStep,
     ]
@@ -84,6 +86,7 @@ def test_default_steps_order(_steps):
         "mapping",
         "staging",
         "run_plugins",
+        "ai_enrichment",
         "quality_check",
         "export",
     ]

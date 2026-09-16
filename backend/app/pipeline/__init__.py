@@ -2,6 +2,7 @@ from .locks import LockRegistry
 from .runner import PipelineRunner
 from .scheduler import SchedulerService, job_id, validate_cron
 from .steps import (
+    EnrichmentStep,
     ExportStep,
     IngestStep,
     MappingStep,
@@ -16,6 +17,7 @@ from .steps import (
 )
 
 __all__ = [
+    "EnrichmentStep",
     "ExportStep",
     "IngestStep",
     "LockRegistry",

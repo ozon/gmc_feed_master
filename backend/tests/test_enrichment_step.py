@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import pytest
 import pytest_asyncio
 from sqlalchemy import select
@@ -20,6 +22,7 @@ from app.pipeline.enrichment import (
     load_enrichment_data,
     store_suggestions,
 )
+from app.pipeline.steps import EnrichmentStep, RunState, StepContext
 
 
 def _result(value, status="ok"):
@@ -186,3 +189,52 @@ async def test_store_then_load_preserves_pinned(db) -> None:
     assert plugin_id == ids["plugin_id"]
     assert data["suggestions"] == {"p1": {"color": "Blue", "gender": "unisex"}}
     assert data["pinned"] == {"p2": {"size": "L"}}
+
+
+def _ctx(factory, ids, *, dry_run=False):
+    state = RunState(products=_products(), client_id=ids["client_id"])
+    return StepContext(
+        feed_source_id=ids["feed_id"], session_factory=factory,
+        logger=logging.getLogger("test"), run_state=state, dry_run=dry_run,
+    )
+
+
+@pytest.mark.asyncio
+async def test_step_disabled_writes_nothing(db) -> None:
+    factory, ids = db
+    ai = FakeAi([_result(EnrichedAttributes(color="Red"))])
+    ctx = _ctx(factory, ids)
+    result = await EnrichmentStep(ai).execute(ctx)
+    assert result.statistics["ai_enrichment"]["enabled"] is False
+    assert ctx.run_state.ai_suggestions == {}
+    _pid, data = await load_enrichment_data(factory, ids["feed_id"])
+    assert data == {}
+
+
+@pytest.mark.asyncio
+async def test_step_enabled_persists_suggestions(db) -> None:
+    factory, ids = db
+    await _set_config(factory, ids["feed_id"], {"enabled": True, "tasks": ["attribute_enrichment"]})
+    ai = FakeAi([
+        _result(EnrichedAttributes(color="Red")),
+        _result(EnrichedAttributes(color="Blue")),
+    ])
+    ctx = _ctx(factory, ids)
+    result = await EnrichmentStep(ai).execute(ctx)
+    assert result.statistics["ai_enrichment"]["generated"] == 2
+    assert ctx.run_state.ai_suggestions["p1"] == {"color": "Red"}
+    _pid, data = await load_enrichment_data(factory, ids["feed_id"])
+    assert data["suggestions"]["p1"] == {"color": "Red"}
+    assert data["suggestions"]["p2"] == {"color": "Blue"}
+
+
+@pytest.mark.asyncio
+async def test_step_dry_run_does_not_persist(db) -> None:
+    factory, ids = db
+    await _set_config(factory, ids["feed_id"], {"enabled": True})
+    ai = FakeAi([_result(EnrichedAttributes(color="Red"))])
+    ctx = _ctx(factory, ids, dry_run=True)
+    await EnrichmentStep(ai).execute(ctx)
+    assert ctx.run_state.ai_suggestions["p1"] == {"color": "Red"}
+    _pid, data = await load_enrichment_data(factory, ids["feed_id"])
+    assert data == {}

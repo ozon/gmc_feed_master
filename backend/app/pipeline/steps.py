@@ -39,6 +39,7 @@ class RunState:
     config_bundle: dict[str, Any] = field(default_factory=dict)
     product_pks: dict[str, int] = field(default_factory=dict)
     dropped: list[dict[str, Any]] = field(default_factory=list)
+    ai_suggestions: dict[str, dict[str, str]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -49,6 +50,7 @@ class StepContext:
     run_state: RunState
     ingestion_run_id: int = 0
     trigger: str = "manual"
+    dry_run: bool = False
 
 
 @dataclass(frozen=True)
@@ -307,6 +309,63 @@ class PluginStep:
         )
 
 
+class EnrichmentStep:
+    name = "ai_enrichment"
+
+    def __init__(self, ai_service: Any = None) -> None:
+        self._ai_service = ai_service
+
+    async def execute(self, ctx: StepContext) -> StepResult:
+        from .enrichment import (
+            DEFAULT_TASKS,
+            TASK_FIELDS,
+            generate_suggestions,
+            store_suggestions,
+        )
+
+        async with ctx.session_factory() as session, session.begin():
+            feed_source = await session.get(FeedSource, ctx.feed_source_id)
+        if feed_source is None:
+            raise LookupError(f"feed source {ctx.feed_source_id} not found")
+
+        cfg = (feed_source.configuration or {}).get("ai_enrichment") or {}
+        if not cfg.get("enabled") or self._ai_service is None:
+            return StepResult(statistics={"ai_enrichment": {"enabled": False}})
+
+        tasks = tuple(
+            t for t in (cfg.get("tasks") or list(DEFAULT_TASKS)) if t in TASK_FIELDS
+        )
+        limit = max(1, int(cfg.get("limit", 50)))
+        budget = max(1, int(cfg.get("budget", 50)))
+
+        outcome = await generate_suggestions(
+            ai_service=self._ai_service,
+            products=ctx.run_state.products,
+            tasks=tasks or DEFAULT_TASKS,
+            limit=limit,
+            budget=budget,
+            client_id=ctx.run_state.client_id,
+            feed_source_id=ctx.feed_source_id,
+        )
+        ctx.run_state.ai_suggestions = outcome.suggestions
+        if not ctx.dry_run and outcome.suggestions:
+            await store_suggestions(
+                ctx.session_factory, ctx.feed_source_id, outcome.suggestions
+            )
+        return StepResult(
+            processed_count=outcome.generated,
+            failed_count=outcome.failed,
+            statistics={
+                "ai_enrichment": {
+                    "enabled": True,
+                    "generated": outcome.generated,
+                    "failed": outcome.failed,
+                    "spent": outcome.spent,
+                }
+            },
+        )
+
+
 class QualityCheckStep:
     name = "quality_check"
 
@@ -496,6 +555,7 @@ def default_steps(
         MappingStep(registry),
         StagingStep(),
         PluginStep(plugin_registry),
+        EnrichmentStep(ai_service),
         QualityCheckStep(registry, clock, image_probe, ai_service),
         ExportStep(registry, store, clock, base_url),
     )
