@@ -84,13 +84,18 @@ async def _add_staging(factory, feed_id, product_id, status="active", excluded=F
         )
 
 
-async def _add_export_run(factory, feed_id, status, product_count=1):
+async def _add_export_run(
+    factory, feed_id, status, product_count=1, critical=0, warning=0, info=0
+):
     async with factory() as session, session.begin():
         session.add(
             ExportRun(
                 feed_source_id=feed_id,
                 status=status,
                 product_count=product_count,
+                critical_finding_count=critical,
+                warning_finding_count=warning,
+                info_finding_count=info,
                 started_at=datetime.now(timezone.utc),
             )
         )
@@ -177,6 +182,22 @@ async def test_summary_feed_without_runs_has_null_last_fields(app_factory):
     assert feed["last_export_at"] is None
     assert feed["last_export_status"] is None
     assert feed["item_count"] == 0
+    assert feed["quality"] == {"critical": 0, "warning": 0, "info": 0}
+
+
+async def test_summary_includes_per_feed_quality_counts(app_factory):
+    _app, factory = app_factory
+    client = await logged_in_client(app_factory)
+    _, feed_a = await _make_feed(factory, client, "Acme")
+    _client_id_b, feed_b = await _make_feed(factory, client, "Zeta")
+
+    await _add_export_run(factory, feed_a, "completed", critical=3, warning=2, info=1)
+    await _add_export_run(factory, feed_b, "completed")
+
+    body = (await client.get("/dashboard/summary")).json()
+    by_name = {c["name"]: c for c in body["clients"]}
+    assert by_name["Acme"]["feed_sources"][0]["quality"] == {"critical": 3, "warning": 2, "info": 1}
+    assert by_name["Zeta"]["feed_sources"][0]["quality"] == {"critical": 0, "warning": 0, "info": 0}
 
 
 async def test_summary_includes_runs_by_day(app_factory):

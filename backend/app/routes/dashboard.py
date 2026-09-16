@@ -107,6 +107,11 @@ async def dashboard_summary(
             "last_export_status": last_export.status if last_export else None,
             "last_run_at": last_run.started_at.isoformat() if last_run else None,
             "last_run_status": last_run.status if last_run else None,
+            "quality": {
+                "critical": last_export.critical_finding_count if last_export else 0,
+                "warning": last_export.warning_finding_count if last_export else 0,
+                "info": last_export.info_finding_count if last_export else 0,
+            },
         })
 
     return {

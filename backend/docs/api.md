@@ -132,7 +132,7 @@ Versioned, immutable prompt templates per task type. Editing = creating a new ve
   Returns `{export_token, export_url}`
 
 ### Dashboard Summary
-- `GET /dashboard/summary` — aggregated view for dashboard (clients, feed sources, last run status, `runs_by_day`: 14-day `{date, success, error}` counts, ascending)
+- `GET /dashboard/summary` — aggregated view for dashboard (clients, feed sources, last run status, `runs_by_day`: 14-day `{date, success, error}` counts, ascending). Each `clients[].feed_sources[]` entry carries `quality: {critical, warning, info}` read from that feed source's latest export run (zeros when it has none; the counts drive the feed-card badge).
 
 ### Feed Dashboard
 - `GET /feed-sources/{id}/dashboard` — single aggregate for the per-feed dashboard. Response: `{kpi: {raw_items, valid_items, excluded_items, last_duration_s, readiness_rate}, volume_trend: [{date, raw, exportable}] (30 days, ascending), stage_funnel: [{stage, passed, dropped}] (ingest → mapping → staging → run_plugins → quality_check → export; cumulative passed from the latest run's statistics), quality: {critical, warning, info, readiness_rate}, recent_runs: [{id, status, started_at, duration_s, failed_count}] (last 10, ascending)}. `kpi.raw_items` is the latest run's ingested product count from its mapping statistics (`statistics.mapping.applied`), falling back to `processed_count` for legacy runs without statistics. Empty feed → zeroed KPIs, empty arrays, readiness 1.0. 404 unknown feed source.
