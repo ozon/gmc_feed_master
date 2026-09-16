@@ -38,6 +38,7 @@ async def test_ai_provider_config_round_trip(session):
         assert row.input_price_per_mtok is None
         assert row.output_price_per_mtok is None
         assert row.is_default is True
+        assert row.tier == "bulk"
 
 
 @pytest.mark.asyncio
@@ -76,6 +77,7 @@ async def test_ai_usage_log_round_trip(session):
         session.add(AiUsageLog(
             client_id=1, feed_source_id=None, task_type="policy_check",
             provider_config_id=1, model="gpt-4o-mini", cache_hit=False,
+            provider="openai", tier="bulk", fallback_used=False,
             prompt_tokens=100, completion_tokens=20,
             cost_usd=0.0001, latency_ms=800, error_code=None,
         ))
@@ -83,3 +85,5 @@ async def test_ai_usage_log_round_trip(session):
         row = (await session.execute(select(AiUsageLog))).scalar_one()
         assert row.task_type == "policy_check"
         assert row.feed_source_id is None
+        assert row.tier == "bulk"
+        assert row.fallback_used is False
