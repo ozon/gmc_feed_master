@@ -267,7 +267,9 @@ def create_app(
         lock_registry = LockRegistry()
         from .ai import AiService
 
-        ai_service = AiService(app.state.db_session_factory, clock=app.state.clock)
+        ai_service = AiService(
+            app.state.db_session_factory, clock=app.state.clock, settings=settings
+        )
         steps = default_steps(
             active_fetcher,
             load_registry(),

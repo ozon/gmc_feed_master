@@ -179,17 +179,19 @@ async def test_patch_invalidates_ai_service_provider_cache(settings_app, admin_h
     })
     provider_id = create.json()["id"]
     service = app.state.ai_service
-    # Prime the per-config caches via a direct call, then verify PATCH clears them.
-    service._providers[provider_id] = object()
-    service._breakers[provider_id] = object()
-    service._semaphores[provider_id] = object()
+    # Prime the runtime collaborators, then verify PATCH drops them.
+    service._router = object()
+    service._instructor_client = object()
+    service._router_settings = object()
+    service._cache = object()
     patch = await admin_http.patch(
         f"/admin/ai/providers/{provider_id}", json={"model": "m2"},
     )
     assert patch.status_code == 200
-    assert provider_id not in service._providers
-    assert provider_id not in service._breakers
-    assert provider_id not in service._semaphores
+    assert service._router is None
+    assert service._instructor_client is None
+    assert service._router_settings is None
+    assert service._cache is None
 
 
 @pytest.mark.asyncio

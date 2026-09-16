@@ -1,18 +1,19 @@
 from __future__ import annotations
 
 import hashlib
-import json
-from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from pydantic import BaseModel
+
 from ..staging.hashing import canonical_json
-from .templates import TaskSpecError
+from . import schemas
 
 # The authoritative variable set per task type. Templates (DB or builtin)
 # may only reference these; anything else fails validation at write time.
 CANONICAL_VARIABLES: dict[str, list[str]] = {
     "title_optimization": ["brand", "title"],
+    "description_optimization": ["title", "description"],
     "category_classification": ["title", "description"],
     "policy_check": ["title", "description"],
     "attribute_enrichment": ["title", "description"],
@@ -24,78 +25,70 @@ CANONICAL_VARIABLES: dict[str, list[str]] = {
 class TaskSpec:
     system: str
     user: str
-    validate: Callable[[str], Any]
+    response_model: type[BaseModel]
 
 
-def _validate_json(content: str) -> Any:
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError as exc:
-        raise TaskSpecError("model output is not valid JSON") from exc
-
-
-def _validate_text(content: str) -> str:
-    return content.strip()
-
-
-# Builtin defaults — DB templates (Feature 2) override these via the
-# resolution chain in AiService; the registry remains the fallback.
 TASK_SPECS: dict[str, TaskSpec] = {
     "title_optimization": TaskSpec(
         system=(
             "You rewrite product titles for Google Merchant Center. "
-            "Reply with the optimized title only, no explanations."
+            "Reply with the optimized title only, no explanations. "
+            "Do not use promotional language or all capital letters."
         ),
         user=(
             "Brand: {{brand}}\nCurrent title: {{title}}\n"
             "Rewrite the title to be concise and search-friendly."
         ),
-        validate=_validate_text,
+        response_model=schemas.OptimizedTitle,
+    ),
+    "description_optimization": TaskSpec(
+        system=(
+            "You rewrite product descriptions for Google Merchant Center. "
+            "Reply with the optimized description only, no explanations."
+        ),
+        user=(
+            "Title: {{title}}\nCurrent description: {{description}}\n"
+            "Rewrite the description to be clear and complete."
+        ),
+        response_model=schemas.OptimizedDescription,
     ),
     "category_classification": TaskSpec(
         system=(
             "You classify products into Google product categories. "
-            "Reply with the category path only."
+            "Reply with the numeric taxonomy id only. "
+            "Example: 2271 for Apparel & Accessories > Clothing > Dresses."
         ),
         user="Title: {{title}}\nDescription: {{description}}\nClassify.",
-        validate=_validate_text,
+        response_model=schemas.CategoryAssignment,
     ),
     "policy_check": TaskSpec(
         system=(
             "You check product data against Google Merchant Center policies. "
-            'Reply with JSON: {"violations": [{"rule": string, "reason": string}], '
-            '"confidence": number between 0 and 1}. No other text.'
+            "Return the list of violations and a confidence between 0 and 1."
         ),
         user="Title: {{title}}\nDescription: {{description}}\nCheck for policy violations.",
-        validate=_validate_json,
+        response_model=schemas.PolicyCheckResult,
     ),
     "attribute_enrichment": TaskSpec(
         system=(
-            "You extract product attributes from free text. "
-            'Reply with JSON: {"color": string|null, "material": string|null, '
-            '"size": string|null, "gtin": string|null}. No other text.'
+            "You extract product attributes from free text. Extract color, "
+            "size, material, gtin, gender, age_group, and up to five custom labels. "
+            "gender is one of male, female, unisex. "
+            "age_group is one of newborn, infant, toddler, kids, adult. "
+            "Use custom_label_0 through custom_label_4. Omit anything unknown."
         ),
         user="Title: {{title}}\nDescription: {{description}}\nExtract the attributes.",
-        validate=_validate_json,
+        response_model=schemas.EnrichedAttributes,
     ),
     "image_quality": TaskSpec(
         system=(
             "You assess product images for Google Merchant Center. "
-            'Reply with JSON: {"watermark": boolean, "text_overlay": boolean, '
-            '"background": string, "confidence": number}. No other text.'
+            "Report watermark, text overlay, background, and confidence between 0 and 1."
         ),
         user="Image URL: {{image_link}}\nAssess the image.",
-        validate=_validate_json,
+        response_model=schemas.ImageQualityResult,
     ),
 }
-
-
-def validate_task(task_type: str, content: str) -> Any:
-    try:
-        spec = TASK_SPECS[task_type]
-    except KeyError as exc:
-        raise TaskSpecError("unknown task type %r" % task_type) from exc  # noqa: UP031 — %-style avoids f-string brace-escaping
-    return spec.validate(content)
 
 
 def input_hash(task_type: str, variables: dict[str, Any]) -> str:

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import logging
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -11,22 +11,19 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..clock import Clock
+from ..config import Settings, get_settings
 from ..models.ai import AiProviderConfig, PromptTemplate
-from .cache import AiResultCacheStore
-from .openai_compat import OpenAICompatibleProvider
-from .provider import AIProvider, AiRequest, AiResponse
-from .resilience import (
-    CircuitBreaker,
-    RetryPolicy,
-    classify_failure,
-)
-from .tasks import TASK_SPECS, TaskSpec, input_hash, validate_task
+from .cache_config import NativeCache, load_cache_settings
+from .provider import AiResponse
+from .router import RouterSettings, build_instructor, build_router, load_router_settings
+from .tasks import TASK_SPECS, TaskSpec
 from .templates import TaskSpecError, render_messages
-from .usage import UsageLogWriter, UsageRecord, estimate_cost
+from .usage import UsageLogWriter, UsageRecord
 
 logger = logging.getLogger(__name__)
 
 TEMPLATE_VERSION_BUILTIN = "builtin"
+TIER_BULK = "bulk"
 
 
 def builtin_template_version(spec: TaskSpec) -> str:
@@ -94,17 +91,8 @@ async def resolve_active_template(
     )
 
 
-def default_provider_factory(config: AiProviderConfig) -> OpenAICompatibleProvider:
-    return OpenAICompatibleProvider(
-        base_url=config.base_url,
-        api_key=config.api_key,
-        model=config.model,
-        timeout_s=config.timeout_s,
-    )
-
-
 class AiChatUnavailable(Exception):
-    """Raised when a chat completion cannot be served (no provider, breaker open, provider failure)."""
+    """Raised when a chat completion cannot be served (no provider, provider failure)."""
 
     def __init__(self, error_code: str) -> None:
         super().__init__(error_code)
@@ -116,42 +104,27 @@ class AiService:
         self,
         session_factory: Callable[[], AsyncSession],
         clock: Clock | None = None,
-        provider_factory: Callable[[AiProviderConfig], AIProvider] | None = None,
-        retry_policy: RetryPolicy | None = None,
-        breaker_failure_threshold: int = 5,
-        breaker_window_s: int = 60,
-        breaker_cooldown_s: int = 30,
+        settings: Settings | None = None,
     ) -> None:
         self._session_factory = session_factory
         self._clock = clock
-        self._provider_factory = (
-            provider_factory if provider_factory is not None else default_provider_factory
-        )
-        self._retry_policy = retry_policy if retry_policy is not None else RetryPolicy()
-        self._cache = AiResultCacheStore(session_factory)
+        self._settings = settings if settings is not None else get_settings()
         self._usage = UsageLogWriter(session_factory)
-        self._providers: dict[int, AIProvider] = {}
-        self._breakers: dict[int, CircuitBreaker] = {}
-        self._semaphores: dict[int, asyncio.Semaphore] = {}
-        self._breaker_failure_threshold = breaker_failure_threshold
-        self._breaker_window_s = breaker_window_s
-        self._breaker_cooldown_s = breaker_cooldown_s
+        self._cache: Any = None
+        self._router: Any = None
+        self._instructor_client: Any = None
+        self._router_settings: RouterSettings | None = None
 
     # -- config resolution ------------------------------------------------
 
-    async def _default_config(self) -> AiProviderConfig | None:
+    async def _load_deployments(self) -> list[AiProviderConfig]:
         async with self._session_factory() as session:
             result = await session.execute(
                 select(AiProviderConfig)
-                .where(AiProviderConfig.enabled.is_(True), AiProviderConfig.is_default.is_(True))
+                .where(AiProviderConfig.enabled.is_(True))
                 .order_by(AiProviderConfig.id)
-                .limit(1)
             )
-            return result.scalar_one_or_none()
-
-    async def _get_config(self, provider_config_id: int) -> AiProviderConfig | None:
-        async with self._session_factory() as session:
-            return await session.get(AiProviderConfig, provider_config_id)
+            return list(result.scalars())
 
     async def _resolve_template(
         self, task_type: str, client_id: int | None
@@ -168,43 +141,36 @@ class AiService:
             system=spec.system, user=spec.user, version=builtin_template_version(spec)
         )
 
-    # -- per-config collaborators -----------------------------------------
+    # -- runtime collaborators --------------------------------------------
 
-    def _provider_for(self, config: AiProviderConfig) -> AIProvider:
-        provider = self._providers.get(config.id)
-        if provider is None:
-            provider = self._provider_factory(config)
-            self._providers[config.id] = provider
-        return provider
+    def _ensure_built(self, rows: list[AiProviderConfig], cfg: RouterSettings) -> None:
+        self._router_settings = cfg
+        self._router = build_router(rows, cfg)
+        self._instructor_client = build_instructor(self._router)
 
-    def _breaker_for(self, config: AiProviderConfig) -> CircuitBreaker:
-        breaker = self._breakers.get(config.id)
-        if breaker is None:
-            breaker = CircuitBreaker(
-                failure_threshold=self._breaker_failure_threshold,
-                window_s=self._breaker_window_s,
-                cooldown_s=self._breaker_cooldown_s,
-                clock=self._clock,
+    def _instructor(self) -> Any:
+        if self._instructor_client is None:
+            raise AiChatUnavailable("no_provider")
+        return self._instructor_client
+
+    async def _ensure_cache(self) -> None:
+        if self._cache is None:
+            cache_cfg = await load_cache_settings(self._session_factory, self._settings)
+            self._cache = NativeCache(
+                cache_type=cache_cfg.cache_type,
+                namespace=cache_cfg.namespace,
+                ttl_taxonomy_s=cache_cfg.ttl_taxonomy_s,
+                ttl_content_s=cache_cfg.ttl_content_s,
+                redis_url=cache_cfg.redis_url,
+                disk_dir=cache_cfg.disk_dir,
             )
-            self._breakers[config.id] = breaker
-        return breaker
 
-    def _semaphore_for(self, config: AiProviderConfig) -> asyncio.Semaphore:
-        semaphore = self._semaphores.get(config.id)
-        if semaphore is None:
-            semaphore = asyncio.Semaphore(max(1, config.max_concurrency))
-            self._semaphores[config.id] = semaphore
-        return semaphore
-
-    def invalidate(self, provider_config_id: int) -> None:
-        """Drop cached collaborators for a config so the next call rebuilds them.
-
-        Called by the admin routes after PATCH/DELETE so runtime config edits
-        (api_key, base_url, model, max_concurrency) take effect immediately.
-        """
-        self._providers.pop(provider_config_id, None)
-        self._breakers.pop(provider_config_id, None)
-        self._semaphores.pop(provider_config_id, None)
+    def invalidate(self, provider_config_id: int | None = None) -> None:
+        """Drop built collaborators so the next call rebuilds them."""
+        self._router = None
+        self._instructor_client = None
+        self._cache = None
+        self._router_settings = None
 
     # -- public API ---------------------------------------------------------
 
@@ -216,48 +182,84 @@ class AiService:
         client_id: int | None = None,
         feed_source_id: int | None = None,
     ) -> AiResult:
-        config = await self._default_config()
-        if config is None:
-            await self._log_usage(UsageRecord(
-                client_id=client_id, feed_source_id=feed_source_id,
-                task_type=task_type, provider_config_id=None, model="",
-                cache_hit=False, prompt_tokens=0, completion_tokens=0,
-                cost_usd=None, latency_ms=0, error_code="no_provider",
-            ))
+        if task_type not in TASK_SPECS:
+            await self._log_error(
+                task_type, client_id, feed_source_id, "invalid_task"
+            )
+            return AiResult(value=None, status="fallback", error_code="invalid_task",
+                            prompt_tokens=0, completion_tokens=0)
+
+        rows = await self._load_deployments()
+        if not rows:
+            await self._log_error(task_type, client_id, feed_source_id, "no_provider")
             return AiResult(value=None, status="fallback", error_code="no_provider",
                             prompt_tokens=0, completion_tokens=0)
 
         try:
             template = await self._resolve_template(task_type, client_id)
+            messages = render_messages(template.system, template.user, variables)
         except TaskSpecError:
-            await self._log_usage(UsageRecord(
-                client_id=client_id, feed_source_id=feed_source_id,
-                task_type=task_type, provider_config_id=None, model="",
-                cache_hit=False, prompt_tokens=0, completion_tokens=0,
-                cost_usd=None, latency_ms=0, error_code="invalid_task",
-            ))
+            logger.exception("ai task %s could not render; falling back", task_type)
+            await self._log_error(
+                task_type, client_id, feed_source_id, "invalid_task"
+            )
             return AiResult(value=None, status="fallback", error_code="invalid_task",
                             prompt_tokens=0, completion_tokens=0)
 
-        hash_value = input_hash(task_type, variables)
+        cfg = self._router_settings or await load_router_settings(self._session_factory)
+        if self._router is None:
+            self._ensure_built(rows, cfg)
+        await self._ensure_cache()
 
-        cache_entry = await self._cache.lookup(
-            task_type, config.id, config.model, template.version, hash_value
-        )
-        if cache_entry is not None:
-            await self._log_usage(UsageRecord(
-                client_id=client_id, feed_source_id=feed_source_id,
-                task_type=task_type, provider_config_id=config.id, model=config.model,
-                cache_hit=True, prompt_tokens=0, completion_tokens=0,
-                cost_usd=None, latency_ms=0, error_code=None,
-            ))
-            return AiResult(value=cache_entry.output.get("value"), status="cache_hit",
-                            error_code=None, prompt_tokens=0, completion_tokens=0)
+        response_model = TASK_SPECS[task_type].response_model
+        cache_kwargs = self._cache.request_kwargs(task_type)
+        cache_request = {"model": TIER_BULK, "messages": messages, **cache_kwargs}
 
-        return await self._call_provider(
-            config, task_type, variables, hash_value, template,
+        cached = await self._cache.lookup(**cache_request)
+        if cached is not None:
+            try:
+                value = response_model.model_validate(cached)
+            except Exception:  # noqa: BLE001 — any invalid cached payload is a miss
+                value = None
+            if value is not None:
+                await self._log_usage(UsageRecord(
+                    client_id=client_id, feed_source_id=feed_source_id,
+                    task_type=task_type, provider_config_id=None, model=TIER_BULK,
+                    cache_hit=True, prompt_tokens=0, completion_tokens=0,
+                    cost_usd=None, latency_ms=0, error_code=None,
+                ))
+                return AiResult(value=value, status="cache_hit", error_code=None,
+                                prompt_tokens=0, completion_tokens=0)
+
+        started = time.monotonic()
+        try:
+            value, completion = await self._instructor().create_with_completion(
+                response_model=response_model,
+                messages=messages,
+                model=TIER_BULK,
+                max_retries=cfg.instructor_max_retries,
+                **cache_kwargs,
+            )
+        except Exception as exc:
+            logger.warning("ai task %s failed: %s", task_type, exc, exc_info=True)
+            await self._log_error(task_type, client_id, feed_source_id, "provider_error")
+            return AiResult(value=None, status="fallback", error_code="provider_error",
+                            prompt_tokens=0, completion_tokens=0)
+
+        latency_ms = int((time.monotonic() - started) * 1000)
+        await self._cache.store(value.model_dump(), **cache_request)
+        usage = getattr(completion, "usage", None)
+        prompt_tokens = int(getattr(usage, "prompt_tokens", 0) or 0)
+        completion_tokens = int(getattr(usage, "completion_tokens", 0) or 0)
+        await self._log_usage(UsageRecord(
             client_id=client_id, feed_source_id=feed_source_id,
-        )
+            task_type=task_type, provider_config_id=None, model=TIER_BULK,
+            cache_hit=False, prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens, cost_usd=None,
+            latency_ms=latency_ms, error_code=None,
+        ))
+        return AiResult(value=value, status="ok", error_code=None,
+                        prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
 
     async def complete_chat(
         self,
@@ -267,70 +269,54 @@ class AiService:
         client_id: int | None = None,
         feed_source_id: int | None = None,
     ) -> AiResponse:
-        config = await self._default_config()
-        if config is None:
-            await self._log_usage(UsageRecord(
-                client_id=client_id, feed_source_id=feed_source_id,
-                task_type="chat", provider_config_id=None, model="",
-                cache_hit=False, prompt_tokens=0, completion_tokens=0,
-                cost_usd=None, latency_ms=0, error_code="no_provider",
-            ))
+        rows = await self._load_deployments()
+        if not rows:
+            await self._log_error("chat", client_id, feed_source_id, "no_provider")
             raise AiChatUnavailable("no_provider")
-        breaker = self._breaker_for(config)
-        if not breaker.allow_call():
-            await self._log_usage(UsageRecord(
-                client_id=client_id, feed_source_id=feed_source_id,
-                task_type="chat", provider_config_id=config.id, model=config.model,
-                cache_hit=False, prompt_tokens=0, completion_tokens=0,
-                cost_usd=None, latency_ms=0, error_code="circuit_open",
-            ))
-            raise AiChatUnavailable("circuit_open")
-        provider = self._provider_for(config)
-        semaphore = self._semaphore_for(config)
-        error_code: str | None = None
-        async with semaphore:
-            for attempt in range(1, self._retry_policy.max_attempts + 1):
-                try:
-                    response = await provider.complete(AiRequest(
-                        task_type="chat", messages=messages, tools=tools,
-                    ))
-                except Exception as exc:  # noqa: BLE001 — chat degrades to 502, never aborts
-                    outcome, retryable = classify_failure(exc)
-                    if not retryable or attempt == self._retry_policy.max_attempts:
-                        error_code = outcome.value
-                        breaker.record_failure()
-                        break
-                    await asyncio.sleep(self._retry_policy.delay_for_attempt(attempt))
-                    continue
-                breaker.record_success()
-                cost = estimate_cost(
-                    response.prompt_tokens, response.completion_tokens,
-                    config.input_price_per_mtok, config.output_price_per_mtok,
-                )
-                await self._log_usage(UsageRecord(
-                    client_id=client_id, feed_source_id=feed_source_id,
-                    task_type="chat", provider_config_id=config.id, model=response.model,
-                    cache_hit=False, prompt_tokens=response.prompt_tokens,
-                    completion_tokens=response.completion_tokens,
-                    cost_usd=cost, latency_ms=response.latency_ms, error_code=None,
-                ))
-                return response
+        cfg = self._router_settings or await load_router_settings(self._session_factory)
+        if self._router is None:
+            self._ensure_built(rows, cfg)
+        started = time.monotonic()
+        try:
+            response = await self._router.acompletion(
+                model=TIER_BULK, messages=messages, tools=tools or None,
+            )
+        except Exception as exc:  # chat degrades to 503, never aborts
+            logger.warning("ai chat failed: %s", exc, exc_info=True)
+            await self._log_error("chat", client_id, feed_source_id, "provider_error")
+            raise AiChatUnavailable("provider_error") from exc
+        latency_ms = int((time.monotonic() - started) * 1000)
+        usage = getattr(response, "usage", None)
+        message = response.choices[0].message
         await self._log_usage(UsageRecord(
             client_id=client_id, feed_source_id=feed_source_id,
-            task_type="chat", provider_config_id=config.id, model=config.model,
-            cache_hit=False, prompt_tokens=0, completion_tokens=0,
-            cost_usd=None, latency_ms=0, error_code=error_code or "unknown",
+            task_type="chat", provider_config_id=None, model=response.model or TIER_BULK,
+            cache_hit=False,
+            prompt_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
+            completion_tokens=int(getattr(usage, "completion_tokens", 0) or 0),
+            cost_usd=None, latency_ms=latency_ms, error_code=None,
         ))
-        raise AiChatUnavailable(error_code or "unknown")
+        return AiResponse(
+            content=message.content or "",
+            prompt_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
+            completion_tokens=int(getattr(usage, "completion_tokens", 0) or 0),
+            model=response.model or TIER_BULK,
+            latency_ms=latency_ms,
+            tool_calls=getattr(message, "tool_calls", None),
+            finish_reason=getattr(response.choices[0], "finish_reason", "stop") or "stop",
+        )
 
     async def test_provider(self, config_id: int) -> dict[str, Any]:
-        config = await self._get_config(config_id)
+        async with self._session_factory() as session:
+            config = await session.get(AiProviderConfig, config_id)
         if config is None:
             return {"status": "error", "error_code": "no_provider"}
-        provider = self._provider_for(config)
+        cfg = self._router_settings or await load_router_settings(self._session_factory)
+        router = build_router([config], cfg)
+        started = time.monotonic()
         try:
-            request = AiRequest(
-                task_type="test",
+            response = await router.acompletion(
+                model=config.tier,
                 messages=[
                     {"role": "system", "content": "Reply with the single word OK."},
                     {"role": "user", "content": "Ping"},
@@ -338,121 +324,32 @@ class AiService:
                 max_tokens=8,
                 temperature=0.0,
             )
-            response = await provider.complete(request)
-        except Exception as exc:  # noqa: BLE001 — probe must report any failure
-            outcome, _ = classify_failure(exc)
-            return {"status": "error", "error_code": outcome.value}
+        except Exception as exc:  # probe must report any failure
+            logger.warning("ai provider probe failed: %s", exc, exc_info=True)
+            return {"status": "error", "error_code": "provider_error"}
+        usage = getattr(response, "usage", None)
         return {
             "status": "ok",
-            "latency_ms": response.latency_ms,
-            "prompt_tokens": response.prompt_tokens,
-            "completion_tokens": response.completion_tokens,
+            "latency_ms": int((time.monotonic() - started) * 1000),
+            "prompt_tokens": int(getattr(usage, "prompt_tokens", 0) or 0),
+            "completion_tokens": int(getattr(usage, "completion_tokens", 0) or 0),
         }
 
     # -- internals -----------------------------------------------------------
 
-    async def _call_provider(
+    async def _log_error(
         self,
-        config: AiProviderConfig,
         task_type: str,
-        variables: dict[str, Any],
-        hash_value: str,
-        template: ResolvedTemplate,
-        *,
         client_id: int | None,
         feed_source_id: int | None,
-    ) -> AiResult:
-        breaker = self._breaker_for(config)
-        if not breaker.allow_call():
-            await self._log_usage(UsageRecord(
-                client_id=client_id, feed_source_id=feed_source_id,
-                task_type=task_type, provider_config_id=config.id, model=config.model,
-                cache_hit=False, prompt_tokens=0, completion_tokens=0,
-                cost_usd=None, latency_ms=0, error_code="circuit_open",
-            ))
-            return AiResult(value=None, status="fallback", error_code="circuit_open",
-                            prompt_tokens=0, completion_tokens=0)
-
-        provider = self._provider_for(config)
-        semaphore = self._semaphore_for(config)
-        try:
-            messages = render_messages(template.system, template.user, variables)
-        except TaskSpecError:
-            logger.exception("ai task %s could not render; falling back", task_type)
-            await self._log_usage(UsageRecord(
-                client_id=client_id, feed_source_id=feed_source_id,
-                task_type=task_type, provider_config_id=config.id, model=config.model,
-                cache_hit=False, prompt_tokens=0, completion_tokens=0,
-                cost_usd=None, latency_ms=0, error_code="invalid_task",
-            ))
-            return AiResult(value=None, status="fallback", error_code="invalid_task",
-                            prompt_tokens=0, completion_tokens=0)
-        retryable_error_code: str | None = None
-
-        async with semaphore:
-            for attempt in range(1, self._retry_policy.max_attempts + 1):
-                try:
-                    response = await provider.complete(AiRequest(
-                        task_type=task_type, messages=messages,
-                    ))
-                except Exception as exc:  # noqa: BLE001 — AI failures degrade to fallback, never abort runs
-                    outcome, retryable = classify_failure(exc)
-                    if not retryable or attempt == self._retry_policy.max_attempts:
-                        retryable_error_code = outcome.value
-                        breaker.record_failure()
-                        break
-                    await asyncio.sleep(self._retry_policy.delay_for_attempt(attempt))
-                    continue
-                # Provider responded — validate the content.
-                try:
-                    value = validate_task(task_type, response.content)
-                except TaskSpecError:
-                    breaker.record_failure()
-                    await self._log_usage(UsageRecord(
-                        client_id=client_id, feed_source_id=feed_source_id,
-                        task_type=task_type, provider_config_id=config.id,
-                        model=response.model, cache_hit=False,
-                        prompt_tokens=response.prompt_tokens,
-                        completion_tokens=response.completion_tokens,
-                        cost_usd=None, latency_ms=response.latency_ms,
-                        error_code="invalid_response",
-                    ))
-                    return AiResult(value=None, status="fallback",
-                                    error_code="invalid_response",
-                                    prompt_tokens=response.prompt_tokens,
-                                    completion_tokens=response.completion_tokens)
-                breaker.record_success()
-                await self._cache.store(
-                    task_type, config.id, config.model, template.version,
-                    hash_value, {"value": value},
-                )
-                cost = estimate_cost(
-                    response.prompt_tokens, response.completion_tokens,
-                    config.input_price_per_mtok, config.output_price_per_mtok,
-                )
-                await self._log_usage(UsageRecord(
-                    client_id=client_id, feed_source_id=feed_source_id,
-                    task_type=task_type, provider_config_id=config.id,
-                    model=response.model, cache_hit=False,
-                    prompt_tokens=response.prompt_tokens,
-                    completion_tokens=response.completion_tokens,
-                    cost_usd=cost, latency_ms=response.latency_ms, error_code=None,
-                ))
-                return AiResult(value=value, status="ok", error_code=None,
-                                prompt_tokens=response.prompt_tokens,
-                                completion_tokens=response.completion_tokens)
-
-        # Exhausted retries (or non-retryable failure).
-        if retryable_error_code is None:
-            retryable_error_code = "unknown"
+        error_code: str,
+    ) -> None:
         await self._log_usage(UsageRecord(
             client_id=client_id, feed_source_id=feed_source_id,
-            task_type=task_type, provider_config_id=config.id, model=config.model,
+            task_type=task_type, provider_config_id=None, model="",
             cache_hit=False, prompt_tokens=0, completion_tokens=0,
-            cost_usd=None, latency_ms=0, error_code=retryable_error_code,
+            cost_usd=None, latency_ms=0, error_code=error_code,
         ))
-        return AiResult(value=None, status="fallback", error_code=retryable_error_code,
-                        prompt_tokens=0, completion_tokens=0)
 
     async def _log_usage(self, record: UsageRecord) -> None:
         await self._usage.write(record)

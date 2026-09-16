@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 import litellm
 from litellm.caching.caching import Cache, CacheMode
+from litellm.types.caching import LiteLLMCacheType
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import Settings
@@ -85,7 +86,7 @@ class NativeCache:
             if backend == "redis" and self._cfg.redis_url:
                 params = parse_redis_url(self._cfg.redis_url)
                 built = Cache(
-                    type="redis",
+                    type=LiteLLMCacheType.REDIS,
                     mode=CacheMode.default_off,
                     host=params["host"],
                     port=params["port"],
@@ -93,12 +94,12 @@ class NativeCache:
                 )
             elif backend == "disk":
                 built = Cache(
-                    type="disk",
+                    type=LiteLLMCacheType.DISK,
                     mode=CacheMode.default_off,
                     disk_cache_dir=self._cfg.disk_dir,
                 )
             else:
-                built = Cache(type="local", mode=CacheMode.default_off)
+                built = Cache(type=LiteLLMCacheType.LOCAL, mode=CacheMode.default_off)
             litellm.cache = built
             return built
         except Exception:
