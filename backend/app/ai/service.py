@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..clock import Clock
 from ..config import Settings, get_settings
 from ..models.ai import AiProviderConfig, PromptTemplate
+from ..models.global_setting import GlobalSetting
 from .cache_config import NativeCache, load_cache_settings
 from .provider import AiResponse
 from .router import RouterSettings, build_instructor, build_router, load_router_settings
@@ -171,6 +172,49 @@ class AiService:
         self._instructor_client = None
         self._cache = None
         self._router_settings = None
+
+    async def apply_settings(self, row: GlobalSetting) -> None:
+        """Build cache + router from a settings row and swap them in on success.
+
+        Raises (leaving the previously active collaborators untouched) when the
+        configured cache backend or router cannot be built.
+        """
+        cfg = RouterSettings(
+            timeout_s=row.ai_router_timeout_s,
+            num_retries=row.ai_router_num_retries,
+            allowed_fails=row.ai_router_allowed_fails,
+            cooldown_s=row.ai_router_cooldown_s,
+            instructor_max_retries=row.ai_instructor_max_retries,
+        )
+        rows = await self._load_deployments()
+        router = build_router(rows, cfg)
+        instructor_client = build_instructor(router)
+        cache = NativeCache(
+            cache_type=row.ai_cache_type,
+            namespace=row.ai_cache_namespace,
+            ttl_taxonomy_s=row.ai_cache_ttl_taxonomy_s,
+            ttl_content_s=row.ai_cache_ttl_content_s,
+            redis_url=self._settings.redis_url,
+            disk_dir=self._settings.ai_cache_dir,
+            redis_host=self._settings.redis_host,
+            redis_port=self._settings.redis_port,
+            redis_password=self._settings.redis_password,
+            redis_ssl=self._settings.redis_ssl,
+        )
+        if not cache.enabled:
+            raise ValueError("configured cache backend is unavailable")
+        self._router = router
+        self._instructor_client = instructor_client
+        self._router_settings = cfg
+        self._cache = cache
+
+    async def cache_status(self) -> dict[str, Any]:
+        await self._ensure_cache()
+        return await self._cache.status()
+
+    async def clear_cache(self, namespace: str | None = None) -> int:
+        await self._ensure_cache()
+        return await self._cache.clear(namespace)
 
     # -- public API ---------------------------------------------------------
 

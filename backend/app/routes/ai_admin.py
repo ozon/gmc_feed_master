@@ -12,14 +12,18 @@ from ..access import CurrentUser, require_admin
 from ..ai.tasks import CANONICAL_VARIABLES
 from ..ai.templates import parse_placeholders, render_messages, validate_template
 from ..ai.usage import aggregate_usage
+from ..config import get_settings
 from ..db.engine import get_db_session
 from ..models.ai import AiProviderConfig, PromptTemplate
 from ..models.client import Client
+from ..models.global_setting import GlobalSetting
 from ..models.staging import StagingProduct
 from ..schemas.ai_admin import (
     AiProviderCreate,
     AiProviderOut,
     AiProviderUpdate,
+    AiSettingsOut,
+    AiSettingsUpdate,
     PromptTemplateCreate,
     PromptTemplateOut,
     PromptTemplatePreviewRequest,
@@ -392,3 +396,81 @@ async def preview_prompt_template(
         "warnings": warnings,
         "errors": [],
     }
+
+
+def _seed_settings() -> GlobalSetting:
+    return GlobalSetting(
+        id=1,
+        staging_removal_retention_days=90,
+        staging_history_retention_days=90,
+        ingestion_run_retention_days=90,
+        ai_usage_retention_days=90,
+        ai_cache_retention_days=90,
+        ai_cache_type="local",
+        ai_cache_namespace="gmc-ai",
+        ai_cache_ttl_taxonomy_s=2592000,
+        ai_cache_ttl_content_s=604800,
+        ai_router_timeout_s=30,
+        ai_router_num_retries=2,
+        ai_router_allowed_fails=3,
+        ai_router_cooldown_s=30,
+        ai_instructor_max_retries=2,
+    )
+
+
+def _settings_out(row: GlobalSetting, redis_from_env: bool) -> AiSettingsOut:
+    return AiSettingsOut(
+        ai_cache_type=row.ai_cache_type,
+        ai_cache_namespace=row.ai_cache_namespace,
+        ai_cache_ttl_taxonomy_s=row.ai_cache_ttl_taxonomy_s,
+        ai_cache_ttl_content_s=row.ai_cache_ttl_content_s,
+        ai_router_timeout_s=row.ai_router_timeout_s,
+        ai_router_num_retries=row.ai_router_num_retries,
+        ai_router_allowed_fails=row.ai_router_allowed_fails,
+        ai_router_cooldown_s=row.ai_router_cooldown_s,
+        ai_instructor_max_retries=row.ai_instructor_max_retries,
+        ai_usage_retention_days=row.ai_usage_retention_days,
+        redis_from_env=redis_from_env,
+        effective_cache_backend="redis" if redis_from_env else row.ai_cache_type,
+    )
+
+
+@router.get("/admin/ai/settings", response_model=AiSettingsOut)
+async def get_ai_settings(
+    _admin: AdminUser,
+    db_session: DbSession,
+) -> AiSettingsOut:
+    session = _require_db(db_session)
+    async with session.begin():
+        row = await session.get(GlobalSetting, 1)
+        if row is None:
+            row = _seed_settings()
+            session.add(row)
+    settings = get_settings()
+    return _settings_out(row, bool(settings.redis_url or settings.redis_host))
+
+
+@router.put("/admin/ai/settings", response_model=AiSettingsOut)
+async def put_ai_settings(
+    payload: AiSettingsUpdate,
+    request: Request,
+    _admin: AdminUser,
+    db_session: DbSession,
+) -> AiSettingsOut:
+    session = _require_db(db_session)
+    service = getattr(request.app.state, "ai_service", None)
+    async with session.begin():
+        row = await session.get(GlobalSetting, 1)
+        if row is None:
+            row = _seed_settings()
+            session.add(row)
+        for field, value in payload.model_dump().items():
+            setattr(row, field, value)
+        await session.flush()
+        if service is not None:
+            try:
+                await service.apply_settings(row)
+            except Exception as exc:  # rollback keeps the previous config active
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
+    settings = get_settings()
+    return _settings_out(row, bool(settings.redis_url or settings.redis_host))

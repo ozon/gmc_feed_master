@@ -86,3 +86,31 @@ class PromptTemplatePreviewRequest(BaseModel):
     product: dict[str, Any] | None = None
     feed_source_id: int | None = None
     product_id: str | None = None
+
+
+class AiSettingsOut(BaseModel):
+    ai_cache_type: Literal["local", "disk"]
+    ai_cache_namespace: str
+    ai_cache_ttl_taxonomy_s: int
+    ai_cache_ttl_content_s: int
+    ai_router_timeout_s: int
+    ai_router_num_retries: int
+    ai_router_allowed_fails: int
+    ai_router_cooldown_s: int
+    ai_instructor_max_retries: int
+    ai_usage_retention_days: int
+    redis_from_env: bool
+    effective_cache_backend: str
+
+
+class AiSettingsUpdate(BaseModel):
+    ai_cache_type: Literal["local", "disk"] = "local"
+    ai_cache_namespace: str = Field(min_length=1, max_length=64)
+    ai_cache_ttl_taxonomy_s: int = Field(ge=1)
+    ai_cache_ttl_content_s: int = Field(ge=1)
+    ai_router_timeout_s: int = Field(ge=1, le=600)
+    ai_router_num_retries: int = Field(ge=0, le=10)
+    ai_router_allowed_fails: int = Field(ge=0, le=100)
+    ai_router_cooldown_s: int = Field(ge=0, le=3600)
+    ai_instructor_max_retries: int = Field(ge=0, le=10)
+    ai_usage_retention_days: int = Field(ge=1)

@@ -152,3 +152,26 @@ async def test_llm_call_does_not_receive_cache_control(service, monkeypatch) -> 
     await service.run_task("title_optimization", {"title": "t"})
     call_kwargs = instructor_client.create_with_completion.await_args.kwargs
     assert "cache" not in call_kwargs
+
+
+@pytest.mark.asyncio
+async def test_apply_settings_keeps_previous_on_cache_failure(service, monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from app.ai import service as svc_mod
+
+    before = service._cache
+    monkeypatch.setattr(service, "_load_deployments", AsyncMock(return_value=[]))
+    monkeypatch.setattr(svc_mod, "build_router", lambda rows, cfg: object())
+    monkeypatch.setattr(svc_mod, "build_instructor", lambda router: object())
+    monkeypatch.setattr(
+        svc_mod, "NativeCache", lambda **kwargs: SimpleNamespace(enabled=False)
+    )
+    row = SimpleNamespace(
+        ai_router_timeout_s=30, ai_router_num_retries=2, ai_router_allowed_fails=3,
+        ai_router_cooldown_s=30, ai_instructor_max_retries=2, ai_cache_type="disk",
+        ai_cache_namespace="x", ai_cache_ttl_taxonomy_s=1, ai_cache_ttl_content_s=1,
+    )
+    with pytest.raises(ValueError):
+        await service.apply_settings(row)
+    assert service._cache is before
