@@ -322,7 +322,7 @@ def _apply_indexed_action(
 
 def _validate_condition(node: Any, path: str) -> None:
     if not isinstance(node, dict):
-        raise ValueError(f"{path}: condition must be an object")
+        raise TypeError(f"{path}: condition must be an object")
     op = node.get("op")
     if op == "all":
         return
@@ -364,18 +364,18 @@ def _validate_condition(node: Any, path: str) -> None:
 def validate_config(config: Any) -> None:
     """Strict validation of a rules config document."""
     if not isinstance(config, dict):
-        raise ValueError("config must be an object")
+        raise TypeError("config must be an object")
     if not config:
         return  # empty config = no rules
     rules = config.get("rules")
     if rules is None:
         return
     if not isinstance(rules, list):
-        raise ValueError("config.rules must be an array")
+        raise TypeError("config.rules must be an array")
     for index, rule in enumerate(rules):
         path = f"rules[{index}]"
         if not isinstance(rule, dict):
-            raise ValueError(f"{path}: rule must be an object")
+            raise TypeError(f"{path}: rule must be an object")
         if not isinstance(rule.get("id"), str) or not rule.get("id"):
             raise ValueError(f"{path}: id must be a non-empty string")
         if not isinstance(rule.get("name"), str) or not rule.get("name"):
@@ -383,7 +383,7 @@ def validate_config(config: Any) -> None:
         _validate_condition(rule.get("when"), f"{path}.when")
         then = rule.get("then")
         if not isinstance(then, list):
-            raise ValueError(f"{path}.then must be an array")
+            raise TypeError(f"{path}.then must be an array")
         for action_index, action in enumerate(then):
             action_path = f"{path}.then[{action_index}]"
             op = action.get("op") if isinstance(action, dict) else None

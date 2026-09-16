@@ -143,7 +143,7 @@ def test_validate_config_accepts_valid_document():
 
 
 def test_validate_config_rejects_bad_shapes():
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         validate_config({"conditions": "nope"})
     with pytest.raises(ValueError):
         validate_config({"conditions": [{"op": "equals", "arg": "x"}]})  # missing field

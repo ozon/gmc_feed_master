@@ -158,13 +158,13 @@ def validate_config(config: Any) -> None:
     if rules is None:
         return
     if not isinstance(rules, list):
-        raise ValueError("config.slotRules must be an array")
+        raise TypeError("config.slotRules must be an array")
     seen_ids: set[str] = set()
     first_rule_per_slot: dict[str, str] = {}
     for index, rule in enumerate(rules):
         path = f"slotRules[{index}]"
         if not isinstance(rule, dict):
-            raise ValueError(f"{path}: rule must be an object")
+            raise TypeError(f"{path}: rule must be an object")
         rule_id = rule.get("id")
         if not isinstance(rule_id, str) or not rule_id:
             raise ValueError(f"{path}: id must be a non-empty string")
@@ -187,7 +187,7 @@ def validate_config(config: Any) -> None:
         _validate_template(template, path)
         fallback = rule.get("fallbackTemplate", "")
         if not isinstance(fallback, str):
-            raise ValueError(f"{path}: fallbackTemplate must be a string")
+            raise TypeError(f"{path}: fallbackTemplate must be a string")
         if fallback:
             _validate_template(fallback, path)
             slot = rule["targetSlot"]

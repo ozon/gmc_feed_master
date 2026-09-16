@@ -185,7 +185,7 @@ def test_validate_config_accepts_empty():
 
 
 def test_validate_config_rejects_bad_shapes():
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         validate_config({"rules": "nope"})
     with pytest.raises(ValueError):
         validate_config({"rules": [{"no_id": True}]})

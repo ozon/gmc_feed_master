@@ -132,14 +132,14 @@ def validate_config(config: Any) -> None:
     if config is None:
         return
     if not isinstance(config, dict):
-        raise ValueError("config must be an object")
+        raise TypeError("config must be an object")
     if not config:
         return
     conditions = config.get("conditions")
     if conditions is None:
         return
     if not isinstance(conditions, list):
-        raise ValueError("config.conditions must be an array")
+        raise TypeError("config.conditions must be an array")
     for index, condition in enumerate(conditions):
         _validate_condition(condition, index)
 
