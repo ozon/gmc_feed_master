@@ -32,13 +32,12 @@ jobs:
       - name: Run alembic migrations
         working-directory: backend
         run: uv run alembic upgrade head
-      - name: Ruff baseline gate (no new lint errors)
+      - name: Alembic drift gate (no pending model changes)
         working-directory: backend
-        run: |
-          COUNT=$(uv run ruff check . --output-format=concise 2>/dev/null | wc -l)
-          BASELINE=$(cat ruff-baseline.txt)
-          echo "ruff errors: $COUNT (baseline $BASELINE)"
-          if [ "$COUNT" -gt "$BASELINE" ]; then exit 1; fi
+        run: uv run alembic check
+      - name: Ruff gate (exit-0, backend + plugins)
+        working-directory: backend
+        run: uv run ruff check . ../plugins
       - name: Mypy gate (exit-0)
         working-directory: backend
         run: |
