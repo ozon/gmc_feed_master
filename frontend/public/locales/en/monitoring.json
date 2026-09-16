@@ -58,5 +58,77 @@
     "critical": "Critical",
     "warning": "Warning",
     "info": "Info"
+  },
+  "rules": {
+    "unknown": {
+      "title": "Unrecognized rule: {{code}}",
+      "description": "No description is available for this rule.",
+      "remediation": "Review the finding details and the GMC attribute requirements."
+    },
+    "baseline_required": {
+      "title": "Missing required attribute",
+      "description": "A required Google Merchant Center attribute is empty.",
+      "remediation": "Fill the attribute in the source feed or via field mapping."
+    },
+    "brand_required": {
+      "title": "Missing brand",
+      "description": "The brand attribute is missing and the category is not exempt.",
+      "remediation": "Provide a brand value or map it from a source field."
+    },
+    "gtin_mpn": {
+      "title": "Identifier problem",
+      "description": "The GTIN is missing without MPN and brand, or its checksum is invalid.",
+      "remediation": "Add a valid GTIN, or provide both MPN and brand."
+    },
+    "enum_values": {
+      "title": "Invalid value",
+      "description": "The value is not one of the enum values allowed for this attribute.",
+      "remediation": "Map the source value to an allowed value."
+    },
+    "conditional_required": {
+      "title": "Missing dependent attribute",
+      "description": "An attribute is required because another attribute is set.",
+      "remediation": "Set the dependent attribute, or clear the attribute that requires it."
+    },
+    "date_format": {
+      "title": "Invalid date",
+      "description": "The date is not ISO-8601 or has no timezone.",
+      "remediation": "Use an ISO-8601 timestamp with a timezone offset."
+    },
+    "length_limits": {
+      "title": "Length out of range",
+      "description": "The value exceeds or falls below the length allowed for this attribute.",
+      "remediation": "Adjust the value to fit the GMC length limit."
+    },
+    "cardinality": {
+      "title": "Wrong number of values",
+      "description": "The attribute has more or fewer values than its kind allows.",
+      "remediation": "Adjust the repeated values to the allowed cardinality."
+    },
+    "currency_consistency": {
+      "title": "Currency mismatch",
+      "description": "A price uses a currency other than the feed source currency.",
+      "remediation": "Use the feed source currency or fix the price currency."
+    },
+    "image_requirements": {
+      "title": "Image requirement",
+      "description": "The image is missing, unsupported, or below the minimum size.",
+      "remediation": "Provide a reachable image of at least 500x500 px in a supported format."
+    },
+    "variant_consistency": {
+      "title": "Variant inconsistency",
+      "description": "Variants in a group disagree on shared attributes.",
+      "remediation": "Align the shared attributes across the variant group."
+    },
+    "volume_drop": {
+      "title": "Catalog volume drop",
+      "description": "The product count dropped sharply versus the previous run.",
+      "remediation": "Check the source feed for truncation or fetch errors before publishing."
+    },
+    "ai_policy_check": {
+      "title": "AI policy suggestion",
+      "description": "The AI policy check flagged this product for review.",
+      "remediation": "Review the AI suggestion and adjust the product data if needed."
+    }
   }
 }

@@ -58,5 +58,77 @@
     "critical": "Kritisch",
     "warning": "Warnung",
     "info": "Info"
+  },
+  "rules": {
+    "unknown": {
+      "title": "Unbekannte Regel: {{code}}",
+      "description": "Für diese Regel liegt keine Beschreibung vor.",
+      "remediation": "Prüfen Sie die Befunddetails und die GMC-Attributanforderungen."
+    },
+    "baseline_required": {
+      "title": "Pflichtattribut fehlt",
+      "description": "Ein erforderliches Google-Merchant-Center-Attribut ist leer.",
+      "remediation": "Füllen Sie das Attribut in der Quellfeed oder über das Feldmapping."
+    },
+    "brand_required": {
+      "title": "Marke fehlt",
+      "description": "Das Attribut brand fehlt und die Kategorie ist nicht ausgenommen.",
+      "remediation": "Geben Sie eine Marke an oder mappen Sie sie aus einem Quellfeld."
+    },
+    "gtin_mpn": {
+      "title": "Identifikatorproblem",
+      "description": "Die GTIN fehlt ohne MPN und Marke, oder ihre Prüfsumme ist ungültig.",
+      "remediation": "Fügen Sie eine gültige GTIN hinzu oder geben Sie MPN und Marke an."
+    },
+    "enum_values": {
+      "title": "Ungültiger Wert",
+      "description": "Der Wert ist keiner der für dieses Attribut erlaubten Enum-Werte.",
+      "remediation": "Mappen Sie den Quellwert auf einen erlaubten Wert."
+    },
+    "conditional_required": {
+      "title": "Abhängiges Attribut fehlt",
+      "description": "Ein Attribut ist erforderlich, weil ein anderes Attribut gesetzt ist.",
+      "remediation": "Setzen Sie das abhängige Attribut oder entfernen Sie das auslösende Attribut."
+    },
+    "date_format": {
+      "title": "Ungültiges Datum",
+      "description": "Das Datum ist nicht ISO-8601 oder hat keine Zeitzone.",
+      "remediation": "Verwenden Sie einen ISO-8601-Zeitstempel mit Zeitzonenversatz."
+    },
+    "length_limits": {
+      "title": "Länge außerhalb des Bereichs",
+      "description": "Der Wert überschreitet oder unterschreitet die für dieses Attribut erlaubte Länge.",
+      "remediation": "Passen Sie den Wert an das GMC-Längenlimit an."
+    },
+    "cardinality": {
+      "title": "Falsche Anzahl von Werten",
+      "description": "Das Attribut hat mehr oder weniger Werte, als sein Typ erlaubt.",
+      "remediation": "Passen Sie die wiederholten Werte an die erlaubte Kardinalität an."
+    },
+    "currency_consistency": {
+      "title": "Währungsabweichung",
+      "description": "Ein Preis verwendet eine andere Währung als die Feedquelle.",
+      "remediation": "Verwenden Sie die Währung der Feedquelle oder korrigieren Sie den Preis."
+    },
+    "image_requirements": {
+      "title": "Bildanforderung",
+      "description": "Das Bild fehlt, wird nicht unterstützt oder ist zu klein.",
+      "remediation": "Stellen Sie ein erreichbares Bild mit mindestens 500x500 px in einem unterstützten Format bereit."
+    },
+    "variant_consistency": {
+      "title": "Varianteninkonsistenz",
+      "description": "Varianten einer Gruppe unterscheiden sich bei gemeinsamen Attributen.",
+      "remediation": "Vereinheitlichen Sie die gemeinsamen Attribute innerhalb der Variantengruppe."
+    },
+    "volume_drop": {
+      "title": "Katalogvolumen eingebrochen",
+      "description": "Die Produktanzahl ist gegenüber dem vorherigen Lauf stark gesunken.",
+      "remediation": "Prüfen Sie die Quellfeed auf Kürzungen oder Abruffehler vor der Veröffentlichung."
+    },
+    "ai_policy_check": {
+      "title": "KI-Richtlinienhinweis",
+      "description": "Die KI-Richtlinienprüfung hat dieses Produkt zur Überprüfung markiert.",
+      "remediation": "Prüfen Sie den KI-Hinweis und passen Sie die Produktdaten bei Bedarf an."
+    }
   }
 }
