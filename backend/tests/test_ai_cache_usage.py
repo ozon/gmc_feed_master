@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.ai.cache import AiResultCacheStore
-from app.ai.usage import UsageLogWriter, UsageRecord, aggregate_usage, estimate_cost
+from app.ai.usage import UsageLogWriter, UsageRecord, aggregate_usage
 from app.models.ai import AiProviderConfig, AiUsageLog
 
 
@@ -106,16 +106,6 @@ async def test_usage_writer_never_raises_on_db_error(session_factory):
         prompt_tokens=0, completion_tokens=0, cost_usd=None,
         latency_ms=0, error_code="timeout",
     ))  # must not raise
-
-
-def test_estimate_cost_with_prices():
-    cost = estimate_cost(1_000_000, 500_000, Decimal("0.15"), Decimal("0.60"))
-    assert cost == Decimal("0.450000")
-
-
-def test_estimate_cost_without_prices_is_none():
-    assert estimate_cost(100, 50, None, Decimal("0.60")) is None
-    assert estimate_cost(100, 50, Decimal("0.15"), None) is None
 
 
 @pytest.mark.asyncio

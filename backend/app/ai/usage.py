@@ -55,20 +55,6 @@ class UsageLogWriter:
             logger.exception("ai usage log write failed for task %s", record.task_type)
 
 
-def estimate_cost(
-    prompt_tokens: int,
-    completion_tokens: int,
-    input_price_per_mtok: Decimal | None,
-    output_price_per_mtok: Decimal | None,
-) -> Decimal | None:
-    if input_price_per_mtok is None or output_price_per_mtok is None:
-        return None
-    return (
-        Decimal(prompt_tokens) * input_price_per_mtok / Decimal(1_000_000)
-        + Decimal(completion_tokens) * output_price_per_mtok / Decimal(1_000_000)
-    ).quantize(Decimal("0.000001"))
-
-
 _GROUP_COLUMNS = {
     "client": AiUsageLog.client_id,
     "feed_source": AiUsageLog.feed_source_id,
