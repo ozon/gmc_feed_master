@@ -46,15 +46,15 @@ class RecordingCrossRule:
 
 
 def _make_ctx(**overrides):
-    defaults = dict(
-        feed_source_id=1,
-        currency="USD",
-        volume_drop_threshold_pct=20,
-        registry=RegistryDocument(attributes={}),
-        clock=TestClock(__import__("datetime").datetime(2026, 1, 1, tzinfo=__import__("datetime").timezone.utc)),
-        image_probe=StubImageProbe(),
-        previous_export_run=None,
-    )
+    defaults = {
+        "feed_source_id": 1,
+        "currency": "USD",
+        "volume_drop_threshold_pct": 20,
+        "registry": RegistryDocument(attributes={}),
+        "clock": TestClock(__import__("datetime").datetime(2026, 1, 1, tzinfo=__import__("datetime").timezone.utc)),
+        "image_probe": StubImageProbe(),
+        "previous_export_run": None,
+    }
     defaults.update(overrides)
     return QcContext(**defaults)
 

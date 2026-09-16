@@ -187,7 +187,7 @@ def create_app(
         yield
         background_tasks = getattr(application.state, "background_tasks", None)
         if background_tasks:
-            done, pending = await asyncio.wait(
+            _done, pending = await asyncio.wait(
                 set(background_tasks), timeout=_SHUTDOWN_DRAIN_TIMEOUT
             )
             if pending:

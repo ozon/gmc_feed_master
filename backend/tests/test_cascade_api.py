@@ -124,7 +124,7 @@ async def _full_tree(factory, client):
 
 
 async def test_delete_feed_source_cascades_everything(app_factory):
-    app, factory, _ = app_factory
+    _app, factory, _ = app_factory
     client = await logged_in_client(app_factory)
     client_id, feed_id = await _full_tree(factory, client)
     resp = await client.delete(f"/feed-sources/{feed_id}")
@@ -140,7 +140,7 @@ async def test_delete_feed_source_cascades_everything(app_factory):
 
 
 async def test_delete_client_cascades_all_feeds(app_factory):
-    app, factory, _ = app_factory
+    _app, factory, _ = app_factory
     client = await logged_in_client(app_factory)
     client_id, feed_id = await _full_tree(factory, client)
     resp = await client.delete(f"/clients/{client_id}")
@@ -164,7 +164,7 @@ async def test_delete_feed_source_rejected_while_run_active(app_factory):
 
 
 async def test_delete_removes_published_files(app_factory):
-    app, factory, settings = app_factory
+    _app, _factory, settings = app_factory
     client = await logged_in_client(app_factory)
     created = (await client.post("/clients", json={"name": "Acme"})).json()
     feed = (await client.post(f"/clients/{created['id']}/feed-sources",

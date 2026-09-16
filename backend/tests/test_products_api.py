@@ -94,7 +94,7 @@ async def test_products_requires_auth_and_404(app_factory):
 
 
 async def test_products_stage_processed_serves_processed_fields(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     products = [
         ("a", {"id": "a", **_BASE, "title": "Alpha Raw"}, "active",
@@ -131,7 +131,7 @@ async def test_products_stage_processed_serves_processed_fields(app_factory):
 
 
 async def test_products_stage_processed_search_and_sort(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     products = [
         ("a", {"id": "a", **_BASE, "title": "Alpha Raw"}, "active",
@@ -155,7 +155,7 @@ async def test_products_stage_processed_search_and_sort(app_factory):
 
 
 async def test_products_detail_includes_processed(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     processed = {"id": "a", **_BASE, "title": "Processed Title"}
     feed_id = await _setup_feed(factory, client, [
@@ -170,7 +170,7 @@ async def test_products_detail_includes_processed(app_factory):
 
 
 async def test_products_pagination_search_filter_sort(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     products = [
         ("a", {"id": "a", **_BASE, "title": "Alpha Shoe"}, "active"),
@@ -212,7 +212,7 @@ async def test_products_pagination_search_filter_sort(app_factory):
 
 
 async def test_products_list_returns_fields_union_and_raw_data(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     products = [
         ("a", {"id": "a", **_BASE, "title": "Alpha", "brand": "Acme",
@@ -235,7 +235,7 @@ async def test_products_list_returns_fields_union_and_raw_data(app_factory):
 
 
 async def test_product_detail_returns_full_raw_data(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     feed_id = await _setup_feed(factory, client,
                                 [("a", {"id": "a", **_BASE, "shipping": [{"country": "DE", "price": "1 EUR"}]}, "active")])
@@ -259,7 +259,7 @@ LOOKUP_ROWS = [
 
 
 async def test_lookup_matches_by_field_counts_and_lowest_sample(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     feed_id = await _setup_feed(factory, client, LOOKUP_ROWS)
     resp = await client.post(f"/feed-sources/{feed_id}/products/lookup", json={
@@ -284,7 +284,7 @@ async def test_lookup_matches_by_field_counts_and_lowest_sample(app_factory):
 
 
 async def test_lookup_default_field_is_id_and_dedupes_values(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     feed_id = await _setup_feed(factory, client, LOOKUP_ROWS)
     resp = await client.post(f"/feed-sources/{feed_id}/products/lookup", json={
@@ -298,7 +298,7 @@ async def test_lookup_default_field_is_id_and_dedupes_values(app_factory):
 
 
 async def test_lookup_removed_sample_carries_status_and_excluded_flag(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     feed_id = await _setup_feed(factory, client, [
         ("z9", {"id": "z9", **_BASE, "title": "Only", "brand": "Solo"}, "removed"),
@@ -314,7 +314,7 @@ async def test_lookup_removed_sample_carries_status_and_excluded_flag(app_factor
 
 
 async def test_lookup_subfield_path(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     feed_id = await _setup_feed(factory, client, LOOKUP_ROWS)
     resp = await client.post(f"/feed-sources/{feed_id}/products/lookup", json={

@@ -34,28 +34,28 @@ pytestmark = pytest.mark.asyncio
 
 
 def _make_ctx(**overrides):
-    defaults = dict(
-        feed_source_id=1,
-        currency="USD",
-        volume_drop_threshold_pct=20,
-        registry=RegistryDocument(attributes={}),
-        clock=TestClock(datetime(2026, 6, 1, tzinfo=timezone.utc)),
-        image_probe=AsyncMock(),
-        previous_export_run=None,
-    )
+    defaults = {
+        "feed_source_id": 1,
+        "currency": "USD",
+        "volume_drop_threshold_pct": 20,
+        "registry": RegistryDocument(attributes={}),
+        "clock": TestClock(datetime(2026, 6, 1, tzinfo=timezone.utc)),
+        "image_probe": AsyncMock(),
+        "previous_export_run": None,
+    }
     defaults.update(overrides)
     return QcContext(**defaults)
 
 
 def _attr(**kwargs):
-    defaults = dict(
-        name="field",
-        kind=AttributeKind.SCALAR,
-        type="string",
-        required=RequirementStatus.OPTIONAL,
-        domain=FeedDomain.PRIMARY,
-        export_status=ExportStatus.EXPORTABLE,
-    )
+    defaults = {
+        "name": "field",
+        "kind": AttributeKind.SCALAR,
+        "type": "string",
+        "required": RequirementStatus.OPTIONAL,
+        "domain": FeedDomain.PRIMARY,
+        "export_status": ExportStatus.EXPORTABLE,
+    }
     defaults.update(kwargs)
     return RegistryAttribute(**defaults)
 

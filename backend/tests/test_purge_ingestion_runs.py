@@ -108,7 +108,7 @@ async def _all_ids(factory, model):
 
 async def test_purges_old_run_without_dependents(isolated_database_url):
     engine, factory, fs_id = await _env(isolated_database_url)
-    run_id = await _run(factory, fs_id, days_old=91)
+    await _run(factory, fs_id, days_old=91)
 
     counts = await purge_expired_ingestion_runs(FactoryAdapter(factory), NOW)
 
@@ -173,7 +173,7 @@ async def test_keeps_run_referenced_by_staging_product(isolated_database_url):
 async def test_deletes_findings_of_purged_run(isolated_database_url):
     engine, factory, fs_id = await _env(isolated_database_url)
     run_id = await _run(factory, fs_id, days_old=91)
-    finding_id = await _finding(factory, fs_id, run_id)
+    await _finding(factory, fs_id, run_id)
 
     counts = await purge_expired_ingestion_runs(FactoryAdapter(factory), NOW)
 

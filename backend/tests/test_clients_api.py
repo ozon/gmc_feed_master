@@ -314,7 +314,7 @@ async def test_feed_source_update_volume_threshold_out_of_range(app_factory):
 
 
 async def test_get_feed_source_returns_detail(app_factory):
-    app, _ = app_factory
+    _app, _ = app_factory
     client = await logged_in_client(app_factory)
     client_id = (await client.post("/clients", json={"name": "Acme"})).json()["id"]
     fs_id = (

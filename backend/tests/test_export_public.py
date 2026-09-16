@@ -93,7 +93,7 @@ async def test_public_endpoint_404_for_unknown_token_and_before_export(app_facto
 
 async def test_public_endpoint_serves_published_file_without_auth(app_factory):
     app, factory, settings = app_factory
-    client, payload = await _create_feed_source(app_factory)
+    _client, payload = await _create_feed_source(app_factory)
     token = payload["export_url"].rsplit("/", 1)[1].removesuffix(".xml")
 
     async with factory() as session:
@@ -110,7 +110,7 @@ async def test_public_endpoint_serves_published_file_without_auth(app_factory):
 
 
 async def test_rotate_token_invalidates_old_url_immediately(app_factory):
-    app, factory, settings = app_factory
+    _app, _factory, settings = app_factory
     client, payload = await _create_feed_source(app_factory)
     old_url = payload["export_url"]
     old_token = old_url.rsplit("/", 1)[1].removesuffix(".xml")

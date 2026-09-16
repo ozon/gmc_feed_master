@@ -495,7 +495,7 @@ async def test_drop_then_pass_reactivation(app_factory, tmp_path):
         registry = load_registry()
         steps = default_steps(fetcher, registry, plugin_registry, export_dir=tmp_path / "exports")
         runner = PipelineRunner(LockRegistry(), factory, list(steps))
-        run_id = await runner.execute(feed_source_id)
+        await runner.execute(feed_source_id)
 
         async with factory() as session:
             row = (await session.execute(
@@ -511,7 +511,7 @@ async def test_drop_then_pass_reactivation(app_factory, tmp_path):
         fetcher.data = tsv_run2
         steps2 = default_steps(fetcher, registry, plugin_registry, export_dir=tmp_path / "exports")
         runner2 = PipelineRunner(LockRegistry(), factory, list(steps2))
-        run_id2 = await runner2.execute(feed_source_id)
+        await runner2.execute(feed_source_id)
 
         async with factory() as session:
             row = (await session.execute(

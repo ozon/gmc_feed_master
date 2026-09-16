@@ -86,7 +86,7 @@ async def test_trigger_returns_202_with_run_id(app_factory):
     run_id = body["run_id"]
     assert isinstance(run_id, int)
 
-    app, factory = app_factory
+    _app, factory = app_factory
     for _ in range(50):
         async with factory() as session:
             run = await session.get(IngestionRun, run_id)
@@ -124,11 +124,11 @@ async def test_trigger_while_lock_held_ends_skipped(app_factory):
 
 
 async def test_history_returns_ordered_results(app_factory):
-    app, factory = app_factory
+    _app, _factory = app_factory
     client, fs_id = await _seed_feed_source(app_factory)
 
-    r1 = await client.post(f"/feed-sources/{fs_id}/run")
-    r2 = await client.post(f"/feed-sources/{fs_id}/run")
+    await client.post(f"/feed-sources/{fs_id}/run")
+    await client.post(f"/feed-sources/{fs_id}/run")
     await asyncio.sleep(0.2)
 
     resp = await client.get(f"/feed-sources/{fs_id}/ingestion-runs")
@@ -149,7 +149,7 @@ async def test_history_returns_ordered_results(app_factory):
 
 
 async def test_history_pagination(app_factory):
-    app, factory = app_factory
+    _app, _factory = app_factory
     client, fs_id = await _seed_feed_source(app_factory)
 
     for _ in range(3):

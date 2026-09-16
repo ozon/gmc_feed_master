@@ -186,11 +186,13 @@ Run:
 git diff -U0 | head -200
 git diff --stat
 ```
-Expected shape: overwhelmingly `RUF059` (unused unpacked variables renamed to `_`/`_name`), plus a handful of others. Read every hunk that is **not** a pure rename. If any hunk changes behaviour (e.g. drops a value that is actually used, changes an exception, changes a default), revert that hunk:
+Expected shape: overwhelmingly `RUF059` (unused unpacked variables renamed to `_`/`_name`), plus `F841` (unused binding removed — the call is preserved), `C408` (`dict(...)` → `{...}`), `RUF015` (`[...][0]` → `next(...)`), `SIM102` and `PIE810` merges. Read every hunk that is **not** a pure rename. If any hunk changes behaviour (e.g. drops a value that is actually used, changes an exception, changes a default), revert that hunk:
 ```bash
 git checkout -p -- <path>
 ```
 and leave the finding for Task 4 instead.
+
+One `F841` fix leaves a dead expression statement rather than deleting the line: `app/qc/rules.py` had `base = group[0]` (unused) rewritten to a bare `group[0]`. Delete that line entirely — it is the only such artifact.
 
 - [ ] **Step 4: Run the full suite**
 

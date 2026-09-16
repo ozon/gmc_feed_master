@@ -276,7 +276,6 @@ class VariantConsistency:
         for gid, group in groups.items():
             if len(group) < 2:
                 continue
-            base = group[0]
             for attr in self._BASE_ATTRS:
                 values = {str(p.get(attr)) for p in group if p.get(attr) is not None}
                 if len(values) > 1:

@@ -141,7 +141,7 @@ async def test_shutdown_drain_times_out_and_warns(app_factory, monkeypatch, capl
     import app.main as main_module
 
     monkeypatch.setattr(main_module, "_SHUTDOWN_DRAIN_TIMEOUT", 0.1)
-    app, factory = app_factory
+    app, _factory = app_factory
     client = await _logged_in_client(app)
     fs_id = await _seed_feed_source(client)
 

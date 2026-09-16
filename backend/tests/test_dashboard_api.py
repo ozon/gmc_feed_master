@@ -122,10 +122,10 @@ async def test_summary_empty(app_factory):
 
 
 async def test_summary_counts_and_per_feed_fields(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     _, feed_a = await _make_feed(factory, client, "Acme")
-    client_id_b, feed_b = await _make_feed(factory, client, "Zeta")
+    _client_id_b, feed_b = await _make_feed(factory, client, "Zeta")
 
     await _add_staging(factory, feed_a, "p1")
     await _add_staging(factory, feed_a, "p2")
@@ -155,7 +155,7 @@ async def test_summary_counts_and_per_feed_fields(app_factory):
 
 
 async def test_summary_last_export_uses_latest_run(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     _, feed_a = await _make_feed(factory, client, "Acme")
     await _add_export_run(factory, feed_a, "failed")

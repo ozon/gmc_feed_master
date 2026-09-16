@@ -105,7 +105,7 @@ async def test_put_pipeline_roundtrip(app_factory):
 
 
 async def test_put_pipeline_replaces_instances(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     await _register_plugin(factory)
     created = (await client.post("/clients", json={"name": "Acme"})).json()
@@ -156,7 +156,7 @@ async def test_put_pipeline_validation_failures(app_factory):
 
 
 async def test_put_pipeline_same_feed_name_no_collision(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     await _register_plugin(factory)
     first_client = (await client.post("/clients", json={"name": "Acme"})).json()
@@ -171,7 +171,7 @@ async def test_put_pipeline_same_feed_name_no_collision(app_factory):
 
 
 async def test_get_pipeline_returns_id_and_enabled(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     await _register_plugin(factory)
     created = (await client.post("/clients", json={"name": "Acme"})).json()
@@ -187,7 +187,7 @@ async def test_get_pipeline_returns_id_and_enabled(app_factory):
 
 
 async def test_put_pipeline_upsert_keeps_ids(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     await _register_plugin(factory)
     created = (await client.post("/clients", json={"name": "Acme"})).json()
@@ -225,7 +225,7 @@ async def test_put_pipeline_upsert_keeps_ids(app_factory):
 async def test_put_pipeline_reorder_swaps_positions(app_factory):
     # Regression guard for uq_module_instances_pipeline_position: naive
     # in-place UPDATEs collide on any swap; the handler must two-pass.
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     await _register_plugin(factory)
     created = (await client.post("/clients", json={"name": "Acme"})).json()
@@ -254,7 +254,7 @@ async def test_put_pipeline_reorder_swaps_positions(app_factory):
 
 
 async def test_put_pipeline_rejects_foreign_instance_id(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     await _register_plugin(factory)
     created = (await client.post("/clients", json={"name": "Acme"})).json()
@@ -272,7 +272,7 @@ async def test_put_pipeline_rejects_foreign_instance_id(app_factory):
 
 
 async def test_patch_instance_enabled(app_factory):
-    app, factory = app_factory
+    _app, factory = app_factory
     client = await logged_in_client(app_factory)
     await _register_plugin(factory)
     created = (await client.post("/clients", json={"name": "Acme"})).json()
@@ -298,7 +298,7 @@ async def test_patch_instance_enabled(app_factory):
 
 
 async def test_patch_instance_not_found(app_factory):
-    app, factory = app_factory
+    _app, _factory = app_factory
     client = await logged_in_client(app_factory)
     created = (await client.post("/clients", json={"name": "Acme"})).json()
     feed = (await client.post(f"/clients/{created['id']}/feed-sources",

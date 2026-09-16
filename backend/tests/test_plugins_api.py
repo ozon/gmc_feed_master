@@ -201,7 +201,7 @@ async def test_config_put_get_round_trip_per_scope(app_factory):
     _, factory = app_factory
     await seed_plugin(factory)
     client = await logged_in_client(app_factory)
-    client_id, feed_source_id = await create_client_and_feed_source(client)
+    client_id, _feed_source_id = await create_client_and_feed_source(client)
 
     resp = await client.put(
         "/plugins/title_case/config", json={"prefix": "Global"}
@@ -263,7 +263,7 @@ async def test_config_undeclared_scope_returns_422(app_factory):
     _, factory = app_factory
     await seed_plugin(factory)
     client = await logged_in_client(app_factory)
-    client_id, feed_source_id = await create_client_and_feed_source(client)
+    _client_id, feed_source_id = await create_client_and_feed_source(client)
     resp = await client.put(
         f"/plugins/title_case/config?feed_source_id={feed_source_id}", json={}
     )

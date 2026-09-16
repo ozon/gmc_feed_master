@@ -89,7 +89,7 @@ def test_logout_invalidates_session_and_clears_matching_cookie(client):
 
 
 def test_login_replaces_existing_session_cookie(client):
-    first = client.post("/auth/login", json=VALID_CREDENTIALS)
+    client.post("/auth/login", json=VALID_CREDENTIALS)
     first_token = client.cookies[SESSION_COOKIE_NAME]
     second = client.post("/auth/login", json=VALID_CREDENTIALS)
 

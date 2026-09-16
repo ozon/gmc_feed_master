@@ -116,7 +116,7 @@ async def _create_feed_source(app_factory):
 
 
 async def _trigger_run(app_factory, feed_source_id):
-    app, factory, _, _ = app_factory
+    _app, factory, _, _ = app_factory
     client = await logged_in_client(app_factory)
     resp = await client.post(f"/feed-sources/{feed_source_id}/run")
     assert resp.status_code == 202
@@ -141,7 +141,7 @@ def _token_of(feed_source_payload):
 
 async def test_full_pipeline_publishes_gmc_xml_at_token_url(app_factory):
     app, factory, _, _ = app_factory
-    client, feed_source = await _create_feed_source(app_factory)
+    _client, feed_source = await _create_feed_source(app_factory)
     await _trigger_run(app_factory, feed_source["id"])
 
     anonymous = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
@@ -198,7 +198,7 @@ async def test_second_unchanged_run_is_deduplicated(app_factory):
 
 
 async def test_changed_run_creates_version_and_diff_shows_field_change(app_factory):
-    app, factory, _, fetcher = app_factory
+    _app, factory, _, fetcher = app_factory
     client, feed_source = await _create_feed_source(app_factory)
     await _trigger_run(app_factory, feed_source["id"])
 
@@ -221,7 +221,7 @@ async def test_changed_run_creates_version_and_diff_shows_field_change(app_facto
 
 
 async def test_rollback_republishes_old_version(app_factory):
-    app, factory, _, fetcher = app_factory
+    app, _factory, _, fetcher = app_factory
     client, feed_source = await _create_feed_source(app_factory)
     await _trigger_run(app_factory, feed_source["id"])
     fetcher.data = WIDE_TSV_CHANGED

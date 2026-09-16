@@ -106,7 +106,7 @@ async def _make_feed(client, source_url="http://source.example/feed.tsv"):
 
 
 async def test_dry_run_full_pass_no_side_effects(app_factory):
-    app, factory, _ = app_factory
+    _app, factory, _ = app_factory
     client = await logged_in_client(app_factory)
     feed_id = await _make_feed(client)
     # seed a genuine custom field directly in the DB (beyond the
@@ -150,7 +150,7 @@ async def test_dry_run_full_pass_no_side_effects(app_factory):
 
 
 async def test_dry_run_limit_caps_rows(app_factory):
-    app, factory, _ = app_factory
+    _app, _factory, _ = app_factory
     client = await logged_in_client(app_factory)
     feed_id = await _make_feed(client)
     body = (await client.post(f"/feed-sources/{feed_id}/dry-run", json={"limit": 1})).json()
@@ -198,7 +198,7 @@ async def test_dry_run_records_plugin_drops(app_factory):
 
 
 async def test_dry_run_findings_grouped_by_severity_and_rule(app_factory):
-    app, factory, _ = app_factory
+    _app, _factory, _ = app_factory
     client = await logged_in_client(app_factory)
     feed_id = await _make_feed(client)
     resp = await client.post(f"/feed-sources/{feed_id}/dry-run", json={})
@@ -210,7 +210,7 @@ async def test_dry_run_findings_grouped_by_severity_and_rule(app_factory):
 
 
 async def test_dry_run_source_failure_returns_422(app_factory):
-    app, factory, _ = app_factory
+    _app, _factory, _ = app_factory
     client = await logged_in_client(app_factory)
     # feed without source_url → IngestStep raises ValueError → 422
     client_id = (await client.post("/clients", json={"name": "Acme"})).json()["id"]
@@ -251,7 +251,7 @@ async def test_dry_run_unmapped_source_flags_baseline_no_automap(app_factory):
 
 
 async def test_dry_run_source_deleted_before_execution_returns_404(app_factory, monkeypatch):
-    app, _, _ = app_factory
+    _app, _, _ = app_factory
     client = await logged_in_client(app_factory)
     feed_id = await _make_feed(client)
 

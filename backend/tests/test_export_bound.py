@@ -58,7 +58,7 @@ async def _seed(session_factory):
 async def test_load_export_bound_filters_and_falls_back(session_factory):
     feed_source_id = await _seed(session_factory)
     bound = await load_export_bound(session_factory, feed_source_id)
-    assert [(pid, product["title"] if "title" in product else None) for pid, product in bound] == [
+    assert [(pid, product.get("title", None)) for pid, product in bound] == [
         ("a", "raw-a"),
         ("b", "proc-b"),
     ]

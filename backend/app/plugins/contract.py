@@ -93,7 +93,7 @@ def _check_reserved_routes(candidate: Candidate) -> list[str]:
     violations: list[str] = []
     for route in router.routes:
         path = getattr(route, "path", "")
-        if path.startswith("/config") or path.startswith("/data"):
+        if path.startswith(("/config", "/data")):
             violations.append(f"reserved route path {path!r}")
     return violations
 

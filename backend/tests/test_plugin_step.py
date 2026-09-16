@@ -191,7 +191,7 @@ async def test_multi_instance_chains_in_order(isolated_database_url):
         {"plugin": "upper", "resolved_config": {}, "resolved_data": {}},
     ]}
 
-    result, rows, _ = await _run_plugin_step(
+    _result, rows, _ = await _run_plugin_step(
         factory, feed_source, products, pks, bundle,
         {"mut": mutating, "upper": UpperPlugin()},
     )

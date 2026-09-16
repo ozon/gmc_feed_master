@@ -74,13 +74,13 @@ async def test_purge_removes_expired_rows_only(isolated_database_url):
     async with factory() as session, session.begin():
         feed_source = await _seed(session)
 
-    expired_pk, expired_hist = await _product(
+    _expired_pk, _expired_hist = await _product(
         factory, feed_source, "old", "removed", NOW - timedelta(days=91)
     )
-    fresh_pk, fresh_hist = await _product(
+    _fresh_pk, fresh_hist = await _product(
         factory, feed_source, "recent", "removed", NOW - timedelta(days=10)
     )
-    active_pk, aged_hist = await _product(
+    _active_pk, _aged_hist = await _product(
         factory, feed_source, "active", "active", None,
         recorded_at=NOW - timedelta(days=91),
     )

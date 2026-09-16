@@ -50,15 +50,14 @@ def parse_header(
             sub_fields = [s.strip() for s in raw_subfields.split(":") if s.strip()]
 
             attr = registry.attributes.get(name)
-            if attr is not None:
-                if attr.kind not in (
-                    AttributeKind.STRUCTURED,
-                    AttributeKind.REPEATED_STRUCTURED,
-                ):
-                    raise HeaderError(
-                        f"Column '{header}' annotates a non-structured attribute",
-                        column=header,
-                    )
+            if attr is not None and attr.kind not in (
+                AttributeKind.STRUCTURED,
+                AttributeKind.REPEATED_STRUCTURED,
+            ):
+                raise HeaderError(
+                    f"Column '{header}' annotates a non-structured attribute",
+                    column=header,
+                )
 
             prev = seen.get(name, 0)
             if prev >= 1:

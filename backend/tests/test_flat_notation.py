@@ -314,7 +314,7 @@ class TestSplitRowStructured:
         plan = HeaderPlan(columns=[
             ColumnSpec(name="shipping", kind="structured", sub_fields=["country", "price"]),
         ])
-        result, err = split_row(["US:6.49:extra"], plan)
+        _result, err = split_row(["US:6.49:extra"], plan)
         assert err is not None
         assert "shipping" in err.message
 
@@ -357,5 +357,5 @@ class TestSplitRowRepeatedStructured:
         plan = HeaderPlan(columns=[
             ColumnSpec(name="shipping", kind="repeated_structured", sub_fields=["country", "price"], arity=2),
         ])
-        result, err = split_row(["US:6.49:extra", "UK:5.99 GBP"], plan)
+        _result, err = split_row(["US:6.49:extra", "UK:5.99 GBP"], plan)
         assert err is not None

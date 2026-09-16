@@ -103,8 +103,8 @@ async def test_user_dashboard_summary_filtered(scope_app, bob_client):
 
 @pytest.mark.asyncio
 async def test_unassigned_client_routes_404(scope_app, bob_client, admin_client):
-    other_id = [c["id"] for c in (await admin_client.get("/clients")).json()
-                if c["name"] == "Other Corp"][0]
+    other_id = next(c["id"] for c in (await admin_client.get("/clients")).json()
+                if c["name"] == "Other Corp")
     assert (await bob_client.get(f"/clients/{other_id}/feed-sources")).status_code == 404
     assert (await bob_client.put(
         f"/clients/{other_id}", json={"name": "Hacked"}
@@ -114,8 +114,8 @@ async def test_unassigned_client_routes_404(scope_app, bob_client, admin_client)
 
 @pytest.mark.asyncio
 async def test_assigned_client_crud_is_admin_only(scope_app, bob_client, admin_client):
-    acme_id = [c["id"] for c in (await admin_client.get("/clients")).json()
-               if c["name"] == "Acme"][0]
+    acme_id = next(c["id"] for c in (await admin_client.get("/clients")).json()
+               if c["name"] == "Acme")
     assert (await bob_client.post(
         "/clients", json={"name": "Bob Corp"}
     )).status_code == 403
@@ -128,8 +128,8 @@ async def test_assigned_client_crud_is_admin_only(scope_app, bob_client, admin_c
 @pytest.mark.asyncio
 async def test_unassigned_feed_source_routes_404(scope_app, bob_client, admin_client):
     feeds = (await admin_client.get("/dashboard/summary")).json()["clients"]
-    other_feed_id = [f["id"] for c in feeds if c["name"] == "Other Corp"
-                     for f in c["feed_sources"]][0]
+    other_feed_id = next(f["id"] for c in feeds if c["name"] == "Other Corp"
+                     for f in c["feed_sources"])
     assert (await bob_client.get(f"/feed-sources/{other_feed_id}")).status_code == 404
     assert (await bob_client.get(
         f"/feed-sources/{other_feed_id}/ingestion-runs"
@@ -142,8 +142,8 @@ async def test_unassigned_feed_source_routes_404(scope_app, bob_client, admin_cl
 @pytest.mark.asyncio
 async def test_assigned_feed_source_routes_allowed(scope_app, bob_client, admin_client):
     feeds = (await admin_client.get("/dashboard/summary")).json()["clients"]
-    acme_feed_id = [f["id"] for c in feeds if c["name"] == "Acme"
-                    for f in c["feed_sources"]][0]
+    acme_feed_id = next(f["id"] for c in feeds if c["name"] == "Acme"
+                    for f in c["feed_sources"])
     assert (await bob_client.get(f"/feed-sources/{acme_feed_id}")).status_code == 200
     assert (await bob_client.get(
         f"/feed-sources/{acme_feed_id}/ingestion-runs"
@@ -154,10 +154,10 @@ async def test_assigned_feed_source_routes_allowed(scope_app, bob_client, admin_
 async def test_plugin_preview_body_scope_enforced(scope_app, bob_client, admin_client):
     app, _ = scope_app
     feeds = (await admin_client.get("/dashboard/summary")).json()["clients"]
-    other_feed_id = [f["id"] for c in feeds if c["name"] == "Other Corp"
-                     for f in c["feed_sources"]][0]
-    acme_feed_id = [f["id"] for c in feeds if c["name"] == "Acme"
-                    for f in c["feed_sources"]][0]
+    other_feed_id = next(f["id"] for c in feeds if c["name"] == "Other Corp"
+                     for f in c["feed_sources"])
+    acme_feed_id = next(f["id"] for c in feeds if c["name"] == "Acme"
+                    for f in c["feed_sources"])
     # Plugin preview routes take feed_source_id in the BODY — router-level
     # path/query enforcement cannot see them; the routes must check scope.
     # Lifespan mounts the plugin routes (assigned → 200 proves they exist).
