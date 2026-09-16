@@ -1,14 +1,10 @@
-import { Badge, Table } from '@mantine/core';
+import { Table } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import type { QualityFinding as ApiQualityFinding } from '../../api/types';
+import { RuleLabel } from './findings/RuleLabel';
+import { SeverityBadge } from './findings/SeverityBadge';
 
 export type QualityFinding = ApiQualityFinding;
-
-const SEVERITY_COLOR: Record<string, string> = {
-  critical: 'red',
-  warning: 'yellow',
-  info: 'blue',
-};
 
 type Props = {
   findings: QualityFinding[];
@@ -31,11 +27,11 @@ export function FindingsTable({ findings }: Props) {
         {findings.map((finding, idx) => (
           <Table.Tr key={`${finding.code}-${finding.product_id}-${idx}`} data-testid={`finding-row-${idx}`}>
             <Table.Td>
-              <Badge color={SEVERITY_COLOR[finding.severity] ?? 'gray'}>
-                {t(`severity.${finding.severity}`, { defaultValue: finding.severity })}
-              </Badge>
+              <SeverityBadge severity={finding.severity} />
             </Table.Td>
-            <Table.Td>{finding.code}</Table.Td>
+            <Table.Td>
+              <RuleLabel code={finding.code} />
+            </Table.Td>
             <Table.Td>{finding.field}</Table.Td>
             <Table.Td>{finding.message}</Table.Td>
             <Table.Td>{finding.product_id}</Table.Td>

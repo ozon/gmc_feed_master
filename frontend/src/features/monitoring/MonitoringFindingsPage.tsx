@@ -5,7 +5,7 @@ import { useParams } from 'react-router';
 import { useQualityFindings, useQualityHistory } from '../../api/hooks';
 import { ErrorState, LoadingState } from '../../components/StateViews';
 import { FindingsTable } from './FindingsTable';
-import { QualitySummaryCards } from './QualitySummaryCards';
+import { FindingsSummary } from './findings/FindingsSummary';
 import { QualityTrendChart } from './QualityTrendChart';
 import { RuleDistributionChart } from './RuleDistributionChart';
 
@@ -32,7 +32,7 @@ export function MonitoringFindingsPage() {
 
   return (
     <Stack gap="md" pt="md">
-      <QualitySummaryCards
+      <FindingsSummary
         counts={data?.counts ?? { critical: 0, warning: 0, info: 0 }}
         delta={data?.delta ?? { fixed: 0, new: 0, remaining: 0 }}
         hasPrevious={Boolean(data?.has_previous)}

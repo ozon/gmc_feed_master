@@ -1,5 +1,6 @@
 import { Badge, Group, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
+import { SEVERITIES } from './severity';
 
 type Props = {
   counts: { critical: number; warning: number; info: number };
@@ -8,17 +9,11 @@ type Props = {
   productCount: number;
 };
 
-const SEVERITY_COLOR: Record<string, string> = {
-  critical: 'red',
-  warning: 'yellow',
-  info: 'blue',
-};
-
-export function QualitySummaryCards({ counts, delta, hasPrevious, productCount }: Props) {
+export function FindingsSummary({ counts, delta, hasPrevious, productCount }: Props) {
   const { t } = useTranslation('monitoring');
   return (
     <SimpleGrid cols={{ base: 1, sm: 3 }}>
-      {(['critical', 'warning', 'info'] as const).map((severity) => (
+      {SEVERITIES.map((severity) => (
         <Paper key={severity} p="md" radius="md" withBorder data-testid={`card-${severity}`}>
           <Stack gap={4}>
             <Text size="sm" c="dimmed">

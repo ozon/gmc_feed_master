@@ -43,6 +43,6 @@ export function ruleInfo(code: string): RuleInfo {
   return RULE_CATALOG[code] ?? UNKNOWN_RULE;
 }
 
-export function ruleTitle(code: string, t: TFunction): string {
-  return t(ruleInfo(code).titleKey, { code, defaultValue: code });
+export function ruleTitle(code: string, t: TFunction<'monitoring'>): string {
+  return t(ruleInfo(code).titleKey as 'rules.unknown.title', { code, defaultValue: code });
 }

@@ -75,8 +75,8 @@ describe('MonitoringFindingsPage', () => {
     renderAt();
     await waitFor(() => expect(screen.getByTestId('findings-table')).toBeInTheDocument());
     const table = within(screen.getByTestId('findings-table'));
-    expect(table.getByText('missing_title')).toBeInTheDocument();
-    expect(table.getByText('low_image_quality')).toBeInTheDocument();
+    expect(table.getByText('Unrecognized rule: missing_title')).toBeInTheDocument();
+    expect(table.getByText('Unrecognized rule: low_image_quality')).toBeInTheDocument();
   });
 
   it('filters by severity when MultiSelect is used', async () => {
@@ -141,7 +141,7 @@ describe('MonitoringFindingsPage', () => {
     await user.click(screen.getByRole('option', { name: 'missing_title' }));
     expect(screen.getAllByTestId(/finding-row-/)).toHaveLength(1);
     const table = within(screen.getByTestId('findings-table'));
-    expect(table.getByText('missing_title')).toBeInTheDocument();
-    expect(table.queryByText('low_image_quality')).not.toBeInTheDocument();
+    expect(table.getByText('Unrecognized rule: missing_title')).toBeInTheDocument();
+    expect(table.queryByText('Unrecognized rule: low_image_quality')).not.toBeInTheDocument();
   });
 });
