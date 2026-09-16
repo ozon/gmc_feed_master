@@ -15,8 +15,8 @@
   ```
   cd backend && uv run ruff check . ../plugins
   ```
-  It must exit 0 with no output at the end of this cycle. Do **not** run `ruff check` from the repository root: ruff's `I001` (import sorting) resolves first-party modules from the project root, so the repo-root cwd produces ~80 additional phantom `I001` findings on the same files (`backend/app/mapping/matcher.py` is clean from `backend/` and flagged from the root). All measurements in this plan use the `backend/` cwd.
-- **Baseline for the authoritative command: 520 lines** (491 in `backend/` + 30 in `plugins/`, 1 shared). Intermediate counts after each wave are diagnostics, not targets; the target is exit 0.
+  It must exit 0 with no output at the end of this cycle. Do **not** run `ruff check` from the repository root: without the `src` setting added in Task 1, ruff's `I001` (import sorting) resolves first-party modules from the project root, so the repo-root cwd produces ~80 additional phantom `I001` findings on the same files (`backend/app/mapping/matcher.py` is clean from `backend/` and flagged from the root). Task 1's `src = ["backend", "plugins"]` removes that cwd-dependence — verified: the same check returns 424 lines from the repo root and from `backend/`.
+- **Baseline for the authoritative command: 520 lines** (491 in `backend/` + 30 in `plugins/`, 1 shared). Task 1's config takes it to **424** (all 100 `B008` findings removed, `I001` re-resolved by the explicit `src`). Intermediate counts after each wave are diagnostics, not targets; the target is exit 0.
 - **No behaviour changes.** No drive-by refactors, no reformatting (`ruff format` is not used), no consolidation "while I'm in there". A rule fix is the smallest edit that satisfies the rule.
 - **Comments are forbidden in this repo — with one counted exception.** This cycle adds exactly ten `# noqa` directives (eight `BLE001`, one `S112` sharing a line with a `BLE001`, one `DTZ001`) at sites enumerated in Task 4. No other comment may be added.
 - **No test may be added, removed, or skipped to make a wave green.** The only test edits permitted are the two assertion updates in Task 5, which pin the new exception type.
@@ -48,6 +48,7 @@
 
 ```toml
 target-version = "py310"
+src = ["backend", "plugins"]
 
 [lint.flake8-bugbear]
 extend-immutable-calls = [
@@ -62,23 +63,24 @@ extend-immutable-calls = [
 ]
 ```
 
-This is ruff's documented remedy for `B008` on FastAPI callables in argument defaults. `backend/pyproject.toml` deliberately stays untouched: ruff walks past a `pyproject.toml` with no `[tool.ruff]` section and finds this file.
+`extend-immutable-calls` is ruff's documented remedy for `B008` on FastAPI callables in argument defaults. `src` declares the two source roots explicitly, because a root-level config otherwise makes the repository root ruff's project root and changes `I001`'s first-party detection for `backend/` files (measured: +80 phantom `I001` findings, including `backend/app/mapping/matcher.py`, which is clean under the `backend/` cwd). With `src` set the results are cwd-independent. `backend/pyproject.toml` deliberately stays untouched: ruff walks past a `pyproject.toml` with no `[tool.ruff]` section and finds this file.
 
-- [ ] **Step 2: Verify the config is actually picked up by `backend/` files**
+- [ ] **Step 2: Verify the config is actually picked up and `B008` is gone**
 
 Run:
 ```bash
 cd backend && uv run ruff check . ../plugins --select B008
 ```
-Expected: `All checks passed!`
+Expected: `All checks passed!` (all 100 `B008` findings gone).
 
-- [ ] **Step 3: Verify the total count dropped by ~100**
+- [ ] **Step 3: Verify the total count and cwd-independence**
 
 Run:
 ```bash
 cd backend && uv run ruff check . ../plugins --output-format=concise 2>/dev/null | wc -l
+cd .. && uv run --project backend ruff check backend plugins --output-format=concise 2>/dev/null | wc -l
 ```
-Expected: `≈420` (was `520`; the ~100 removed findings are all `B008`).
+Expected: both print `424` (was `520`). Identical counts from both cwds prove the `src` setting did its job. `SIM117` (101) and `I001` (87) now dominate what remains.
 
 - [ ] **Step 4: Commit**
 
