@@ -22,6 +22,7 @@ Severity legend: Important (will actively mislead) · Medium · Minor.
 - Evidence: §10: "Labelizer and Category deliberately stay `[global, client]` only for MVP — no per-feed-source (per-market) granularity." vs §2: "data: client + feed_source per-rule value lists" and §5.9: "PluginData (scopes client + feed_source)… per-market labeling ships with the MVP."
 - Impact: a reader honoring §10 would drop feed-scope data support that §5.9 mandates and the code implements.
 - Suggestion: **operator action** — correct the stale §10 bullet; the spec is the contract and must be internally consistent.
+- Status: OPEN — operator-owned (re-verified 2026-09-16, M14: spec:285 vs spec:43/197 still contradict). Filed as `TODO.md` §8.2.
 
 ### [D3] Spec §2 still says "single user, no role model" while two-role RBAC shipped per ADR-0009
 - Severity: **Important**
@@ -29,6 +30,7 @@ Severity legend: Important (will actively mislead) · Medium · Minor.
 - Evidence: spec §2: "Access / auth | Single user (operator only), no client portal, no role model." Code: `role` (`admin`/`user`), `user_clients`, `/admin/*` routes; ADR-0009 documents the two-role design; api.md/architecture.md document RBAC.
 - Impact: anyone auditing against the spec finds the shipped auth model in violation; the binding rule makes this a spec-vs-docs conflict requiring a spec amendment, not doc reversion.
 - Suggestion: **operator action** — record the ADR-0009 change in spec §2.
+- Status: OPEN — operator-owned (re-verified 2026-09-16, M14: spec:37 still says "single user, no role model" while two-role RBAC shipped). Filed as `TODO.md` §8.2.
 
 ## Findings (doc fixes)
 
