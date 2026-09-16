@@ -249,15 +249,16 @@ Retention: Last N per feed source (default 30, includes rollback versions).
 | `provider_type` | String(50) | `openai_compatible` (only value currently) |
 | `base_url` | String(1024) | OpenAI or self-hosted (vLLM/Ollama/LM Studio) |
 | `api_key` | String(1024) | Write-only via API; redacted in all responses and logs |
-| `model` | String(255) | e.g. `gpt-4o-mini` |
+| `model` | String(255) | LiteLLM model id, e.g. `openai/gpt-4o-mini`, `anthropic/claude-3-5-sonnet` |
+| `tier` | String(20) | `bulk` or `precision` — the Router model group the row joins |
 | `input_price_per_mtok` | Numeric(12,6) | Nullable; cost estimation |
 | `output_price_per_mtok` | Numeric(12,6) | Nullable; cost estimation |
 | `max_concurrency` | Integer | Per-config call semaphore |
 | `timeout_s` | Integer | Per-request timeout |
 | `enabled` | Boolean | Disabled configs are skipped |
-| `is_default` | Boolean | At most one row true (enforced on write) |
+| `is_default` | Boolean | **Legacy, unused** — kept until the cleanup phase; tier replaces it |
 
-One default config serves all AI calls (`AiService.run_task`); swapping providers is a config-row change, not a code change.
+Enabled rows are grouped by `tier` into LiteLLM Router model groups (`bulk`, `precision`) with automatic `bulk → precision` failover; swapping providers is a config-row change, not a code change.
 
 ### AiResultCache
 | Column | Type | Notes |
@@ -273,6 +274,8 @@ One default config serves all AI calls (`AiService.run_task`); swapping provider
 
 Unique key: `(task_type, provider_config_id, model, template_version, input_hash)` — unchanged product content is a cache hit with zero provider calls. No TTL: content-hash + version keying makes stale entries practically impossible. **Retention**: purged by the nightly `system-ai-purge` job after `ai_cache_retention_days`.
 
+**Legacy, unused**: `AiService` now uses LiteLLM's native cache (`local`/`disk`/`redis`, namespaced per task type with TTLs). This table and its purge are retained until the cleanup phase, when the table is dropped.
+
 ### AiUsageLog
 | Column | Type | Notes |
 |--------|------|-------|
@@ -282,11 +285,14 @@ Unique key: `(task_type, provider_config_id, model, template_version, input_hash
 | `task_type` | String(100) | |
 | `provider_config_id` | Integer | Nullable; no FK (logs outlive deleted configs) |
 | `model` | String(255) | |
+| `provider` | String(255) | Nullable; provider that served the request |
+| `tier` | String(20) | Nullable; Router model group (`bulk`/`precision`) |
+| `fallback_used` | Boolean | True when the precision fallback served the request |
 | `cache_hit` | Boolean | Cost reports can show avoided spend |
 | `prompt_tokens` / `completion_tokens` | Integer | From provider usage when available |
 | `cost_usd` | Numeric(12,6) | Nullable estimate from configured prices |
 | `latency_ms` | Integer | |
-| `error_code` | String(100) | Nullable: `no_provider`, `circuit_open`, `rate_limited`, `timeout`, `server_error`, `client_error`, `invalid_response` |
+| `error_code` | String(100) | Nullable: `no_provider`, `provider_error`, `invalid_task` |
 | `created_at` | DateTime | Indexed |
 
 One row per AI call including cache hits (tokens 0). **Retention**: purged nightly after `ai_usage_retention_days`. Aggregated via `GET /admin/ai/usage`.

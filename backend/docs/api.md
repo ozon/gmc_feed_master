@@ -43,8 +43,8 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 ### AI Administration
 All routes require the admin role. `api_key` is never included in any response.
 
-- `GET /admin/ai/providers` — list provider configs `[{id, name, provider_type, base_url, model, input_price_per_mtok, output_price_per_mtok, max_concurrency, timeout_s, enabled, is_default}]`
-- `POST /admin/ai/providers` — create `{name, provider_type="openai_compatible", base_url, api_key?, model, input_price_per_mtok?, output_price_per_mtok?, max_concurrency=4, timeout_s=30, enabled=true, is_default=false}`; setting `is_default` clears the flag on all other configs
+- `GET /admin/ai/providers` — list provider configs `[{id, name, provider_type, base_url, model, tier, input_price_per_mtok, output_price_per_mtok, max_concurrency, timeout_s, enabled}]`
+- `POST /admin/ai/providers` — create `{name, provider_type="litellm"|"openai_compatible", base_url, api_key?, model, tier="bulk"|"precision", input_price_per_mtok?, output_price_per_mtok?, max_concurrency=4, timeout_s=30, enabled=true}`; enabled rows are grouped by `tier` into Router model groups with `bulk → precision` failover
 - `PATCH /admin/ai/providers/{id}` — partial update; `api_key` absent = unchanged, explicit `""` = cleared
 - `DELETE /admin/ai/providers/{id}` (204) — delete config; runs read config at call time, so deletion just makes the next AI call fall back
 - `POST /admin/ai/providers/{id}/test` — live probe completion (`"Reply with OK"`); returns `{"status": "ok", latency_ms, prompt_tokens, completion_tokens}` or `{"status": "error", "error_code"}`
