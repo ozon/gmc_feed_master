@@ -21,11 +21,13 @@ All figures below were measured on `main` at `cdc2a1e` with the pinned `ruff==0.
 - **There is no ruff configuration anywhere in the repository.** No `ruff.toml`, no `.ruff.toml`, and no `[tool.ruff]` section in `backend/pyproject.toml` (the only `pyproject.toml` in the repo).
 - **Ruff 0.16.6's built-in default is 413 rules** — `SIM`, `B`, `I`, `UP`, `RUF`, `FURB`, `BLE`, `S`, `ASYNC`, `DTZ` are all enabled by default; `E501` is not. Verified with `ruff check --isolated` (ignores all config files) in a directory with no config, and by resolving `linter.rules.enabled` (413 entries) — identical in `/tmp` and in `backend/`, so the rule set comes from the version, not from any file.
 - **Ruff config discovery walks past `backend/pyproject.toml`.** A root-level `ruff.toml` applies to files under `backend/` even though `backend/pyproject.toml` exists without a `[tool.ruff]` section. Verified with a throwaway tree. It applies to `plugins/` as well.
-- **Error counts:** `backend/` 489 errors (491 lines in `--output-format=concise`, which is what the CI gate counts): `tests/` 237, `app/` 165, `alembic/` 43, `registry/` 39, `scripts/` 5. `plugins/` 34 (B008 19, TRY004 10, I001 5). `examples/` contains no Python.
+- **Error counts:** `backend/` 489 errors (491 lines in `--output-format=concise`, which is what the CI gate counts): `tests/` 237, `app/` 165, `alembic/` 43, `registry/` 39, `scripts/` 5. `plugins/` 34 (B008 19, TRY004 10, I001 5) — 30 when measured from the `backend/` cwd, see the measurement correction below. `examples/` contains no Python.
 - **`alembic check` at HEAD reports exactly three operations** (see Workstream 2 for root causes).
 - **All 8 `BLE001` sites are intentional** contract-mandated broad catches (per-item XML parse error collection, plugin-contract probes that must catch anything, image-probe failure caching, `validate_config` error collection, per-plugin isolation). Narrowing them would change failure semantics.
 
 ### Fix-wave sizing (measured in a throwaway worktree, then reverted)
+
+**Measurement correction (2026-09-16, during plan writing): the counts below are per-invocation and cwd-sensitive.** The authoritative gate runs from `backend/` as `uv run ruff check . ../plugins`, whose baseline is **520 lines** (491 `backend/` + 30 `plugins/`, one shared). Ruff's `I001` resolves first-party modules from the resolved project root, so running the same check from the repository root reports ~80 extra phantom `I001` findings on unchanged files (e.g. `backend/app/mapping/matcher.py` is clean from `backend/`, flagged from the root). The plan pins all waves and gates to the `backend/` cwd form.
 
 | Wave | Action | Errors after |
 |---|---|---|
