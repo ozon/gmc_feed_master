@@ -70,6 +70,7 @@ async def dry_run(
             clock=state.clock,
             image_probe=image_probe,
             limit=payload.limit if payload else None,
+            ai_service=getattr(state, "ai_service", None),
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail="feed source not found") from exc
@@ -87,4 +88,5 @@ async def dry_run(
         ],
         "findings": _group_findings(result.findings),
         "sample": result.sample,
+        "ai_suggestions": result.ai_suggestions,
     }

@@ -17,7 +17,7 @@ from ..models.export import ExportRun
 from ..models.feed_source import FeedSource
 from ..qc.engine import Finding, QcContext, run_engine
 from ..staging.config_resolver import resolve_config_bundle
-from .steps import IngestStep, PluginStep, RunState, StepContext
+from .steps import EnrichmentStep, IngestStep, PluginStep, RunState, StepContext
 
 DRY_RUN_SAMPLE_CAP = 50
 
@@ -30,6 +30,7 @@ class DryRunResult:
     dropped: list[dict[str, Any]] = field(default_factory=list)
     findings: list[Finding] = field(default_factory=list)
     sample: list[dict[str, Any]] = field(default_factory=list)
+    ai_suggestions: dict[str, dict[str, str]] = field(default_factory=dict)
 
 
 async def run_dry_run(
@@ -42,10 +43,11 @@ async def run_dry_run(
     clock: Clock,
     image_probe: Any,
     limit: int | None = None,
+    ai_service: Any = None,
 ) -> DryRunResult:
     logger = logging.getLogger("dry_run")
     run_state = RunState()
-    ctx = StepContext(feed_source_id, session_factory, logger, run_state, 0)
+    ctx = StepContext(feed_source_id, session_factory, logger, run_state, 0, dry_run=True)
 
     async with session_factory() as session:
         feed_source = await session.get(FeedSource, feed_source_id)
@@ -68,6 +70,9 @@ async def run_dry_run(
 
     await PluginStep(plugin_registry).execute(ctx)
     processed = list(run_state.products)
+
+    await EnrichmentStep(ai_service).execute(ctx)
+    ai_suggestions = dict(run_state.ai_suggestions)
 
     async with session_factory() as session:
         previous_export_run = (await session.execute(
@@ -107,4 +112,5 @@ async def run_dry_run(
         dropped=list(run_state.dropped),
         findings=findings,
         sample=processed[:DRY_RUN_SAMPLE_CAP],
+        ai_suggestions=ai_suggestions,
     )

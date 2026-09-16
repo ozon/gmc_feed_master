@@ -238,3 +238,63 @@ async def test_step_dry_run_does_not_persist(db) -> None:
     assert ctx.run_state.ai_suggestions["p1"] == {"color": "Red"}
     _pid, data = await load_enrichment_data(factory, ids["feed_id"])
     assert data == {}
+
+
+def _registry_stub():
+    from types import SimpleNamespace
+
+    return SimpleNamespace(attributes={})
+
+
+def _clock_stub():
+    from datetime import datetime, timezone
+    from types import SimpleNamespace
+
+    return SimpleNamespace(now=lambda: datetime.now(timezone.utc))
+
+
+@pytest.mark.asyncio
+async def test_run_dry_run_surfaces_suggestions_without_persisting(db, monkeypatch) -> None:
+    factory, ids = db
+    await _set_config(factory, ids["feed_id"], {"enabled": True})
+    ai = FakeAi([_result(EnrichedAttributes(color="Red"))])
+
+    async with factory() as session, session.begin():
+        feed = await session.get(FeedSource, ids["feed_id"])
+        feed.source_url = "http://example.test/feed.csv"
+        feed.source_format = "csv"
+
+    from app.pipeline import dry_run as dry_run_module
+    from app.pipeline.steps import StepResult
+
+    class FakeIngest:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def execute(self, ctx):
+            ctx.run_state.products = _products()
+            ctx.run_state.client_id = ids["client_id"]
+            return StepResult(processed_count=2)
+
+    monkeypatch.setattr(dry_run_module, "IngestStep", FakeIngest)
+
+    from types import SimpleNamespace
+
+    def _passthrough(product, mappings, registry):
+        return product, SimpleNamespace(dropped_unmapped=0, shape_mismatches=0)
+
+    monkeypatch.setattr(dry_run_module, "apply_mapping", _passthrough)
+
+    result = await dry_run_module.run_dry_run(
+        session_factory=factory,
+        feed_source_id=ids["feed_id"],
+        fetcher=object(),
+        registry=_registry_stub(),
+        plugin_registry={},
+        clock=_clock_stub(),
+        image_probe=None,
+        ai_service=ai,
+    )
+    assert result.ai_suggestions.get("p1") == {"color": "Red"}
+    _pid, data = await load_enrichment_data(factory, ids["feed_id"])
+    assert data == {}
