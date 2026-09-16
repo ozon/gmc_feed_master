@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.10+, FastAPI, SQLAlchemy 2.0 async, PostgreSQL, pytest (`-n auto` default; mark `@pytest.mark.asyncio` explicitly).
 
-**Status:** Phase B of `docs/superpowers/specs/2026-09-16-litellm-instructor-ai-core-design.md` (Phase A merged at `bef098d`).
+**Status:** Phase B of `docs/superpowers/specs/2026-09-16-litellm-instructor-ai-core-design.md` (Phase A merged at `bef098d`); complete 2026-09-16 on branch `ai-enrichment-step`. Execution notes: the dry-run test needed two test-side patches — `apply_mapping` passthrough (an empty `field_mapping` strips all fields, leaving products with no `id`) and a typed `HttpFetcher` cast for mypy. Gates at close: backend 1299 passed, ruff 490/490 (zero new), mypy exit-0.
 
 ## Global Constraints
 

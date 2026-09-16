@@ -1347,3 +1347,16 @@ Inline code review of the cycle found one critical and one important issue; both
 - **Router-build failures degrade.** `litellm.Router` validates deployments at construction and can raise; `AiService` catches it and returns `status="fallback"` (or `AiChatUnavailable`) so a misconfigured provider row cannot abort a run.
 
 **Rationale:** Tiered multi-provider failover, typed outputs, and a native cache with namespaces/TTLs are the incoming requirements and are not expressible in the bespoke stack; swapping them behind `AiService` kept QC, chat, the template library, the enrichment review flow, and the admin UI untouched. Deferring the destructive drops avoided a red intermediate (dropping `is_default`/`AiResultCache` before `service.py`/`ai_admin.py` stop referencing them), which the original task order got wrong. Pinning exact versions and a mypy override kept the hard typecheck gate green.
+
+### 2026-09-16 — AI enrichment pipeline step (phase B)
+
+**Topic:** Opt-in `EnrichmentStep` that generates attribute suggestions during a feed run and writes them to the existing Z4 review store; human review stays the only path that changes product output.
+
+**Decision:**
+- **Step, not plugin, for generation; plugin, not step, for application.** `EnrichmentStep` runs after `PluginStep` and before `QualityCheckStep`, gated per feed source by `configuration.ai_enrichment = {enabled, tasks, limit, budget}` (default disabled). It writes only to the `enrichment` plugin's feed-source `PluginData.suggestions`; the Z4 plugin continues to apply only `pinned` (accepted) values. This resolves the incoming spec's "pipeline step, not plugin" requirement without discarding the existing suggest→accept→pin safety gate.
+- **Direct store access, not the route helpers.** `app/routes/plugins.py`'s `_get_payload`/`_put_payload` are `CurrentUser`-scoped; a pipeline step has no user. `app/pipeline/enrichment.py` resolves the `enrichment` plugin row by name and reads/writes the feed-source `PluginData` row directly (`scope="feed_source"`, `key="default"`), merging into `suggestions` and preserving `pinned` verbatim.
+- **Budget and isolation mirror `qc/ai_rules.py`.** `ok` spends one budget unit, `cache_hit` is free, `fallback` counts as a failure; each product/task call is wrapped so one failure never aborts the batch. No new concurrency mechanism — the existing per-provider semaphore throttles. No DB session is held across an AI call.
+- **Dry-run never persists.** `StepContext.dry_run` and `RunState.ai_suggestions` were added; `run_dry_run(..., ai_service=...)` runs the step with `dry_run=True` and returns `ai_suggestions` in the response, writing nothing. `PluginStep`'s existing dry-run behavior is unchanged.
+- **Suggestion values are strings**, matching the plugin manifest's `data_schema` (`additionalProperties: {type: string}`).
+
+**Rationale:** Keeping generation in a step satisfies the spec while the review gate preserves the Z3-era trust line (AI never writes feed output unreviewed). Reusing the Z4 store means the Enrichment UI needs no change — step-generated suggestions appear in the existing review surface. The engine lives in a focused module (`app/pipeline/enrichment.py`) so budget/isolation/store logic is unit-testable without pipeline plumbing.

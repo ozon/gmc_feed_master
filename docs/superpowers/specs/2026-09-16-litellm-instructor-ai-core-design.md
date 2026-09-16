@@ -1,7 +1,7 @@
 # LiteLLM + Instructor AI Core Replacement (AI Reintegration) — Design
 
 Date: 2026-09-16
-Status: Approved in brainstorming (operator); phase A implemented 2026-09-16 on branch `litellm-instructor-core` (see ADR-0010)
+Status: Approved in brainstorming (operator); phase A implemented 2026-09-16 on branch `litellm-instructor-core` (ADR-0010); phase B (enrichment step) implemented 2026-09-16 on branch `ai-enrichment-step`
 Baseline: `main` at `0272bb0`
 
 ## Purpose and premise correction
