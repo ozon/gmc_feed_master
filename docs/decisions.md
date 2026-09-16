@@ -1398,3 +1398,15 @@ Inline code review of the cycle found one critical and one important issue; both
 **Two traps recorded for future cycles:**
 - **`ruff`'s `I001` depends on the resolved project root.** A config at the repository root otherwise moves `project_root` off `backend/` and reports ~80 phantom import-order findings on unchanged files (`backend/app/mapping/matcher.py` is clean under the `backend/` cwd). The root `ruff.toml` sets `src = ["backend", "plugins"]`; with it, the same check returns identical results from `backend/` and from the repository root.
 - **Never narrow the rule selection when `RUF100` is in play.** `--select X,Y,RUF100 --fix` replaces the enabled rule set, so `RUF100` sees every *other* rule's `noqa` as unused and deletes it. That mistake removed six justified `# noqa: UP031` directives in `app/ai/templates.py` (their messages contain literal `{{%s}}`, which f-strings cannot express without quadrupled braces) and one `# noqa: BLE001` in `app/ai/service.py`; all seven were restored.
+
+### 2026-09-16 — M14 hardening cycle 2: dev-host knobs, docs re-verification, minor triage
+
+**Topic:** Removing the machine-specific dev host, closing the documentation-consistency backlog, bounding the deferred-minor backlog, and shipping the UsagePage KPI/trend surface.
+
+**Decision:**
+- **One paired dev-host knob.** The dev host is no longer hardcoded anywhere: `frontend/vite.config.ts` reads `VITE_ALLOWED_HOSTS` (comma-separated, default `localhost`, documented in the new `frontend/.env.example`) and `Caddyfile.dev`'s site label is `{$DEV_HOST:localhost}`. Vite enforces the Host allow-list and Caddy picks the site label, so both must be set together when reaching the dev server by hostname.
+- **Historical review reports are re-verified, never trusted.** The 2026-09-08 consistency report's 14 doc findings were re-derived from code before any edit: 12 were already resolved, 2 had residual defects, and the report was factually wrong on two counts (D5). Every finding now carries a disposition (`FIXED` / `ALREADY CORRECT` / `OPEN — operator-owned`) so the report stops functioning as an open list.
+- **Addressing the report means neither rewriting nor "fixing" docs to match other docs.** Where the report and the code disagreed, the code won and the report was corrected; where the spec conflicts with itself or with shipped reality (D2/D3), nothing was touched — those are operator-owned amendments (TODO 8.2).
+- **The deferred-minor list is bounded by triage.** All 22 ledger entries were classified against code; the 5 genuine gaps are filed as numbered TODO items (Section 11) rather than carried as prose.
+
+**Rationale:** Both inputs to this cycle were point-in-time artifacts, and acting on them directly would have produced churn (re-"fixing" correct docs) and false confidence. Re-deriving from code made the cycle small and honest: the docs work was 2 real edits plus 14 dispositions, and the minors work was 1 real edit plus 17 classifications. Recording that the report had drifted from reality is itself the useful output — the same trap will recur with any older review artifact.
