@@ -92,3 +92,47 @@ async def test_lookup_returns_cached_value() -> None:
 
     cache._cache = Fake()  # type: ignore[assignment]
     assert await cache.lookup(model="bulk", messages=[]) == {"value": "cached"}
+
+
+def test_effective_backend_uses_discrete_redis_vars() -> None:
+    cfg = cache_config.CacheSettings(
+        cache_type="local", namespace="gmc-ai", ttl_taxonomy_s=1, ttl_content_s=1,
+        redis_url=None, disk_dir="/tmp/x", redis_host="redis-host",
+    )
+    assert cache_config.effective_backend(cfg) == "redis"
+
+
+def test_redis_params_url_takes_precedence_over_discrete_vars() -> None:
+    cfg = cache_config.CacheSettings(
+        cache_type="local", namespace="gmc-ai", ttl_taxonomy_s=1, ttl_content_s=1,
+        redis_url="rediss://:pw@urlhost:6380/0", disk_dir="/tmp/x",
+        redis_host="otherhost",
+    )
+    assert cache_config.redis_params(cfg) == {
+        "host": "urlhost", "port": 6380, "password": "pw", "ssl": True,
+    }
+
+
+@pytest.mark.asyncio
+async def test_local_round_trip_with_use_cache_flag() -> None:
+    cache = cache_config.NativeCache(
+        cache_type="local", namespace="gmc-ai", ttl_taxonomy_s=60,
+        ttl_content_s=60, redis_url=None, disk_dir="/tmp/ai-cache-test",
+    )
+    kwargs = cache.request_kwargs("title_optimization")
+    assert kwargs["cache"]["use-cache"] is True
+    request = {"model": "bulk", "messages": [{"role": "user", "content": "hi"}], **kwargs}
+    await cache.store({"title": "Hello"}, **request)
+    assert await cache.lookup(**request) == {"title": "Hello"}
+
+
+@pytest.mark.asyncio
+async def test_lookup_miss_returns_none_when_not_stored() -> None:
+    cache = cache_config.NativeCache(
+        cache_type="local", namespace="gmc-ai", ttl_taxonomy_s=60,
+        ttl_content_s=60, redis_url=None, disk_dir="/tmp/ai-cache-test",
+    )
+    kwargs = cache.request_kwargs("title_optimization")
+    assert await cache.lookup(
+        model="bulk", messages=[{"role": "user", "content": "never"}], **kwargs
+    ) is None

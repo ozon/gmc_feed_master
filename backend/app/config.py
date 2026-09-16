@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     export_dir: str = str(DEFAULT_EXPORT_DIR)
     public_base_url: str = "http://localhost:8000"
     redis_url: str | None = None
+    redis_host: str | None = None
+    redis_port: int = 6379
+    redis_password: str | None = None
+    redis_ssl: bool = False
     ai_cache_dir: str = str(Path(__file__).resolve().parents[2] / ".cache" / "ai")
 
     @property

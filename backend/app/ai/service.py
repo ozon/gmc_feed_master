@@ -244,7 +244,6 @@ class AiService:
                 messages=messages,
                 model=TIER_BULK,
                 max_retries=cfg.instructor_max_retries,
-                **cache_kwargs,
             )
         except Exception as exc:
             logger.warning("ai task %s failed: %s", task_type, exc, exc_info=True)

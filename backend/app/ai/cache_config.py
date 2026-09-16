@@ -27,10 +27,14 @@ class CacheSettings:
     ttl_content_s: int
     redis_url: str | None
     disk_dir: str
+    redis_host: str | None = None
+    redis_port: int = 6379
+    redis_password: str | None = None
+    redis_ssl: bool = False
 
 
 def effective_backend(cfg: CacheSettings) -> str:
-    if cfg.redis_url:
+    if cfg.redis_url or cfg.redis_host:
         return "redis"
     return cfg.cache_type if cfg.cache_type in ("local", "disk") else "local"
 
@@ -44,6 +48,19 @@ def parse_redis_url(url: str) -> dict[str, Any]:
     }
 
 
+def redis_params(cfg: CacheSettings) -> dict[str, Any]:
+    if cfg.redis_url:
+        params = parse_redis_url(cfg.redis_url)
+        params["ssl"] = cfg.redis_url.startswith("rediss://")
+        return params
+    return {
+        "host": cfg.redis_host or "localhost",
+        "port": cfg.redis_port,
+        "password": cfg.redis_password,
+        "ssl": cfg.redis_ssl,
+    }
+
+
 async def load_cache_settings(
     session_factory: Callable[[], AsyncSession], settings: Settings
 ) -> CacheSettings:
@@ -51,7 +68,11 @@ async def load_cache_settings(
         row = await session.get(GlobalSetting, 1)
     if row is None:
         return CacheSettings(
-            "local", "gmc-ai", 2592000, 604800, settings.redis_url, settings.ai_cache_dir
+            "local", "gmc-ai", 2592000, 604800, settings.redis_url, settings.ai_cache_dir,
+            redis_host=settings.redis_host,
+            redis_port=settings.redis_port,
+            redis_password=settings.redis_password,
+            redis_ssl=settings.redis_ssl,
         )
     return CacheSettings(
         cache_type=row.ai_cache_type,
@@ -60,6 +81,10 @@ async def load_cache_settings(
         ttl_content_s=row.ai_cache_ttl_content_s,
         redis_url=settings.redis_url,
         disk_dir=settings.ai_cache_dir,
+        redis_host=settings.redis_host,
+        redis_port=settings.redis_port,
+        redis_password=settings.redis_password,
+        redis_ssl=settings.redis_ssl,
     )
 
 
@@ -73,9 +98,17 @@ class NativeCache:
         ttl_content_s: int,
         redis_url: str | None,
         disk_dir: str,
+        redis_host: str | None = None,
+        redis_port: int = 6379,
+        redis_password: str | None = None,
+        redis_ssl: bool = False,
     ) -> None:
         self._cfg = CacheSettings(
-            cache_type, namespace, ttl_taxonomy_s, ttl_content_s, redis_url, disk_dir
+            cache_type, namespace, ttl_taxonomy_s, ttl_content_s, redis_url, disk_dir,
+            redis_host=redis_host,
+            redis_port=redis_port,
+            redis_password=redis_password,
+            redis_ssl=redis_ssl,
         )
         self._cache: Any = self._build()
         self.enabled = self._cache is not None
@@ -83,14 +116,15 @@ class NativeCache:
     def _build(self) -> Any:
         try:
             backend = effective_backend(self._cfg)
-            if backend == "redis" and self._cfg.redis_url:
-                params = parse_redis_url(self._cfg.redis_url)
+            if backend == "redis":
+                params = redis_params(self._cfg)
                 built = Cache(
                     type=LiteLLMCacheType.REDIS,
                     mode=CacheMode.default_off,
                     host=params["host"],
                     port=params["port"],
                     password=params["password"],
+                    ssl=params["ssl"],
                 )
             elif backend == "disk":
                 built = Cache(
@@ -116,7 +150,11 @@ class NativeCache:
             else self._cfg.ttl_content_s
         )
         return {
-            "cache": {"namespace": f"{self._cfg.namespace}:{task_type}", "ttl": ttl}
+            "cache": {
+                "use-cache": True,
+                "namespace": f"{self._cfg.namespace}:{task_type}",
+                "ttl": ttl,
+            }
         }
 
     async def lookup(self, **kwargs: Any) -> Any | None:

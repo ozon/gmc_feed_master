@@ -132,3 +132,23 @@ async def test_run_task_unknown_task_is_fallback(service) -> None:
     result = await service.run_task("nope", {})
     assert result.status == "fallback"
     assert result.error_code == "invalid_task"
+
+
+@pytest.mark.asyncio
+async def test_llm_call_does_not_receive_cache_control(service, monkeypatch) -> None:
+    monkeypatch.setattr(service, "_resolve_template", AsyncMock(
+        return_value=ai_service_module.ResolvedTemplate("sys", "user", "v1")
+    ))
+    monkeypatch.setattr(service, "_load_deployments", AsyncMock(return_value=_provider_rows()))
+    completion = SimpleNamespace(
+        usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1), model="m"
+    )
+    instructor_client = MagicMock()
+    instructor_client.create_with_completion = AsyncMock(
+        return_value=(_FakeModel(value="ok"), completion)
+    )
+    monkeypatch.setattr(service, "_instructor", lambda: instructor_client)
+
+    await service.run_task("title_optimization", {"title": "t"})
+    call_kwargs = instructor_client.create_with_completion.await_args.kwargs
+    assert "cache" not in call_kwargs
