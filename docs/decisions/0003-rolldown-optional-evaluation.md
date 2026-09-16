@@ -1,7 +1,7 @@
 # ADR-0003: Rolldown as Optional Bundler Evaluation
 
 ## Status
-Accepted (Evaluation)
+Completed — Rolldown shipped via the Vite 8 upgrade. See the closing status note.
 
 ## Context
 Vite 6+ uses Rolldown (Rust-based bundler) internally for production builds. The question: adopt `rolldown-vite` explicitly or stay with standard Vite (esbuild dev, Rollup build) as MVP baseline.

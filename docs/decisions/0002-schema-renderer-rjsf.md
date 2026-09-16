@@ -1,7 +1,7 @@
 # ADR-0002: RJSF for Schema-Rendered Plugin UIs
 
 ## Status
-Accepted
+Superseded — a custom Mantine `JsonSchemaForm` shipped instead. See the closing status note.
 
 ## Context
 Plugin configuration and data UIs need to be rendered from JSON Schema manifests (Pydantic v2 output, JSON Schema draft 2020-12). Options: custom JSON Schema renderer vs. `@rjsf/core` with `@rjsf/mantine` theme.

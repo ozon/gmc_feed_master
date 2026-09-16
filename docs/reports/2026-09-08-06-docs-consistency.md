@@ -31,7 +31,7 @@ Severity legend: Important (will actively mislead) · Medium · Minor.
 - Corroborating drift: `frontend/docs/plugin-uis.md:58` still documents "AJV (for RJSF): Configured for JSON Schema draft 2020-12"; `backend/docs/plugins.md:173` says "JsonSchemaForm (RJSF)"; root AGENTS.md doc-map line for plugin-uis says "RJSF schema rendering".
 - Impact: the "rejected alternative" is what shipped. An engineer adding plugin UIs would install RJSF/AJV per the ADR and diverge from the actual validation/rendering path.
 - Suggestion: amend ADR-0002 (Status: Superseded — custom renderer shipped); scrub RJSF/AJV mentions from plugin-uis.md, backend/docs/plugins.md, and the AGENTS.md doc-map line.
-- Status: CONFIRMED-known-class (tooling agent T8 independently flagged the same contradiction; unified here)
+- Status: ALREADY CORRECT (verified 2026-09-16, M14) — ADR-0002 gained a `Superseded (2026-09-08)` closing note, and the RJSF/AJV mentions are gone from `frontend/docs/plugin-uis.md`, `backend/docs/plugins.md`, and the AGENTS.md doc-map line. M14 only aligned ADR-0002's stale top-of-file `## Status` (it still read "Accepted") with the closing note.
 
 ### [D4] data-model.md Session entity does not match the model
 - Severity: Medium
@@ -72,14 +72,14 @@ Severity legend: Important (will actively mislead) · Medium · Minor.
 - Location: `frontend/docs/architecture.md:7` vs `frontend/package.json` (vite 8.2.2) and `frontend/vite.config.ts:22`
 - Impact: wrong bundler mental model; `manualChunks` advice from that era would break the build.
 - Suggestion: update to Vite 8 (Rolldown, `rolldownOptions.output.codeSplitting.groups`); consider surfacing the chunking strategy (currently only in decisions.md).
-- Status: NEW
+- Status: ALREADY CORRECT (verified 2026-09-16, M14) — `frontend/docs/architecture.md` already reads "Vite 8 (Rolldown bundler; vendor chunks via build.rolldownOptions.output.codeSplitting.groups)".
 
 ### [D10] ADR-0003 treats Rolldown as an optional evaluation; it is the shipped bundler
 - Severity: Medium
 - Location: `docs/decisions/0003-rolldown-optional-evaluation.md` vs vite 8.2.2 + rolldownOptions in the shipped config
 - Impact: readers believe Rollup is the prod bundler and Rolldown is merely being evaluated.
 - Suggestion: mark ADR-0003 Superseded/Completed (Rolldown adopted via the Vite 8 upgrade; criteria passed).
-- Status: NEW
+- Status: FIXED (2026-09-16, M14) — ADR-0003 gained a `Completed (2026-09-08)` closing note; M14 aligned its stale top-of-file `## Status` ("Accepted (Evaluation)") with it.
 
 ### [D11] Code route `GET /feed-sources/{id}/fields` missing from api.md
 - Severity: Medium
