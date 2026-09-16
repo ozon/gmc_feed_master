@@ -90,7 +90,14 @@
       "cacheHits": "Cache hits",
       "promptTokens": "Prompt tokens",
       "completionTokens": "Completion tokens",
-      "cost": "Cost (USD)"
+      "cost": "Cost (USD)",
+      "kpiCalls": "Total calls",
+      "kpiCacheHitRate": "Cache hit rate",
+      "kpiCost": "Total cost (USD)",
+      "kpiCostSaved": "Cost saved (USD)",
+      "trendTitle": "Daily usage",
+      "trendCalls": "Calls",
+      "trendCacheHits": "Cache hits"
     },
     "tier": {
       "bulk": "Bulk",

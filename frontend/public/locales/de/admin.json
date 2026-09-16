@@ -90,7 +90,14 @@
       "cacheHits": "Cache-Treffer",
       "promptTokens": "Prompt-Tokens",
       "completionTokens": "Completion-Tokens",
-      "cost": "Kosten (USD)"
+      "cost": "Kosten (USD)",
+      "kpiCalls": "Aufrufe gesamt",
+      "kpiCacheHitRate": "Cache-Trefferquote",
+      "kpiCost": "Gesamtkosten (USD)",
+      "kpiCostSaved": "Eingesparte Kosten (USD)",
+      "trendTitle": "Nutzung pro Tag",
+      "trendCalls": "Aufrufe",
+      "trendCacheHits": "Cache-Treffer"
     },
     "tier": {
       "bulk": "Masse",
