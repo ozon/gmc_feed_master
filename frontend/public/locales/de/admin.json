@@ -53,7 +53,8 @@
     "section": {
       "providers": "Provider",
       "usage": "Nutzung",
-      "templates": "Prompt-Bibliothek"
+      "templates": "Prompt-Bibliothek",
+      "settings": "Einstellungen"
     },
     "providersTitle": "KI-Provider",
     "empty": "Keine KI-Provider konfiguriert",
@@ -102,7 +103,35 @@
     },
     "baseUrl": "API-Basis-URL",
     "maxConcurrency": "Max. Nebenlaeufigkeit",
-    "timeoutS": "Zeitlimit (s)"
+    "timeoutS": "Zeitlimit (s)",
+    "settings": {
+      "cacheTitle": "Cache",
+      "routerTitle": "Router & Wiederholungen",
+      "cacheType": "Cache-Backend",
+      "cacheTypeOptions": {
+        "local": "Lokal (im Speicher)",
+        "disk": "Festplatte"
+      },
+      "namespace": "Cache-Namespace",
+      "ttlTaxonomy": "Taxonomie-TTL (s)",
+      "ttlContent": "Inhalts-TTL (s)",
+      "backend": "Backend",
+      "healthy": "Verfuegbar",
+      "unhealthy": "Nicht verfuegbar",
+      "entries": "Eintraege",
+      "hitRatio": "Trefferquote",
+      "costSaved": "Eingesparte Kosten",
+      "clearCache": "Cache leeren",
+      "cacheCleared": "Cache geleert",
+      "redisOverride": "Redis wird ueber die Umgebung konfiguriert; die Backend-Auswahl ist deaktiviert.",
+      "timeout": "Zeitlimit (s)",
+      "numRetries": "Wiederholungen",
+      "allowedFails": "Erlaubte Fehler",
+      "cooldown": "Abkuehlzeit (s)",
+      "instructorRetries": "Instructor-Wiederholungen",
+      "usageRetention": "Nutzungs-Aufbewahrung (Tage)",
+      "saveFailed": "Einstellungen konnten nicht gespeichert werden"
+    }
   },
   "promptLibrary": {
     "title": "Prompt-Bibliothek",

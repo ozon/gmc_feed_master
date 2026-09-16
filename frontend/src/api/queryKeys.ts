@@ -45,5 +45,9 @@ export const queryKeys = {
     providers: ['ai', 'providers'] as const,
     promptTemplates: ['ai', 'prompt-templates'] as const,
     usage: (params: unknown) => ['ai', 'usage', params] as const,
+    settings: ['ai', 'settings'] as const,
+    cache: ['ai', 'cache'] as const,
+    cacheStats: ['ai', 'cache', 'stats'] as const,
+    usageSummary: ['ai', 'usage-summary'] as const,
   },
 };

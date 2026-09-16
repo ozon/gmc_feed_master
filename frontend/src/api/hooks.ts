@@ -10,10 +10,13 @@ import {
 import { queryKeys } from './queryKeys';
 import type {
   AdminUser,
+  AiCacheStatus,
   AiProvider,
+  AiSettings,
   AiTestResult,
   AiUsageParams,
   AiUsageRow,
+  AiUsageSummary,
   ChatMessage,
   ClientRow,
   ClientSummary,
@@ -769,7 +772,7 @@ export function useUpdateAiProvider() {
       max_concurrency?: number;
       timeout_s?: number;
       enabled?: boolean;
-      is_default?: boolean;
+      tier?: 'bulk' | 'precision';
     }) => apiPatch<AiProvider>(`/admin/ai/providers/${id}`, payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.ai.providers });
@@ -791,6 +794,52 @@ export function useTestAiProvider() {
   return useMutation({
     mutationFn: (id: number) =>
       apiPost<AiTestResult>(`/admin/ai/providers/${id}/test`),
+  });
+}
+
+export function useAiSettings() {
+  return useQuery({
+    queryKey: queryKeys.ai.settings,
+    queryFn: () => apiGet<AiSettings>('/admin/ai/settings'),
+  });
+}
+
+export function useUpdateAiSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: AiSettings) =>
+      apiPut<AiSettings>('/admin/ai/settings', payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ai.settings });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ai.cache });
+    },
+  });
+}
+
+export function useAiCacheStatus() {
+  return useQuery({
+    queryKey: queryKeys.ai.cache,
+    queryFn: () => apiGet<AiCacheStatus>('/admin/ai/cache'),
+  });
+}
+
+export function useAiCacheStats() {
+  return useQuery({
+    queryKey: queryKeys.ai.cacheStats,
+    queryFn: () => apiGet<AiUsageSummary>('/admin/ai/cache/stats'),
+  });
+}
+
+export function useClearAiCache() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (namespace?: string) =>
+      apiPost<{ removed: number }>('/admin/ai/cache/clear', {
+        namespace: namespace ?? null,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ai.cache });
+    },
   });
 }
 

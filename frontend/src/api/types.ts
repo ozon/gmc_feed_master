@@ -331,6 +331,41 @@ export type AiUsageParams = {
   to?: string;
 };
 
+export type AiSettings = {
+  ai_cache_type: 'local' | 'disk';
+  ai_cache_namespace: string;
+  ai_cache_ttl_taxonomy_s: number;
+  ai_cache_ttl_content_s: number;
+  ai_router_timeout_s: number;
+  ai_router_num_retries: number;
+  ai_router_allowed_fails: number;
+  ai_router_cooldown_s: number;
+  ai_instructor_max_retries: number;
+  ai_usage_retention_days: number;
+  redis_from_env: boolean;
+  effective_cache_backend: string;
+};
+
+export type AiCacheStatus = {
+  effective_backend: string;
+  redis_from_env: boolean;
+  healthy: boolean;
+  namespace: string;
+  entries: number | null;
+};
+
+export type AiUsageSummary = {
+  calls: number;
+  cache_hits: number;
+  hit_ratio: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  cost_usd: string | number;
+  saved_prompt_tokens: number;
+  saved_completion_tokens: number;
+  cost_saved_usd: string | number;
+};
+
 export type AiUsageRow = {
   group_key: number | string | null;
   calls: number;

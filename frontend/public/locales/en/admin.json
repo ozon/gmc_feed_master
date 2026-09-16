@@ -53,7 +53,8 @@
     "section": {
       "providers": "Providers",
       "usage": "Usage",
-      "templates": "Prompt Library"
+      "templates": "Prompt Library",
+      "settings": "Settings"
     },
     "providersTitle": "AI Providers",
     "empty": "No AI providers configured",
@@ -102,7 +103,35 @@
     },
     "baseUrl": "API base URL",
     "maxConcurrency": "Max concurrency",
-    "timeoutS": "Timeout (s)"
+    "timeoutS": "Timeout (s)",
+    "settings": {
+      "cacheTitle": "Cache",
+      "routerTitle": "Router & retries",
+      "cacheType": "Cache backend",
+      "cacheTypeOptions": {
+        "local": "Local (in-memory)",
+        "disk": "Disk"
+      },
+      "namespace": "Cache namespace",
+      "ttlTaxonomy": "Taxonomy TTL (s)",
+      "ttlContent": "Content TTL (s)",
+      "backend": "Backend",
+      "healthy": "Healthy",
+      "unhealthy": "Unavailable",
+      "entries": "Entries",
+      "hitRatio": "Hit ratio",
+      "costSaved": "Cost saved",
+      "clearCache": "Clear cache",
+      "cacheCleared": "Cache cleared",
+      "redisOverride": "Redis is configured via the environment; the backend selector is disabled.",
+      "timeout": "Timeout (s)",
+      "numRetries": "Retries",
+      "allowedFails": "Allowed fails",
+      "cooldown": "Cooldown (s)",
+      "instructorRetries": "Instructor retries",
+      "usageRetention": "Usage retention (days)",
+      "saveFailed": "Could not save settings"
+    }
   },
   "promptLibrary": {
     "title": "Prompt Library",
