@@ -309,15 +309,15 @@ export type SchedulerJob = { id: string; trigger: string };
 export type AiProvider = {
   id: number;
   name: string;
-  provider_type: string;
+  provider_type: 'litellm' | 'openai_compatible';
   base_url: string;
   model: string;
+  tier: 'bulk' | 'precision';
   input_price_per_mtok: string | null;
   output_price_per_mtok: string | null;
   max_concurrency: number;
   timeout_s: number;
   enabled: boolean;
-  is_default: boolean;
 };
 
 export type AiUsageGroupBy = 'client' | 'feed_source' | 'task_type' | 'day';

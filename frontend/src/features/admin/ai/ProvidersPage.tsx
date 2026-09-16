@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  ActionIcon, Badge, Button, Group, Modal, Stack, Switch, Table, TextInput, Title,
+  ActionIcon, Badge, Button, Group, Modal, NumberInput, Select, Stack, Switch, Table, TextInput, Title,
 } from '@mantine/core';
 import { IconBolt, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,17 @@ import {
 import { notifyMutationError, notifySuccess } from '../../../app/notifications';
 import { EmptyState, ErrorState, LoadingState } from '../../../components/StateViews';
 import type { AiProvider } from '../../../api/types';
+
+type ProviderPayload = {
+  name: string;
+  provider_type: AiProvider['provider_type'];
+  tier: AiProvider['tier'];
+  base_url: string;
+  model: string;
+  max_concurrency: number;
+  timeout_s: number;
+  api_key?: string;
+};
 
 export function ProvidersPage() {
   const { t } = useTranslation('admin');
@@ -32,7 +43,11 @@ export function ProvidersPage() {
     <Stack>
       <Group justify="space-between">
         <Title order={4}>{t('ai.providersTitle')}</Title>
-        <Button leftSection={<IconPlus size={16} />} onClick={() => setCreating(true)}>
+        <Button
+          leftSection={<IconPlus size={16} />}
+          data-testid="ai-add-provider"
+          onClick={() => setCreating(true)}
+        >
           {t('ai.add')}
         </Button>
       </Group>
@@ -44,8 +59,8 @@ export function ProvidersPage() {
             <Table.Tr>
               <Table.Th>{t('ai.columns.name')}</Table.Th>
               <Table.Th>{t('ai.columns.model')}</Table.Th>
+              <Table.Th>{t('ai.columns.tier')}</Table.Th>
               <Table.Th>{t('ai.columns.enabled')}</Table.Th>
-              <Table.Th>{t('ai.columns.default')}</Table.Th>
               <Table.Th />
             </Table.Tr>
           </Table.Thead>
@@ -54,6 +69,11 @@ export function ProvidersPage() {
               <Table.Tr key={provider.id} data-testid={`ai-provider-row-${provider.id}`}>
                 <Table.Td>{provider.name}</Table.Td>
                 <Table.Td>{provider.model}</Table.Td>
+                <Table.Td>
+                  <Badge variant="light" color={provider.tier === 'precision' ? 'grape' : 'blue'}>
+                    {t(`ai.tier.${provider.tier}`)}
+                  </Badge>
+                </Table.Td>
                 <Table.Td>
                   <Switch
                     aria-label={t('ai.columns.enabled')}
@@ -65,11 +85,6 @@ export function ProvidersPage() {
                       )
                     }
                   />
-                </Table.Td>
-                <Table.Td>
-                  {provider.is_default ? (
-                    <Badge variant="light" color="grape">{t('ai.default')}</Badge>
-                  ) : null}
                 </Table.Td>
                 <Table.Td>
                   <Group gap="xs" wrap="nowrap">
@@ -142,19 +157,7 @@ export function ProvidersPage() {
             );
           } else {
             createProvider.mutate(
-              {
-                name: String(payload.name ?? ''),
-                provider_type: 'openai_compatible',
-                base_url: String(payload.base_url ?? ''),
-                model: String(payload.model ?? ''),
-                input_price_per_mtok: null,
-                output_price_per_mtok: null,
-                max_concurrency: 4,
-                timeout_s: 30,
-                enabled: true,
-                is_default: Boolean(payload.is_default),
-                ...(payload.api_key !== undefined ? { api_key: String(payload.api_key) } : {}),
-              },
+              { ...payload, enabled: true, input_price_per_mtok: null, output_price_per_mtok: null },
               {
                 onSuccess: () => {
                   notifySuccess(t('ai.saved'));
@@ -176,14 +179,19 @@ function ProviderModal({
   opened: boolean;
   provider: AiProvider | null;
   onClose: () => void;
-  onSubmit: (payload: Record<string, unknown>) => void;
+  onSubmit: (payload: ProviderPayload) => void;
 }) {
   const { t } = useTranslation('admin');
   const [name, setName] = useState(provider?.name ?? '');
+  const [providerType, setProviderType] = useState<AiProvider['provider_type']>(
+    provider?.provider_type ?? 'litellm',
+  );
+  const [tier, setTier] = useState<AiProvider['tier']>(provider?.tier ?? 'bulk');
   const [baseUrl, setBaseUrl] = useState(provider?.base_url ?? '');
   const [model, setModel] = useState(provider?.model ?? '');
   const [apiKey, setApiKey] = useState('');
-  const [isDefault, setIsDefault] = useState(provider?.is_default ?? false);
+  const [maxConcurrency, setMaxConcurrency] = useState<number>(provider?.max_concurrency ?? 4);
+  const [timeoutS, setTimeoutS] = useState<number>(provider?.timeout_s ?? 30);
 
   return (
     <Modal opened={opened} onClose={onClose} title={provider ? t('ai.edit') : t('ai.add')}>
@@ -194,15 +202,36 @@ function ProviderModal({
           onChange={(e) => setName(e.currentTarget.value)}
           data-testid="ai-modal-name"
         />
+        <Select
+          label={t('ai.providerType')}
+          value={providerType}
+          onChange={(value) => setProviderType((value ?? 'litellm') as AiProvider['provider_type'])}
+          data-testid="ai-modal-provider-type"
+          data={[
+            { value: 'litellm', label: t('ai.providerTypeOptions.litellm') },
+            { value: 'openai_compatible', label: t('ai.providerTypeOptions.openai_compatible') },
+          ]}
+        />
+        <Select
+          label={t('ai.columns.tier')}
+          value={tier}
+          onChange={(value) => setTier((value ?? 'bulk') as AiProvider['tier'])}
+          data-testid="ai-modal-tier"
+          data={[
+            { value: 'bulk', label: t('ai.tier.bulk') },
+            { value: 'precision', label: t('ai.tier.precision') },
+          ]}
+        />
         <TextInput
-          label="Base URL"
+          label={t('ai.baseUrl')}
           value={baseUrl}
           onChange={(e) => setBaseUrl(e.currentTarget.value)}
         />
         <TextInput
-          label="Model"
+          label={t('ai.columns.model')}
           value={model}
           onChange={(e) => setModel(e.currentTarget.value)}
+          data-testid="ai-modal-model"
         />
         <TextInput
           label={t('ai.apiKey')}
@@ -210,17 +239,32 @@ function ProviderModal({
           value={apiKey}
           onChange={(e) => setApiKey(e.currentTarget.value)}
         />
-        <Switch
-          label={t('ai.columns.default')}
-          checked={isDefault}
-          onChange={(e) => setIsDefault(e.currentTarget.checked)}
+        <NumberInput
+          label={t('ai.maxConcurrency')}
+          value={maxConcurrency}
+          min={1}
+          max={64}
+          onChange={(value) => setMaxConcurrency(typeof value === 'number' ? value : 4)}
+        />
+        <NumberInput
+          label={t('ai.timeoutS')}
+          value={timeoutS}
+          min={1}
+          max={600}
+          onChange={(value) => setTimeoutS(typeof value === 'number' ? value : 30)}
         />
         <Button
-          disabled={!name || !baseUrl || !model}
+          disabled={!name || !model}
+          data-testid="ai-modal-save"
           onClick={() => onSubmit({
-            name, base_url: baseUrl, model,
+            name,
+            provider_type: providerType,
+            tier,
+            base_url: baseUrl,
+            model,
+            max_concurrency: maxConcurrency,
+            timeout_s: timeoutS,
             ...(apiKey !== '' ? { api_key: apiKey } : {}),
-            is_default: isDefault,
           })}
         >
           {t('ai.save')}

@@ -75,7 +75,8 @@
       "name": "Name",
       "model": "Modell",
       "enabled": "Aktiv",
-      "default": "Standard"
+      "default": "Standard",
+      "tier": "Stufe"
     },
     "usage": {
       "title": "KI-Nutzung",
@@ -89,7 +90,19 @@
       "promptTokens": "Prompt-Tokens",
       "completionTokens": "Completion-Tokens",
       "cost": "Kosten (USD)"
-    }
+    },
+    "tier": {
+      "bulk": "Masse",
+      "precision": "Praezision"
+    },
+    "providerType": "Anbietertyp",
+    "providerTypeOptions": {
+      "litellm": "LiteLLM",
+      "openai_compatible": "OpenAI-kompatibel"
+    },
+    "baseUrl": "API-Basis-URL",
+    "maxConcurrency": "Max. Nebenlaeufigkeit",
+    "timeoutS": "Zeitlimit (s)"
   },
   "promptLibrary": {
     "title": "Prompt-Bibliothek",

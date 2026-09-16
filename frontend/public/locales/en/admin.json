@@ -75,7 +75,8 @@
       "name": "Name",
       "model": "Model",
       "enabled": "Enabled",
-      "default": "Default"
+      "default": "Default",
+      "tier": "Tier"
     },
     "usage": {
       "title": "AI Usage",
@@ -89,7 +90,19 @@
       "promptTokens": "Prompt tokens",
       "completionTokens": "Completion tokens",
       "cost": "Cost (USD)"
-    }
+    },
+    "tier": {
+      "bulk": "Bulk",
+      "precision": "Precision"
+    },
+    "providerType": "Provider type",
+    "providerTypeOptions": {
+      "litellm": "LiteLLM",
+      "openai_compatible": "OpenAI-compatible"
+    },
+    "baseUrl": "API base URL",
+    "maxConcurrency": "Max concurrency",
+    "timeoutS": "Timeout (s)"
   },
   "promptLibrary": {
     "title": "Prompt Library",
