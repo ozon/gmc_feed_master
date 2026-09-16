@@ -7,6 +7,10 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "fleetOverview": "Fleet Overview",
+    "clients": "Clients",
+    "systemLogs": "System Logs",
+    "globalRules": "Global Rules",
     "setup": "Setup",
     "products": "Products",
     "pipeline": "Pipeline Editor",
@@ -52,7 +56,8 @@
   },
   "breadcrumbs": {
     "selectClient": "Select client",
-    "selectFeed": "Select feed"
+    "selectFeed": "Select feed",
+    "allClients": "All clients"
   },
   "scope": {
     "global": "Global",
@@ -72,6 +77,5 @@
   "notFoundTitle": "Page not found",
   "notFoundHome": "Go to the dashboard",
   "userMenuAriaLabel": "User menu",
-  "serverDetailLeadIn": "Server message: {{detail}}",
-  "selectFeedSourceHint": "Select a feed source first"
+  "serverDetailLeadIn": "Server message: {{detail}}"
 }

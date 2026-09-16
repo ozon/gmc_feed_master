@@ -7,6 +7,10 @@
   },
   "nav": {
     "dashboard": "Übersicht",
+    "fleetOverview": "Flottenübersicht",
+    "clients": "Mandanten",
+    "systemLogs": "Systemprotokolle",
+    "globalRules": "Globale Regeln",
     "setup": "Einrichtung",
     "products": "Produkte",
     "pipeline": "Pipeline-Editor",
@@ -52,7 +56,8 @@
   },
   "breadcrumbs": {
     "selectClient": "Mandant auswählen",
-    "selectFeed": "Feed auswählen"
+    "selectFeed": "Feed auswählen",
+    "allClients": "Alle Mandanten"
   },
   "scope": {
     "global": "Global",
@@ -72,6 +77,5 @@
   "notFoundTitle": "Seite nicht gefunden",
   "notFoundHome": "Zum Dashboard gehen",
   "userMenuAriaLabel": "Benutzermenü",
-  "serverDetailLeadIn": "Servermeldung: {{detail}}",
-  "selectFeedSourceHint": "Wählen Sie zuerst eine Feed-Source aus"
+  "serverDetailLeadIn": "Servermeldung: {{detail}}"
 }

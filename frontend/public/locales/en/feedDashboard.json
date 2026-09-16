@@ -1,0 +1,35 @@
+{
+  "title": "Feed dashboard",
+  "runPipeline": "Run pipeline",
+  "editPipeline": "Edit pipeline",
+  "copyExportUrl": "Copy export URL",
+  "kpi": {
+    "rawItems": "Raw items",
+    "validItems": "Valid items",
+    "excludedItems": "Excluded items",
+    "duration": "Processing duration",
+    "readiness": "GMC readiness"
+  },
+  "charts": {
+    "volumeTitle": "Volume & pass-through (30 days)",
+    "volumeEmpty": "No runs in the last 30 days.",
+    "funnelTitle": "Pipeline stage funnel",
+    "funnelEmpty": "No run statistics available.",
+    "qualityTitle": "Quality distribution",
+    "qualityEmpty": "No quality findings yet."
+  },
+  "runs": {
+    "title": "Recent runs",
+    "empty": "No runs yet.",
+    "duration": "{{seconds}}s",
+    "started": "Started",
+    "status": "Status",
+    "failed": "Failed"
+  },
+  "badge": {
+    "active": "ACTIVE",
+    "target": "Google Merchant Center"
+  },
+  "breadcrumbClients": "Clients",
+  "copied": "Copied"
+}

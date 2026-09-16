@@ -55,6 +55,15 @@ const PluginPage = lazy(() =>
 const AdminPage = lazy(() =>
   import('../features/admin/AdminPage').then((m) => ({ default: m.AdminPage })),
 );
+const FeedDashboardPage = lazy(() =>
+  import('../features/feedDashboard/FeedDashboardPage').then((m) => ({ default: m.FeedDashboardPage })),
+);
+const SystemLogsPage = lazy(() =>
+  import('../features/systemLogs/SystemLogsPage').then((m) => ({ default: m.SystemLogsPage })),
+);
+const GlobalRulesPage = lazy(() =>
+  import('../features/globalRules/GlobalRulesPage').then((m) => ({ default: m.GlobalRulesPage })),
+);
 
 export function RequireSession() {
   const location = useLocation();
@@ -140,6 +149,7 @@ const routes = [
         errorElement: <RouteErrorBoundary />,
         children: [
           { index: true, element: <DashboardPage /> },
+          { path: 'clients/:clientId/feeds/:feedSourceId', element: <FeedDashboardPage /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/setup', element: <SetupPage /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/products', element: <ProductsPage /> },
           { path: 'clients/:clientId/feeds/:feedSourceId/pipeline', element: <PipelinePage /> },
@@ -173,6 +183,8 @@ const routes = [
               { path: 'admin/ai', element: <AdminPage /> },
             ],
           },
+          { path: 'logs', element: <SystemLogsPage /> },
+          { path: 'rules', element: <GlobalRulesPage /> },
         ],
       },
     ],

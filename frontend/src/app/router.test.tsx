@@ -20,6 +20,7 @@ function jsonResponse(body: unknown, status = 200) {
 const emptySummary = {
   counts: { clients: 0, feed_sources: 0, active_products: 0, failed_last_exports: 0 },
   clients: [],
+  runs_by_day: [],
 };
 
 beforeEach(() => {
@@ -331,6 +332,48 @@ describe('route error boundary', () => {
     expect(await screen.findByText('Something went wrong.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument();
     expect(screen.queryByText(/Unexpected Application Error/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('feed index and placeholder routes', () => {
+  function stubSession(handler: (url: string) => Response) {
+    stubFetch((url) => {
+      if (url === '/auth/me') return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
+      if (url === '/dashboard/summary') return jsonResponse(emptySummary);
+      if (url === '/plugins') return jsonResponse([]);
+      return handler(url);
+    });
+  }
+
+  it('renders FeedDashboardPage at /clients/:clientId/feeds/:feedSourceId', async () => {
+    stubSession((url) => {
+      if (url === '/feed-sources/2/dashboard') {
+        return jsonResponse({
+          kpi: { raw_items: 0, valid_items: 0, excluded_items: 0, last_duration_s: null, readiness_rate: 1 },
+          volume_trend: [], stage_funnel: [],
+          quality: { critical: 0, warning: 0, info: 0, readiness_rate: 1 },
+          recent_runs: [],
+        });
+      }
+      return jsonResponse({});
+    });
+    window.history.replaceState({}, '', '/clients/1/feeds/2');
+    render(<App />);
+    expect(await screen.findByText('Raw items')).toBeInTheDocument();
+  });
+
+  it('renders SystemLogsPage at /logs', async () => {
+    stubSession(() => jsonResponse({}));
+    window.history.replaceState({}, '', '/logs');
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'System Logs' })).toBeInTheDocument();
+  });
+
+  it('renders GlobalRulesPage at /rules', async () => {
+    stubSession(() => jsonResponse({}));
+    window.history.replaceState({}, '', '/rules');
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'Global Rules' })).toBeInTheDocument();
   });
 });
 

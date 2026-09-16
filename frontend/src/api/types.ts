@@ -17,6 +17,12 @@ export type ClientSummary = {
   feed_sources: FeedSourceSummary[];
 };
 
+export type RunsByDayRow = {
+  date: string;
+  success: number;
+  error: number;
+};
+
 export type DashboardSummary = {
   counts: {
     clients: number;
@@ -25,6 +31,32 @@ export type DashboardSummary = {
     failed_last_exports: number;
   };
   clients: ClientSummary[];
+  runs_by_day: RunsByDayRow[];
+};
+
+export type FeedDashboardData = {
+  kpi: {
+    raw_items: number;
+    valid_items: number;
+    excluded_items: number;
+    last_duration_s: number | null;
+    readiness_rate: number;
+  };
+  volume_trend: Array<{ date: string; raw: number; exportable: number }>;
+  stage_funnel: Array<{ stage: string; passed: number; dropped: number }>;
+  quality: {
+    critical: number;
+    warning: number;
+    info: number;
+    readiness_rate: number;
+  };
+  recent_runs: Array<{
+    id: number;
+    status: string;
+    started_at: string;
+    duration_s: number | null;
+    failed_count: number;
+  }>;
 };
 
 export type PluginManifestFrontend = {

@@ -47,6 +47,7 @@ const summary = {
       ],
     },
   ],
+  runs_by_day: [],
 };
 
 const plugins = [
@@ -160,11 +161,36 @@ describe('AppShell', () => {
     expect(screen.queryByText('Client Widget')).not.toBeInTheDocument();
   });
 
-  it('disables feed-scoped nav items until a feed source is selected', async () => {
+  it('hides feed-scoped nav items and shows global items outside a feed context', async () => {
     render(<App />);
     await screen.findByRole('heading', { name: 'Dashboard' });
-    expect(screen.getByText('Setup').closest('a,button')).toHaveAttribute('data-disabled', 'true');
-    expect(screen.getAllByText('Select a feed source first').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Setup')).not.toBeInTheDocument();
+    expect(screen.queryByText('Products')).not.toBeInTheDocument();
+    expect(screen.queryByText('Select a feed source first')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /fleet overview/i })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: /system logs/i })).toHaveAttribute('href', '/logs');
+    expect(screen.getByRole('link', { name: /global rules/i })).toHaveAttribute('href', '/rules');
+  });
+
+  it('shows the Dashboard nav item with exact feed base href in feed scope', async () => {
+    window.history.replaceState({}, '', '/clients/1/feeds/2/products');
+    render(<App />);
+    expect(await screen.findByRole('link', { name: /^dashboard$/i })).toHaveAttribute(
+      'href',
+      '/clients/1/feeds/2',
+    );
+  });
+
+  it('offers an all-clients reset in the breadcrumb feed menu', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState({}, '', '/clients/1/feeds/2/products');
+    render(<App />);
+    await screen.findByText('Main Feed');
+    await user.click(screen.getByRole('button', { name: 'Select feed' }));
+    expect(await screen.findByRole('menuitem', { name: /all clients/i })).toHaveAttribute(
+      'href',
+      '/',
+    );
   });
 
   it('shows the client and feed breadcrumb on a feed route', async () => {

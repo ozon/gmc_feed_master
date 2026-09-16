@@ -102,6 +102,7 @@ export function useSavePipeline(feedSourceId) {
 ├── /login
 └── (RequireSession) → AppShell
     ├── /                                    → DashboardPage
+    ├── /clients/:clientId/feeds/:feedSourceId          → FeedDashboardPage (feed index)
     ├── /clients/:clientId/feeds/:feedSourceId/setup          → SetupPage
     ├── /clients/:clientId/feeds/:feedSourceId/products       → ProductsPage
     ├── /clients/:clientId/feeds/:feedSourceId/pipeline       → PipelinePage
@@ -118,6 +119,8 @@ export function useSavePipeline(feedSourceId) {
     │   ├── /admin/clients               → AdminPage (Clients tab)
     │   ├── /admin/settings              → AdminPage (Settings tab)
     │   └── /admin/ai                    → AdminPage (AI tab: provider configs + prompt library + usage view)
+    ├── /logs                               → SystemLogsPage (placeholder)
+    ├── /rules                              → GlobalRulesPage (placeholder)
     └── *                                 → NotFoundPage
 ```
 
@@ -177,12 +180,17 @@ export function useSavePipeline(feedSourceId) {
   - Custom component via `manifest.frontend.component` (build-time import)
   - Registry map in `src/features/plugin/customComponents.ts` — keyed by plugin id (currently `rules` → `RulesUI`, `filter` → `FilterUI`, `custom_labels` → `CustomLabelsUI`)
   - Fallback: if plugin id has no registry entry, renders schema form
-- **Navigation**: The sidebar shows Dashboard plus the feed-scoped areas in this order: Setup, plugin entries (enabled plugins with `manifest.frontend.component`), Products, Pipeline, Monitoring, Export. Plugin entries appear only in feed context and are labeled via `pluginNames.*` i18n keys with `plugin.name` as fallback, with icons resolved via `getPluginIcon`. Each plugin has two surfaces (ADR-0007): its Plugin Page (dashboard/tool) and its Setup surface embedded in the Pipeline Editor — `PluginConfigPanel` embeds the plugin's registered Setup component from `CONFIG_COMPONENTS` (`src/features/plugin/configComponents.ts`) with a tier switcher (Feed / Client / Global); plugins with only a custom page component show a hint and an "Open plugin page" link in the panel. Plugin routes (`/plugins/:id`, `/clients/:c/plugins/:id`, `/clients/:c/feeds/:f/plugins/:id`) remain as deep links (ScopeContextBar tier hrefs, bookmarks).
+- **Navigation**: The sidebar is scope-swapped. In global scope (no feed selected) it shows Fleet Overview (`/`), Clients (`/#clients`), System Logs (`/logs`), Global Rules (`/rules`), plus the Admin entry for admins. In feed scope it shows Dashboard (the exact feed base route), then Setup, plugin entries (enabled plugins with `manifest.frontend.component`), Products, Pipeline, Monitoring, Export. The header feed dropdown (FeedBreadcrumb) switches between the client's feed sources and offers an "All clients" reset to `/`. Plugin entries appear only in feed context and are labeled via `pluginNames.*` i18n keys with `plugin.name` as fallback, with icons resolved via `getPluginIcon`. Each plugin has two surfaces (ADR-0007): its Plugin Page (dashboard/tool) and its Setup surface embedded in the Pipeline Editor — `PluginConfigPanel` embeds the plugin's registered Setup component from `CONFIG_COMPONENTS` (`src/features/plugin/configComponents.ts`) with a tier switcher (Feed / Client / Global); plugins with only a custom page component show a hint and an "Open plugin page" link in the panel. Plugin routes (`/plugins/:id`, `/clients/:c/plugins/:id`, `/clients/:c/feeds/:f/plugins/:id`) remain as deep links (ScopeContextBar tier hrefs, bookmarks).
 - **Plugin UIs with custom components**:
   - `rules` → `RulesUI` (`src/features/rules/`) — ordered rule list with dnd reordering, master pinning, i18n (`rules` namespace)
   - `filter` → `FilterUI` (`src/features/filter/`) — conjunctive scalar condition editor with live preview, dirty-guard + useBlocker, i18n (`filter` namespace)
   - `custom_labels` → `CustomLabelsUI` (`src/features/customLabels/`, UI name "Labelizer") — merged Global/Client/Feed tier view (union-by-id mirroring the runtime `config_merge`); the bulk tab is slot-selected via a top SegmentedControl (custom_label_0..4) with a coverage dashboard (any-slot labeled/total, progress bar, quick stats) and collapsible priority-ordered rule cards (matched + overridden badges, shadowed-value list with attribution tooltips), debounced draft preview via `POST /plugins/custom_labels/preview`; rule duplicate/delete, override-at-client-level, clickable tier navigation, help drawer; expanded rule cards at feed tier add a synchronized, windowed product preview column beside the value list (batch lookup via `POST /feed-sources/{id}/products/lookup`), i18n (`customLabels` namespace)
 - All three custom components share the pattern: dirty-guard + `useBlocker` navigation guard with `ConfirmModal`, `useSavePluginConfig` mutation for editable-tier writes
+
+### Shared Dashboard Primitives (`src/components/dashboard/`)
+- `StatCard` — KPI card with number formatting and neutral/warning/critical variants; consumed by both the fleet dashboard and the feed dashboard
+- `ChartCard` — Paper + title + structural empty-state branch; all dashboard charts render inside it
+- `dashboardColors` — semantic series colors (success/error/warning/info/raw/exportable/passed/dropped) and the 8-color donut palette; single source so fleet and feed charts cannot drift
 
 ### Quality Dashboard (`src/features/monitoring/`)
 - `MonitoringRunsPage` — `IngestionRunsTable` with polling

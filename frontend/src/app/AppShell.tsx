@@ -24,12 +24,15 @@ import {
   IconChevronDown,
   IconDashboard,
   IconFileExport,
+  IconGavel,
   IconGitBranch,
+  IconListDetails,
   IconLogout,
   IconMoon,
   IconSettings,
   IconShieldCog,
   IconSun,
+  IconUsers,
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
@@ -163,7 +166,7 @@ function FeedBreadcrumb() {
   const client = summary?.clients?.find((entry) => String(entry.id) === clientId);
   const feed = client?.feed_sources?.find((entry) => String(entry.id) === feedSourceId);
   const area =
-    /^\/clients\/[^/]+\/feeds\/[^/]+\/([^/?]+)/.exec(location.pathname)?.[1] ?? 'setup';
+    /^\/clients\/[^/]+\/feeds\/[^/]+\/([^/?]+)/.exec(location.pathname)?.[1] ?? '';
 
   if (!clientId) return null;
 
@@ -185,11 +188,15 @@ function FeedBreadcrumb() {
           </UnstyledButton>
         </Menu.Target>
         <Menu.Dropdown>
+          <Menu.Item component={Link} to="/">
+            {t('breadcrumbs.allClients')}
+          </Menu.Item>
+          <Menu.Divider />
           {(client?.feed_sources ?? []).map((entry) => (
             <Menu.Item
               key={entry.id}
               component={Link}
-              to={`/clients/${clientId}/feeds/${entry.id}/${area}${location.search}`}
+              to={`/clients/${clientId}/feeds/${entry.id}${area ? `/${area}` : ''}${location.search}`}
             >
               {entry.name}
             </Menu.Item>
@@ -223,19 +230,26 @@ export function AppShell() {
     [plugins, feedBase, t],
   );
 
-  function isActive(to: string | null): boolean {
-    if (!to) return false;
+  function isActive(to: string): boolean {
     if (to === '/') return location.pathname === '/';
+    if (to === '/#clients') return location.pathname === '/' && location.hash === '#clients';
     return location.pathname.startsWith(to);
   }
 
-  const feedScoped: Array<{ to: string | null; label: string; icon: ComponentType<{ size?: number }> }> = [
-    { to: feedBase ? `${feedBase}/setup` : null, label: t('nav.setup'), icon: IconSettings },
-    ...(feedBase ? pluginNavItems : []),
-    { to: feedBase ? `${feedBase}/products` : null, label: t('nav.products'), icon: IconBox },
-    { to: feedBase ? `${feedBase}/pipeline` : null, label: t('nav.pipeline'), icon: IconGitBranch },
-    { to: feedBase ? `${feedBase}/monitoring` : null, label: t('nav.monitoring'), icon: IconActivity },
-    { to: feedBase ? `${feedBase}/export` : null, label: t('nav.export'), icon: IconFileExport },
+  const feedScoped: Array<{ to: string; label: string; icon: ComponentType<{ size?: number }> }> = [
+    { to: `${feedBase}/setup`, label: t('nav.setup'), icon: IconSettings },
+    ...pluginNavItems,
+    { to: `${feedBase}/products`, label: t('nav.products'), icon: IconBox },
+    { to: `${feedBase}/pipeline`, label: t('nav.pipeline'), icon: IconGitBranch },
+    { to: `${feedBase}/monitoring`, label: t('nav.monitoring'), icon: IconActivity },
+    { to: `${feedBase}/export`, label: t('nav.export'), icon: IconFileExport },
+  ];
+
+  const globalNav = [
+    { to: '/', label: t('nav.fleetOverview'), icon: IconDashboard },
+    { to: '/#clients', label: t('nav.clients'), icon: IconUsers },
+    { to: '/logs', label: t('nav.systemLogs'), icon: IconListDetails },
+    { to: '/rules', label: t('nav.globalRules'), icon: IconGavel },
   ];
 
   return (
@@ -262,50 +276,59 @@ export function AppShell() {
 
       <MantineAppShell.Navbar p="md">
         <Stack gap={4}>
-          <NavLink
-            component={Link}
-            to="/"
-            label={t('nav.dashboard')}
-            leftSection={<IconDashboard size={16} />}
-            active={isActive('/')}
-            variant={isActive('/') ? 'light' : undefined}
-            color={isActive('/') ? 'blue' : undefined}
-            onClick={close}
-          />
-          {session?.role === 'admin' && (
-            <NavLink
-              component={Link}
-              to="/admin"
-              label={t('nav.admin')}
-              leftSection={<IconShieldCog size={16} />}
-              active={isActive('/admin')}
-              variant={isActive('/admin') ? 'light' : undefined}
-              color={isActive('/admin') ? 'blue' : undefined}
-              onClick={close}
-            />
-          )}
-          {feedScoped.map((item) =>
-            item.to ? (
+          {feedBase ? (
+            <>
               <NavLink
-                key={item.label}
                 component={Link}
-                to={item.to}
-                label={item.label}
-                leftSection={<item.icon size={16} />}
-                active={isActive(item.to)}
-                variant={isActive(item.to) ? 'light' : undefined}
-                color={isActive(item.to) ? 'blue' : undefined}
+                to={feedBase}
+                label={t('nav.dashboard')}
+                leftSection={<IconDashboard size={16} />}
+                active={location.pathname === feedBase}
+                variant={location.pathname === feedBase ? 'light' : undefined}
+                color={location.pathname === feedBase ? 'blue' : undefined}
                 onClick={close}
               />
-            ) : (
-              <NavLink
-                key={item.label}
-                label={item.label}
-                leftSection={<item.icon size={16} />}
-                description={t('selectFeedSourceHint')}
-                disabled
-              />
-            ),
+              {feedScoped.map((item) => (
+                <NavLink
+                  key={item.label}
+                  component={Link}
+                  to={item.to}
+                  label={item.label}
+                  leftSection={<item.icon size={16} />}
+                  active={isActive(item.to)}
+                  variant={isActive(item.to) ? 'light' : undefined}
+                  color={isActive(item.to) ? 'blue' : undefined}
+                  onClick={close}
+                />
+              ))}
+            </>
+          ) : (
+            <>
+              {globalNav.map((item) => (
+                <NavLink
+                  key={item.label}
+                  component={Link}
+                  to={item.to}
+                  label={item.label}
+                  leftSection={<item.icon size={16} />}
+                  active={item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to)}
+                  variant="subtle"
+                  onClick={close}
+                />
+              ))}
+              {session?.role === 'admin' && (
+                <NavLink
+                  component={Link}
+                  to="/admin"
+                  label={t('nav.admin')}
+                  leftSection={<IconShieldCog size={16} />}
+                  active={isActive('/admin')}
+                  variant={isActive('/admin') ? 'light' : undefined}
+                  color={isActive('/admin') ? 'blue' : undefined}
+                  onClick={close}
+                />
+              )}
+            </>
           )}
         </Stack>
       </MantineAppShell.Navbar>

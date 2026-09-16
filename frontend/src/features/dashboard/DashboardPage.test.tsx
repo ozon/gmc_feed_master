@@ -66,16 +66,22 @@ const summary: DashboardSummary = {
       ],
     },
   ],
+  runs_by_day: [
+    { date: '2026-08-26', success: 3, error: 1 },
+    { date: '2026-08-27', success: 2, error: 0 },
+  ],
 };
 
 const deletedSummary: DashboardSummary = {
   counts: { clients: 1, feed_sources: 1, active_products: 4200, failed_last_exports: 0 },
   clients: [summary.clients[0]],
+  runs_by_day: [],
 };
 
 const emptySummary: DashboardSummary = {
   counts: { clients: 0, feed_sources: 0, active_products: 0, failed_last_exports: 0 },
   clients: [],
+  runs_by_day: [],
 };
 
 const plugins = [
@@ -123,7 +129,7 @@ describe('DashboardPage', () => {
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
-    expect(screen.getByText('Clients')).toBeInTheDocument();
+    expect(screen.getAllByText('Clients').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Feed sources')).toBeInTheDocument();
     expect(screen.getByText('Active products')).toBeInTheDocument();
     expect(screen.getByText('Failed exports')).toBeInTheDocument();
@@ -247,6 +253,40 @@ describe('DashboardPage', () => {
     expect(await screen.findByText('Could not be saved.')).toBeInTheDocument();
     expect(screen.queryByText('Saved')).not.toBeInTheDocument();
     expect(window.location.pathname).toBe('/');
+  });
+
+  it('renders the fleet chart titles on the dashboard', async () => {
+    fetchMock = stubFetch((url) => {
+      if (url === '/auth/me') return jsonResponse({ username: 'operator' });
+      if (url === '/dashboard/summary') return jsonResponse(summary);
+      if (url === '/plugins') return jsonResponse(plugins);
+      return jsonResponse({});
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(screen.getByText('Catalog volume by feed')).toBeInTheDocument();
+    expect(screen.getByText('Pipeline health (14 days)')).toBeInTheDocument();
+  });
+
+  it('navigates to the feed dashboard when clicking a feed card', async () => {
+    const user = userEvent.setup();
+    fetchMock = stubFetch((url) => {
+      if (url === '/auth/me') return jsonResponse({ username: 'operator' });
+      if (url === '/dashboard/summary') return jsonResponse(summary);
+      if (url === '/plugins') return jsonResponse(plugins);
+      return jsonResponse({});
+    });
+
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Dashboard' });
+
+    await user.click(screen.getByText('Acme DE'));
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/clients/1/feeds/2');
+    });
   });
 
   it('renders the empty state and the error state with retry', async () => {
