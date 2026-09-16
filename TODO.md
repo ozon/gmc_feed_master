@@ -526,6 +526,32 @@
 
 ---
 
+## Section 11 — M14 triage follow-ups (2026-09-16)
+
+Filed by the M14 deferred-minors triage (`docs/reports/2026-09-16-deferred-minors-triage.md`). All are test-coverage or cosmetic-UX gaps, not user-visible defects. The other 17 ledger items triaged as fixed / obsolete / accepted-by-design need no work.
+
+### 11.1 [ ] Category `RulesTab`: cover the blocker "stay" branch [P3]
+
+`frontend/src/features/category/RulesTab.tsx:228` uses `useBlocker(dirty)`. No test drives the "stay on page" branch (only the "leave" branch). Add a test that triggers navigation while dirty, chooses stay, and asserts the draft is preserved.
+
+### 11.2 [ ] Dashboard donut charts: assert data and series names [P3]
+
+No test renders a `DonutChart` with a data payload, so a broken `data`/`series` mapping would pass CI. Add a test in the dashboard/feed-dashboard suites asserting the rendered chart receives the expected rows and series names.
+
+### 11.3 [ ] `FeedSourceCard`: make the card a real link [P3]
+
+`frontend/src/features/dashboard/FeedSourceCard.tsx:80` renders `component="a"` with no `href`, so middle-click / open-in-new-tab does nothing. Give the anchor a real `href` (and keep the `onClick` navigation) or drop `component="a"` and rely on the keyboard handler. Decide whether the lost middle-click is worth the change.
+
+### 11.4 [ ] Trend chart: handle a non-ascending day series [P3]
+
+The trend fill logic assumes ascending input. An export-only day sitting between raw-data days can produce a non-monotonic axis. Either sort defensively before filling or reject the case explicitly.
+
+### 11.5 [ ] Staging: cover the excluded-only case [P3]
+
+No test seeds products that are *exclusively* excluded (all products filtered out), so the zero-export path for a fully-excluded feed is unexercised. Add a staging/QC test for it.
+
+---
+
 ## Working notes for the next agent
 
 - **Remaining P2 pool:** 2.2 (deferred on backend question), 3.5, 6.1, 6.2, plus the m11c leftovers (enable-error toast wording key; span-aria-label robustness — noted inside the 1.9/1.10 Done entries) and the m11d leftovers (prefix-matcher seed assertion; noted inside the 1.6 Done entry). Section 9 labelsizer polish leftovers: 9.4 (blocked — needs second scoped plugin). TODO section 1 is now COMPLETE. dnd-kit follow-up: the pointer interaction test is coupled to geometry internals — revisit on any dnd-kit major bump (noted inside the 1.4 Done entry). Task 5.1 blocked on core plugins (Labelizer/Rules/Filter shipped 2026-09-05; Category shipped 2026-09-09); 8.1 is the owner's planning meta-task. Open ops items: ruff is now a hard exit-0 gate over `backend/` + `plugins/` with no baseline file (M13 cycle, 2026-09-16) and `alembic check` is clean and enforced in CI; mypy has been a hard exit-0 gate since 2026-09-10 (Section 10.1); the remaining ops item is the dev-env config (vite `allowedHosts` machine-specific host + `Caddyfile.dev` site-label mismatch), deferred to hardening cycle 2. CLOSED 2026-09-10 (section9-polish cycle): 9.1 (pluralization _one/_other for 7 i18n keys), 9.2 (usePreview fake timers), 9.3 (labels_equivalence deepcopy), 9.5 (manifest.py error message wording), 9.6 (plugin re-exec test + doc), 9B.3 (alembic env.py DATABASE_URL guard + conftest warning). CLOSED 2026-09-10 (plugin-optimistic-locking cycle): category assignments read-modify-write race — generic expected_version/409 + builder retry-once on all plugin config/data PUTs. CLOSED 2026-09-10 (m12-followups cycle): ProductsPage parallel-load flake (global asyncUtilTimeout: 5000 + 10/10 stability proof) and German findings pluralization (verified already-correct since M11c). CLOSED 2026-09-10 (mypy-baseline-cleanup cycle): 42 mypy errors → 0 across 5 cluster commits + gate flip; `pydantic.mypy` plugin enabled, `mypy-baseline.txt` deleted, CI hard exit-0. ENVIRONMENT LESSON (2026-09-07): subagent sessions can die mid-task returning empty — controller must verify working tree vs brief and either re-dispatch a finisher or controller-execute; stale `task-N-report.md` files from prior cycles sit at the same paths — always overwrite and check freshness. ENVIRONMENT LESSON (2026-09-10): subagent dispatch can 429 for an entire session — controller-inline execution per the established pattern is the fallback.

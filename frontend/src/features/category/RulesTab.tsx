@@ -303,7 +303,11 @@ export function RulesTab({
           <Button variant="default" disabled={!dirty} onClick={() => setDraft(baseline)}>
             {t('rules.reset')}
           </Button>
-          <Button disabled={!dirty} loading={save.isPending || validate.isPending} onClick={saveRules}>
+          <Button
+            disabled={!dirty || save.isPending || validate.isPending}
+            loading={save.isPending || validate.isPending}
+            onClick={saveRules}
+          >
             {t('rules.save')}
           </Button>
           <Button variant="light" onClick={addRule}>{t('rules.add')}</Button>
