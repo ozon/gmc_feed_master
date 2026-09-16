@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import cast
 
 import pytest
 import pytest_asyncio
@@ -11,6 +12,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.ai.schemas import EnrichedAttributes, OptimizedTitle
 from app.ai.service import AiResult
+from app.ingest.fetch import HttpFetcher
 from app.models.client import Client
 from app.models.feed_source import FeedSource
 from app.models.plugin import Plugin, PluginData
@@ -288,7 +290,7 @@ async def test_run_dry_run_surfaces_suggestions_without_persisting(db, monkeypat
     result = await dry_run_module.run_dry_run(
         session_factory=factory,
         feed_source_id=ids["feed_id"],
-        fetcher=object(),
+        fetcher=cast(HttpFetcher, object()),
         registry=_registry_stub(),
         plugin_registry={},
         clock=_clock_stub(),
