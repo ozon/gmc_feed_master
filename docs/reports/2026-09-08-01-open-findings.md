@@ -39,7 +39,7 @@ Severity legend: P0 = before any new milestone · P1 = before next follow-up wor
 | ruff ~506 pre-existing errors, "unpinned but installed" | **Worse than documented**: ruff is not in the backend dev group at all (`backend/pyproject.toml` dev group has no ruff; `uv.lock` has no ruff). `uv run ruff` only works because a global ruff happens to be on PATH. See tooling report T2. |
 | mypy not a dev dep | **Resolved** 2026-09-08: mypy 2.3.1 added with `[tool.mypy]` config + 42-error baseline (TODO 10.1). |
 | ProductsPage.test.tsx parallel-load flake (passes solo) | Still open; documented; worth a fake-timer pass. |
-| vite `allowedHosts` contains machine-specific host (`x.hermes-tower.com`) | Still present (`frontend/vite.config.ts:35`); also Caddyfile.dev site label (`http://localhost`) mismatch noted on the message board. |
+| vite `allowedHosts` contains machine-specific host (`x.hermes-tower.com`) | **Resolved 2026-09-16 (M14):** the host is gone from the repo. `frontend/vite.config.ts` reads `VITE_ALLOWED_HOSTS` (default `localhost`, documented in the new `frontend/.env.example`), and `Caddyfile.dev`'s site label is `{$DEV_HOST:localhost}`, so the Vite and Caddy dev hosts are two paired env knobs instead of two hardcoded values. |
 | 65 unclassified pytest warnings | Still unclassified (mentioned once on the message board, no task filed). |
 | German findings tooltips lack pluralization (`1 Warnungen`) | Still open; UX audit found the plural gap extends to more keys (U15). |
 | Frontend full-suite flake under concurrent backend load | Known environment behavior; re-run-solo convention documented. |

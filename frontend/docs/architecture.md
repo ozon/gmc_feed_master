@@ -217,15 +217,19 @@ openssl req -x509 -newkey rsa:2048 -nodes \
   -days 365 -subj "/CN=localhost" \
   -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
 
-# .env.local
+# .env.local  (see .env.example for the canonical list)
 VITE_HTTPS_CERT=local-certs/localhost-cert.pem
 VITE_HTTPS_KEY=local-certs/localhost-key.pem
+VITE_ALLOWED_HOSTS=localhost
 
 # Dev servers
 cd backend && uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1
 cd frontend && npm run dev
 # Open https://localhost:5173
 ```
+
+- `.env.example` is the canonical list of frontend env vars; copy it to `.env.local` (gitignored). `VITE_ALLOWED_HOSTS` is comma-separated — Vite rejects any Host header not listed, so reaching the dev server by hostname means adding it here.
+- To serve the app through Caddy instead, run `make dev-caddy` (HTTP, no TLS) and set `DEV_HOST` to the same host. The two knobs are deliberately paired: `VITE_ALLOWED_HOSTS` governs Vite, `DEV_HOST` governs Caddy's site label.
 
 - Vite proxies `/auth/*`, `/health`, `/admin`, `/clients`, `/feed-sources`, `/dashboard`, `/plugins`, `/registry`, `/export` to `http://127.0.0.1:8000` (production Caddyfiles mirror this list, including `/admin/*`)
 - HTTPS required for `Secure` session cookie

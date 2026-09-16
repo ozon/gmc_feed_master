@@ -10,6 +10,10 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, rootDir, '');
   const certPath = env.VITE_HTTPS_CERT?.trim();
   const keyPath = env.VITE_HTTPS_KEY?.trim();
+  const allowedHosts = (env.VITE_ALLOWED_HOSTS?.trim() || 'localhost')
+    .split(',')
+    .map((host) => host.trim())
+    .filter(Boolean);
 
   if (Boolean(certPath) !== Boolean(keyPath)) {
     throw new Error('VITE_HTTPS_CERT and VITE_HTTPS_KEY must be set together');
@@ -32,7 +36,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      allowedHosts: ['localhost', 'x.hermes-tower.com'],
+      allowedHosts,
       ...(certPath && keyPath
         ? {
             https: {

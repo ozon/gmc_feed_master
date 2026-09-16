@@ -7,7 +7,7 @@ React 19 + TypeScript + Vite. Mantine UI, TanStack Query (server state), TanStac
 ```bash
 # From frontend/
 npm install
-npm run dev              # Vite dev server (needs .env.local with certs for HTTPS)
+npm run dev              # Vite dev server (copy .env.example to .env.local; certs for HTTPS)
 npm run build            # typecheck + production build
 npm run test             # vitest
 npm run typecheck        # tsc -b
