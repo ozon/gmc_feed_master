@@ -1410,3 +1410,16 @@ Inline code review of the cycle found one critical and one important issue; both
 - **The deferred-minor list is bounded by triage.** All 22 ledger entries were classified against code; the 5 genuine gaps are filed as numbered TODO items (Section 11) rather than carried as prose.
 
 **Rationale:** Both inputs to this cycle were point-in-time artifacts, and acting on them directly would have produced churn (re-"fixing" correct docs) and false confidence. Re-deriving from code made the cycle small and honest: the docs work was 2 real edits plus 14 dispositions, and the minors work was 1 real edit plus 17 classifications. Recording that the report had drifted from reality is itself the useful output — the same trap will recur with any older review artifact.
+
+### 2026-09-16 — Findings & quality surfaces UX
+
+**Topic:** Making the quality findings actionable (grouping, rule guidance, product drill-down, table ergonomics) and unifying the quality surfaces behind one module.
+
+**Decision:**
+- New shared module `frontend/src/features/monitoring/findings/` owns severity constants, the rule catalog (13 rule codes + unknown fallback, i18n-backed), grouping/filtering helpers, the shared badges/summary, the explorer and both charts. `QualitySummaryCards` is deleted; `FindingsTable` consumes the shared severity badge and rule label, so the dry-run results inherit them.
+- Grouping, counting, search, sorting and pagination are client-side over the existing `quality-findings` response (which already returns every finding). Server-side grouped/paginated endpoints are deferred until a feed produces findings in the thousands.
+- `FindingsExplorer` groups by rule or GMC attribute (findings without a field bucket into a "feed level" group); flat mode is a sortable, paginated table. Product drill-down reuses the existing `useProductDetail` hook and `ProductDrawer`; no new route.
+- `GET /dashboard/summary` feed entries gain `quality: {critical, warning, info}` from the feed's latest export run (zeros when none) — no migration, no new endpoint, no extra query. Dashboard feed cards show a critical-else-warning badge linking to the findings page; the feed dashboard's quality chart links there too.
+- Rule guidance lives in i18n (`rules.*` in `monitoring.json`), since the rule set is fixed and owned by the backend QC rules. A frontend test reads `backend/app/qc/{rules,ai_rules}.py` and fails if a backend `rule_id` has no catalog entry.
+
+**Rationale:** The findings page showed raw rule codes with no guidance and no way to reach the product behind a finding, and severity styling was duplicated across four surfaces. A single module removes the drift and delivers the ergonomics without new dependencies or schema changes. The per-feed quality counts reuse the export runs the summary already loads, so the badge is free.

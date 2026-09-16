@@ -192,12 +192,14 @@ export function useSavePipeline(feedSourceId) {
 - `ChartCard` — Paper + title + structural empty-state branch; all dashboard charts render inside it
 - `dashboardColors` — semantic series colors (success/error/warning/info/raw/exportable/passed/dropped) and the 8-color donut palette; single source so fleet and feed charts cannot drift
 
-### Quality Dashboard (`src/features/monitoring/`)
+### Quality Findings (`src/features/monitoring/` + `src/features/monitoring/findings/`)
+- `findings/` — the shared findings domain module: `severity.ts` (order, colors, labels), `ruleCatalog.ts` (rule-code → title/description/remediation, with a backend-`rule_id` guard test), `groupFindings.ts` (group/count/filter helpers), `SeverityBadge`/`RuleLabel`/`FindingsSummary`, `FindingsExplorer`, and the `QualityTrendChart`/`RuleDistributionChart` charts
+- `MonitoringFindingsPage` — composes `FindingsSummary` (severity counts with run-over-run `↓ fixed` / `↑ new` delta badges when a previous run exists), both charts, `FindingsExplorer` (group by rule or GMC attribute, collapsible groups, free-text search, severity/rule filters, flat sortable + paginated table) and a `ProductDrawer` for finding → product drill-down
+- `FindingsTable` — shared flat findings table (sortable, paginated, optional product drill-down) used by the explorer and the dry-run results
 - `MonitoringRunsPage` — `IngestionRunsTable` with polling
-- `MonitoringFindingsPage` — quality overview: `QualitySummaryCards` (severity counts with run-over-run `↓ fixed` / `↑ new` delta badges when a previous run exists), `QualityTrendChart` (`@mantine/charts` line chart over `useQualityHistory`), `RuleDistributionChart` (horizontal bar chart of findings by code), severity MultiSelect + code Select filters, then `FindingsTable`
 - `MonitoringDryRunPage` — trigger dry run, show `DryRunResults`
 
-Charts use `@mantine/charts@9.5.2` (peer `recharts`); styles imported in `src/App.tsx`. The delta counters come from the extended `quality-findings` response; the trend chart consumes `GET /feed-sources/{id}/quality-history` via `useQualityHistory`.
+Charts use `@mantine/charts@9.5.2` (peer `recharts`); styles imported in `src/App.tsx`. The delta counters come from the extended `quality-findings` response; the trend chart consumes `GET /feed-sources/{id}/quality-history` via `useQualityHistory`. The fleet dashboard feed cards show a `quality` badge (critical, else warning) from `GET /dashboard/summary` and link into the feed's findings page; the feed dashboard's quality chart links there too.
 
 ### Export (`src/features/export/`)
 - `ExportPage` — `ExportVersionList` + `ExportVersionDiff` + `RollbackConfirmModal`
