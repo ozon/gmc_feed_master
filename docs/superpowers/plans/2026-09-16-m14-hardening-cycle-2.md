@@ -73,13 +73,15 @@ Replace the first line of `Caddyfile.dev`:
 
 The default keeps `make dev-caddy` working with no environment set.
 
-- [ ] **Step 4: Verify no machine-specific host remains**
+- [ ] **Step 4: Verify no machine-specific host remains in shipped config or live docs**
 
 Run:
 ```bash
-cd /home/ozon/gmc_feed_master && rg -n "hermes-tower" . --glob '!node_modules' --glob '!.git' --glob '!docs/superpowers/**' --glob '!.superpowers/**'
+cd /home/ozon/gmc_feed_master && rg -n "hermes-tower" frontend/src frontend/vite.config.ts frontend/.env.example Caddyfile Caddyfile.dev Makefile README.md AGENTS.md
 ```
-Expected: no matches (the removed value may still appear in historical specs/plans and the SDD ledger — those are exempt).
+Expected: no matches.
+
+Historical review artifacts that *recorded* the finding (`docs/reports/2026-09-08-01-open-findings.md`), the message board, and `docs/superpowers/**`/`.superpowers/**` are exempt. When this task lands, update the `allowedHosts` row in `docs/reports/2026-09-08-01-open-findings.md` to mark it resolved (that report is an open-findings tracker, same treatment as the D-report).
 
 - [ ] **Step 5: Verify the frontend still builds**
 
