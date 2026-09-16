@@ -1386,3 +1386,15 @@ Inline code review of the cycle found one critical and one important issue; both
 - **`GET/PUT /admin/settings` no longer carry `ai_cache_retention_days`.**
 
 **Rationale:** These were deliberately deferred in phase A so each commit stayed green (dropping `is_default`/`AiResultCache` before `service.py`/`ai_admin.py` stopped referencing them would have broken the build); by phase D every reference was gone, so the deletion is mechanical. `ruff` dropped from 490 to 489 because one baseline warning lived in a deleted file — no new errors, and `ruff-baseline.txt` was left untouched (it is already stale at 508).
+
+### 2026-09-16 — Ruff gate flipped to exit-0; alembic check enforced
+
+**Topic:** Removing the count-file ruff baseline and making model↔DB drift a build failure.
+
+**Decision:** `backend/ruff-baseline.txt` is deleted and `ruff` is now a hard exit-0 gate over `backend/` **and** `plugins/` (`uv run ruff check . ../plugins` from `backend/`). All 489 pre-existing `backend/` findings and 30 `plugins/` findings were fixed across waves: a root `ruff.toml`, safe autofixes, unsafe autofixes, hand-fixes, and plugin hand-fixes. `B008` was resolved by configuration (`[tool.ruff.lint.flake8-bugbear] extend-immutable-calls` for the FastAPI callables) rather than by editing ~100 route signatures — ruff's documented remedy. `alembic check` is added to CI; the two reported drifts were fixed by aligning the models to the migrations (no new migration), because the migrations created the deployed objects: `feed_sources.export_token` uniqueness moves from a column-level `unique=True` (a UNIQUE constraint) to the unique index `uq_feed_sources_export_token` that migration `m8` created, and `staging_products` declares `m5`'s partial index `ix_staging_products_removed_purge` (`postgresql_where=status = 'removed'`).
+
+**Rationale:** The baseline file had drifted from 508 to 489 and nobody maintained it, so the gate could not fail; and it did not cover `plugins/`, a first-class code root. This mirrors the mypy cleanup of 2026-09-10 (42 → 0, baseline deleted, gate hard).
+
+**Two traps recorded for future cycles:**
+- **`ruff`'s `I001` depends on the resolved project root.** A config at the repository root otherwise moves `project_root` off `backend/` and reports ~80 phantom import-order findings on unchanged files (`backend/app/mapping/matcher.py` is clean under the `backend/` cwd). The root `ruff.toml` sets `src = ["backend", "plugins"]`; with it, the same check returns identical results from `backend/` and from the repository root.
+- **Never narrow the rule selection when `RUF100` is in play.** `--select X,Y,RUF100 --fix` replaces the enabled rule set, so `RUF100` sees every *other* rule's `noqa` as unused and deletes it. That mistake removed six justified `# noqa: UP031` directives in `app/ai/templates.py` (their messages contain literal `{{%s}}`, which f-strings cannot express without quadrupled braces) and one `# noqa: BLE001` in `app/ai/service.py`; all seven were restored.

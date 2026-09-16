@@ -87,7 +87,8 @@ flow must all keep working.
   `instructor==1.17.0`) and pull a large transitive tree, including `openai`
   (used only transitively by LiteLLM — never imported by application code).
 - The mypy hard gate is preserved via a `[[tool.mypy.overrides]]` entry for
-  `litellm.*` / `instructor.*`; no new `ruff-baseline.txt` exceptions.
+  `litellm.*` / `instructor.*`; no new ruff findings (the gate is
+  exit-0 since 2026-09-16, with no baseline file).
 - Router construction validates deployments and can raise on a misconfigured
   model id. `AiService` catches router-build failures and degrades to
   `status="fallback"` / `AiChatUnavailable`, preserving the "AI never blocks

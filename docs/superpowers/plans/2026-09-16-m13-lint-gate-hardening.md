@@ -703,13 +703,15 @@ Append (never rewrite history — the older baseline-gate entries stay):
 
 `docs/decisions/0010-litellm-instructor-ai-transport.md` line ~90 says "no new `ruff-baseline.txt` exceptions". The file no longer exists; reword to "no new ruff findings (the gate is exit-0)".
 
-- [ ] **Step 5: Verify no document references the deleted file**
+- [ ] **Step 5: Verify no operative document references the deleted file**
 
 Run:
 ```bash
-cd /home/ozon/gmc_feed_master && rg -n "ruff-baseline" --glob '!docs/superpowers/**' --glob '!.superpowers/**' .
+cd /home/ozon/gmc_feed_master && rg -n "ruff-baseline" backend/AGENTS.md AGENTS.md .github/ frontend/ docs/decisions/0010-litellm-instructor-ai-transport.md
 ```
-Expected: no matches. Historical specs/plans and the gitignored SDD ledger are exempt (append-only history).
+Expected: no matches.
+
+Historical records are exempt and must not be rewritten: prior cycle-log entries in `TODO.md`, the older dated entries in `docs/decisions.md` (the repo's rule is *append, never rewrite history*), `backend/docs/mypy-baseline.md` (itself a closed historical record), and anything under `docs/superpowers/**` / `.superpowers/**`.
 
 - [ ] **Step 6: Commit**
 
