@@ -36,28 +36,8 @@ class AiProviderConfig(Base):
     max_concurrency: Mapped[int] = mapped_column(Integer, nullable=False, default=4)
     timeout_s: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-
-
-class AiResultCache(Base):
-    __tablename__ = "ai_result_cache"
-    __table_args__ = (
-        UniqueConstraint(
-            "task_type", "provider_config_id", "model", "template_version", "input_hash",
-            name="uq_ai_result_cache_key",
-        ),
-        Index("ix_ai_result_cache_input_hash", "input_hash"),
-    )
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    task_type: Mapped[str] = mapped_column(String(100), nullable=False)
-    provider_config_id: Mapped[int] = mapped_column(ForeignKey("ai_provider_configs.id", ondelete="CASCADE"), nullable=False)
-    model: Mapped[str] = mapped_column(String(255), nullable=False)
-    template_version: Mapped[str] = mapped_column(String(100), nullable=False, default="builtin")
-    input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
-    output: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
 class AiUsageLog(Base):

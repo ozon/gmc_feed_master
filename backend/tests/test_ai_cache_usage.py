@@ -7,9 +7,8 @@ import pytest_asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.ai.cache import AiResultCacheStore
 from app.ai.usage import UsageLogWriter, UsageRecord, aggregate_usage
-from app.models.ai import AiProviderConfig, AiUsageLog
+from app.models.ai import AiUsageLog
 
 
 @pytest_asyncio.fixture
@@ -18,65 +17,6 @@ async def session_factory(isolated_database_url):
     factory = async_sessionmaker(engine, expire_on_commit=False)
     yield factory
     await engine.dispose()
-
-
-@pytest_asyncio.fixture
-async def config_id(session_factory):
-    async with session_factory() as session:
-        async with session.begin():
-            config = AiProviderConfig(
-                name="primary", provider_type="openai_compatible",
-                base_url="https://api.openai.com/v1", api_key="sk-test",
-                model="gpt-4o-mini", max_concurrency=4, timeout_s=30,
-                enabled=True, is_default=True,
-            )
-            session.add(config)
-            await session.flush()
-            return config.id
-
-
-@pytest.mark.asyncio
-async def test_cache_store_and_lookup_round_trip(session_factory, config_id):
-    store = AiResultCacheStore(session_factory)
-    hit = await store.lookup(
-        "attribute_enrichment", config_id, "gpt-4o-mini", "builtin", "a" * 64
-    )
-    assert hit is None
-    await store.store(
-        "attribute_enrichment", config_id, "gpt-4o-mini", "builtin", "a" * 64,
-        {"color": "blue"},
-    )
-    hit = await store.lookup(
-        "attribute_enrichment", config_id, "gpt-4o-mini", "builtin", "a" * 64
-    )
-    assert hit is not None
-    assert hit.output == {"color": "blue"}
-
-
-@pytest.mark.asyncio
-async def test_cache_lookup_misses_on_different_template_version(session_factory, config_id):
-    store = AiResultCacheStore(session_factory)
-    await store.store(
-        "attribute_enrichment", config_id, "gpt-4o-mini", "builtin", "a" * 64,
-        {"color": "blue"},
-    )
-    assert await store.lookup(
-        "attribute_enrichment", config_id, "gpt-4o-mini", "v2", "a" * 64
-    ) is None
-
-
-@pytest.mark.asyncio
-async def test_cache_store_duplicate_key_does_not_raise(session_factory, config_id):
-    store = AiResultCacheStore(session_factory)
-    await store.store(
-        "attribute_enrichment", config_id, "gpt-4o-mini", "builtin", "a" * 64,
-        {"color": "blue"},
-    )
-    # Concurrent insert of the same key must be swallowed, not raised.
-    await store.store(
-        "attribute_enrichment", config_id, "gpt-4o-mini", "builtin", "a" * 64,
-        {"color": "red"},
-    )
 
 
 @pytest.mark.asyncio

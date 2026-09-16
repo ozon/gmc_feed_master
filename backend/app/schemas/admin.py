@@ -38,7 +38,6 @@ class GlobalSettingsOut(BaseModel):
     staging_history_retention_days: int = Field(ge=1)
     ingestion_run_retention_days: int = Field(ge=1)
     ai_usage_retention_days: int = Field(ge=1)
-    ai_cache_retention_days: int = Field(ge=1)
 
 
 class GlobalSettingsUpdate(GlobalSettingsOut):

@@ -31,7 +31,6 @@ EXPECTED_TABLES = {
     "user_clients",
     "global_settings",
     "ai_provider_configs",
-    "ai_result_cache",
     "ai_usage_logs",
     "prompt_templates",
 }

@@ -406,7 +406,6 @@ def _seed_settings() -> GlobalSetting:
         staging_history_retention_days=90,
         ingestion_run_retention_days=90,
         ai_usage_retention_days=90,
-        ai_cache_retention_days=90,
         ai_cache_type="local",
         ai_cache_namespace="gmc-ai",
         ai_cache_ttl_taxonomy_s=2592000,

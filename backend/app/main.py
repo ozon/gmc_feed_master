@@ -167,9 +167,8 @@ def create_app(
                         datetime.now(timezone.utc),
                     )
                     logging.getLogger(__name__).info(
-                        "ai purge: %s usage rows, %s cache rows",
+                        "ai purge: %s usage rows",
                         counts.usage_rows,
-                        counts.cache_rows,
                     )
 
                 scheduler_service.register_system_job(

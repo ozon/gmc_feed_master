@@ -5,7 +5,7 @@ import pytest_asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.models.ai import AiProviderConfig, AiResultCache, AiUsageLog
+from app.models.ai import AiProviderConfig, AiUsageLog
 
 
 @pytest_asyncio.fixture
@@ -29,7 +29,6 @@ async def test_ai_provider_config_round_trip(session):
             max_concurrency=4,
             timeout_s=30,
             enabled=True,
-            is_default=True,
         ))
     async with session.begin():
         row = (await session.execute(
@@ -37,38 +36,7 @@ async def test_ai_provider_config_round_trip(session):
         )).scalar_one()
         assert row.input_price_per_mtok is None
         assert row.output_price_per_mtok is None
-        assert row.is_default is True
         assert row.tier == "bulk"
-
-
-@pytest.mark.asyncio
-async def test_ai_result_cache_unique_key(session):
-    from sqlalchemy.exc import IntegrityError
-
-    async with session.begin():
-        session.add(AiProviderConfig(
-            name="primary", provider_type="openai_compatible",
-            base_url="http://localhost:11434/v1", api_key="",
-            model="llama3.3", max_concurrency=2, timeout_s=60,
-            enabled=True, is_default=True,
-        ))
-    async with session.begin():
-        config = (await session.execute(select(AiProviderConfig))).scalar_one()
-        session.add(AiResultCache(
-            task_type="attribute_enrichment", provider_config_id=config.id,
-            model="llama3.3", template_version="builtin",
-            input_hash="a" * 64, output={"color": "blue"},
-        ))
-    # Duplicate key inside one transaction: flush must raise IntegrityError.
-    async with session.begin():
-        config = (await session.execute(select(AiProviderConfig))).scalar_one()
-        session.add(AiResultCache(
-            task_type="attribute_enrichment", provider_config_id=config.id,
-            model="llama3.3", template_version="builtin",
-            input_hash="a" * 64, output={"color": "red"},
-        ))
-        with pytest.raises(IntegrityError):
-            await session.flush()
 
 
 @pytest.mark.asyncio
