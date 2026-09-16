@@ -30,7 +30,19 @@
     "severityPlaceholder": "All severities",
     "codeFilter": "Code",
     "codePlaceholder": "All codes",
-    "total": "Total: {{count}}"
+    "total": "Total: {{count}}",
+    "groupBy": "Group by",
+    "groupRule": "Rule",
+    "groupAttribute": "Attribute",
+    "groupFlat": "Flat",
+    "search": "Search",
+    "searchPlaceholder": "Message, product or field",
+    "ruleFilter": "Rule",
+    "rulePlaceholder": "All rules",
+    "feedLevel": "Feed level",
+    "showMore": "Show {{count}} more",
+    "openProduct": "Open product {{id}}",
+    "pageSize": "Rows per page"
   },
   "quality": {
     "ofProducts": "of {{count}} products"

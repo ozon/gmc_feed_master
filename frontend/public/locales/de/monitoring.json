@@ -30,7 +30,19 @@
     "severityPlaceholder": "Alle Schweregrade",
     "codeFilter": "Code",
     "codePlaceholder": "Alle Codes",
-    "total": "Gesamt: {{count}}"
+    "total": "Gesamt: {{count}}",
+    "groupBy": "Gruppieren nach",
+    "groupRule": "Regel",
+    "groupAttribute": "Attribut",
+    "groupFlat": "Flach",
+    "search": "Suche",
+    "searchPlaceholder": "Meldung, Produkt oder Feld",
+    "ruleFilter": "Regel",
+    "rulePlaceholder": "Alle Regeln",
+    "feedLevel": "Feed-Ebene",
+    "showMore": "{{count}} weitere anzeigen",
+    "openProduct": "Produkt {{id}} öffnen",
+    "pageSize": "Zeilen pro Seite"
   },
   "quality": {
     "ofProducts": "von {{count}} Produkten"

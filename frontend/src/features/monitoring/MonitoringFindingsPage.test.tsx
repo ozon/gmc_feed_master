@@ -88,10 +88,10 @@ describe('MonitoringFindingsPage', () => {
     });
     renderAt();
     await waitFor(() => expect(screen.getByTestId('findings-table')).toBeInTheDocument());
-    expect(screen.getAllByTestId(/finding-row-/)).toHaveLength(2);
+    expect(screen.getAllByTestId(/finding-row/)).toHaveLength(2);
     await user.click(screen.getByRole('combobox', { name: /severity/i }));
     await user.click(screen.getByRole('option', { name: 'Critical' }));
-    expect(screen.getAllByTestId(/finding-row-/)).toHaveLength(1);
+    expect(screen.getAllByTestId(/finding-row/)).toHaveLength(1);
   });
 
   it('renders severity summary cards with counts and of-products line', async () => {
@@ -136,10 +136,10 @@ describe('MonitoringFindingsPage', () => {
     });
     renderAt();
     await waitFor(() => expect(screen.getByTestId('findings-table')).toBeInTheDocument());
-    expect(screen.getAllByTestId(/finding-row-/)).toHaveLength(2);
+    expect(screen.getAllByTestId(/finding-row/)).toHaveLength(2);
     await user.click(screen.getByRole('combobox', { name: /code/i }));
     await user.click(screen.getByRole('option', { name: 'missing_title' }));
-    expect(screen.getAllByTestId(/finding-row-/)).toHaveLength(1);
+    expect(screen.getAllByTestId(/finding-row/)).toHaveLength(1);
     const table = within(screen.getByTestId('findings-table'));
     expect(table.getByText('Unrecognized rule: missing_title')).toBeInTheDocument();
     expect(table.queryByText('Unrecognized rule: low_image_quality')).not.toBeInTheDocument();
