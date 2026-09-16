@@ -173,3 +173,91 @@ class NativeCache:
             await self._cache.async_add_cache(result, **kwargs)
         except Exception:
             logger.warning("ai cache: store failed; continuing", exc_info=True)
+
+    # -- status / clear -----------------------------------------------------
+
+    def _namespace_prefix(self, namespace: str | None) -> str:
+        base = self._cfg.namespace
+        return f"{base}:{namespace}:" if namespace else f"{base}:"
+
+    async def _healthy(self) -> bool:
+        if self._cache is None:
+            return False
+        control = {
+            "use-cache": True,
+            "namespace": f"{self._cfg.namespace}:__health__",
+            "ttl": 5,
+        }
+        try:
+            await self._cache.async_add_cache(
+                {"ok": True}, model="__health__",
+                messages=[{"role": "user", "content": "ping"}], cache=control,
+            )
+            probe = await self._cache.async_get_cache(
+                model="__health__",
+                messages=[{"role": "user", "content": "ping"}], cache=control,
+            )
+            return bool(probe)
+        except Exception:
+            logger.warning("ai cache: health probe failed", exc_info=True)
+            return False
+        finally:
+            await self.clear("__health__")
+
+    def _entries(self) -> int | None:
+        if self._cache is None:
+            return None
+        backend = self._cache.cache
+        try:
+            in_memory = getattr(backend, "cache_dict", None)
+            if isinstance(in_memory, dict):
+                return len(in_memory)
+            on_disk = getattr(backend, "disk_cache", None)
+            if on_disk is not None:
+                return sum(1 for _ in on_disk.iterkeys())
+        except Exception:
+            logger.warning("ai cache: entry count failed", exc_info=True)
+        return None  # redis: an entry count needs a SCAN; reported as unknown
+
+    async def status(self) -> dict[str, Any]:
+        return {
+            "effective_backend": effective_backend(self._cfg),
+            "redis_from_env": bool(self._cfg.redis_url or self._cfg.redis_host),
+            "healthy": await self._healthy(),
+            "namespace": self._cfg.namespace,
+            "entries": self._entries(),
+        }
+
+    async def clear(self, namespace: str | None = None) -> int:
+        if self._cache is None:
+            return 0
+        prefix = self._namespace_prefix(namespace)
+        backend = self._cache.cache
+        try:
+            in_memory = getattr(backend, "cache_dict", None)
+            if isinstance(in_memory, dict):
+                keys = [k for k in list(in_memory) if str(k).startswith(prefix)]
+                for key in keys:
+                    in_memory.pop(key, None)
+                ttl_dict = getattr(backend, "ttl_dict", None)
+                if isinstance(ttl_dict, dict):
+                    for key in keys:
+                        ttl_dict.pop(key, None)
+                return len(keys)
+            on_disk = getattr(backend, "disk_cache", None)
+            if on_disk is not None:
+                keys = [
+                    k for k in list(on_disk.iterkeys()) if str(k).startswith(prefix)
+                ]
+                for key in keys:
+                    on_disk.delete(key)
+                return len(keys)
+            client = backend.init_async_client()
+            removed = 0
+            async for key in client.scan_iter(match=f"{prefix}*"):
+                await client.delete(key)
+                removed += 1
+            return removed
+        except Exception:
+            logger.warning("ai cache: clear failed", exc_info=True)
+            return 0

@@ -136,3 +136,63 @@ async def test_lookup_miss_returns_none_when_not_stored() -> None:
     assert await cache.lookup(
         model="bulk", messages=[{"role": "user", "content": "never"}], **kwargs
     ) is None
+
+
+@pytest.mark.asyncio
+async def test_status_reports_local_backend_healthy() -> None:
+    cache = cache_config.NativeCache(
+        cache_type="local", namespace="gmc-ai", ttl_taxonomy_s=60,
+        ttl_content_s=60, redis_url=None, disk_dir="/tmp/ai-cache-test",
+    )
+    status = await cache.status()
+    assert status["effective_backend"] == "local"
+    assert status["redis_from_env"] is False
+    assert status["healthy"] is True
+    assert status["namespace"] == "gmc-ai"
+    assert status["entries"] == 0
+
+
+@pytest.mark.asyncio
+async def test_clear_scoped_to_namespace() -> None:
+    cache = cache_config.NativeCache(
+        cache_type="local", namespace="gmc-ai", ttl_taxonomy_s=60,
+        ttl_content_s=60, redis_url=None, disk_dir="/tmp/ai-cache-test",
+    )
+    title = cache.request_kwargs("title_optimization")
+    attrs = cache.request_kwargs("attribute_enrichment")
+    await cache.store({"t": 1}, model="bulk", messages=[{"role": "user", "content": "a"}], **title)
+    await cache.store({"a": 1}, model="bulk", messages=[{"role": "user", "content": "b"}], **attrs)
+    removed = await cache.clear("title_optimization")
+    assert removed == 1
+    assert await cache.lookup(model="bulk", messages=[{"role": "user", "content": "a"}], **title) is None
+    assert await cache.lookup(model="bulk", messages=[{"role": "user", "content": "b"}], **attrs) == {"a": 1}
+
+
+@pytest.mark.asyncio
+async def test_clear_all_namespaces() -> None:
+    cache = cache_config.NativeCache(
+        cache_type="local", namespace="gmc-ai", ttl_taxonomy_s=60,
+        ttl_content_s=60, redis_url=None, disk_dir="/tmp/ai-cache-test",
+    )
+    title = cache.request_kwargs("title_optimization")
+    await cache.store({"t": 1}, model="bulk", messages=[{"role": "user", "content": "a"}], **title)
+    assert await cache.clear() == 1
+    assert (await cache.status())["entries"] == 0
+
+
+@pytest.mark.asyncio
+async def test_status_unhealthy_when_backend_errors() -> None:
+    cache = cache_config.NativeCache(
+        cache_type="local", namespace="gmc-ai", ttl_taxonomy_s=60,
+        ttl_content_s=60, redis_url=None, disk_dir="/tmp/ai-cache-test",
+    )
+
+    class Boom:
+        async def async_set_cache(self, *args, **kwargs):
+            raise RuntimeError("down")
+
+        async def async_get_cache(self, *args, **kwargs):
+            raise RuntimeError("down")
+
+    cache._cache.cache = Boom()  # type: ignore[assignment]
+    assert (await cache.status())["healthy"] is False
