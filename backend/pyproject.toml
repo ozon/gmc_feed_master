@@ -13,6 +13,8 @@ dependencies = [
   "apscheduler==3.11.3",
   "jsonschema==4.26.0",
   "pillow>=10.4,<11",
+  "litellm==1.101.0",
+  "instructor==1.17.0",
 ]
 
 [dependency-groups]
@@ -41,6 +43,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["plugin"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["litellm.*", "litellm", "instructor.*", "instructor"]
 ignore_missing_imports = true
 
 [tool.uv]
