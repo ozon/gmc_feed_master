@@ -58,14 +58,14 @@ Severity legend: Important (will actively mislead) · Medium · Minor.
 - Severity: Medium
 - Location: `backend/docs/api.md:52` vs `backend/app/routes/clients.py` (only POST /clients, GET /clients, PUT/DELETE /clients/{id})
 - Suggestion: remove the line or implement the endpoint.
-- Status: NEW
+- Status: ALREADY CORRECT (verified 2026-09-16, M14) — api.md documents only `POST /clients`, `GET /clients`, `PUT /clients/{id}`, `DELETE /clients/{id}`; no phantom `GET /clients/{id}` remains.
 
 ### [D8] api.md documents `POST /registry/generate` which is not an HTTP route
 - Severity: Medium
 - Location: `backend/docs/api.md:137` vs `backend/app/routes/registry.py` (only `GET /registry/attributes`)
 - Evidence: regeneration is a CLI script (`scripts/registry_check.py`), correctly documented in README.
 - Suggestion: replace the entry with the CLI command.
-- Status: NEW
+- Status: ALREADY CORRECT (verified 2026-09-16, M14) — api.md documents registry regeneration as the CLI (`scripts/registry_check.py`), not as an HTTP route.
 
 ### [D9] frontend/docs/architecture.md stack line is doubly stale: "Vite 6 (esbuild dev, Rollup prod)"
 - Severity: Medium
@@ -86,7 +86,7 @@ Severity legend: Important (will actively mislead) · Medium · Minor.
 - Location: `backend/app/routes/products.py:170`; api.md's Products section omits it
 - Impact: undiscoverable endpoint that powers the column picker / preview extraFields.
 - Suggestion: add it to api.md (and fold in the later query-key additions like `productLookup`, `adminUsers`, `adminSettings`, `adminScheduler` noted in frontend/docs/architecture.md's key table where applicable).
-- Status: NEW
+- Status: ALREADY CORRECT (verified 2026-09-16, M14) — `GET /feed-sources/{id}/fields` is documented in full, including its 2026-09-10 breaking-change note.
 
 ### [D12] data-model.md IngestionRun status enum omits `pending`
 - Severity: Minor
