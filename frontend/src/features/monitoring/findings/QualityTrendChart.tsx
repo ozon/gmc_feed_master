@@ -1,6 +1,7 @@
 import { LineChart } from '@mantine/charts';
 import dayjs from 'dayjs';
-import type { QualityHistoryRow } from '../../api/types';
+import type { QualityHistoryRow } from '../../../api/types';
+import { chartColors } from '../../../components/dashboard/dashboardColors';
 
 type Props = {
   rows: QualityHistoryRow[];
@@ -19,9 +20,9 @@ export function QualityTrendChart({ rows }: Props) {
       }))}
       dataKey="date"
       series={[
-        { name: 'critical', color: 'red.6' },
-        { name: 'warning', color: 'yellow.6' },
-        { name: 'info', color: 'blue.6' },
+        { name: 'critical', color: chartColors.error },
+        { name: 'warning', color: chartColors.warning },
+        { name: 'info', color: chartColors.info },
       ]}
       withLegend
     />
