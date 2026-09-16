@@ -11,7 +11,6 @@ from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -61,10 +60,9 @@ async def create_feed_source(client, name="Main"):
 
 
 async def seed_field_mapping(factory, feed_source_id, doc):
-    async with factory() as session:
-        async with session.begin():
-            feed_source = await session.get(FeedSource, feed_source_id)
-            feed_source.field_mapping = doc
+    async with factory() as session, session.begin():
+        feed_source = await session.get(FeedSource, feed_source_id)
+        feed_source.field_mapping = doc
 
 
 def source_field(name, kind, sub_fields=(), max_repeats=0):

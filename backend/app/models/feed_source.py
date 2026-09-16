@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import secrets
 from datetime import datetime
-from typing import Any
-from typing import TYPE_CHECKING
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Index, func
+from typing import TYPE_CHECKING, Any
+
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base import Base
 
 if TYPE_CHECKING:
@@ -36,9 +37,9 @@ class FeedSource(Base):
     configuration: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-    pipelines: Mapped[list["ModulePipeline"]] = relationship(
+    pipelines: Mapped[list[ModulePipeline]] = relationship(
         "ModulePipeline", back_populates="feed_source", foreign_keys="ModulePipeline.feed_source_id"
     )
-    active_pipeline: Mapped["ModulePipeline | None"] = relationship(
+    active_pipeline: Mapped[ModulePipeline | None] = relationship(
         "ModulePipeline", back_populates="active_for_feed_source", foreign_keys=[active_pipeline_id], uselist=False
     )

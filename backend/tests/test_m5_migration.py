@@ -1,10 +1,11 @@
 import asyncio
 
 import pytest
-from alembic import command
 from alembic.config import Config
 from sqlalchemy import inspect, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from alembic import command
 
 pytestmark = pytest.mark.asyncio
 
@@ -104,9 +105,8 @@ async def test_removal_deletes_history_via_cascade(isolated_database_url):
                 "SELECT id, '{}' FROM staging_products"
             ))
 
-    async with factory() as session:
-        async with session.begin():
-            await session.execute(text("DELETE FROM staging_products"))
+    async with factory() as session, session.begin():
+        await session.execute(text("DELETE FROM staging_products"))
 
     async with factory() as session:
         remaining = (await session.execute(

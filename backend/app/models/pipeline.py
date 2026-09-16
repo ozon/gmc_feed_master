@@ -1,11 +1,22 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
-from typing import TYPE_CHECKING
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, func, true
+from typing import TYPE_CHECKING, Any
+
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+    func,
+    true,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base import Base
 
 if TYPE_CHECKING:
@@ -21,10 +32,10 @@ class ModulePipeline(Base):
     version: Mapped[str] = mapped_column(String(100), nullable=False)
     definition: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    feed_source: Mapped["FeedSource"] = relationship(
+    feed_source: Mapped[FeedSource] = relationship(
         "FeedSource", back_populates="pipelines", foreign_keys=[feed_source_id]
     )
-    active_for_feed_source: Mapped["FeedSource | None"] = relationship(
+    active_for_feed_source: Mapped[FeedSource | None] = relationship(
         "FeedSource", back_populates="active_pipeline", foreign_keys="FeedSource.active_pipeline_id", uselist=False
     )
 

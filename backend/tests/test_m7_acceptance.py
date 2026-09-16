@@ -8,9 +8,16 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
 from app.main import create_app
-from app.models import Client, FeedSource, IngestionRun, ExportRun, ExportVersion, QualityFinding
-from app.models.staging import StagingProduct
+from app.models import (
+    Client,
+    ExportRun,
+    ExportVersion,
+    FeedSource,
+    IngestionRun,
+    QualityFinding,
+)
 from app.models.session import Session
+from app.models.staging import StagingProduct
 from app.models.user import User
 from app.persistence.users import seed_initial_user
 
@@ -55,98 +62,105 @@ async def logged_in_client(app_factory):
 
 async def _seed_feed_source(app_factory):
     _, factory, _ = app_factory
-    async with factory() as session:
-        async with session.begin():
-            client = Client(name="Acme")
-            session.add(client)
-            await session.flush()
-            feed_source = FeedSource(
-                client_id=client.id,
-                name="Main feed",
-                source_format="tsv",
-                source_url="http://test.local/feed.tsv",
-                currency="USD",
-                configuration={},
-            )
-            session.add(feed_source)
-            await session.flush()
-            return client.id, feed_source.id
+    async with factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        feed_source = FeedSource(
+            client_id=client.id,
+            name="Main feed",
+            source_format="tsv",
+            source_url="http://test.local/feed.tsv",
+            currency="USD",
+            configuration={},
+        )
+        session.add(feed_source)
+        await session.flush()
+        return client.id, feed_source.id
 
 
 async def test_end_to_end_qc_finds_issues(app_factory):
     _, factory, _ = app_factory
     _, feed_source_id = await _seed_feed_source(app_factory)
 
-    async with factory() as session:
-        async with session.begin():
-            ingestion_run = IngestionRun(
+    async with factory() as session, session.begin():
+        ingestion_run = IngestionRun(
+            feed_source_id=feed_source_id,
+            status="completed",
+            processed_count=3,
+            failed_count=0,
+        )
+        session.add(ingestion_run)
+        await session.flush()
+
+        products = [
+            {
+                "id": "SKU-1",
+                "title": "Good Product",
+                "description": "A product",
+                "link": "http://example.com/1",
+                "image_link": "http://example.com/1.jpg",
+                "availability": "in_stock",
+                "price": "10 USD",
+                "condition": "new",
+                "brand": "Acme",
+                "gtin": "0012345678905",
+            },
+            {
+                "id": "SKU-2",
+                "description": "Missing title",
+                "link": "http://example.com/2",
+                "image_link": "http://example.com/2.jpg",
+                "availability": "in_stock",
+                "price": "20 USD",
+                "condition": "new",
+            },
+            {
+                "id": "SKU-3",
+                "title": "Bad Enum",
+                "description": "Product",
+                "link": "http://example.com/3",
+                "image_link": "http://example.com/3.jpg",
+                "availability": "invalid_status",
+                "price": "30 EUR",
+                "condition": "new",
+                "brand": "Widget",
+            },
+        ]
+
+        for product in products:
+            row = StagingProduct(
                 feed_source_id=feed_source_id,
-                status="completed",
-                processed_count=3,
-                failed_count=0,
+                ingestion_run_id=ingestion_run.id,
+                product_id=product["id"],
+                content_hash="abc",
+                config_hash="def",
+                status="active",
+                raw_data=product,
+                processed_data=product,
             )
-            session.add(ingestion_run)
-            await session.flush()
+            session.add(row)
 
-            products = [
-                {
-                    "id": "SKU-1",
-                    "title": "Good Product",
-                    "description": "A product",
-                    "link": "http://example.com/1",
-                    "image_link": "http://example.com/1.jpg",
-                    "availability": "in_stock",
-                    "price": "10 USD",
-                    "condition": "new",
-                    "brand": "Acme",
-                    "gtin": "0012345678905",
-                },
-                {
-                    "id": "SKU-2",
-                    "description": "Missing title",
-                    "link": "http://example.com/2",
-                    "image_link": "http://example.com/2.jpg",
-                    "availability": "in_stock",
-                    "price": "20 USD",
-                    "condition": "new",
-                },
-                {
-                    "id": "SKU-3",
-                    "title": "Bad Enum",
-                    "description": "Product",
-                    "link": "http://example.com/3",
-                    "image_link": "http://example.com/3.jpg",
-                    "availability": "invalid_status",
-                    "price": "30 EUR",
-                    "condition": "new",
-                    "brand": "Widget",
-                },
-            ]
+        ingestion_run_id = ingestion_run.id
 
-            for product in products:
-                row = StagingProduct(
-                    feed_source_id=feed_source_id,
-                    ingestion_run_id=ingestion_run.id,
-                    product_id=product["id"],
-                    content_hash="abc",
-                    config_hash="def",
-                    status="active",
-                    raw_data=product,
-                    processed_data=product,
-                )
-                session.add(row)
-
-            ingestion_run_id = ingestion_run.id
-
-    from registry.loader import load_registry
     from app.clock import SystemClock
     from app.qc.engine import QcContext, run_engine
-    from app.qc.rules import (
-        BaselineRequired, BrandRequired, GtinMpn, EnumValues,
-        ConditionalRequired, DateFormat, LengthLimits, CardinalityRule,
-        CurrencyConsistency, ImageRequirements, VariantConsistency, VolumeDrop,
-    )
     from app.qc.persistence import persist_findings
+    from app.qc.rules import (
+        BaselineRequired,
+        BrandRequired,
+        CardinalityRule,
+        ConditionalRequired,
+        CurrencyConsistency,
+        DateFormat,
+        EnumValues,
+        GtinMpn,
+        ImageRequirements,
+        LengthLimits,
+        VariantConsistency,
+        VolumeDrop,
+    )
+    from registry.loader import load_registry
 
     async with factory() as session:
         feed_source = await session.get(FeedSource, feed_source_id)

@@ -81,9 +81,8 @@ async def _staged_rows(factory):
 
 
 async def _prepare(factory, products):
-    async with factory() as session:
-        async with session.begin():
-            feed_source = await _seed(session)
+    async with factory() as session, session.begin():
+        feed_source = await _seed(session)
     staging_ctx = _ctx(factory, feed_source.id, products)
     await StagingStep().execute(staging_ctx)
     staged_pks = {

@@ -1,4 +1,4 @@
-from app.staging.delta import StoredRow, StagingCounts, classify
+from app.staging.delta import StagingCounts, StoredRow, classify
 from app.staging.hashing import content_hash
 
 CFG = "cfg0"

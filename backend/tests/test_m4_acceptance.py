@@ -14,7 +14,6 @@ from app.pipeline import LockRegistry, StepContext, StepResult, default_steps
 from app.pipeline.runner import PipelineRunner
 from registry.loader import load_registry
 
-
 pytestmark = pytest.mark.asyncio
 
 FEED_TSV = (
@@ -79,21 +78,20 @@ async def logged_in_client(app_factory):
 
 
 async def _seed_feed_source(factory):
-    async with factory() as session:
-        async with session.begin():
-            client = Client(name="Acme")
-            session.add(client)
-            await session.flush()
-            feed_source = FeedSource(
-                client_id=client.id,
-                name="Main feed",
-                source_format="tsv",
-                source_url="http://test.local/feed.tsv",
-                configuration={},
-            )
-            session.add(feed_source)
-            await session.flush()
-            return feed_source.id
+    async with factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        feed_source = FeedSource(
+            client_id=client.id,
+            name="Main feed",
+            source_format="tsv",
+            source_url="http://test.local/feed.tsv",
+            configuration={},
+        )
+        session.add(feed_source)
+        await session.flush()
+        return feed_source.id
 
 
 async def _get_run(factory, run_id):

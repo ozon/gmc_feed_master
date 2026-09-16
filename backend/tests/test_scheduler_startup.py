@@ -11,7 +11,6 @@ from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -93,8 +92,9 @@ async def test_startup_skips_invalid_cron(db):
 
 
 async def test_app_without_db_has_no_scheduler():
-    from app.session_store import InMemorySessionStore
     from datetime import timedelta
+
+    from app.session_store import InMemorySessionStore
 
     store = InMemorySessionStore(idle=timedelta(minutes=30), absolute=timedelta(hours=12), secret="test-s")
     settings = Settings(_env_file=None, session_secret="test-s", initial_username="u", initial_password="p")

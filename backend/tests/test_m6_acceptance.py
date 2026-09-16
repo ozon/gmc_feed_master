@@ -1,11 +1,9 @@
 """M6 acceptance gate — plugin host verified."""
 
-import os
 import shutil
 import tempfile
-from copy import deepcopy
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -25,9 +23,8 @@ from app.persistence.users import seed_initial_user
 from app.pipeline import LockRegistry, default_steps
 from app.pipeline.runner import PipelineRunner
 from app.plugins.contract import contract_violations
-from app.plugins.discovery import Candidate, discover, discover_and_mount, register_candidates
+from app.plugins.discovery import discover
 from registry.loader import load_registry
-
 
 pytestmark = pytest.mark.asyncio
 
@@ -84,21 +81,20 @@ async def logged_in_client(app_factory):
 
 
 async def _seed_client_and_feed(factory):
-    async with factory() as session:
-        async with session.begin():
-            client = Client(name="Acme")
-            session.add(client)
-            await session.flush()
-            feed_source = FeedSource(
-                client_id=client.id,
-                name="Main feed",
-                source_format="tsv",
-                source_url="http://test.local/feed.tsv",
-                configuration={},
-            )
-            session.add(feed_source)
-            await session.flush()
-            return client.id, feed_source.id
+    async with factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        feed_source = FeedSource(
+            client_id=client.id,
+            name="Main feed",
+            source_format="tsv",
+            source_url="http://test.local/feed.tsv",
+            configuration={},
+        )
+        session.add(feed_source)
+        await session.flush()
+        return client.id, feed_source.id
 
 
 async def _seed_mappings(factory, feed_source_id):
@@ -168,11 +164,10 @@ async def test_discovery_is_idempotent_across_restarts(app_factory):
             assert plugin.version == "1.0.0"
             assert plugin.enabled is False
 
-        async with factory() as session:
-            async with session.begin():
-                plugin = (await session.execute(select(Plugin))).scalars().one()
-                plugin.enabled = True
-                await session.flush()
+        async with factory() as session, session.begin():
+            plugin = (await session.execute(select(Plugin))).scalars().one()
+            plugin.enabled = True
+            await session.flush()
 
         manifest_path = tmp_plugins / "example_plugin" / "plugin.json"
         import json
@@ -225,43 +220,42 @@ async def test_end_to_end_execution_through_runner(app_factory, tmp_path):
         async with app.router.lifespan_context(app):
             pass
 
-        async with factory() as session:
-            async with session.begin():
-                plugin = (await session.execute(
-                    select(Plugin).where(Plugin.name == "example_upper")
-                )).scalars().one()
+        async with factory() as session, session.begin():
+            plugin = (await session.execute(
+                select(Plugin).where(Plugin.name == "example_upper")
+            )).scalars().one()
 
-                config = PluginConfig(
-                    plugin_id=plugin.id,
-                    scope="global",
-                    key="default",
-                    config={"suffix": "_sfx"},
-                )
-                session.add(config)
-                await session.flush()
+            config = PluginConfig(
+                plugin_id=plugin.id,
+                scope="global",
+                key="default",
+                config={"suffix": "_sfx"},
+            )
+            session.add(config)
+            await session.flush()
 
-                pipeline = ModulePipeline(
-                    feed_source_id=feed_source_id,
-                    name="pipe",
-                    version="1",
-                    definition={},
-                )
-                session.add(pipeline)
-                await session.flush()
+            pipeline = ModulePipeline(
+                feed_source_id=feed_source_id,
+                name="pipe",
+                version="1",
+                definition={},
+            )
+            session.add(pipeline)
+            await session.flush()
 
-                instance = ModuleInstance(
-                    pipeline_id=pipeline.id,
-                    plugin_id=plugin.id,
-                    position=0,
-                    name="upper",
-                    configuration={},
-                )
-                session.add(instance)
-                await session.flush()
+            instance = ModuleInstance(
+                pipeline_id=pipeline.id,
+                plugin_id=plugin.id,
+                position=0,
+                name="upper",
+                configuration={},
+            )
+            session.add(instance)
+            await session.flush()
 
-                feed_source = await session.get(FeedSource, feed_source_id)
-                feed_source.active_pipeline_id = pipeline.id
-                await session.flush()
+            feed_source = await session.get(FeedSource, feed_source_id)
+            feed_source.active_pipeline_id = pipeline.id
+            await session.flush()
 
         plugin_registry: dict[str, Any] = {}
         candidates, _ = discover(tmp_plugins)
@@ -352,34 +346,33 @@ async def test_error_isolation_preserves_last_known_good(app_factory, tmp_path):
         async with app.router.lifespan_context(app):
             pass
 
-        async with factory() as session:
-            async with session.begin():
-                plugin = (await session.execute(
-                    select(Plugin).where(Plugin.name == "error_on_a1")
-                )).scalars().one()
+        async with factory() as session, session.begin():
+            plugin = (await session.execute(
+                select(Plugin).where(Plugin.name == "error_on_a1")
+            )).scalars().one()
 
-                pipeline = ModulePipeline(
-                    feed_source_id=feed_source_id,
-                    name="pipe",
-                    version="1",
-                    definition={},
-                )
-                session.add(pipeline)
-                await session.flush()
+            pipeline = ModulePipeline(
+                feed_source_id=feed_source_id,
+                name="pipe",
+                version="1",
+                definition={},
+            )
+            session.add(pipeline)
+            await session.flush()
 
-                instance = ModuleInstance(
-                    pipeline_id=pipeline.id,
-                    plugin_id=plugin.id,
-                    position=0,
-                    name="err",
-                    configuration={},
-                )
-                session.add(instance)
-                await session.flush()
+            instance = ModuleInstance(
+                pipeline_id=pipeline.id,
+                plugin_id=plugin.id,
+                position=0,
+                name="err",
+                configuration={},
+            )
+            session.add(instance)
+            await session.flush()
 
-                feed_source = await session.get(FeedSource, feed_source_id)
-                feed_source.active_pipeline_id = pipeline.id
-                await session.flush()
+            feed_source = await session.get(FeedSource, feed_source_id)
+            feed_source.active_pipeline_id = pipeline.id
+            await session.flush()
 
         plugin_registry: dict[str, Any] = {}
         candidates, _ = discover(tmp_plugins)
@@ -464,34 +457,33 @@ async def test_drop_then_pass_reactivation(app_factory, tmp_path):
         async with app.router.lifespan_context(app):
             pass
 
-        async with factory() as session:
-            async with session.begin():
-                plugin = (await session.execute(
-                    select(Plugin).where(Plugin.name == "conditional_dropper")
-                )).scalars().one()
+        async with factory() as session, session.begin():
+            plugin = (await session.execute(
+                select(Plugin).where(Plugin.name == "conditional_dropper")
+            )).scalars().one()
 
-                pipeline = ModulePipeline(
-                    feed_source_id=feed_source_id,
-                    name="pipe",
-                    version="1",
-                    definition={},
-                )
-                session.add(pipeline)
-                await session.flush()
+            pipeline = ModulePipeline(
+                feed_source_id=feed_source_id,
+                name="pipe",
+                version="1",
+                definition={},
+            )
+            session.add(pipeline)
+            await session.flush()
 
-                instance = ModuleInstance(
-                    pipeline_id=pipeline.id,
-                    plugin_id=plugin.id,
-                    position=0,
-                    name="dropper",
-                    configuration={},
-                )
-                session.add(instance)
-                await session.flush()
+            instance = ModuleInstance(
+                pipeline_id=pipeline.id,
+                plugin_id=plugin.id,
+                position=0,
+                name="dropper",
+                configuration={},
+            )
+            session.add(instance)
+            await session.flush()
 
-                feed_source = await session.get(FeedSource, feed_source_id)
-                feed_source.active_pipeline_id = pipeline.id
-                await session.flush()
+            feed_source = await session.get(FeedSource, feed_source_id)
+            feed_source.active_pipeline_id = pipeline.id
+            await session.flush()
 
         plugin_registry: dict[str, Any] = {}
         candidates, _ = discover(tmp_plugins)

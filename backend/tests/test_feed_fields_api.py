@@ -70,20 +70,19 @@ async def test_fields_unified_shape_from_mapping_document(app_factory):
         f"/clients/{created['id']}/feed-sources",
         json={"name": "DE", "source_format": "xml"},
     )).json()
-    async with factory() as session:
-        async with session.begin():
-            from app.models import FeedSource as FS
-            row = await session.get(FS, feed["id"])
-            row.field_mapping = {
-                "version": 1, "auto_mapped": False,
-                "source_fields": [
-                    {"name": "title", "kind": "scalar", "sub_fields": [],
-                     "max_repeats": 0},
-                    {"name": "shipping", "kind": "repeated_structured",
-                     "sub_fields": ["country", "price"], "max_repeats": 3},
-                ],
-                "mappings": {},
-            }
+    async with factory() as session, session.begin():
+        from app.models import FeedSource as FS
+        row = await session.get(FS, feed["id"])
+        row.field_mapping = {
+            "version": 1, "auto_mapped": False,
+            "source_fields": [
+                {"name": "title", "kind": "scalar", "sub_fields": [],
+                 "max_repeats": 0},
+                {"name": "shipping", "kind": "repeated_structured",
+                 "sub_fields": ["country", "price"], "max_repeats": 3},
+            ],
+            "mappings": {},
+        }
 
     resp = await client.get(f"/feed-sources/{feed['id']}/fields")
     assert resp.status_code == 200

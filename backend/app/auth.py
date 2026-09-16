@@ -9,7 +9,6 @@ from .clock import Clock
 from .config import Settings, get_settings
 from .session_store import InMemorySessionStore, SessionStore
 
-
 SESSION_COOKIE_NAME = "gmc_session"
 _INVALID_CREDENTIALS = "Invalid credentials"
 

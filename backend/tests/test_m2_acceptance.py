@@ -9,11 +9,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
 from app.main import create_app
-from app.models import Client, FeedSource, IngestionRun, ExportRun, ExportVersion
+from app.models import Client, ExportRun, ExportVersion, FeedSource, IngestionRun
 from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
-
 
 pytestmark = pytest.mark.asyncio
 

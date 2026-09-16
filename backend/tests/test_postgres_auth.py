@@ -1,18 +1,17 @@
-import os
 from datetime import datetime, timezone
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import delete, select
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from app.clock import TestClock
 from app.config import Settings
 from app.main import create_app
 from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
-from app.clock import TestClock
 
 
 @pytest_asyncio.fixture

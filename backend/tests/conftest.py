@@ -6,17 +6,15 @@ from urllib.parse import quote, urlsplit
 
 import psycopg
 import pytest
-from alembic import command
 from alembic.config import Config
-from pytest_postgresql import factories
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from fastapi.testclient import TestClient
+from pytest_postgresql import factories
 
+from alembic import command
 from app.clock import TestClock
 from app.config import Settings
 from app.main import create_app
 from app.session_store import InMemorySessionStore
-
 
 os.environ.setdefault("SESSION_SECRET", "test-secret")
 os.environ.setdefault("INITIAL_USERNAME", "test-user")

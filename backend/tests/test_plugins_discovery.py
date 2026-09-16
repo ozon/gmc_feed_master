@@ -9,7 +9,11 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.models.pipeline import ModuleInstance, ModulePipeline
 from app.models.plugin import Plugin
-from app.plugins.discovery import Candidate, collect_router, discover, register_candidates
+from app.plugins.discovery import (
+    collect_router,
+    discover,
+    register_candidates,
+)
 
 pytestmark = pytest.mark.asyncio
 
@@ -163,22 +167,19 @@ class TestRegisterCandidatesIntegration:
         write_plugin(tmp_path / "upper")
         candidates, _ = discover(tmp_path)
 
-        async with factory() as session:
-            async with session.begin():
-                pk_map = await register_candidates(session, candidates)
+        async with factory() as session, session.begin():
+            pk_map = await register_candidates(session, candidates)
         first_pk = pk_map["example_upper"]
 
-        async with factory() as session:
-            async with session.begin():
-                row = await session.get(Plugin, first_pk)
-                row.enabled = True
+        async with factory() as session, session.begin():
+            row = await session.get(Plugin, first_pk)
+            row.enabled = True
 
         bumped = dict(MANIFEST, version="2.0.0")
         write_plugin(tmp_path / "upper", manifest=bumped)
         candidates_v2, _ = discover(tmp_path)
-        async with factory() as session:
-            async with session.begin():
-                pk_map_v2 = await register_candidates(session, candidates_v2)
+        async with factory() as session, session.begin():
+            pk_map_v2 = await register_candidates(session, candidates_v2)
 
         assert pk_map_v2["example_upper"] == first_pk
         async with factory() as session:
@@ -197,9 +198,8 @@ class TestRegisterCandidatesIntegration:
         write_plugin(tmp_path / "core" / "builtin", manifest=dict(MANIFEST, id="builtin"))
         write_plugin(tmp_path / "third_party")
         candidates, _ = discover(tmp_path)
-        async with factory() as session:
-            async with session.begin():
-                pk_map = await register_candidates(session, candidates)
+        async with factory() as session, session.begin():
+            pk_map = await register_candidates(session, candidates)
 
         async with factory() as session:
             third = await session.get(Plugin, pk_map["example_upper"])
@@ -245,9 +245,8 @@ class TestRegisterCandidatesIntegration:
         bumped = dict(MANIFEST, version="9.9.9")
         write_plugin(tmp_path / "upper", manifest=bumped)
         candidates_v2, _ = discover(tmp_path)
-        async with factory() as session:
-            async with session.begin():
-                await register_candidates(session, candidates_v2)
+        async with factory() as session, session.begin():
+            await register_candidates(session, candidates_v2)
 
         async with factory() as session:
             refreshed = (

@@ -1,12 +1,10 @@
+import re
 from pathlib import Path
 
 import pytest
 
-import re
-
 from registry.model import AttributeKind, ExportStatus, FeedDomain
 from registry.parser import RegistryParseError, parse_gmc_markdown
-
 
 FIXTURES = Path(__file__).parent / "fixtures" / "registry"
 

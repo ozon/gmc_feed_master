@@ -1,10 +1,11 @@
 import asyncio
 
 import pytest
-from alembic import command
 from alembic.config import Config
 from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import create_async_engine
+
+from alembic import command
 
 pytestmark = pytest.mark.asyncio
 

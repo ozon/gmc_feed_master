@@ -51,9 +51,8 @@ class PipelineRunner:
         lock = self._lock_registry.get(feed_source_id)
         await lock.acquire()
         try:
-            async with self._session_factory() as session:
-                async with session.begin():
-                    feed_source = await session.get(FeedSource, feed_source_id)
+            async with self._session_factory() as session, session.begin():
+                feed_source = await session.get(FeedSource, feed_source_id)
             if feed_source is None:
                 if run_id is not None:
                     return await self._finish(feed_source_id, run_id, "skipped")
@@ -105,23 +104,21 @@ class PipelineRunner:
             lock.release()
 
     async def _feed_source_exists(self, feed_source_id: int) -> bool:
-        async with self._session_factory() as session:
-            async with session.begin():
-                return await session.get(FeedSource, feed_source_id) is not None
+        async with self._session_factory() as session, session.begin():
+            return await session.get(FeedSource, feed_source_id) is not None
 
     async def _start(self, feed_source_id: int, run_id: int | None) -> int:
-        async with self._session_factory() as session:
-            async with session.begin():
-                if run_id is None:
-                    run = IngestionRun(feed_source_id=feed_source_id, status="running")
-                    session.add(run)
-                    await session.flush()
-                    return run.id
-                existing = await session.get(IngestionRun, run_id)
-                if existing is None:
-                    raise ValueError(f"unknown run id {run_id}")
-                existing.status = "running"
-                return existing.id
+        async with self._session_factory() as session, session.begin():
+            if run_id is None:
+                run = IngestionRun(feed_source_id=feed_source_id, status="running")
+                session.add(run)
+                await session.flush()
+                return run.id
+            existing = await session.get(IngestionRun, run_id)
+            if existing is None:
+                raise ValueError(f"unknown run id {run_id}")
+            existing.status = "running"
+            return existing.id
 
     async def _finish(
         self,
@@ -134,22 +131,21 @@ class PipelineRunner:
         error_message: str | None = None,
         error_stack_trace: str | None = None,
     ) -> int:
-        async with self._session_factory() as session:
-            async with session.begin():
-                if run_id is None:
-                    run = IngestionRun(feed_source_id=feed_source_id, status=status)
-                    session.add(run)
-                    await session.flush()
-                else:
-                    existing = await session.get(IngestionRun, run_id)
-                    if existing is None:
-                        raise ValueError(f"unknown run id {run_id}")
-                    existing.status = status
-                    run = existing
-                run.processed_count = processed_count
-                run.failed_count = failed_count
-                run.statistics = statistics or {}
-                run.error_message = error_message
-                run.error_stack_trace = error_stack_trace
-                run.completed_at = datetime.now(timezone.utc)
-                return run.id
+        async with self._session_factory() as session, session.begin():
+            if run_id is None:
+                run = IngestionRun(feed_source_id=feed_source_id, status=status)
+                session.add(run)
+                await session.flush()
+            else:
+                existing = await session.get(IngestionRun, run_id)
+                if existing is None:
+                    raise ValueError(f"unknown run id {run_id}")
+                existing.status = status
+                run = existing
+            run.processed_count = processed_count
+            run.failed_count = failed_count
+            run.statistics = statistics or {}
+            run.error_message = error_message
+            run.error_stack_trace = error_stack_trace
+            run.completed_at = datetime.now(timezone.utc)
+            return run.id

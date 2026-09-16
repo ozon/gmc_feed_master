@@ -7,10 +7,9 @@ from io import BytesIO
 import httpx
 from PIL import Image
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.image_dimension import ImageDimension
-from .constants import IMAGE_FETCH_CAP_BYTES, IMAGE_CONCURRENCY
+from .constants import IMAGE_CONCURRENCY, IMAGE_FETCH_CAP_BYTES
 
 logger = logging.getLogger(__name__)
 
@@ -65,13 +64,11 @@ class ImageProbeImpl:
                 return None, None, error
 
     async def _cache_dimensions(self, url: str, width: int, height: int) -> None:
-        async with self._session_factory() as session:
-            async with session.begin():
-                row = ImageDimension(url=url, width=width, height=height)
-                session.add(row)
+        async with self._session_factory() as session, session.begin():
+            row = ImageDimension(url=url, width=width, height=height)
+            session.add(row)
 
     async def _cache_error(self, url: str, error: str) -> None:
-        async with self._session_factory() as session:
-            async with session.begin():
-                row = ImageDimension(url=url, fetch_error=error)
-                session.add(row)
+        async with self._session_factory() as session, session.begin():
+            row = ImageDimension(url=url, fetch_error=error)
+            session.add(row)

@@ -1,10 +1,11 @@
-import pytest
-import httpx
-from unittest.mock import AsyncMock, MagicMock
 from io import BytesIO
+from unittest.mock import AsyncMock, MagicMock
 
-from app.qc.image_probe import ImageProbeImpl
+import httpx
+import pytest
+
 from app.models.image_dimension import ImageDimension
+from app.qc.image_probe import ImageProbeImpl
 
 pytestmark = pytest.mark.asyncio
 

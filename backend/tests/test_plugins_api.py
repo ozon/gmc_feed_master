@@ -13,7 +13,6 @@ from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -66,15 +65,14 @@ async def app_factory(isolated_database_url):
 
 
 async def seed_plugin(factory, name="title_case", version="1.0.0", manifest=None, enabled=False):
-    async with factory() as session:
-        async with session.begin():
-            plugin = Plugin(
-                name=name,
-                version=version,
-                manifest=manifest if manifest is not None else make_manifest(),
-                enabled=enabled,
-            )
-            session.add(plugin)
+    async with factory() as session, session.begin():
+        plugin = Plugin(
+            name=name,
+            version=version,
+            manifest=manifest if manifest is not None else make_manifest(),
+            enabled=enabled,
+        )
+        session.add(plugin)
     return plugin.id
 
 
@@ -133,36 +131,35 @@ async def test_toggle_enabled_unknown_plugin_returns_404(app_factory):
 
 
 async def _seed_plugin_in_use(factory, plugin_name="used_plugin"):
-    async with factory() as session:
-        async with session.begin():
-            plugin = Plugin(
-                name=plugin_name,
-                version="1.0.0",
-                enabled=True,
-                manifest=make_manifest(id=plugin_name),
+    async with factory() as session, session.begin():
+        plugin = Plugin(
+            name=plugin_name,
+            version="1.0.0",
+            enabled=True,
+            manifest=make_manifest(id=plugin_name),
+        )
+        session.add(plugin)
+        await session.flush()
+        acme = Client(name="Acme")
+        session.add(acme)
+        await session.flush()
+        feed = FeedSource(client_id=acme.id, name="DE", source_format="wide_tsv")
+        session.add(feed)
+        await session.flush()
+        pipeline = ModulePipeline(
+            feed_source_id=feed.id, name="p", version="1", definition={}
+        )
+        session.add(pipeline)
+        await session.flush()
+        session.add(
+            ModuleInstance(
+                pipeline_id=pipeline.id,
+                plugin_id=plugin.id,
+                position=0,
+                name="a",
+                configuration={},
             )
-            session.add(plugin)
-            await session.flush()
-            acme = Client(name="Acme")
-            session.add(acme)
-            await session.flush()
-            feed = FeedSource(client_id=acme.id, name="DE", source_format="wide_tsv")
-            session.add(feed)
-            await session.flush()
-            pipeline = ModulePipeline(
-                feed_source_id=feed.id, name="p", version="1", definition={}
-            )
-            session.add(pipeline)
-            await session.flush()
-            session.add(
-                ModuleInstance(
-                    pipeline_id=pipeline.id,
-                    plugin_id=plugin.id,
-                    position=0,
-                    name="a",
-                    configuration={},
-                )
-            )
+        )
     return plugin.id
 
 

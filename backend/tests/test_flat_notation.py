@@ -1,10 +1,9 @@
 import pytest
 
 from app.ingest.flat_notation import (
+    ColumnSpec,
     HeaderError,
     HeaderPlan,
-    ColumnSpec,
-    RowError,
     parse_header,
     split_row,
 )

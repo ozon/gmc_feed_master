@@ -8,7 +8,6 @@ from app.clock import TestClock
 from app.models import Client, FeedSource, IngestionRun
 from app.pipeline.reconcile import INTERRUPTED_MESSAGE, reconcile_interrupted_runs
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -22,29 +21,27 @@ async def session_factory(isolated_database_url):
 
 @pytest_asyncio.fixture
 async def feed_source_id(session_factory):
-    async with session_factory() as session:
-        async with session.begin():
-            client = Client(name="Acme")
-            session.add(client)
-            await session.flush()
-            feed_source = FeedSource(
-                client_id=client.id,
-                name="Main feed",
-                source_format="xml",
-                source_url="https://example.com/feed.xml",
-            )
-            session.add(feed_source)
-            await session.flush()
-            return feed_source.id
+    async with session_factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        feed_source = FeedSource(
+            client_id=client.id,
+            name="Main feed",
+            source_format="xml",
+            source_url="https://example.com/feed.xml",
+        )
+        session.add(feed_source)
+        await session.flush()
+        return feed_source.id
 
 
 async def _seed_run(factory, feed_source_id, status):
-    async with factory() as session:
-        async with session.begin():
-            run = IngestionRun(feed_source_id=feed_source_id, status=status)
-            session.add(run)
-            await session.flush()
-            return run.id
+    async with factory() as session, session.begin():
+        run = IngestionRun(feed_source_id=feed_source_id, status=status)
+        session.add(run)
+        await session.flush()
+        return run.id
 
 
 async def _get_run(factory, run_id):

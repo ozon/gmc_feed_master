@@ -15,15 +15,14 @@ from app.models.staging import StagingProduct
 from app.models.user import User
 from app.persistence.users import seed_initial_user
 
-
 pytestmark = pytest.mark.asyncio
 
 WIDE_TSV = (
-    "id\ttitle\tdescription\tlink\timage_link\tavailability\tprice\tcondition\tbrand\tgtin\n"
-    "SKU-1\tRed Shirt\tA red shirt\thttp://shop.example/1\thttp://shop.example/1.jpg\tin_stock\t10.00 USD\tnew\tAcme\t0012345678905\n"
-    "drop-me\tBlue Hat\tA blue hat\thttp://shop.example/2\thttp://shop.example/2.jpg\tin_stock\t5.00 USD\tnew\tAcme\t0012345678912\n"
-    "SKU-3\tBad Row\t\t\thttp://shop.example/3\thttp://shop.example/3.jpg\tin_stock\t7.00 USD\tnew\tAcme\t0012345678929\n"
-).encode("utf-8")
+    b"id\ttitle\tdescription\tlink\timage_link\tavailability\tprice\tcondition\tbrand\tgtin\n"
+    b"SKU-1\tRed Shirt\tA red shirt\thttp://shop.example/1\thttp://shop.example/1.jpg\tin_stock\t10.00 USD\tnew\tAcme\t0012345678905\n"
+    b"drop-me\tBlue Hat\tA blue hat\thttp://shop.example/2\thttp://shop.example/2.jpg\tin_stock\t5.00 USD\tnew\tAcme\t0012345678912\n"
+    b"SKU-3\tBad Row\t\t\thttp://shop.example/3\thttp://shop.example/3.jpg\tin_stock\t7.00 USD\tnew\tAcme\t0012345678929\n"
+)
 
 
 class StubFetcher:

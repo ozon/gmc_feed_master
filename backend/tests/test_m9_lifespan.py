@@ -16,7 +16,6 @@ from app.pipeline.scheduler import (
     job_id,
 )
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -48,21 +47,20 @@ async def app_env(isolated_database_url, tmp_path):
 
 
 async def _seed_feed(factory, cron_expression=None):
-    async with factory() as session:
-        async with session.begin():
-            client = Client(name="Acme")
-            session.add(client)
-            await session.flush()
-            feed_source = FeedSource(
-                client_id=client.id,
-                name="Main feed",
-                source_format="xml",
-                source_url="https://example.com/feed.xml",
-                cron_expression=cron_expression,
-            )
-            session.add(feed_source)
-            await session.flush()
-            return feed_source.id
+    async with factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        feed_source = FeedSource(
+            client_id=client.id,
+            name="Main feed",
+            source_format="xml",
+            source_url="https://example.com/feed.xml",
+            cron_expression=cron_expression,
+        )
+        session.add(feed_source)
+        await session.flush()
+        return feed_source.id
 
 
 async def test_lifespan_starts_scheduler_registers_jobs_and_shuts_down(app_env):
@@ -87,11 +85,10 @@ async def test_lifespan_starts_scheduler_registers_jobs_and_shuts_down(app_env):
 async def test_lifespan_reconciles_orphaned_runs(app_env):
     factory, settings, tmp_path = app_env
     fs_id = await _seed_feed(factory)
-    async with factory() as session:
-        async with session.begin():
-            session.add(IngestionRun(feed_source_id=fs_id, status="running"))
-            session.add(IngestionRun(feed_source_id=fs_id, status="pending"))
-            session.add(IngestionRun(feed_source_id=fs_id, status="success"))
+    async with factory() as session, session.begin():
+        session.add(IngestionRun(feed_source_id=fs_id, status="running"))
+        session.add(IngestionRun(feed_source_id=fs_id, status="pending"))
+        session.add(IngestionRun(feed_source_id=fs_id, status="success"))
     app = create_app(
         settings=settings,
         db_session_factory=factory,

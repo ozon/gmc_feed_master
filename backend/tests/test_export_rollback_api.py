@@ -64,31 +64,29 @@ async def _seed_versions(app_factory, product_sets):
     """Run export_for_run once per product set; returns feed_source_id."""
     _, factory, settings = app_factory
     clock = TestClock(datetime(2026, 8, 27, tzinfo=timezone.utc))
-    async with factory() as session:
-        async with session.begin():
-            client = Client(name="Acme")
-            session.add(client)
-            await session.flush()
-            feed_source = FeedSource(
-                client_id=client.id, name="Main", source_format="tsv",
-                export_token="tok-rollback-test",
-            )
-            session.add(feed_source)
-            await session.flush()
-            feed_source_id = feed_source.id
+    async with factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        feed_source = FeedSource(
+            client_id=client.id, name="Main", source_format="tsv",
+            export_token="tok-rollback-test",
+        )
+        session.add(feed_source)
+        await session.flush()
+        feed_source_id = feed_source.id
 
     service = ExportService(factory, ExportFileStore(settings.export_dir), clock, "http://test.public")
     for products in product_sets:
-        async with factory() as session:
-            async with session.begin():
-                run = IngestionRun(feed_source_id=feed_source_id, status="completed")
-                session.add(run)
-                await session.flush()
-                session.add(ExportRun(
-                    feed_source_id=feed_source_id, ingestion_run_id=run.id,
-                    status="pending_export", product_count=len(products),
-                ))
-                run_id = run.id
+        async with factory() as session, session.begin():
+            run = IngestionRun(feed_source_id=feed_source_id, status="completed")
+            session.add(run)
+            await session.flush()
+            session.add(ExportRun(
+                feed_source_id=feed_source_id, ingestion_run_id=run.id,
+                status="pending_export", product_count=len(products),
+            ))
+            run_id = run.id
         await service.export_for_run(feed_source_id, run_id, products, REGISTRY)
     return feed_source_id
 
@@ -201,10 +199,9 @@ async def test_rollback_missing_version_file_404(app_factory):
 async def test_rollback_respects_retention(app_factory):
     feed_source_id = await _seed_versions(app_factory, [BASE, CHANGED])
     _, factory, settings = app_factory
-    async with factory() as session:
-        async with session.begin():
-            fs = await session.get(FeedSource, feed_source_id)
-            fs.history_retention_count = 2
+    async with factory() as session, session.begin():
+        fs = await session.get(FeedSource, feed_source_id)
+        fs.history_retention_count = 2
 
     client = await logged_in_client(app_factory)
     resp = await client.post(f"/feed-sources/{feed_source_id}/export-history/1/rollback")

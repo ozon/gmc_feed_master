@@ -2,8 +2,15 @@ import re
 from pathlib import Path
 
 from .model import (
-    AttributeKind, Cardinality, Constraints, ExportStatus, FeedDomain,
-    RegistryAttribute, RegistryDocument, RequirementStatus, SubField,
+    AttributeKind,
+    Cardinality,
+    Constraints,
+    ExportStatus,
+    FeedDomain,
+    RegistryAttribute,
+    RegistryDocument,
+    RequirementStatus,
+    SubField,
 )
 
 
@@ -12,7 +19,7 @@ class RegistryParseError(ValueError):
 
 
 _PRIMITIVES = {"String", "URL", "Price", "Date", "Integer", "Boolean", "Enum"}
-_HEADER = re.compile(r"^\|\s*Field\s*\|\s*(Required|Status)\s*\|\s*(?:Type/Syntax|Note)\s*\|", re.I)
+_HEADER = re.compile(r"^\|\s*Field\s*\|\s*(Required|Status)\s*\|\s*(?:Type/Syntax|Note)\s*\|", re.IGNORECASE)
 
 
 def _clean(value: str) -> str:
@@ -62,21 +69,19 @@ def _constraints(description: str) -> tuple[Constraints, Cardinality]:
 
     # Fallback max_length: only match "max N" when followed by char/letter context
     if max_length is None:
-        if m := re.search(r"max\.?\s*(\d+)\s*(?:char|letter)", description, re.IGNORECASE):
-            max_length = int(m.group(1))
-        elif m := re.search(r"max\.\s*(\d+)\s+(?=[A-Z])(?!MB\b|s\b|px\b|year\b|chars?\b)", description):
+        if (m := re.search(r"max\.?\s*(\d+)\s*(?:char|letter)", description, re.IGNORECASE)) or (m := re.search(r"max\.\s*(\d+)\s+(?=[A-Z])(?!MB\b|s\b|px\b|year\b|chars?\b)", description)):
             max_length = int(m.group(1))
 
     # Format detection
-    if re.search(r"ISO\s*3166(?:-1)?", description, re.I):
+    if re.search(r"ISO\s*3166(?:-1)?", description, re.IGNORECASE):
         fmt = "ISO 3166-1"
-    elif re.search(r"\bIANA\b", description, re.I):
+    elif re.search(r"\bIANA\b", description, re.IGNORECASE):
         fmt = "IANA"
-    elif re.search(r"\bpercent\b", description, re.I):
+    elif re.search(r"\bpercent\b", description, re.IGNORECASE):
         fmt = "percent"
-    elif re.search(r"ISO\s*8601", description, re.I):
+    elif re.search(r"ISO\s*8601", description, re.IGNORECASE):
         fmt = "ISO 8601"
-    elif re.search(r"RFC\s*(?:2396|3986|1738)", description, re.I):
+    elif re.search(r"RFC\s*(?:2396|3986|1738)", description, re.IGNORECASE):
         fmt = "RFC URL"
     elif re.search(r"\bURL\b", description):
         fmt = "url"
@@ -110,7 +115,7 @@ def _constraints(description: str) -> tuple[Constraints, Cardinality]:
 
 def _type_name(raw: str, line: int) -> str:
     text = _clean(raw).strip().rstrip(".")
-    text = re.sub(r"^(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)\.?\s+", "", text, flags=re.I)
+    text = re.sub(r"^(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)\.?\s+", "", text, flags=re.IGNORECASE)
     text = re.sub(r"\s*(?:>|≥|\+).*", "", text).strip()
     if text.lower() in {"number", "phone no", "phone", "percent"}:
         return "String"
@@ -120,18 +125,18 @@ def _type_name(raw: str, line: int) -> str:
         return "String"
     if text.lower().startswith("iana"):
         return "String"
-    if re.match(r"^\d+[- ]digit\b", text, re.I):
+    if re.match(r"^\d+[- ]digit\b", text, re.IGNORECASE):
         return "String"
-    if re.match(r"^(?:Integer|String)\s*\([^)]*\)\s+OR\s+(?:Integer|String)", text, re.I):
+    if re.match(r"^(?:Integer|String)\s*\([^)]*\)\s+OR\s+(?:Integer|String)", text, re.IGNORECASE):
         return "String"
-    prefix = re.match(r"^(String|URL|Price|Date|Integer|Boolean)\b", text, re.I)
+    prefix = re.match(r"^(String|URL|Price|Date|Integer|Boolean)\b", text, re.IGNORECASE)
     if prefix:
         return {"url": "URL", "price": "Price", "date": "Date", "integer": "Integer", "boolean": "Boolean", "string": "String"}[prefix.group(1).lower()]
-    if re.match(r"^Enum\s+like\b", text, re.I):
+    if re.match(r"^Enum\s+like\b", text, re.IGNORECASE):
         return "Enum"
-    if re.match(r"^Enum(?:-like)?\s*:", text, re.I):
+    if re.match(r"^Enum(?:-like)?\s*:", text, re.IGNORECASE):
         return "Enum"
-    if re.match(r"^Date\s+interval\b", text, re.I):
+    if re.match(r"^Date\s+interval\b", text, re.IGNORECASE):
         return "Date"
     # These are documented representations of a primitive field, not new types.
     documented = (
@@ -143,7 +148,7 @@ def _type_name(raw: str, line: int) -> str:
         r"String\s*/\s*URL\s*/\s*phone\s+no$", r"String\s*\(numeric\)$",
     )
     for pattern in documented:
-        if re.match(pattern, text, re.I):
+        if re.match(pattern, text, re.IGNORECASE):
             if text.lower().startswith("enum"):
                 return "Enum"
             if text.lower().startswith("url"):
@@ -164,7 +169,7 @@ def _enum_values(text: str) -> tuple[str, ...]:
     # Defaults and prose are metadata, not enum members.  Keep this cleanup
     # here so it applies equally to top-level and nested enum syntax.
     text = text.replace(r"\|", "|")
-    text = re.sub(r",?\s*default\s+(?:=\s*)?[^,;|]+", "", text, flags=re.I)
+    text = re.sub(r",?\s*default\s+(?:=\s*)?[^,;|]+", "", text, flags=re.IGNORECASE)
     internal_range = re.fullmatch(r"\s*([^,|]+?)\s+(?:\.\.\.|…)\s+([^,|]+?)\s*", text)
     if internal_range:
         start = internal_range.group(1).strip().strip("`")
@@ -201,17 +206,17 @@ def _object_parts(value: str) -> list[tuple[str, str]]:
     result: list[tuple[str, str]] = []
     expanded: list[str] = []
     for part in parts:
-        alternatives = re.split(r"\s+OR\s+", part, flags=re.I)
+        alternatives = re.split(r"\s+OR\s+", part, flags=re.IGNORECASE)
         for alternative in alternatives:
             expanded.extend(re.split(r"\s+\+\s+", alternative) if re.search(r"\s+\+\s+", alternative) else [alternative])
     for part in expanded:
-        part = re.sub(r";\s*repeatable(?:\s*\([^)]*\))?\s*$", "", part, flags=re.I).strip()
-        part = re.sub(r"\s+–\s+only one of the two.*$", "", part, flags=re.I).strip()
+        part = re.sub(r";\s*repeatable(?:\s*\([^)]*\))?\s*$", "", part, flags=re.IGNORECASE).strip()
+        part = re.sub(r"\s+–\s+only one of the two.*$", "", part, flags=re.IGNORECASE).strip()
         match = re.fullmatch(r"`?([A-Za-z][\w]*)`?(?:\s*\((.*)\))?", part)
         if match:
             result.append((match.group(1), match.group(2) or ""))
             continue
-        match = re.match(r"`?([A-Za-z][\w]*)`?\s*\((.*)\)\s*$", part, re.S)
+        match = re.match(r"`?([A-Za-z][\w]*)`?\s*\((.*)\)\s*$", part, re.DOTALL)
         if match:
             result.append((match.group(1), match.group(2)))
     return result
@@ -248,16 +253,16 @@ def _table_cells(line: str) -> list[str]:
 
 def _field_spec(name: str, spec: str, description: str, line: int) -> SubField:
     required = RequirementStatus.OPTIONAL
-    if re.search(r"\bcond(?:itional)?\.?\b", spec, re.I):
+    if re.search(r"\bcond(?:itional)?\.?\b", spec, re.IGNORECASE):
         required = RequirementStatus.CONDITIONAL
-    elif re.search(r"\breq(?:uired)?\.?\b", spec, re.I):
+    elif re.search(r"\breq(?:uired)?\.?\b", spec, re.IGNORECASE):
         required = RequirementStatus.REQUIRED
-    type_part = re.sub(r"^(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)\.?\s*[,;:]?\s*", "", spec, flags=re.I).strip()
-    type_part = re.sub(r"\s*[,;:]\s*(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)\.?\s*$", "", type_part, flags=re.I).strip()
+    type_part = re.sub(r"^(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)\.?\s*[,;:]?\s*", "", spec, flags=re.IGNORECASE).strip()
+    type_part = re.sub(r"\s*[,;:]\s*(?:req(?:uired)?|opt(?:ional)?|cond(?:itional)?)\.?\s*$", "", type_part, flags=re.IGNORECASE).strip()
     enum_text = type_part
     is_enum = "|" in enum_text or re.fullmatch(r"[A-Za-z_]+(?:/[A-Za-z_]+)+", enum_text)
     type_name = "Enum" if is_enum else (
-        "String" if not type_part or re.match(r"^(?:max|min)\.?\s*\d+\b", type_part, re.I)
+        "String" if not type_part or re.match(r"^(?:max|min)\.?\s*\d+\b", type_part, re.IGNORECASE)
         else _type_name(type_part, line)
     )
     enum_values = _enum_values(enum_text) if type_name == "Enum" else ()
@@ -270,18 +275,18 @@ def _type_info(syntax: str, description: str, line: int):
     # "NOT repeatable" / "non-repeatable" must not count as repeated:
     # only an un-negated "repeatable" makes the attribute repeated.
     repeated = any(
-        not re.search(r"(?:not|non)[\s-]*$", text[max(0, m.start() - 10):m.start()], re.I)
-        for m in re.finditer(r"\brepeatable\b", text, re.I)
+        not re.search(r"(?:not|non)[\s-]*$", text[max(0, m.start() - 10):m.start()], re.IGNORECASE)
+        for m in re.finditer(r"\brepeatable\b", text, re.IGNORECASE)
     )
-    count = re.search(r"up to\s+(\d+)", text, re.I)
+    count = re.search(r"up to\s+(\d+)", text, re.IGNORECASE)
     cardinality = Cardinality(int(count.group(1)) if count else None)
-    enum_match = re.search(r"Enum(?:-like)?\s*:\s*(.*)", text, re.I)
+    enum_match = re.search(r"Enum(?:-like)?\s*:\s*(.*)", text, re.IGNORECASE)
     enums = _enum_values(enum_match.group(1)) if enum_match else ()
-    if re.match(r"^Object\b", text, re.I):
+    if re.match(r"^Object\b", text, re.IGNORECASE):
         object_payload = _object_payload(text)
         object_match = re.match(r".*", object_payload) if object_payload is not None else None
         if not object_match:
-            if re.match(r"Object\s+like\b", text, re.I):
+            if re.match(r"Object\s+like\b", text, re.IGNORECASE):
                 like_fields = (
                     SubField("digital_source_type", "Enum", RequirementStatus.OPTIONAL,
                              enum_values=("default", "trained_algorithmic_media")),
@@ -329,9 +334,9 @@ def _expand_names(raw_names: str) -> list[str]:
 def _requirement_qualifiers(requirement_text: str, description: str) -> tuple[str, ...]:
     text = f"{requirement_text} {description}"
     qualifiers: list[str] = []
-    if re.search(r"\balternative\b", text, re.I):
+    if re.search(r"\balternative\b", text, re.IGNORECASE):
         qualifiers.append("alternative")
-    match = re.search(r"required\s+from\s+([0-9]{4}-[0-9]{2}-[0-9]{2})", text, re.I)
+    match = re.search(r"required\s+from\s+([0-9]{4}-[0-9]{2}-[0-9]{2})", text, re.IGNORECASE)
     if match:
         qualifiers.append(f"required_from:{match.group(1)}")
     return tuple(qualifiers)
@@ -354,11 +359,11 @@ def parse_gmc_markdown(path: Path) -> RegistryDocument:
     i = 0
     while i < len(lines):
         line = lines[i]
-        if re.match(r"^##\s+9\.", line, re.I):
+        if re.match(r"^##\s+9\.", line, re.IGNORECASE):
             section = "local"
-        elif re.match(r"^##\s+10\.", line, re.I):
+        elif re.match(r"^##\s+10\.", line, re.IGNORECASE):
             section = "vehicle"
-        elif re.match(r"^##\s+11\.", line, re.I):
+        elif re.match(r"^##\s+11\.", line, re.IGNORECASE):
             section = "deprecated"
         elif _HEADER.match(line):
             if i + 1 >= len(lines) or not lines[i + 1].lstrip().startswith("|---"):
@@ -376,7 +381,7 @@ def parse_gmc_markdown(path: Path) -> RegistryDocument:
                 requirement = _requirement(requirement_text)
                 status = ExportStatus.NON_EXPORTABLE if section == "deprecated" or requirement in (RequirementStatus.DEPRECATED, RequirementStatus.REMOVED) else ExportStatus.EXPORTABLE
                 domain = FeedDomain.VEHICLE_LISTINGS if section == "vehicle" else _row_domain(section)
-                deprecated_vehicle = section == "deprecated" and re.search(r"vehicle|vehicle feeds", description, re.I)
+                deprecated_vehicle = section == "deprecated" and re.search(r"vehicle|vehicle feeds", description, re.IGNORECASE)
                 kind, type_name, fields, enums, cardinality = _type_info(syntax, description, row_line)
                 qualifiers = _requirement_qualifiers(requirement_text, description)
                 for name in _expand_names(raw_names):

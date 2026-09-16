@@ -1,6 +1,8 @@
-from app.config import Settings
-from pydantic import ValidationError
 from pathlib import Path
+
+from pydantic import ValidationError
+
+from app.config import Settings
 
 
 def test_session_defaults(monkeypatch):

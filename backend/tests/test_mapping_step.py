@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.ingest.report import SourceField
-from app.mapping import MappingDocumentError, MappingEntry
+from app.mapping import MappingDocumentError
 from app.pipeline import MappingStep, RunState, StepContext
 from registry.loader import load_registry
 

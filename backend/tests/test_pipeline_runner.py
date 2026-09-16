@@ -1,4 +1,3 @@
-import asyncio
 import logging
 
 import pytest
@@ -9,7 +8,6 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.models import Client, FeedSource, IngestionRun
 from app.pipeline import LockRegistry, StepContext, StepResult
 from app.pipeline.runner import PipelineRunner
-
 
 pytestmark = pytest.mark.asyncio
 
@@ -45,20 +43,19 @@ async def session_factory(isolated_database_url):
 
 @pytest_asyncio.fixture
 async def feed_source_id(session_factory):
-    async with session_factory() as session:
-        async with session.begin():
-            client = Client(name="Acme")
-            session.add(client)
-            await session.flush()
-            feed_source = FeedSource(
-                client_id=client.id,
-                name="Main feed",
-                source_format="xml",
-                source_url="https://example.com/feed.xml",
-            )
-            session.add(feed_source)
-            await session.flush()
-            return feed_source.id
+    async with session_factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        feed_source = FeedSource(
+            client_id=client.id,
+            name="Main feed",
+            source_format="xml",
+            source_url="https://example.com/feed.xml",
+        )
+        session.add(feed_source)
+        await session.flush()
+        return feed_source.id
 
 
 async def _get_run(factory, run_id):
@@ -139,12 +136,11 @@ async def test_missing_feed_source_returns_none_without_run(session_factory):
 
 
 async def test_precreated_run_id_is_updated_through_lifecycle(session_factory, feed_source_id):
-    async with session_factory() as session:
-        async with session.begin():
-            run = IngestionRun(feed_source_id=feed_source_id, status="pending")
-            session.add(run)
-            await session.flush()
-            run_id = run.id
+    async with session_factory() as session, session.begin():
+        run = IngestionRun(feed_source_id=feed_source_id, status="pending")
+        session.add(run)
+        await session.flush()
+        run_id = run.id
 
     runner = PipelineRunner(LockRegistry(), session_factory, [RecordingStep(processed=1)])
     returned_id = await runner.execute(feed_source_id, run_id=run_id)
@@ -157,12 +153,11 @@ async def test_precreated_run_id_is_updated_through_lifecycle(session_factory, f
 
 async def test_precreated_run_id_skipped_when_lock_held(session_factory, feed_source_id):
     registry = LockRegistry()
-    async with session_factory() as session:
-        async with session.begin():
-            run = IngestionRun(feed_source_id=feed_source_id, status="pending")
-            session.add(run)
-            await session.flush()
-            run_id = run.id
+    async with session_factory() as session, session.begin():
+        run = IngestionRun(feed_source_id=feed_source_id, status="pending")
+        session.add(run)
+        await session.flush()
+        run_id = run.id
 
     runner = PipelineRunner(registry, session_factory, [RecordingStep()])
     lock = registry.get(feed_source_id)
@@ -204,12 +199,11 @@ async def test_locked_skip_logs_previous_run_still_active(session_factory, feed_
 
 async def test_locked_skip_precreated_run_carries_reason(session_factory, feed_source_id):
     registry = LockRegistry()
-    async with session_factory() as session:
-        async with session.begin():
-            run = IngestionRun(feed_source_id=feed_source_id, status="pending")
-            session.add(run)
-            await session.flush()
-            run_id = run.id
+    async with session_factory() as session, session.begin():
+        run = IngestionRun(feed_source_id=feed_source_id, status="pending")
+        session.add(run)
+        await session.flush()
+        run_id = run.id
     runner = PipelineRunner(registry, session_factory, [RecordingStep()])
     lock = registry.get(feed_source_id)
     await lock.acquire()

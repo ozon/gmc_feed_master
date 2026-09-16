@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -81,9 +82,18 @@ async def run_dry_run(
         )).scalar_one_or_none()
 
     from ..qc.rules import (
-        BaselineRequired, BrandRequired, CardinalityRule, ConditionalRequired,
-        CurrencyConsistency, DateFormat, EnumValues, GtinMpn, ImageRequirements,
-        LengthLimits, VariantConsistency, VolumeDrop,
+        BaselineRequired,
+        BrandRequired,
+        CardinalityRule,
+        ConditionalRequired,
+        CurrencyConsistency,
+        DateFormat,
+        EnumValues,
+        GtinMpn,
+        ImageRequirements,
+        LengthLimits,
+        VariantConsistency,
+        VolumeDrop,
     )
 
     qc_ctx = QcContext(

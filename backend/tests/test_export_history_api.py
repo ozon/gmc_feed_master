@@ -1,9 +1,12 @@
+from datetime import datetime, timezone
+
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from app.clock import TestClock
 from app.config import Settings
 from app.export.service import ExportService
 from app.export.store import ExportFileStore
@@ -12,8 +15,6 @@ from app.models import Client, ExportRun, ExportVersion, FeedSource, IngestionRu
 from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
-from app.clock import TestClock
-from datetime import datetime, timezone
 from registry.loader import load_registry
 
 pytestmark = pytest.mark.asyncio
@@ -62,35 +63,33 @@ async def _seed_versions(app_factory, product_sets, finding_counts=None):
     """Run export_for_run once per product set; returns feed_source_id."""
     _, factory, settings = app_factory
     clock = TestClock(datetime(2026, 8, 27, tzinfo=timezone.utc))
-    async with factory() as session:
-        async with session.begin():
-            client = Client(name="Acme")
-            session.add(client)
-            await session.flush()
-            feed_source = FeedSource(
-                client_id=client.id, name="Main", source_format="tsv",
-                export_token="tok-history-test",
-            )
-            session.add(feed_source)
-            await session.flush()
-            feed_source_id = feed_source.id
+    async with factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        feed_source = FeedSource(
+            client_id=client.id, name="Main", source_format="tsv",
+            export_token="tok-history-test",
+        )
+        session.add(feed_source)
+        await session.flush()
+        feed_source_id = feed_source.id
 
     service = ExportService(factory, ExportFileStore(settings.export_dir), clock, "http://test.public")
     for index, products in enumerate(product_sets):
         counts = finding_counts[index] if finding_counts else (0, 0, 0)
-        async with factory() as session:
-            async with session.begin():
-                run = IngestionRun(feed_source_id=feed_source_id, status="completed")
-                session.add(run)
-                await session.flush()
-                session.add(ExportRun(
-                    feed_source_id=feed_source_id, ingestion_run_id=run.id,
-                    status="pending_export", product_count=len(products),
-                    critical_finding_count=counts[0],
-                    warning_finding_count=counts[1],
-                    info_finding_count=counts[2],
-                ))
-                run_id = run.id
+        async with factory() as session, session.begin():
+            run = IngestionRun(feed_source_id=feed_source_id, status="completed")
+            session.add(run)
+            await session.flush()
+            session.add(ExportRun(
+                feed_source_id=feed_source_id, ingestion_run_id=run.id,
+                status="pending_export", product_count=len(products),
+                critical_finding_count=counts[0],
+                warning_finding_count=counts[1],
+                info_finding_count=counts[2],
+            ))
+            run_id = run.id
         await service.export_for_run(feed_source_id, run_id, products, REGISTRY)
     return feed_source_id
 

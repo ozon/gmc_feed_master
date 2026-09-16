@@ -14,7 +14,6 @@ from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
 
-
 pytestmark = pytest.mark.asyncio
 
 

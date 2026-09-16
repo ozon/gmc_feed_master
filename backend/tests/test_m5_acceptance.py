@@ -19,7 +19,6 @@ from app.models.user import User
 from app.persistence.users import seed_initial_user
 from app.staging.purge import purge_expired
 
-
 pytestmark = pytest.mark.asyncio
 
 TWO_PRODUCTS_TSV = (
@@ -233,45 +232,43 @@ async def test_config_change_reprocesses_without_history(app_factory):
     client = await logged_in_client(app_factory)
     fs_id = await _create_feed_source(client)
 
-    async with factory() as session:
-        async with session.begin():
-            feed_source = await session.get(FeedSource, fs_id)
-            plugin = Plugin(
-                name="labelizer",
-                version="1.0.0",
-                manifest={"id": "labelizer"},
-            )
-            session.add(plugin)
-            await session.flush()
-            pipeline = ModulePipeline(
-                feed_source_id=fs_id,
-                name="pipe",
-                version="1",
-                definition={},
-            )
-            session.add(pipeline)
-            await session.flush()
-            feed_source.active_pipeline_id = pipeline.id
-            instance = ModuleInstance(
-                pipeline_id=pipeline.id,
-                plugin_id=plugin.id,
-                position=0,
-                name="lbl",
-                configuration={"slot": "custom_label_0"},
-            )
-            session.add(instance)
-            await session.flush()
-            instance_id = instance.id
+    async with factory() as session, session.begin():
+        feed_source = await session.get(FeedSource, fs_id)
+        plugin = Plugin(
+            name="labelizer",
+            version="1.0.0",
+            manifest={"id": "labelizer"},
+        )
+        session.add(plugin)
+        await session.flush()
+        pipeline = ModulePipeline(
+            feed_source_id=fs_id,
+            name="pipe",
+            version="1",
+            definition={},
+        )
+        session.add(pipeline)
+        await session.flush()
+        feed_source.active_pipeline_id = pipeline.id
+        instance = ModuleInstance(
+            pipeline_id=pipeline.id,
+            plugin_id=plugin.id,
+            position=0,
+            name="lbl",
+            configuration={"slot": "custom_label_0"},
+        )
+        session.add(instance)
+        await session.flush()
+        instance_id = instance.id
 
     await _trigger_run(factory, client, fs_id)
     fetcher.data = CHANGED_TITLE_TSV
     await _trigger_run(factory, client, fs_id)
     assert await _history_count(factory, fs_id) == 3
 
-    async with factory() as session:
-        async with session.begin():
-            instance = await session.get(ModuleInstance, instance_id)
-            instance.configuration = {"slot": "custom_label_9"}
+    async with factory() as session, session.begin():
+        instance = await session.get(ModuleInstance, instance_id)
+        instance.configuration = {"slot": "custom_label_9"}
 
     await _trigger_run(factory, client, fs_id)
 
@@ -327,15 +324,14 @@ async def test_purge_clears_expired_rows_end_to_end(app_factory):
     assert rows["A2"].status == "removed"
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=91)
-    async with factory() as session:
-        async with session.begin():
-            await session.execute(
-                text(
-                    "UPDATE staging_products SET removed_at = :cutoff "
-                    "WHERE feed_source_id = :fid AND product_id = 'A2'"
-                ),
-                {"cutoff": cutoff, "fid": fs_id},
-            )
+    async with factory() as session, session.begin():
+        await session.execute(
+            text(
+                "UPDATE staging_products SET removed_at = :cutoff "
+                "WHERE feed_source_id = :fid AND product_id = 'A2'"
+            ),
+            {"cutoff": cutoff, "fid": fs_id},
+        )
 
     counts = await purge_expired(factory, datetime.now(timezone.utc))
 

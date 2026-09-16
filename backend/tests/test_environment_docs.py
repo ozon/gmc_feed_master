@@ -1,6 +1,6 @@
-from pathlib import Path
 import json
 import subprocess
+from pathlib import Path
 
 
 def test_env_example_documents_required_settings():

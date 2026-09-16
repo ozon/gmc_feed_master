@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.ingest import FetchError, IngestReport, RowError, read_feed
+from app.ingest import FetchError, IngestReport, read_feed
 from app.pipeline import IngestStep, RunState, StepContext, StepResult
 from registry.model import RegistryDocument
 

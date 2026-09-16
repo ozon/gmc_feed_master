@@ -38,9 +38,8 @@ async def _seed(session):
 async def _env(isolated_database_url):
     engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
-    async with factory() as session:
-        async with session.begin():
-            feed_source = await _seed(session)
+    async with factory() as session, session.begin():
+        feed_source = await _seed(session)
     return engine, factory, feed_source.id
 
 
@@ -60,49 +59,46 @@ async def _run(factory, feed_source_id, days_old, status="success"):
 
 
 async def _export_run(factory, feed_source_id, ingestion_run_id, status="success"):
-    async with factory() as session:
-        async with session.begin():
-            row = ExportRun(
-                feed_source_id=feed_source_id,
-                ingestion_run_id=ingestion_run_id,
-                status=status,
-            )
-            session.add(row)
-            await session.flush()
-            return row.id
+    async with factory() as session, session.begin():
+        row = ExportRun(
+            feed_source_id=feed_source_id,
+            ingestion_run_id=ingestion_run_id,
+            status=status,
+        )
+        session.add(row)
+        await session.flush()
+        return row.id
 
 
 async def _finding(factory, feed_source_id, ingestion_run_id, product_id="sku-1"):
-    async with factory() as session:
-        async with session.begin():
-            row = QualityFinding(
-                feed_source_id=feed_source_id,
-                ingestion_run_id=ingestion_run_id,
-                product_id=product_id,
-                severity="warning",
-                code="missing-field",
-                message="field is missing",
-            )
-            session.add(row)
-            await session.flush()
-            return row.id
+    async with factory() as session, session.begin():
+        row = QualityFinding(
+            feed_source_id=feed_source_id,
+            ingestion_run_id=ingestion_run_id,
+            product_id=product_id,
+            severity="warning",
+            code="missing-field",
+            message="field is missing",
+        )
+        session.add(row)
+        await session.flush()
+        return row.id
 
 
 async def _staging_product(factory, feed_source_id, ingestion_run_id, product_id):
-    async with factory() as session:
-        async with session.begin():
-            row = StagingProduct(
-                feed_source_id=feed_source_id,
-                ingestion_run_id=ingestion_run_id,
-                product_id=product_id,
-                content_hash="h",
-                config_hash="c",
-                status="active",
-                raw_data={},
-            )
-            session.add(row)
-            await session.flush()
-            return row.id
+    async with factory() as session, session.begin():
+        row = StagingProduct(
+            feed_source_id=feed_source_id,
+            ingestion_run_id=ingestion_run_id,
+            product_id=product_id,
+            content_hash="h",
+            config_hash="c",
+            status="active",
+            raw_data={},
+        )
+        session.add(row)
+        await session.flush()
+        return row.id
 
 
 async def _all_ids(factory, model):

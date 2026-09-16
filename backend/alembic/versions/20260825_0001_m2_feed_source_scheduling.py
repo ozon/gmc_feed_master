@@ -4,14 +4,16 @@ Revision ID: 20260825_0001
 Revises: 20260824_0001
 Create Date: 2026-08-25 09:10:00.000000
 """
-from typing import Sequence, Union
-from alembic import op
+from collections.abc import Sequence
+
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
+
 revision: str = '20260825_0001'
-down_revision: Union[str, Sequence[str], None] = '20260824_0001'
-branch_labels: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = '20260824_0001'
+branch_labels: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

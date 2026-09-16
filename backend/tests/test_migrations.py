@@ -1,15 +1,15 @@
+import asyncio
 import os
 import uuid
-import asyncio
 from urllib.parse import urlsplit, urlunsplit
 
-import pytest
 import asyncpg
-from alembic import command
+import pytest
 from alembic.config import Config
 from sqlalchemy import inspect, text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from alembic import command
 
 EXPECTED_TABLES = {
     "users",

@@ -1,8 +1,8 @@
 from sqlalchemy import CheckConstraint, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 
-from app.db.base import Base
 import app.models  # noqa: F401
+from app.db.base import Base
 
 
 def test_m1_table_set_is_complete():

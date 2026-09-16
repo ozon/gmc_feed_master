@@ -14,7 +14,6 @@ from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -150,7 +149,6 @@ async def test_shutdown_drain_times_out_and_warns(app_factory, monkeypatch, capl
 
     async def stuck_execute(feed_source_id, run_id=None):
         await gate.wait()
-        return None
 
     app.state.pipeline_runner.execute = stuck_execute
 

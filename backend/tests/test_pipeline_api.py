@@ -13,7 +13,6 @@ from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -60,11 +59,10 @@ async def _register_plugin(factory, name="example_upper", enabled=True,
                                   "properties": {"suffix": {"type": "string"}},
                                   "required": ["suffix"]},
                 "data_schema": {"type": "object"}}
-    async with factory() as session:
-        async with session.begin():
-            session.add(Plugin(name=name, version="1.0.0", enabled=enabled,
-                               manifest=manifest))
-            await session.flush()
+    async with factory() as session, session.begin():
+        session.add(Plugin(name=name, version="1.0.0", enabled=enabled,
+                           manifest=manifest))
+        await session.flush()
 
 
 async def test_get_pipeline_empty(app_factory):

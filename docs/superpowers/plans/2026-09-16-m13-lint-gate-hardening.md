@@ -100,63 +100,57 @@ git commit -m "chore(lint): add root ruff config teaching B008 that FastAPI call
 - Consumes: Task 1's config.
 - Produces: a tree containing no safely-fixable ruff findings.
 
-- [ ] **Step 1: Apply import fixes and commit them separately**
+**Never narrow the rule selection when `RUF100` is involved.** `--select X,Y,RUF100 --fix` replaces the enabled rule set with `X,Y,RUF100`, which makes `RUF100` treat *every other rule's* `noqa` directive as unused and delete it. Measured during execution: that exact mistake deleted six justified `# noqa: UP031` directives in `app/ai/templates.py` (their message strings contain literal `{{%s}}`, which f-strings cannot express without quadrupled braces) and one `# noqa: BLE001` in `app/ai/service.py`. The wave below therefore runs the full default rule set and lets `RUF100` judge each directive against the rules that are actually enabled.
 
-Run:
-```bash
-cd backend && uv run ruff check . ../plugins --select I001,F401,RUF100 --fix
-cd backend && uv run ruff check . ../plugins --output-format=concise 2>/dev/null | wc -l
-```
-Expected: a number no higher than the previous step's, with `I001` and `F401` findings gone:
-```bash
-cd backend && uv run ruff check . ../plugins --select I001,F401,RUF100
-```
-Expected: `All checks passed!`
-
-- [ ] **Step 2: Run the full suite**
-
-Run:
-```bash
-cd backend && env -u DATABASE_URL uv run pytest -q
-```
-Expected: PASS, same passed-count as the cycle baseline (nothing added or removed).
-
-- [ ] **Step 3: Commit the import cluster**
-
-```bash
-git add -A backend plugins
-git commit -m "style(lint): sort imports and prune unused imports (I001, F401, RUF100)"
-```
-
-- [ ] **Step 4: Apply the remaining safe fixes**
+- [ ] **Step 1: Apply all safe fixes with the full rule set**
 
 Run:
 ```bash
 cd backend && uv run ruff check . ../plugins --fix
 ```
-This fixes the remaining safely-fixable rules: `SIM117` (nested `with`), `FURB167`, `UP007`, `UP035`, `RUF015`, `F841`, `PLW1510`, `UP037`, `PYI055`, `UP012`, `C408`, `SIM102`, `PIE810`, `RUF022`, `SIM114`, `SIM401`, `RET501`, `PLR1711`.
+Expected final line: `Found N errors.` with `No fixes available (... --unsafe-fixes option)` — i.e. no safe fixes remain.
 
-- [ ] **Step 5: Confirm nothing safely-fixable is left**
+- [ ] **Step 2: Confirm only genuinely-unused `noqa` directives were removed**
 
 Run:
 ```bash
-cd backend && uv run ruff check . ../plugins 2>&1 | tail -2
+git diff | grep -E "^-.*noqa"
 ```
-Expected: a `Found N errors` line where `N` equals the count of remaining items and the second line reads `No fixes available (... hidden fixes can be enabled with the --unsafe-fixes option)` — i.e. no safe fixes remain.
+Expected: exactly these six lines (or their post-edit equivalents), and nothing else:
+```
+-                StagingProduct.excluded == False,  # noqa: E712
+-from plugin import evaluate_condition  # noqa: E402
+-                       user: CurrentUser = Depends(get_current_user),  # noqa: B008 — plugin-route convention (see category plugin)
+-                       db_session: Any = Depends(get_db_session)) -> dict[str, Any] | JSONResponse:  # noqa: B008
+-                               user: CurrentUser = Depends(get_current_user),  # noqa: B008 — plugin-route convention
+-                               db_session: Any = Depends(get_db_session),  # noqa: B008
+```
+The four `B008` directives became redundant when Task 1's config stopped `B008` firing on FastAPI callables; `E712`/`E402` are not enabled by this rule set. If any `UP031`, `BLE001` or other `noqa` line appears here, the run was narrowed — restore those lines (`git checkout <path>`) and re-run Step 1.
 
-- [ ] **Step 6: Run the full suite**
+- [ ] **Step 3: Verify the remaining set**
+
+Run:
+```bash
+cd backend && uv run ruff check . ../plugins --output-format=json 2>/dev/null | python3 -c "
+import json,sys,collections
+d=json.load(sys.stdin); c=collections.Counter(x['code'] for x in d)
+[print(f'  {k:10} {v}') for k,v in c.most_common()]; print('TOTAL',len(d))"
+```
+Expected `TOTAL 127`: `RUF059` 59, `SIM117` 16, `TRY004` 10, `BLE001` 8, `F841` 8, `RUF015` 6, `PLW1510` 5, `RUF012` 3, `C408` 3, `SIM102` 2, `EXE001` 2, `S112` 1, `PIE810` 1, `SIM401` 1, `ASYNC221` 1, `DTZ001` 1.
+
+- [ ] **Step 4: Run the full suite**
 
 Run:
 ```bash
 cd backend && env -u DATABASE_URL uv run pytest -q
 ```
-Expected: PASS. A failure here means one of the 300+ mechanical edits changed behaviour — find it from the failing test and revert only that hunk (`git checkout -p`).
+Expected: `1295 passed`. A failure means one of the ~300 mechanical edits changed behaviour — find it from the failing test and revert only that hunk (`git checkout -p`).
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add -A backend plugins
-git commit -m "style(lint): apply safe ruff autofixes (SIM117, FURB167, UP*, RUF*, C408, ...)"
+git commit -m "style(lint): apply safe ruff autofixes (I001, F401, SIM117, FURB167, UP*, ...)"
 ```
 
 ---

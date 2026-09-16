@@ -7,7 +7,12 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.clock import TestClock
 from app.export.renderer import ChannelMetadata
-from app.export.service import ExportOutcome, ExportService, channel_metadata_for, generate_export_token
+from app.export.service import (
+    ExportOutcome,
+    ExportService,
+    channel_metadata_for,
+    generate_export_token,
+)
 from app.export.store import ExportFileStore
 from app.models import Client, ExportRun, ExportVersion, FeedSource, IngestionRun
 from registry.loader import load_registry
@@ -29,21 +34,20 @@ async def env(isolated_database_url, tmp_path):
     clock = TestClock(datetime(2026, 8, 27, tzinfo=timezone.utc))
     service = ExportService(factory, store, clock, "http://test.public")
 
-    async with factory() as session:
-        async with session.begin():
-            client = Client(name="Acme")
-            session.add(client)
-            await session.flush()
-            feed_source = FeedSource(
-                client_id=client.id,
-                name="Main",
-                source_format="tsv",
-                export_token="tok-service-test",
-                history_retention_count=2,
-            )
-            session.add(feed_source)
-            await session.flush()
-            feed_source_id = feed_source.id
+    async with factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        feed_source = FeedSource(
+            client_id=client.id,
+            name="Main",
+            source_format="tsv",
+            export_token="tok-service-test",
+            history_retention_count=2,
+        )
+        session.add(feed_source)
+        await session.flush()
+        feed_source_id = feed_source.id
 
     yield {"factory": factory, "store": store, "clock": clock, "service": service, "feed_source_id": feed_source_id}
     await engine.dispose()

@@ -1,17 +1,12 @@
 """Tests for plugin contract checker (Task 7)."""
 
-import copy
 import json
 import shutil
-
-import pytest
 
 from app.plugins.contract import contract_violations
 from app.plugins.discovery import Candidate, discover
 from app.plugins.loader import load_plugin_class
-from app.plugins.manifest import PluginManifest, parse_manifest
-from app.plugins.runtime import RunContext
-
+from app.plugins.manifest import PluginManifest
 
 FIXTURE_DIR = (
     __import__("pathlib").Path(__file__).resolve().parent / "fixtures" / "example_plugin"

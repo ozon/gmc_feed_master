@@ -5,7 +5,7 @@ import io
 
 from registry.model import RegistryDocument
 
-from .flat_notation import HeaderError, parse_header, split_row
+from .flat_notation import parse_header, split_row
 from .report import IngestReport, RowError, SourceField
 
 

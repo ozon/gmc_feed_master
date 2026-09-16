@@ -2,36 +2,33 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
-from datetime import timedelta
-
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-
 from contextlib import asynccontextmanager
+from datetime import timedelta
+from pathlib import Path
+
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from pydantic import ValidationError
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from .access import CurrentUser, enforce_scope_access, get_current_user
 from .auth import (
+    SESSION_COOKIE_NAME,
     Credentials,
     PasswordChange,
-    SESSION_COOKIE_NAME,
+    _store,
     authenticate,
     clear_session_cookie,
     create_session,
+    invalidate_session,
     require_user,
     require_user_for_interaction,
     set_session_cookie,
-    _store,
-    invalidate_session,
 )
 from .clock import Clock, SystemClock
 from .config import Settings, get_settings
-from .ingest import HttpFetcher
-from .session_store import SessionStore
-from .persistence.sessions import PostgresSessionStore
 from .db.engine import create_engine, create_session_factory, get_db_session
+from .ingest import HttpFetcher
+from .persistence.sessions import PostgresSessionStore
 from .persistence.users import change_password, seed_initial_user
 from .routes import (
     admin_router,
@@ -50,6 +47,7 @@ from .routes.dry_run import router as dry_run_router
 from .routes.feed_dashboard import router as feed_dashboard_router
 from .routes.pipeline import router as pipeline_router
 from .routes.products import router as products_router
+from .session_store import SessionStore
 
 
 def _configured_settings() -> Settings | None:
@@ -254,7 +252,12 @@ def create_app(
 
         from registry.loader import load_registry
 
-        from .pipeline import LockRegistry, PipelineRunner, SchedulerService, default_steps
+        from .pipeline import (
+            LockRegistry,
+            PipelineRunner,
+            SchedulerService,
+            default_steps,
+        )
         from .qc.image_probe import ImageProbeImpl
 
         image_http_client = httpx.AsyncClient()

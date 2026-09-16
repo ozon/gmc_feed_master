@@ -63,8 +63,8 @@ class EnrichmentPlugin:
             limit: int = Field(default=20, ge=1, le=50)
 
         async def scan(payload: ScanRequest, request: Request,
-                       user: CurrentUser = Depends(get_current_user),  # noqa: B008 — plugin-route convention (see category plugin)
-                       db_session: Any = Depends(get_db_session)) -> dict[str, Any] | JSONResponse:  # noqa: B008
+                       user: CurrentUser = Depends(get_current_user),
+                       db_session: Any = Depends(get_db_session)) -> dict[str, Any] | JSONResponse:
             service = getattr(request.app.state, "ai_service", None)
             if service is None:
                 raise HTTPException(status_code=503, detail="ai service unavailable")
@@ -229,8 +229,8 @@ class EnrichmentPlugin:
 
         for mode in ("accept", "discard", "unpin"):
             async def endpoint(payload: ItemsRequest,
-                               user: CurrentUser = Depends(get_current_user),  # noqa: B008 — plugin-route convention
-                               db_session: Any = Depends(get_db_session),  # noqa: B008
+                               user: CurrentUser = Depends(get_current_user),
+                               db_session: Any = Depends(get_db_session),
                                _mode: str = mode):
                 return await _mutate(payload, _mode, user, db_session)
 

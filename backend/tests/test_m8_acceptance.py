@@ -1,5 +1,4 @@
 import asyncio
-from datetime import datetime, timezone
 
 import pytest
 import pytest_asyncio
@@ -21,10 +20,10 @@ pytestmark = pytest.mark.asyncio
 REGISTRY = load_registry()
 
 WIDE_TSV = (
-    "id\ttitle\tdescription\tlink\timage_link\tavailability\tprice\tcondition\tbrand\tgtin\tshipping(country:price)\tshipping(country:price)\n"
-    "SKU-1\tRed Shirt\tA red shirt\thttp://shop.example/1\thttp://shop.example/1.jpg\tin_stock\t10.00 USD\tnew\tAcme\t0012345678905\tUS:6.49 USD\tUK:5.99 GBP\n"
-    "SKU-2\tBlue Hat\tA blue hat\thttp://shop.example/2\thttp://shop.example/2.jpg\tin_stock\t5.00 USD\tnew\tAcme\t0012345678912\tUS:6.49 USD\n"
-).encode("utf-8")
+    b"id\ttitle\tdescription\tlink\timage_link\tavailability\tprice\tcondition\tbrand\tgtin\tshipping(country:price)\tshipping(country:price)\n"
+    b"SKU-1\tRed Shirt\tA red shirt\thttp://shop.example/1\thttp://shop.example/1.jpg\tin_stock\t10.00 USD\tnew\tAcme\t0012345678905\tUS:6.49 USD\tUK:5.99 GBP\n"
+    b"SKU-2\tBlue Hat\tA blue hat\thttp://shop.example/2\thttp://shop.example/2.jpg\tin_stock\t5.00 USD\tnew\tAcme\t0012345678912\tUS:6.49 USD\n"
+)
 
 WIDE_TSV_CHANGED = WIDE_TSV.replace(b"10.00 USD\t", b"9.00 USD\t", 1)
 

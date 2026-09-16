@@ -3,8 +3,8 @@ import subprocess
 import sys
 from typing import Any, cast
 
-from starlette.requests import Request
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 
 from app.auth import _store
 from app.clock import SystemClock
@@ -153,8 +153,9 @@ def test_create_app_is_public_entry_point_for_health_and_auth_flow():
         initial_username="operator",
         initial_password="correct",
     )
-    from app.session_store import InMemorySessionStore
     from datetime import timedelta
+
+    from app.session_store import InMemorySessionStore
 
     client = TestClient(
         create_app(

@@ -6,7 +6,14 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
 from app.main import create_app
-from app.models import Client, FeedSource, IngestionRun, ExportRun, ExportVersion, QualityFinding
+from app.models import (
+    Client,
+    ExportRun,
+    ExportVersion,
+    FeedSource,
+    IngestionRun,
+    QualityFinding,
+)
 from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
@@ -52,21 +59,20 @@ async def logged_in_client(app_factory):
 
 async def _seed_feed_source(app_factory):
     _, factory = app_factory
-    async with factory() as session:
-        async with session.begin():
-            client = Client(name="Acme")
-            session.add(client)
-            await session.flush()
-            feed_source = FeedSource(
-                client_id=client.id,
-                name="Main feed",
-                source_format="tsv",
-                source_url="http://test.local/feed.tsv",
-                configuration={},
-            )
-            session.add(feed_source)
-            await session.flush()
-            return client.id, feed_source.id
+    async with factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        feed_source = FeedSource(
+            client_id=client.id,
+            name="Main feed",
+            source_format="tsv",
+            source_url="http://test.local/feed.tsv",
+            configuration={},
+        )
+        session.add(feed_source)
+        await session.flush()
+        return client.id, feed_source.id
 
 
 async def test_404_for_missing_feed_source(app_factory):
@@ -90,35 +96,34 @@ async def test_returns_findings(app_factory):
     _, factory = app_factory
     _, feed_source_id = await _seed_feed_source(app_factory)
 
-    async with factory() as session:
-        async with session.begin():
-            ingestion_run = IngestionRun(feed_source_id=feed_source_id, status="completed")
-            session.add(ingestion_run)
-            await session.flush()
+    async with factory() as session, session.begin():
+        ingestion_run = IngestionRun(feed_source_id=feed_source_id, status="completed")
+        session.add(ingestion_run)
+        await session.flush()
 
-            export_run = ExportRun(
-                feed_source_id=feed_source_id,
-                ingestion_run_id=ingestion_run.id,
-                status="completed",
-                product_count=5,
-                critical_finding_count=1,
-                warning_finding_count=2,
-                info_finding_count=0,
-            )
-            session.add(export_run)
-            await session.flush()
+        export_run = ExportRun(
+            feed_source_id=feed_source_id,
+            ingestion_run_id=ingestion_run.id,
+            status="completed",
+            product_count=5,
+            critical_finding_count=1,
+            warning_finding_count=2,
+            info_finding_count=0,
+        )
+        session.add(export_run)
+        await session.flush()
 
-            finding = QualityFinding(
-                feed_source_id=feed_source_id,
-                ingestion_run_id=ingestion_run.id,
-                product_id="SKU-1",
-                severity="critical",
-                code="enum_values",
-                field="availability",
-                message="invalid value",
-                details={},
-            )
-            session.add(finding)
+        finding = QualityFinding(
+            feed_source_id=feed_source_id,
+            ingestion_run_id=ingestion_run.id,
+            product_id="SKU-1",
+            severity="critical",
+            code="enum_values",
+            field="availability",
+            message="invalid value",
+            details={},
+        )
+        session.add(finding)
 
     client = await logged_in_client(app_factory)
     resp = await client.get(f"/feed-sources/{feed_source_id}/quality-findings")

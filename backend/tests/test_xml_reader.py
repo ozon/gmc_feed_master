@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from app.ingest.xml_reader import XmlParseError, parse_xml
 from app.ingest.report import IngestReport, RowError
+from app.ingest.xml_reader import XmlParseError, parse_xml
 from registry.model import (
     AttributeKind,
     ExportStatus,

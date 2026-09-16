@@ -12,7 +12,7 @@ import sys
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import delete, inspect, text
+from sqlalchemy import delete, inspect
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
@@ -20,7 +20,6 @@ from app.main import create_app
 from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import seed_initial_user
-
 
 EXPECTED_TABLES = {
     "users",

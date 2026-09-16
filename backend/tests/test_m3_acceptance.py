@@ -7,7 +7,6 @@ from app.pipeline import LockRegistry, StepContext, StepResult, default_steps
 from app.pipeline.runner import PipelineRunner
 from registry.loader import load_registry
 
-
 pytestmark = pytest.mark.asyncio
 
 HAPPY_TSV = b"id\ttitle\tprice\n1\tRed Shirt\t19.99\n2\tBlue Hat\t9.50\n3\tGreen Pants\t25.00\n"
@@ -60,22 +59,21 @@ async def session_factory(isolated_database_url):
 
 
 async def _seed_feed_source(session_factory, configuration, field_mapping=None):
-    async with session_factory() as session:
-        async with session.begin():
-            client = Client(name="Acme")
-            session.add(client)
-            await session.flush()
-            feed_source = FeedSource(
-                client_id=client.id,
-                name="Main feed",
-                source_format="tsv",
-                source_url="http://test.local/feed.tsv",
-                configuration=configuration,
-                field_mapping=field_mapping or IDENTITY_MAPPINGS,
-            )
-            session.add(feed_source)
-            await session.flush()
-            return feed_source.id
+    async with session_factory() as session, session.begin():
+        client = Client(name="Acme")
+        session.add(client)
+        await session.flush()
+        feed_source = FeedSource(
+            client_id=client.id,
+            name="Main feed",
+            source_format="tsv",
+            source_url="http://test.local/feed.tsv",
+            configuration=configuration,
+            field_mapping=field_mapping or IDENTITY_MAPPINGS,
+        )
+        session.add(feed_source)
+        await session.flush()
+        return feed_source.id
 
 
 async def _get_run(factory, run_id):

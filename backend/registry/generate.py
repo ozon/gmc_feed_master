@@ -1,6 +1,6 @@
+import difflib
 import hashlib
 import json
-import difflib
 from pathlib import Path
 
 from .model import RegistryDocument

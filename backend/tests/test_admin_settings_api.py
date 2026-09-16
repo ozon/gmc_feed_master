@@ -106,14 +106,13 @@ async def test_get_scheduler_lists_system_jobs(settings_app, admin_http):
 async def test_purge_honors_configured_retention(settings_app):
     _, factory = settings_app
     now = datetime(2026, 1, 1, tzinfo=timezone.utc)
-    async with factory() as session:
-        async with session.begin():
-            session.add(GlobalSetting(
-                id=1,
-                staging_removal_retention_days=1,
-                staging_history_retention_days=1,
-                ingestion_run_retention_days=1,
-            ))
+    async with factory() as session, session.begin():
+        session.add(GlobalSetting(
+            id=1,
+            staging_removal_retention_days=1,
+            staging_history_retention_days=1,
+            ingestion_run_retention_days=1,
+        ))
     # With a 1-day cutoff, nothing at `now` is expired; a 10-day-old run is not.
     counts = await purge_expired(factory, now)
     assert counts.removed_products == 0
@@ -128,25 +127,24 @@ async def test_ingestion_run_purge_uses_db_retention(isolated_database_url):
     now = datetime(2026, 1, 1, tzinfo=timezone.utc)
     engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
-    async with factory() as session:
-        async with session.begin():
-            client = Client(name="Purge Co")
-            session.add(client)
-            await session.flush()
-            feed = FeedSource(client_id=client.id, name="F", source_format="xml",
-                              source_url="https://x.example/f.xml")
-            session.add(feed)
-            await session.flush()
-            session.add(IngestionRun(
-                feed_source_id=feed.id, status="completed",
-                started_at=now - timedelta(days=60),
-            ))
-            session.add(GlobalSetting(
-                id=1,
-                staging_removal_retention_days=90,
-                staging_history_retention_days=90,
-                ingestion_run_retention_days=50,
-            ))
+    async with factory() as session, session.begin():
+        client = Client(name="Purge Co")
+        session.add(client)
+        await session.flush()
+        feed = FeedSource(client_id=client.id, name="F", source_format="xml",
+                          source_url="https://x.example/f.xml")
+        session.add(feed)
+        await session.flush()
+        session.add(IngestionRun(
+            feed_source_id=feed.id, status="completed",
+            started_at=now - timedelta(days=60),
+        ))
+        session.add(GlobalSetting(
+            id=1,
+            staging_removal_retention_days=90,
+            staging_history_retention_days=90,
+            ingestion_run_retention_days=50,
+        ))
     # 60-day-old run, 50-day configured retention → purged (90-day default would keep it).
     counts = await purge_expired_ingestion_runs(factory, now)
     assert counts.runs_purged == 1

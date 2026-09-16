@@ -67,14 +67,13 @@ class ExportService:
         registry: RegistryDocument,
         source: str = "manual",
     ) -> ExportOutcome:
-        async with self._session_factory() as session:
-            async with session.begin():
-                feed_source = await session.get(FeedSource, feed_source_id)
-                if feed_source is None:
-                    raise LookupError(f"feed source {feed_source_id} not found")
-                client = await session.get(Client, feed_source.client_id)
-                client_name = client.name if client is not None else ""
-                retention = feed_source.history_retention_count
+        async with self._session_factory() as session, session.begin():
+            feed_source = await session.get(FeedSource, feed_source_id)
+            if feed_source is None:
+                raise LookupError(f"feed source {feed_source_id} not found")
+            client = await session.get(Client, feed_source.client_id)
+            client_name = client.name if client is not None else ""
+            retention = feed_source.history_retention_count
 
         try:
             channel = channel_metadata_for(feed_source, client_name, self._public_base_url)
@@ -269,21 +268,20 @@ class ExportService:
     async def rollback(
         self, feed_source_id: int, version_number: int, registry: RegistryDocument
     ) -> ExportVersionOut:
-        async with self._session_factory() as session:
-            async with session.begin():
-                feed_source = await session.get(FeedSource, feed_source_id)
-                if feed_source is None:
-                    raise LookupError(f"feed source {feed_source_id} not found")
-                client = await session.get(Client, feed_source.client_id)
-                client_name = client.name if client is not None else ""
-                source_version = (
-                    await session.execute(
-                        select(ExportVersion).where(
-                            ExportVersion.feed_source_id == feed_source_id,
-                            ExportVersion.version_number == version_number,
-                        )
+        async with self._session_factory() as session, session.begin():
+            feed_source = await session.get(FeedSource, feed_source_id)
+            if feed_source is None:
+                raise LookupError(f"feed source {feed_source_id} not found")
+            client = await session.get(Client, feed_source.client_id)
+            client_name = client.name if client is not None else ""
+            source_version = (
+                await session.execute(
+                    select(ExportVersion).where(
+                        ExportVersion.feed_source_id == feed_source_id,
+                        ExportVersion.version_number == version_number,
                     )
-                ).scalar_one_or_none()
+                )
+            ).scalar_one_or_none()
         if source_version is None:
             raise LookupError(f"version {version_number} not found")
         data = self._store.read_version(feed_source_id, version_number)
@@ -298,48 +296,47 @@ class ExportService:
 
         new_number: int | None = None
         try:
-            async with self._session_factory() as session:
-                async with session.begin():
-                    locked = (
-                        await session.execute(
-                            select(FeedSource)
-                            .where(FeedSource.id == feed_source_id)
-                            .with_for_update()
-                        )
-                    ).scalar_one_or_none()
-                    if locked is None:
-                        raise LookupError(f"feed source {feed_source_id} not found")
-                    retention = locked.history_retention_count
-                    latest = (
-                        await session.execute(
-                            select(ExportVersion)
-                            .where(ExportVersion.feed_source_id == feed_source_id)
-                            .order_by(ExportVersion.version_number.desc())
-                            .limit(1)
-                        )
-                    ).scalar_one_or_none()
-                    new_number = (latest.version_number + 1) if latest is not None else 1
-                    self._store.write_version(feed_source_id, new_number, rendered)
-                    run = ExportRun(
-                        feed_source_id=feed_source_id,
-                        ingestion_run_id=None,
-                        status="rollback",
-                        product_count=len(products),
+            async with self._session_factory() as session, session.begin():
+                locked = (
+                    await session.execute(
+                        select(FeedSource)
+                        .where(FeedSource.id == feed_source_id)
+                        .with_for_update()
                     )
-                    session.add(run)
-                    await session.flush()
-                    version = ExportVersion(
-                        feed_source_id=feed_source_id,
-                        export_run_id=run.id,
-                        version_number=new_number,
-                        file_hash=file_hash,
-                        product_count=len(products),
-                        source="rollback",
-                        source_version_id=source_version.id,
+                ).scalar_one_or_none()
+                if locked is None:
+                    raise LookupError(f"feed source {feed_source_id} not found")
+                retention = locked.history_retention_count
+                latest = (
+                    await session.execute(
+                        select(ExportVersion)
+                        .where(ExportVersion.feed_source_id == feed_source_id)
+                        .order_by(ExportVersion.version_number.desc())
+                        .limit(1)
                     )
-                    session.add(version)
-                    await session.flush()
-                    run.export_version_id = version.id
+                ).scalar_one_or_none()
+                new_number = (latest.version_number + 1) if latest is not None else 1
+                self._store.write_version(feed_source_id, new_number, rendered)
+                run = ExportRun(
+                    feed_source_id=feed_source_id,
+                    ingestion_run_id=None,
+                    status="rollback",
+                    product_count=len(products),
+                )
+                session.add(run)
+                await session.flush()
+                version = ExportVersion(
+                    feed_source_id=feed_source_id,
+                    export_run_id=run.id,
+                    version_number=new_number,
+                    file_hash=file_hash,
+                    product_count=len(products),
+                    source="rollback",
+                    source_version_id=source_version.id,
+                )
+                session.add(version)
+                await session.flush()
+                run.export_version_id = version.id
         except Exception:
             if new_number is not None:
                 self._store.delete_version_file(feed_source_id, new_number)
@@ -355,19 +352,18 @@ class ExportService:
 
     async def _mark_run_failed(self, feed_source_id: int, ingestion_run_id: int) -> None:
         try:
-            async with self._session_factory() as session:
-                async with session.begin():
-                    run = (
-                        await session.execute(
-                            select(ExportRun).where(
-                                ExportRun.feed_source_id == feed_source_id,
-                                ExportRun.ingestion_run_id == ingestion_run_id,
-                            )
+            async with self._session_factory() as session, session.begin():
+                run = (
+                    await session.execute(
+                        select(ExportRun).where(
+                            ExportRun.feed_source_id == feed_source_id,
+                            ExportRun.ingestion_run_id == ingestion_run_id,
                         )
-                    ).scalar_one_or_none()
-                    if run is not None:
-                        run.status = "failed"
-                        run.completed_at = self._clock.now()
+                    )
+                ).scalar_one_or_none()
+                if run is not None:
+                    run.status = "failed"
+                    run.completed_at = self._clock.now()
         except Exception:
             logger.exception(
                 "failed to mark export run failed for feed source %s", feed_source_id
@@ -375,31 +371,29 @@ class ExportService:
 
     async def _mark_run_failed_by_id(self, run_id: int) -> None:
         try:
-            async with self._session_factory() as session:
-                async with session.begin():
-                    run = await session.get(ExportRun, run_id)
-                    if run is not None:
-                        run.status = "failed"
-                        run.completed_at = self._clock.now()
+            async with self._session_factory() as session, session.begin():
+                run = await session.get(ExportRun, run_id)
+                if run is not None:
+                    run.status = "failed"
+                    run.completed_at = self._clock.now()
         except Exception:
             logger.exception("failed to mark export run %s failed", run_id)
 
     async def _prune_retention(self, feed_source_id: int, retention: int) -> None:
         numbers: list[int] = []
         try:
-            async with self._session_factory() as session:
-                async with session.begin():
-                    stale = (
-                        await session.execute(
-                            select(ExportVersion)
-                            .where(ExportVersion.feed_source_id == feed_source_id)
-                            .order_by(ExportVersion.version_number.desc())
-                            .offset(max(retention, 1))
-                        )
-                    ).scalars().all()
-                    numbers = [row.version_number for row in stale]
-                    for row in stale:
-                        await session.delete(row)
+            async with self._session_factory() as session, session.begin():
+                stale = (
+                    await session.execute(
+                        select(ExportVersion)
+                        .where(ExportVersion.feed_source_id == feed_source_id)
+                        .order_by(ExportVersion.version_number.desc())
+                        .offset(max(retention, 1))
+                    )
+                ).scalars().all()
+                numbers = [row.version_number for row in stale]
+                for row in stale:
+                    await session.delete(row)
             for number in numbers:
                 self._store.delete_version_file(feed_source_id, number)
         except Exception:

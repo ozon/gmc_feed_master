@@ -5,7 +5,12 @@ from dataclasses import dataclass
 from typing import Any
 from xml.sax.saxutils import escape
 
-from registry.model import AttributeKind, ExportStatus, RegistryAttribute, RegistryDocument
+from registry.model import (
+    AttributeKind,
+    ExportStatus,
+    RegistryAttribute,
+    RegistryDocument,
+)
 
 
 @dataclass(frozen=True)

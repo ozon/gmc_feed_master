@@ -19,15 +19,14 @@ async def reconcile_interrupted_runs(
     session_factory: Callable[[], AsyncSession],
     clock: Clock,
 ) -> int:
-    async with session_factory() as session:
-        async with session.begin():
-            result = await session.execute(
-                update(IngestionRun)
-                .where(IngestionRun.status.in_(("running", "pending")))
-                .values(
-                    status="error",
-                    error_message=INTERRUPTED_MESSAGE,
-                    completed_at=clock.now(),
-                )
+    async with session_factory() as session, session.begin():
+        result = await session.execute(
+            update(IngestionRun)
+            .where(IngestionRun.status.in_(("running", "pending")))
+            .values(
+                status="error",
+                error_message=INTERRUPTED_MESSAGE,
+                completed_at=clock.now(),
             )
-            return result.rowcount
+        )
+        return result.rowcount

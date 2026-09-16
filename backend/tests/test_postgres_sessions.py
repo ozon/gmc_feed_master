@@ -1,16 +1,14 @@
-import os
 from datetime import datetime, timedelta, timezone
 
 import pytest
 import pytest_asyncio
 from sqlalchemy import delete, select
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.clock import TestClock as InjectableTestClock
 from app.models.session import Session
 from app.models.user import User
 from app.persistence.sessions import PostgresSessionStore, _token_hash
-
 
 pytestmark = pytest.mark.asyncio
 
@@ -20,16 +18,14 @@ async def postgres_store(isolated_database_url):
     url = isolated_database_url
     engine = create_async_engine(url, pool_size=2, max_overflow=0)
     factory = async_sessionmaker(engine, expire_on_commit=False)
-    async with factory() as session:
-        async with session.begin():
-            await session.execute(delete(Session))
-            await session.execute(delete(User))
-            session.add(User(username="operator", password_hash="not-used"))
+    async with factory() as session, session.begin():
+        await session.execute(delete(Session))
+        await session.execute(delete(User))
+        session.add(User(username="operator", password_hash="not-used"))
     yield PostgresSessionStore(factory, timedelta(minutes=30), timedelta(hours=12), "test-secret")
-    async with factory() as session:
-        async with session.begin():
-            await session.execute(delete(Session))
-            await session.execute(delete(User))
+    async with factory() as session, session.begin():
+        await session.execute(delete(Session))
+        await session.execute(delete(User))
     await engine.dispose()
 
 

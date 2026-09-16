@@ -8,13 +8,12 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
 from app.main import create_app
-from app.routes.products import _product_field_candidates
 from app.models import Client, ExportRun, ExportVersion, FeedSource, IngestionRun
 from app.models.session import Session
 from app.models.staging import StagingProduct
 from app.models.user import User
 from app.persistence.users import seed_initial_user
-
+from app.routes.products import _product_field_candidates
 
 pytestmark = pytest.mark.asyncio
 
@@ -63,23 +62,22 @@ async def _setup_feed(factory, client, products):
             json={"name": "DE", "source_format": "wide_tsv"},
         )
     ).json()
-    async with factory() as session:
-        async with session.begin():
-            run = IngestionRun(feed_source_id=feed["id"], status="success",
-                               started_at=datetime.now(timezone.utc))
-            session.add(run)
-            await session.flush()
-            for pid, raw, status, *rest in products:
-                processed = rest[0] if rest else None
-                excluded = rest[1] if len(rest) > 1 else False
-                session.add(
-                    StagingProduct(
-                        feed_source_id=feed["id"], ingestion_run_id=run.id,
-                        product_id=pid, content_hash="h", config_hash="c",
-                        status=status, raw_data=raw,
-                        processed_data=processed, excluded=excluded,
-                    )
+    async with factory() as session, session.begin():
+        run = IngestionRun(feed_source_id=feed["id"], status="success",
+                           started_at=datetime.now(timezone.utc))
+        session.add(run)
+        await session.flush()
+        for pid, raw, status, *rest in products:
+            processed = rest[0] if rest else None
+            excluded = rest[1] if len(rest) > 1 else False
+            session.add(
+                StagingProduct(
+                    feed_source_id=feed["id"], ingestion_run_id=run.id,
+                    product_id=pid, content_hash="h", config_hash="c",
+                    status=status, raw_data=raw,
+                    processed_data=processed, excluded=excluded,
                 )
+            )
     return feed["id"]
 
 

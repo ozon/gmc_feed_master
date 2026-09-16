@@ -14,7 +14,6 @@ from app.models.staging import StagingProduct
 from app.models.user import User
 from app.persistence.users import seed_initial_user
 
-
 pytestmark = pytest.mark.asyncio
 
 
@@ -66,37 +65,35 @@ async def _make_feed(factory, client, name):
 
 
 async def _add_staging(factory, feed_id, product_id, status="active", excluded=False):
-    async with factory() as session:
-        async with session.begin():
-            run = IngestionRun(feed_source_id=feed_id, status="success",
-                               started_at=datetime.now(timezone.utc))
-            session.add(run)
-            await session.flush()
-            session.add(
-                StagingProduct(
-                    feed_source_id=feed_id,
-                    ingestion_run_id=run.id,
-                    product_id=product_id,
-                    content_hash="h",
-                    config_hash="c",
-                    status=status,
-                    excluded=excluded,
-                    raw_data={"id": product_id, "title": f"Title {product_id}"},
-                )
+    async with factory() as session, session.begin():
+        run = IngestionRun(feed_source_id=feed_id, status="success",
+                           started_at=datetime.now(timezone.utc))
+        session.add(run)
+        await session.flush()
+        session.add(
+            StagingProduct(
+                feed_source_id=feed_id,
+                ingestion_run_id=run.id,
+                product_id=product_id,
+                content_hash="h",
+                config_hash="c",
+                status=status,
+                excluded=excluded,
+                raw_data={"id": product_id, "title": f"Title {product_id}"},
             )
+        )
 
 
 async def _add_export_run(factory, feed_id, status, product_count=1):
-    async with factory() as session:
-        async with session.begin():
-            session.add(
-                ExportRun(
-                    feed_source_id=feed_id,
-                    status=status,
-                    product_count=product_count,
-                    started_at=datetime.now(timezone.utc),
-                )
+    async with factory() as session, session.begin():
+        session.add(
+            ExportRun(
+                feed_source_id=feed_id,
+                status=status,
+                product_count=product_count,
+                started_at=datetime.now(timezone.utc),
             )
+        )
 
 
 async def _add_run(factory, feed_id, status, days_ago=0, processed=10):

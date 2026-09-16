@@ -1,6 +1,6 @@
-from app.auth import SESSION_COOKIE_NAME
 from fastapi.testclient import TestClient
 
+from app.auth import SESSION_COOKIE_NAME
 
 VALID_CREDENTIALS = {"username": "operator", "password": "correct"}
 

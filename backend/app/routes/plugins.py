@@ -98,7 +98,7 @@ async def _resolve_target(
 
 
 def _owner_filters(
-    model: type[PluginConfig] | type[PluginData],
+    model: type[PluginConfig | PluginData],
     scope: str,
     client_id: int | None,
     feed_source_id: int | None,
@@ -250,7 +250,7 @@ async def _get_payload(
     plugin_id: str,
     client_id: int | None,
     feed_source_id: int | None,
-    model: type[PluginConfig] | type[PluginData],
+    model: type[PluginConfig | PluginData],
     column_name: str,
     scope_kind: str,
     db_session: AsyncSession | None,
@@ -323,7 +323,7 @@ async def _put_payload(
     payload: dict[str, Any],
     client_id: int | None,
     feed_source_id: int | None,
-    model: type[PluginConfig] | type[PluginData],
+    model: type[PluginConfig | PluginData],
     column_name: str,
     scope_kind: str,
     schema_key: str,

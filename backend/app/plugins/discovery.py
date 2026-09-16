@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from fastapi import APIRouter, FastAPI
 from sqlalchemy import select
@@ -130,9 +131,8 @@ async def discover_and_mount(app: FastAPI) -> None:
 
     factory = getattr(app.state, "db_session_factory", None)
     if factory is not None and candidates:
-        async with factory() as session:
-            async with session.begin():
-                await register_candidates(session, candidates)
+        async with factory() as session, session.begin():
+            await register_candidates(session, candidates)
 
     registry: dict[str, Any] = app.state.plugin_registry
     for candidate in candidates:

@@ -2,11 +2,11 @@ import asyncio
 from pathlib import Path
 
 import pytest
-from alembic import command
 from alembic.config import Config
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from alembic import command
 from app.models.global_setting import GlobalSetting
 from app.persistence.users import seed_initial_user
 
