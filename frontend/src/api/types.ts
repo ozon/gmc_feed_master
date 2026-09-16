@@ -322,14 +322,15 @@ export type AiProvider = {
 
 export type AiUsageGroupBy = 'client' | 'feed_source' | 'task_type' | 'day';
 
-export type AiUsageParams = {
-  group_by: AiUsageGroupBy;
+export type AiUsageFilterParams = {
   client_id?: number;
   feed_source_id?: number;
   task_type?: string;
   from?: string;
   to?: string;
 };
+
+export type AiUsageParams = AiUsageFilterParams & { group_by: AiUsageGroupBy };
 
 export type AiSettings = {
   ai_cache_type: 'local' | 'disk';
@@ -373,6 +374,15 @@ export type AiUsageRow = {
   prompt_tokens: number;
   completion_tokens: number;
   cost_usd: string | null;
+};
+
+export type AiUsageTimeseriesRow = {
+  group_key: string;
+  calls: number;
+  cache_hits: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  cost_usd: string | number;
 };
 
 export type AiTestResult = {

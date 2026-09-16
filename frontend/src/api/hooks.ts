@@ -14,9 +14,11 @@ import type {
   AiProvider,
   AiSettings,
   AiTestResult,
+  AiUsageFilterParams,
   AiUsageParams,
   AiUsageRow,
   AiUsageSummary,
+  AiUsageTimeseriesRow,
   ChatMessage,
   ClientRow,
   ClientSummary,
@@ -852,6 +854,31 @@ export function useAiUsage(params: AiUsageParams) {
   return useQuery({
     queryKey: queryKeys.ai.usage(params),
     queryFn: () => apiGet<{ rows: AiUsageRow[] }>(`/admin/ai/usage?${search}`),
+  });
+}
+
+export function useAiUsageSummary(params: AiUsageFilterParams) {
+  const search = new URLSearchParams(
+    Object.entries(params)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => [k, String(v)]),
+  ).toString();
+  return useQuery({
+    queryKey: queryKeys.ai.usageSummary(params),
+    queryFn: () => apiGet<AiUsageSummary>(`/admin/ai/usage/summary?${search}`),
+  });
+}
+
+export function useAiUsageTimeseries(params: AiUsageFilterParams) {
+  const search = new URLSearchParams(
+    Object.entries(params)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => [k, String(v)]),
+  ).toString();
+  return useQuery({
+    queryKey: queryKeys.ai.usageTimeseries(params),
+    queryFn: () =>
+      apiGet<{ rows: AiUsageTimeseriesRow[] }>(`/admin/ai/usage/timeseries?${search}`),
   });
 }
 
