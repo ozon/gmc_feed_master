@@ -49,6 +49,13 @@ All routes require the admin role. `api_key` is never included in any response.
 - `DELETE /admin/ai/providers/{id}` (204) — delete config; runs read config at call time, so deletion just makes the next AI call fall back
 - `POST /admin/ai/providers/{id}/test` — live probe completion (`"Reply with OK"`); returns `{"status": "ok", latency_ms, prompt_tokens, completion_tokens}` or `{"status": "error", "error_code"}`
 - `GET /admin/ai/usage?group_by=client|feed_source|task_type|day&client_id=&feed_source_id=&task_type=&from=&to=` — aggregated `{"rows": [{group_key, calls, cache_hits, prompt_tokens, completion_tokens, cost_usd}]}`; 422 on other group_by values
+- `GET /admin/ai/usage/summary?client_id=&feed_source_id=&task_type=&from=&to=` — totals `{calls, cache_hits, hit_ratio, prompt_tokens, completion_tokens, cost_usd, saved_prompt_tokens, saved_completion_tokens, cost_saved_usd}` (savings are the cache-hit portion)
+- `GET /admin/ai/usage/timeseries?from=&to=` — per-day aggregated rows (`group_by=day` shape) for charting
+- `GET /admin/ai/settings` — AI runtime settings; seeds defaults on first read. Returns the DB settings plus `redis_from_env` and `effective_cache_backend` (never the Redis credentials)
+- `PUT /admin/ai/settings` — same body minus the derived fields; persists then **hot-applies** (rebuilds the LiteLLM cache and Router on the running service). A build failure returns 422 and the previous config stays active (the DB write rolls back)
+- `GET /admin/ai/cache` — `{effective_backend, redis_from_env, healthy, namespace, entries}`; health is a fail-open set/get probe; `entries` is `null` for redis (needs a SCAN)
+- `GET /admin/ai/cache/stats?from=&to=` — cache-hit ratio and saved tokens/cost from `ai_usage_logs`
+- `POST /admin/ai/cache/clear` — `{namespace?}` clears one task-type namespace (by cache-key prefix) or all AI namespaces; returns `{removed}`
 
 ### Prompt Templates (admin only)
 

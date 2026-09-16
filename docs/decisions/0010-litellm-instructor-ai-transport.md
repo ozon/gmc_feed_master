@@ -80,6 +80,7 @@ flow must all keep working.
   promoted to `backend/registry/` later.
 
 ## Consequences
+- **Manual cache ops must opt in.** With `CacheMode.default_off`, LiteLLM's `async_get_cache`/`async_add_cache` only act when the request carries `cache={"use-cache": True}`; the initial implementation omitted it, making the cache a silent no-op until phase C fixed it. The completion-level `caching=True`/`Router.cache_responses` path is intentionally not used (it would cache raw, unvalidated completions); the LLM call receives no cache-control.
 - `litellm` and `instructor` are pinned exact dependencies (`litellm==1.101.0`,
   `instructor==1.17.0`) and pull a large transitive tree, including `openai`
   (used only transitively by LiteLLM — never imported by application code).

@@ -1360,3 +1360,16 @@ Inline code review of the cycle found one critical and one important issue; both
 - **Suggestion values are strings**, matching the plugin manifest's `data_schema` (`additionalProperties: {type: string}`).
 
 **Rationale:** Keeping generation in a step satisfies the spec while the review gate preserves the Z3-era trust line (AI never writes feed output unreviewed). Reusing the Z4 store means the Enrichment UI needs no change — step-generated suggestions appear in the existing review surface. The engine lives in a focused module (`app/pipeline/enrichment.py`) so budget/isolation/store logic is unit-testable without pipeline plumbing.
+
+### 2026-09-16 — Admin AI settings, cache telemetry, and the validated-only caching fix (phase C)
+
+**Topic:** Surface the LiteLLM cache and router knobs in the admin area with hot-apply, add cache/usage telemetry, and fix a Phase A defect that made the cache a no-op.
+
+**Decision:**
+- **The cache was dead; now it is not.** LiteLLM's manual `async_get_cache`/`async_add_cache` only act when the request carries `cache={"use-cache": True}` (verified in `Cache.should_use_cache`); under `CacheMode.default_off` they silently no-op. `NativeCache.request_kwargs` now adds the flag, and `AiService.run_task` no longer passes cache-control to the LLM call — so writes stay validated-only (the completion-level `caching=True`/`Router.cache_responses` path is deliberately unused, as it would cache raw completions). Phase A's tests missed this because they mocked `_cache`; a real local round-trip test now guards it.
+- **`ai_settings` are DB-backed and hot-applied.** `GET/PUT /admin/ai/settings` edits the `global_settings` AI columns; `PUT` persists, then `AiService.apply_settings` rebuilds the LiteLLM cache + Router and assigns them only on success. A build failure raises 422 and the DB transaction rolls back, leaving the previous config active.
+- **Env holds only connection facts.** Redis is `REDIS_URL` (parsed) or discrete `REDIS_HOST`/`REDIS_PORT`/`REDIS_PASSWORD`/`REDIS_SSL`; `REDIS_URL` wins, `rediss://` sets TLS. `AI_CACHE_DIR` is the disk path. Model ids/keys stay in `ai_provider_configs`.
+- **Cache status/clear and usage telemetry.** `NativeCache.status()` probes health with a fail-open set/get (a `Cache.ping()` crashes on the local backend and was avoided) and reports entries for local/disk (`null` for redis, which would need a SCAN); `clear(namespace)` deletes by cache-key prefix (`local` dict / disk `iterkeys` / redis `SCAN`). `GET /admin/ai/cache[/stats]` and `POST /admin/ai/cache/clear` expose it; `summarize_usage` adds saved tokens/cost (the cache-hit share) and `GET /admin/ai/usage/{summary,timeseries}`.
+- **Opt-in redis service.** `docker-compose.yml` gains `redis` under `profiles: ["ai-cache"]`; `redis==8.1.0` and `diskcache==5.6.3` are pinned dependencies (`diskcache` is required for the disk backend — the `litellm[caching]` extra).
+
+**Rationale:** A cache that silently never hits is worse than no cache: it advertises savings while every call costs money. Fixing that was a prerequisite for any cache telemetry to be meaningful, so it was folded into this phase rather than deferred. Hot-apply keeps the admin UI honest (no "restart required") at the cost of a validate-then-swap path, which is small because the Router and cache are already rebuilt lazily by `AiService`.

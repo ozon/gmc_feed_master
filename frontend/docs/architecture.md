@@ -118,7 +118,7 @@ export function useSavePipeline(feedSourceId) {
     │   ├── /admin/users                 → AdminPage (Users tab)
     │   ├── /admin/clients               → AdminPage (Clients tab)
     │   ├── /admin/settings              → AdminPage (Settings tab)
-    │   └── /admin/ai                    → AdminPage (AI tab: provider configs + prompt library + usage view)
+    │   └── /admin/ai                    → AdminPage (AI tab: providers + settings + prompt library + usage)
     ├── /logs                               → SystemLogsPage (placeholder)
     ├── /rules                              → GlobalRulesPage (placeholder)
     └── *                                 → NotFoundPage
@@ -132,7 +132,7 @@ export function useSavePipeline(feedSourceId) {
 ## Admin Area & Role-aware UI
 
 - Session shape (`GET /auth/me`): `{username, role: 'admin' | 'user', client_ids: number[] | null}` (`null` = admin/unrestricted). Server state via `useSession` only (ADR-0001).
-- Single "Admin" NavLink in `AppShell` renders only for admins and links to `/admin`; `AdminPage` is one page with URL-driven Mantine tabs (Users, Clients, Settings; `keepMounted={false}`, so only the active tab's queries fire). The sub-paths `/admin/users|clients|settings` preselect the tab. Dashboard shows a "Manage clients" link for admins instead of inline client CRUD.
+- Single "Admin" NavLink in `AppShell` renders only for admins and links to `/admin`; `AdminPage` is one page with URL-driven Mantine tabs (Users, Clients, Settings; `keepMounted={false}`, so only the active tab's queries fire). The AI tab is sectioned (Providers, Settings, Prompt Library, Usage) via a SegmentedControl; **Settings** (`AiSettingsPage`) edits the hot-applied AI runtime knobs and shows cache status/stats/clear, with the backend selector disabled when Redis is provided by the environment. The sub-paths `/admin/users|clients|settings` preselect the tab. Dashboard shows a "Manage clients" link for admins instead of inline client CRUD.
 - `AdminClientsPage` — Clients tab panel: client CRUD moved here from the dashboard (now read-only listing for everyone); the dashboard's `ClientModal`/`DeleteClientModal` components are reused there.
 - `AdminUsersPage` — Users tab panel: user table (role badge, assigned-client count, active switch), create/edit modal with role select + client multi-select, reset-password modal.
 - `AdminSettingsPage` — Settings tab panel: editable retention days (`/admin/settings`), scheduler job overview (`/admin/scheduler`), plugin enable/disable toggles (reuses `useUpdatePluginEnabled`).

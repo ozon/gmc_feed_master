@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.10+, FastAPI, SQLAlchemy 2.0 async, PostgreSQL, `litellm==1.101.0`, `instructor==1.17.0`, `redis==8.1.0`, `diskcache==5.6.3`; React 19 + Mantine + TanStack Query.
 
-**Status:** Phase C of `docs/superpowers/specs/2026-09-16-litellm-instructor-ai-core-design.md` (A merged `bef098d`, B merged `5d4d28f`).
+**Status:** Phase C of `docs/superpowers/specs/2026-09-16-litellm-instructor-ai-core-design.md` (A merged `bef098d`, B merged `5d4d28f`); complete 2026-09-16 on branch `ai-settings-phase-c`. Execution notes: the health probe initially polluted the entries count, so `_healthy` now clears its `__health__` namespace in a `finally`; `parse_redis_url`'s return shape was left unchanged so Phase A's exact-dict tests stay valid (`rediss://` TLS is derived in `_build`). The UsagePage KPI row from the spec's frontend list was not implemented (no code was specified for it; the `/admin/ai/usage/summary` endpoint it would consume is live). Gates at close: backend 1314 passed, ruff 490/490 (zero new), mypy exit-0; frontend 541 passed + typecheck clean.
 
 ## Global Constraints
 

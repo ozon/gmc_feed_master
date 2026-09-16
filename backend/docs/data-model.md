@@ -58,10 +58,19 @@ Unique `(user_id, client_id)`. Many-to-many: a `user` sees only their assigned c
 | `staging_history_retention_days` | Integer | Default 90 |
 | `ingestion_run_retention_days` | Integer | Default 90 |
 | `ai_usage_retention_days` | Integer | Default 90 |
-| `ai_cache_retention_days` | Integer | Default 90 |
+| `ai_cache_retention_days` | Integer | Default 90; **unused** (the DB result cache is retired) — dropped in the cleanup phase |
+| `ai_cache_type` | String(20) | `local` or `disk` (redis is selected by env) |
+| `ai_cache_namespace` | String(100) | Cache-key namespace prefix, default `gmc-ai` |
+| `ai_cache_ttl_taxonomy_s` | Integer | Taxonomy-task cache TTL, default 2592000 |
+| `ai_cache_ttl_content_s` | Integer | Content-task cache TTL, default 604800 |
+| `ai_router_timeout_s` | Integer | LiteLLM Router per-request timeout, default 30 |
+| `ai_router_num_retries` | Integer | Default 2 |
+| `ai_router_allowed_fails` | Integer | Default 3 |
+| `ai_router_cooldown_s` | Integer | Default 30 |
+| `ai_instructor_max_retries` | Integer | Default 2 |
 | `updated_at` | DateTime | |
 
-Row is seeded lazily on first `GET /admin/settings` (the migration does not insert it). The nightly purge jobs read these values; fallback is 90 days per column while no row exists. Editable via `PUT /admin/settings` (admin only).
+Row is seeded lazily on first `GET /admin/settings` (the migration does not insert it). The nightly purge jobs read these values; fallback is 90 days per column while no row exists. Editable via `PUT /admin/settings` (retention) and `GET/PUT /admin/ai/settings` (the `ai_*` columns, hot-applied to the running AI service).
 
 ### Client
 | Column | Type | Notes |
