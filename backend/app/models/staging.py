@@ -11,6 +11,7 @@ from sqlalchemy import (
     UniqueConstraint,
     false,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -20,7 +21,16 @@ from app.db.base import Base
 
 class StagingProduct(Base):
     __tablename__ = "staging_products"
-    __table_args__ = (UniqueConstraint("feed_source_id", "product_id", name="uq_staging_products_source_product"), Index("ix_staging_products_feed_source_id", "feed_source_id"), Index("ix_staging_products_ingestion_run_id", "ingestion_run_id"))
+    __table_args__ = (
+        UniqueConstraint("feed_source_id", "product_id", name="uq_staging_products_source_product"),
+        Index("ix_staging_products_feed_source_id", "feed_source_id"),
+        Index("ix_staging_products_ingestion_run_id", "ingestion_run_id"),
+        Index(
+            "ix_staging_products_removed_purge",
+            "removed_at",
+            postgresql_where=text("status = 'removed'"),
+        ),
+    )
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     feed_source_id: Mapped[int] = mapped_column(ForeignKey("feed_sources.id", ondelete="RESTRICT"), nullable=False)
     ingestion_run_id: Mapped[int] = mapped_column(ForeignKey("ingestion_runs.id", ondelete="RESTRICT"), nullable=False)

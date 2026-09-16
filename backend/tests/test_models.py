@@ -119,9 +119,8 @@ def test_m8_feed_source_columns():
     feed = Base.metadata.tables["feed_sources"]
     assert {"feed_type", "export_token", "history_retention_count"} <= set(feed.c.keys())
     assert any(
-        {c.name for c in constraint.columns} == {"export_token"}
-        for constraint in feed.constraints
-        if isinstance(constraint, UniqueConstraint)
+        index.unique and {c.name for c in index.columns} == {"export_token"}
+        for index in feed.indexes
     )
 
 

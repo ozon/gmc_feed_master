@@ -16,7 +16,10 @@ if TYPE_CHECKING:
 
 class FeedSource(Base):
     __tablename__ = "feed_sources"
-    __table_args__ = (Index("ix_feed_sources_client_id", "client_id"),)
+    __table_args__ = (
+        Index("ix_feed_sources_client_id", "client_id"),
+        Index("uq_feed_sources_export_token", "export_token", unique=True),
+    )
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     client_id: Mapped[int] = mapped_column(ForeignKey("clients.id", ondelete="RESTRICT"), nullable=False)
     active_pipeline_id: Mapped[int | None] = mapped_column(
@@ -29,7 +32,7 @@ class FeedSource(Base):
     target_language: Mapped[str | None] = mapped_column(String(10), nullable=True)
     currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     feed_type: Mapped[str] = mapped_column(String(20), nullable=False, default="primary", server_default="primary")
-    export_token: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, default=lambda: secrets.token_urlsafe(32))
+    export_token: Mapped[str] = mapped_column(String(64), nullable=False, default=lambda: secrets.token_urlsafe(32))
     history_retention_count: Mapped[int] = mapped_column(Integer, nullable=False, default=30, server_default="30")
     source_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     volume_drop_threshold_pct: Mapped[int] = mapped_column(Integer, nullable=False, default=20, server_default="20")
