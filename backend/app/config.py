@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     plugins_dir: str = str(Path(__file__).resolve().parents[2] / "plugins")
     export_dir: str = str(DEFAULT_EXPORT_DIR)
     public_base_url: str = "http://localhost:8000"
+    redis_url: str | None = None
+    ai_cache_dir: str = str(Path(__file__).resolve().parents[2] / ".cache" / "ai")
 
     @property
     def async_database_url(self) -> str:
