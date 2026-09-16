@@ -32,6 +32,7 @@ const summary = {
           last_export_status: null,
           last_run_at: null,
           last_run_status: null,
+          quality: { critical: 0, warning: 0, info: 0 },
         },
         {
           id: 3,
@@ -43,6 +44,7 @@ const summary = {
           last_export_status: null,
           last_run_at: null,
           last_run_status: null,
+          quality: { critical: 0, warning: 0, info: 0 },
         },
       ],
     },
