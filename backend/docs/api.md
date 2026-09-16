@@ -191,8 +191,9 @@ Plugin routes must not use these prefixes. Example: Category plugin uses `/plugi
   - 404 if token not found or file missing
 
 ## Dry Run
-- `POST /feed-sources/{id}/dry-run` — execute pipeline without export, returns findings preview
+- `POST /feed-sources/{id}/dry-run` — execute pipeline without export, returns findings preview plus AI enrichment suggestions
   `{limit: number}` — max products to process
+  Response includes `ai_suggestions: {product_id: {field: value}}` when `configuration.ai_enrichment` is enabled (generated but **not persisted**; the normal run does persist into the Enrichment review store)
 
 ## Error Responses
 - `401` — invalid/missing session, or deactivated user

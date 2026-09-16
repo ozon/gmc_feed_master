@@ -18,7 +18,7 @@ uv run mypy .                             # gate: exit-0, hard (flipped 2026-09-
 
 ## Key conventions
 - **Migrations only via Alembic** — never `create_all`. `uv run alembic revision --autogenerate -m "msg"`
-- **Pipeline steps** in `app/pipeline/steps.py` — fixed order: `IngestStep` → `MappingStep` → `StagingStep` → `PluginStep` → `QualityCheckStep` → `ExportStep`
+- **Pipeline steps** in `app/pipeline/steps.py` — fixed order: `IngestStep` → `MappingStep` → `StagingStep` → `PluginStep` → `EnrichmentStep` (opt-in) → `QualityCheckStep` → `ExportStep`
 - **Delta mechanics** in `app/staging/delta.py` — `content_hash` (canonical product) + `config_hash` (pipeline + resolved plugin config/data + versions)
 - **Three-tier scope merge** in `app/staging/config_resolver.py` — `global` → `client` → `feed_source` (per-key dict merge)
 - **Plugin runtime contract** in `app/plugins/runtime.py` — `RunContext` with read-only `original_product`
