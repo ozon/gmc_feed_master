@@ -4,15 +4,16 @@ Revision ID: 2e9e790582c3
 Revises: 642b864e0593
 Create Date: 2026-09-16 11:56:26.461642
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 
-revision: str = '2e9e790582c3'
-down_revision: Union[str, Sequence[str], None] = '642b864e0593'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+from alembic import op
+
+revision: str = "2e9e790582c3"
+down_revision: str | Sequence[str] | None = "642b864e0593"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
