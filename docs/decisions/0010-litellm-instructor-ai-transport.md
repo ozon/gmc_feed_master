@@ -47,12 +47,14 @@ flow must all keep working.
 4. **`tier` replaces `is_default`.** Enabled rows join their tier's model
    group; the Router load-balances within a tier. Every task (including chat
    and the provider probe) starts on `bulk` with `precision` as fallback.
-5. **Additive migration in phase A.** The m15 migration adds `tier`, the
-   `global_settings` AI columns, and the `ai_usage_logs` telemetry columns. The
-   physical drops (`is_default`, `ai_result_cache`, `ai_cache_retention_days`)
-   and deletion of the bespoke modules (`openai_compat.py`, `cache.py`,
-   `resilience.py`, the `AIProvider` Protocol) move to the cleanup phase, so
-   every phase-A commit stays green while the old code is still referenced.
+5. **Additive migration in phase A, destructive cleanup in phase D.** The m15
+   migration added `tier`, the `global_settings` AI columns, and the
+   `ai_usage_logs` telemetry columns, so every phase-A commit stayed green while
+   the old code was still referenced. Phase D then deleted the bespoke modules
+   (`openai_compat.py`, `cache.py`, `resilience.py`, the `AIProvider` Protocol)
+   and migration `m16` (`b1a2c3d4e5f6`) dropped `is_default`, `ai_result_cache`,
+   and `ai_cache_retention_days` — applied only after Phases A–C removed every
+   reference.
 6. **Model identifiers and API keys stay in `ai_provider_configs` (DB),
    admin-editable.** They are not environment variables. Only deployment-level
    values that are not meaningful per instance live in `.env`: `REDIS_URL` and

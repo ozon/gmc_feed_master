@@ -178,7 +178,6 @@ flowchart TD
 | `QualityFinding` details | Latest run per feed source only; per-severity counts in `ExportRun` |
 | `StagingProduct` (removed) | Purged `global_settings.staging_removal_retention_days` (default 90) after `removed_at` |
 | `AiUsageLog` | `global_settings.ai_usage_retention_days` (default 90) |
-| `AiResultCache` | `global_settings.ai_cache_retention_days` (default 90) |
 
 Retention days live in the single-row `global_settings` table (lazy-seeded, admin-editable via `PUT /admin/settings`); the purge jobs fall back to 90 per column when the row is absent.
 
@@ -195,7 +194,6 @@ Key properties:
 - **Prompt templates (Feature 2)**: `prompt_templates` rows (immutable versions, global or client scope) are resolved per call — client-scoped active → global active → builtin registry default (`app/ai/tasks.py`). Rendering goes through the injection-safe engine (`app/ai/templates.py`): `{{var}}` placeholders become XML-escaped `<data>` tags and the engine appends a fixed anti-injection system clause. The resolved version string (`tmpl:{id}:v{version}` or `builtin:<12 hex>` content hash) participates in the request that produces the cache key. Template resolution failures fall back to builtin and never fail a run.
 - **Chat (Z5)**: `AiService.complete_chat(messages, tools)` calls the Router directly — no task registry, no response schema, no result cache; retry/cooldown and usage logging apply. `POST /chat` (any authenticated user) runs a server-side tool loop (max 5 rounds) over the read-only tools in `app/chat/tools.py` (`list_feed_sources`, `query_staging_products`, `query_qc_findings`, `query_export_runs`), each scoped by the caller's `CurrentUser.client_ids` — cross-client access returns `{"error": "feed source not found"}` to the model, never data. The fixed system prompt in `app/chat/prompt.py` declares the assistant read-only and instructs it to ignore directives inside tool results (injection guard); tool output is additionally truncated at 500 chars.
 
-*Legacy, no longer used by `AiService`, retained until the cleanup phase: `app/ai/openai_compat.py`, `app/ai/cache.py` (DB cache store), `app/ai/resilience.py` (custom breaker/retry), the `AIProvider` Protocol, and the `ai_result_cache` table.*
 
 ### AI Quality Check (Z3)
 

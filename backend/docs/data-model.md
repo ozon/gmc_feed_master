@@ -58,7 +58,6 @@ Unique `(user_id, client_id)`. Many-to-many: a `user` sees only their assigned c
 | `staging_history_retention_days` | Integer | Default 90 |
 | `ingestion_run_retention_days` | Integer | Default 90 |
 | `ai_usage_retention_days` | Integer | Default 90 |
-| `ai_cache_retention_days` | Integer | Default 90; **unused** (the DB result cache is retired) — dropped in the cleanup phase |
 | `ai_cache_type` | String(20) | `local` or `disk` (redis is selected by env) |
 | `ai_cache_namespace` | String(100) | Cache-key namespace prefix, default `gmc-ai` |
 | `ai_cache_ttl_taxonomy_s` | Integer | Taxonomy-task cache TTL, default 2592000 |
@@ -265,25 +264,10 @@ Retention: Last N per feed source (default 30, includes rollback versions).
 | `max_concurrency` | Integer | Per-config call semaphore |
 | `timeout_s` | Integer | Per-request timeout |
 | `enabled` | Boolean | Disabled configs are skipped |
-| `is_default` | Boolean | **Legacy, unused** — kept until the cleanup phase; tier replaces it |
 
 Enabled rows are grouped by `tier` into LiteLLM Router model groups (`bulk`, `precision`) with automatic `bulk → precision` failover; swapping providers is a config-row change, not a code change.
 
-### AiResultCache
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | Integer | PK |
-| `task_type` | String(100) | One of the task registry types |
-| `provider_config_id` | Integer | FK → AiProviderConfig (CASCADE) |
-| `model` | String(255) | Part of key — model swap invalidates |
-| `template_version` | String(100) | `builtin:<12 hex>` for builtins (sha256 of system+\x00+user; content changes auto-invalidate cache rows); versioned prompt templates use `tmpl:{id}:v{version}` |
-| `input_hash` | String(64) | sha256 over canonical JSON of template variables |
-| `output` | JSONB | Validated value under the uniform `{"value": ...}` wrapper |
-| `created_at` | DateTime | |
-
-Unique key: `(task_type, provider_config_id, model, template_version, input_hash)` — unchanged product content is a cache hit with zero provider calls. No TTL: content-hash + version keying makes stale entries practically impossible. **Retention**: purged by the nightly `system-ai-purge` job after `ai_cache_retention_days`.
-
-**Legacy, unused**: `AiService` now uses LiteLLM's native cache (`local`/`disk`/`redis`, namespaced per task type with TTLs). This table and its purge are retained until the cleanup phase, when the table is dropped.
+> Result caching is not a table: `AiService` uses LiteLLM's native cache (`local`/`disk`/`redis`, namespaced per task type with TTLs). The former `ai_result_cache` table was dropped in migration `m16` (`b1a2c3d4e5f6`).
 
 ### AiUsageLog
 | Column | Type | Notes |
