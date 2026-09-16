@@ -409,6 +409,17 @@
 
 **Answered 2026-09-09:** owner picked the Category plugin as the next milestone (M12; spec `docs/superpowers/specs/2026-09-09-category-plugin-design.md`, plan `docs/superpowers/plans/2026-09-09-category-plugin.md`, cycle executed on branch `m12-category`). Supplemental feeds remain the open M13+ candidate.
 
+### 8.2 [ ] Operator: amend `gmc-feed-engine-spec.md` for two spec conflicts [P1, operator-owned]
+
+**Why:** the 2026-09-08 docs-consistency review found two conflicts that only the operator can resolve, because the binding rule is *fix the doc, never the spec*. Both were re-verified as still present on 2026-09-16 (M14).
+
+1. **D2 — labelizer feed_source scope.** §10 (line 285) says Labelizer and Category "deliberately stay `[global, client]` only for MVP — no per-feed-source (per-market) granularity", while §2 (line 43) and §5.9 (line 197) mandate client + feed_source per-rule value lists with the three-tier merge, and the code implements that three-tier merge. §10's bullet is stale; §5.9 describes the shipped behaviour.
+2. **D3 — access model.** §2 (line 37) still says "Single user (operator only), no client portal, no role model", while two-role RBAC (`admin` / `user`) with client assignment shipped per ADR-0009, including `/admin/*` routes, `user_clients`, and 404-hiding scope checks.
+
+**Acceptance:** §10's scope bullet and §2's access row are amended so the spec is internally consistent and matches what shipped; no downstream doc has to be reverted. Until then, M14 deliberately leaves every labelizer-scope and auth/RBAC doc statement untouched, and the findings stay marked `OPEN — operator-owned` in `docs/reports/2026-09-08-06-docs-consistency.md`.
+
+**Reference:** `docs/reports/2026-09-08-06-docs-consistency.md` §"Operator flags".
+
 ---
 
 ## Section 9 — Labelizer polish cycle leftovers (2026-09-07 final-review triage, all BACKLOG)
