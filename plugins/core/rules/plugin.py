@@ -2,8 +2,35 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
+
+logger = logging.getLogger(__name__)
+
+_PLACEHOLDER_RE = re.compile(r"\{\{\s*([a-z_][a-z0-9_]*)\s*\}\}")
+_IDENT_RE = re.compile(r"[a-z_][a-z0-9_]*")
+
+STRUCTURED_AI_TASKS: tuple[str, ...] = (
+    "title_optimization",
+    "description_optimization",
+    "category_classification",
+    "attribute_enrichment",
+)
+GENERIC_AI_TASK = "rule_value"
+
+# Local mirror of app/pipeline/enrichment.py::TASK_FIELDS — plugins do not import
+# app code. Locked by test_ai_output_fields_mirror_task_fields.
+_AI_OUTPUT_FIELDS: dict[str, tuple[str, ...]] = {
+    "title_optimization": ("title",),
+    "description_optimization": ("description",),
+    "category_classification": ("google_product_category",),
+    "attribute_enrichment": (
+        "color", "size", "material", "gtin", "gender", "age_group",
+        "custom_label_0", "custom_label_1", "custom_label_2",
+        "custom_label_3", "custom_label_4",
+    ),
+}
 
 
 class ConditionError(ValueError):
@@ -180,6 +207,7 @@ _ACTION_REQUIRED_KEYS: dict[str, tuple[str, ...]] = {
     "prepend": ("field", "value"),
     "remove": ("field",),
     "clear": ("field",),
+    "ai": (),
 }
 
 
@@ -208,6 +236,8 @@ def apply_action(product: dict[str, Any], action: dict[str, Any]) -> dict[str, A
     op = action.get("op")
     if op not in _ACTION_REQUIRED_KEYS:
         raise ActionError(f"unknown action op {op!r}")
+    if op == "ai":
+        return dict(product)
     field = action.get("field")
     if not isinstance(field, str) or not field:
         raise ActionError(f"action op {op!r} requires a non-empty field")
@@ -320,6 +350,69 @@ def _apply_indexed_action(
 # ---------------------------------------------------------------------------
 
 
+def _ai_output_fields(action: dict[str, Any]) -> tuple[str, ...]:
+    if action.get("promptSource") == "custom":
+        field = action.get("field")
+        return (field,) if isinstance(field, str) and field else ()
+    return _AI_OUTPUT_FIELDS.get(str(action.get("taskType")), ())
+
+
+def _validate_ai_action(action: dict[str, Any], path: str) -> None:
+    source = action.get("promptSource")
+    if source not in ("template", "custom"):
+        raise ValueError(f"{path}: op 'ai' requires promptSource 'template' or 'custom'")
+    if source == "template":
+        if action.get("taskType") not in STRUCTURED_AI_TASKS:
+            raise ValueError(
+                f"{path}: op 'ai' template requires taskType in {STRUCTURED_AI_TASKS}"
+            )
+        template_id = action.get("templateId")
+        if isinstance(template_id, bool) or not isinstance(template_id, int):
+            raise ValueError(f"{path}: op 'ai' template requires an integer templateId")
+        return
+    if action.get("taskType") != GENERIC_AI_TASK:
+        raise ValueError(
+            f"{path}: op 'ai' custom requires taskType {GENERIC_AI_TASK!r}"
+        )
+    for key in ("system", "user"):
+        if not isinstance(action.get(key), str) or not action.get(key):
+            raise ValueError(f"{path}: op 'ai' custom requires a non-empty {key}")
+    variables = action.get("variables")
+    if (
+        not isinstance(variables, list)
+        or not variables
+        or not all(isinstance(v, str) and v for v in variables)
+    ):
+        raise ValueError(f"{path}: op 'ai' custom requires a non-empty variables list")
+    declared = set(variables)
+    for name in variables:
+        if _IDENT_RE.fullmatch(name) is None:
+            raise ValueError(
+                f"{path}: op 'ai' variable {name!r} must be a lowercase identifier"
+            )
+    used = _PLACEHOLDER_RE.findall(action["system"]) + _PLACEHOLDER_RE.findall(action["user"])
+    for name in used:
+        if name not in declared:
+            raise ValueError(
+                f"{path}: op 'ai' placeholder {{{{{name}}}}} is not declared in variables"
+            )
+    if not isinstance(action.get("field"), str) or not action.get("field"):
+        raise ValueError(f"{path}: op 'ai' custom requires a non-empty field")
+
+
+def _pending_entry(product: dict[str, Any], action: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "product_id": str(product.get("id", "")),
+        "field": action.get("field") or "",
+        "taskType": action.get("taskType"),
+        "promptSource": action.get("promptSource"),
+        "templateId": action.get("templateId"),
+        "system": action.get("system"),
+        "user": action.get("user"),
+        "variables": list(action.get("variables") or []),
+    }
+
+
 def _validate_condition(node: Any, path: str) -> None:
     if not isinstance(node, dict):
         raise TypeError(f"{path}: condition must be an object")
@@ -384,9 +477,14 @@ def validate_config(config: Any) -> None:
         then = rule.get("then")
         if not isinstance(then, list):
             raise TypeError(f"{path}.then must be an array")
+        ai_outputs: set[str] = set()
         for action_index, action in enumerate(then):
             action_path = f"{path}.then[{action_index}]"
             op = action.get("op") if isinstance(action, dict) else None
+            if op == "ai":
+                _validate_ai_action(action, action_path)
+                ai_outputs.update(_ai_output_fields(action))
+                continue
             if op not in _ACTION_REQUIRED_KEYS:
                 raise ValueError(f"{action_path}: unknown action op {op!r}")
             for key in _ACTION_REQUIRED_KEYS[op]:
@@ -394,6 +492,12 @@ def validate_config(config: Any) -> None:
                     raise ValueError(f"{action_path}: op {op!r} requires {key}")
             if not isinstance(action.get("field"), str) or not action.get("field"):
                 raise ValueError(f"{action_path}: op {op!r} requires a non-empty field")
+            if action["field"] in ai_outputs:
+                raise ValueError(
+                    f"{action_path}: field {action['field']!r} is written by a "
+                    f"preceding 'ai' action; an 'ai' action must be the last write "
+                    f"to its field"
+                )
             try:
                 _parse_indexed(action["field"])
             except ValueError as exc:
@@ -428,5 +532,15 @@ class RulesPlugin:
             if not evaluate_condition(rule.get("when", {"op": "all"}), current):
                 continue
             for action in rule.get("then", []):
+                if isinstance(action, dict) and action.get("op") == "ai":
+                    pending = getattr(getattr(ctx, "run_state", None), "rule_ai_pending", None)
+                    if pending is None:
+                        logger.warning(
+                            "rules: ai action on product %s dropped (no run_state)",
+                            product.get("id"),
+                        )
+                    else:
+                        pending.append(_pending_entry(current, action))
+                    continue
                 current = apply_action(current, action)
         return current

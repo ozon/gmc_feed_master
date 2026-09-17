@@ -40,6 +40,7 @@ class RunState:
     product_pks: dict[str, int] = field(default_factory=dict)
     dropped: list[dict[str, Any]] = field(default_factory=list)
     ai_suggestions: dict[str, dict[str, str]] = field(default_factory=dict)
+    rule_ai_pending: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -223,6 +224,7 @@ class PluginStep:
                     feed_source_id=ctx.feed_source_id,
                     run_id=ctx.ingestion_run_id,
                     logger=ctx.logger,
+                    run_state=ctx.run_state,
                 )
                 run_states[instance["plugin"]] = prepare(
                     instance["resolved_config"], instance["resolved_data"], rctx
@@ -243,6 +245,7 @@ class PluginStep:
                     run_id=ctx.ingestion_run_id,
                     logger=ctx.logger,
                     original_product=original,
+                    run_state=ctx.run_state,
                 )
                 try:
                     if accepts_state.get(instance["plugin"]):
