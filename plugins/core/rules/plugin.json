@@ -40,12 +40,18 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "op": {"type": "string", "title": "Operation", "enum": ["set", "replace", "append", "prepend", "remove", "clear"]},
+                  "op": {"type": "string", "title": "Operation", "enum": ["set", "replace", "append", "prepend", "remove", "clear", "ai"]},
                   "field": {"type": "string", "title": "Field"},
                   "value": {"title": "Value"},
                   "find": {"type": "string", "title": "Find"},
                   "with": {"type": "string", "title": "Replace with"},
-                  "caseSensitive": {"type": "boolean", "title": "Case sensitive", "default": true}
+                  "caseSensitive": {"type": "boolean", "title": "Case sensitive", "default": true},
+                  "promptSource": {"type": "string", "title": "Prompt source", "enum": ["template", "custom"]},
+                  "taskType": {"type": "string", "title": "AI task"},
+                  "templateId": {"type": "integer", "title": "Template"},
+                  "system": {"type": "string", "title": "System prompt"},
+                  "user": {"type": "string", "title": "User prompt"},
+                  "variables": {"type": "array", "title": "Variables", "items": {"type": "string"}}
                 },
                 "required": ["op", "field"]
               }
