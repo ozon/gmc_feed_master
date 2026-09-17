@@ -45,6 +45,7 @@ EXPECTED_TABLES = {
     "prompt_templates",
     "ai_model_catalog",
     "ai_model_catalog_sync",
+    "event_log",
 }
 
 
