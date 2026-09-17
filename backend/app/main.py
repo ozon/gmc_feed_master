@@ -94,9 +94,9 @@ def create_app(
     fetcher: HttpFetcher | None = None,
     plugins_dir: Path | str | None = None,
 ) -> FastAPI:
-    configure_logging(settings)
     if settings is None and session_store is None and db_session_factory is None:
         settings = _configured_settings()
+    configure_logging(settings)
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
