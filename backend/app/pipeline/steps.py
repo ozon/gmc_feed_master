@@ -596,17 +596,24 @@ class ExportStep:
             source=ctx.trigger,
         )
         if not ctx.dry_run:
-            async with ctx.session_factory() as session, session.begin():
-                await audit(
-                    session,
-                    "export.publish",
-                    target_type="feed_source",
-                    target_id=ctx.feed_source_id,
-                    detail={
-                        "products": outcome.product_count,
-                        "version": outcome.version_number,
-                        "deduplicated": outcome.deduplicated,
-                    },
+            try:
+                async with ctx.session_factory() as session, session.begin():
+                    await audit(
+                        session,
+                        "export.publish",
+                        target_type="feed_source",
+                        target_id=ctx.feed_source_id,
+                        detail={
+                            "products": outcome.product_count,
+                            "version": outcome.version_number,
+                            "deduplicated": outcome.deduplicated,
+                        },
+                    )
+            except Exception:
+                # ponytail: audit is best-effort; a failed audit must not mark
+                # an already-published run as failed.
+                ctx.logger.warning(
+                    "export audit failed; publish already committed", exc_info=True
                 )
         return StepResult(
             statistics={

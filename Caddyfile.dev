@@ -26,6 +26,9 @@
 	handle /export/* {
 		reverse_proxy http://127.0.0.1:8000
 	}
+	handle /chat {
+		reverse_proxy http://127.0.0.1:8000
+	}
 	handle /logs/* {
 		reverse_proxy http://127.0.0.1:8000
 	}

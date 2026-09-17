@@ -11,6 +11,7 @@ import {
   Title,
 } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
+import { useDebouncedValue } from '@mantine/hooks';
 import { useEventLogs } from '../../api/hooks';
 import type { EventLogEntry } from '../../api/types';
 import { ErrorState, LoadingState } from '../../components/StateViews';
@@ -29,17 +30,21 @@ export function SystemLogsPage() {
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<number | null>(null);
 
+  const [debouncedActor] = useDebouncedValue(actor, 300);
+  const [debouncedRequestId] = useDebouncedValue(requestId, 300);
+  const [debouncedSearch] = useDebouncedValue(search, 300);
+
   const filters = useMemo(
     () => ({
       category: category ?? undefined,
       level: level ?? undefined,
       source: source ?? undefined,
-      actor: actor || undefined,
-      request_id: requestId || undefined,
-      q: search || undefined,
+      actor: debouncedActor || undefined,
+      request_id: debouncedRequestId || undefined,
+      q: debouncedSearch || undefined,
       limit: 50,
     }),
-    [category, level, source, actor, requestId, search],
+    [category, level, source, debouncedActor, debouncedRequestId, debouncedSearch],
   );
 
   const query = useEventLogs(filters);

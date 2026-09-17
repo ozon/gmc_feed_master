@@ -28,7 +28,7 @@ const SENSITIVE = [
   'access_key',
   'refresh_token',
 ];
-const MAX_VALUE = 2000;
+const MAX_VALUE = 2048;
 const MAX_DEPTH = 3;
 const MAX_BATCH = 10;
 const FLUSH_INTERVAL_MS = 5000;
