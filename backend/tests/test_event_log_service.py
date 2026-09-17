@@ -54,3 +54,33 @@ async def test_audit_pulls_actor_from_contextvars(factory):
         assert row.run_id == 7
         assert row.context["target_type"] == "user"
         assert row.context["target_id"] == "operator"
+
+
+async def test_audit_fills_indexed_columns_from_target_id(factory):
+    structlog.contextvars.clear_contextvars()
+    async with factory() as session, session.begin():
+        await audit(session, "export.publish", target_type="feed_source", target_id=42)
+        await audit(session, "client.delete", target_type="client", target_id="7")
+
+    async with factory() as session:
+        rows = (
+            await session.execute(select(EventLog).order_by(EventLog.id))
+        ).scalars().all()
+    assert rows[0].feed_source_id == 42
+    assert rows[0].client_id is None
+    assert rows[1].client_id == 7
+    assert rows[1].feed_source_id is None
+
+
+async def test_audit_contextvar_wins_over_target_id(factory):
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(feed_source_id=99)
+    try:
+        async with factory() as session, session.begin():
+            await audit(session, "export.publish", target_type="feed_source", target_id=42)
+    finally:
+        structlog.contextvars.clear_contextvars()
+
+    async with factory() as session:
+        row = (await session.execute(select(EventLog))).scalar_one()
+        assert row.feed_source_id == 99

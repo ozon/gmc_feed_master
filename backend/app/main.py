@@ -380,13 +380,18 @@ def create_app(
         token = await create_session(store, app.state.clock, user_id)
         set_session_cookie(response, token, settings.session_absolute_hours * 60 * 60)
         if db_session is not None:
-            await db_session.rollback()
-            async with db_session.begin():
-                await audit(
-                    db_session,
-                    "auth.login.success",
-                    target_type="user",
-                    target_id=user_id,
+            try:
+                await db_session.rollback()
+                async with db_session.begin():
+                    await audit(
+                        db_session,
+                        "auth.login.success",
+                        target_type="user",
+                        target_id=user_id,
+                    )
+            except Exception:
+                logging.getLogger(__name__).warning(
+                    "login success audit write failed", exc_info=True
                 )
         return {"username": user_id}
 
@@ -403,12 +408,17 @@ def create_app(
         await invalidate_session(store, token)
         clear_session_cookie(response)
         if db_session is not None:
-            async with db_session.begin():
-                await audit(
-                    db_session,
-                    "auth.logout",
-                    target_type="user",
-                    target_id=request_user,
+            try:
+                async with db_session.begin():
+                    await audit(
+                        db_session,
+                        "auth.logout",
+                        target_type="user",
+                        target_id=request_user,
+                    )
+            except Exception:
+                logging.getLogger(__name__).warning(
+                    "logout audit write failed", exc_info=True
                 )
         return {"status": "ok"}
 

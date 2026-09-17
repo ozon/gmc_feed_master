@@ -231,3 +231,25 @@ async def test_client_logs_rate_limit_exceeded(settings_app):
         last = await admin_client.post("/logs/client", json=body)
     assert last is not None and last.status_code == 429
     await admin_client.aclose()
+
+
+async def test_unhandled_exception_persisted_as_server_error(settings_app):
+    app, factory = settings_app
+
+    @app.get("/boom")
+    async def boom() -> None:
+        raise RuntimeError("kaboom")
+
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    with pytest.raises(RuntimeError, match="kaboom"):
+        await client.get("/boom", headers={"X-Request-ID": "srv-err-req-1"})
+    await client.aclose()
+
+    async with factory() as session:
+        row = (
+            await session.execute(
+                select(EventLog).where(EventLog.category == "server_error")
+            )
+        ).scalar_one()
+    assert row.message == "kaboom"
+    assert row.request_id == "srv-err-req-1"

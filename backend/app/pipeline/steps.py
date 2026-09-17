@@ -13,6 +13,7 @@ from app.config import DEFAULT_EXPORT_DIR
 from registry.model import RegistryDocument
 
 from ..clock import Clock, SystemClock
+from ..event_log import audit
 from ..export.store import ExportFileStore
 from ..ingest import HttpFetcher, read_feed
 from ..ingest.report import SourceField
@@ -594,6 +595,19 @@ class ExportStep:
             ctx.feed_source_id, ctx.ingestion_run_id, products, self._registry,
             source=ctx.trigger,
         )
+        if not ctx.dry_run:
+            async with ctx.session_factory() as session, session.begin():
+                await audit(
+                    session,
+                    "export.publish",
+                    target_type="feed_source",
+                    target_id=ctx.feed_source_id,
+                    detail={
+                        "products": outcome.product_count,
+                        "version": outcome.version_number,
+                        "deduplicated": outcome.deduplicated,
+                    },
+                )
         return StepResult(
             statistics={
                 "export": {

@@ -331,7 +331,7 @@ One row per AI call including cache hits (tokens 0). **Retention**: purged night
 | `message` | Text | Not null |
 | `context` | JSONB | Not null, server default `'{}'` |
 
-Indexes: `created_at`, `(category, created_at)`, `request_id`, `feed_source_id`. Append-only by application convention (no update/delete path; a DB trigger/revoke would be required for tamper resistance). Written by `app/event_log/service.py`; `audit` pulls actor/role/context from contextvars, and the request-context middleware persists unhandled exceptions as `server_error`. Read via the admin-only `GET /logs/entries`. **Retention**: purged nightly by `system-event-log-purge` after `event_log_retention_days`.
+Indexes: `created_at`, `(category, created_at)`, `request_id`, `feed_source_id`. Append-only by application convention (no update/delete path; a DB trigger/revoke would be required for tamper resistance). Written by `app/event_log/service.py`; `audit` pulls actor/role/context from contextvars and, for `feed_source`/`client` targets, falls back to `target_id` for the indexed `feed_source_id`/`client_id` columns when the matching contextvar is absent, and the request-context middleware persists unhandled exceptions as `server_error`. Read via the admin-only `GET /logs/entries`. **Retention**: purged nightly by `system-event-log-purge` after `event_log_retention_days`.
 
 ### PromptTemplate
 | Column | Type | Notes |

@@ -381,12 +381,6 @@ async def _put_payload(
                 )
             )
             await session.flush()
-            action = (
-                "plugin.config.update"
-                if column_name == "config"
-                else "plugin.data.update"
-            )
-            await audit(session, action, target_type="plugin", target_id=plugin_id)
         except IntegrityError:
             raise HTTPException(
                 status_code=409,
@@ -395,4 +389,10 @@ async def _put_payload(
                     "current_version": None,
                 },
             ) from None
+        action = (
+            "plugin.config.update"
+            if column_name == "config"
+            else "plugin.data.update"
+        )
+        await audit(session, action, target_type="plugin", target_id=plugin_id)
     return {"status": "ok"}

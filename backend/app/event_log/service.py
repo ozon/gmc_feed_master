@@ -21,6 +21,13 @@ def _bound(name: str) -> Any:
     return structlog.contextvars.get_contextvars().get(name)
 
 
+def _as_int(value: Any) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 async def record_event(
     session: AsyncSession,
     *,
@@ -69,6 +76,13 @@ async def audit(
         context["target_type"] = target_type
     if target_id is not None:
         context["target_id"] = str(target_id)
+    client_id = _bound("client_id")
+    feed_source_id = _bound("feed_source_id")
+    if target_id is not None:
+        if target_type == "feed_source" and feed_source_id is None:
+            feed_source_id = _as_int(target_id)
+        elif target_type == "client" and client_id is None:
+            client_id = _as_int(target_id)
     await record_event(
         session,
         category="audit",
@@ -78,8 +92,8 @@ async def audit(
         context=context,
         actor=_bound("actor"),
         actor_role=_bound("actor_role"),
-        client_id=_bound("client_id"),
-        feed_source_id=_bound("feed_source_id"),
+        client_id=client_id,
+        feed_source_id=feed_source_id,
         request_id=_bound("request_id"),
         run_id=_bound("run_id"),
     )
