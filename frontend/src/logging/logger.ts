@@ -65,8 +65,11 @@ function flush(): void {
   const body = JSON.stringify({ entries });
   try {
     if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
-      navigator.sendBeacon('/logs/client', new Blob([body], { type: 'application/json' }));
-      return;
+      const queued = navigator.sendBeacon(
+        '/logs/client',
+        new Blob([body], { type: 'application/json' }),
+      );
+      if (queued) return;
     }
   } catch {
     // fall through to fetch
@@ -121,6 +124,11 @@ function currentPath(): string {
   return typeof window === 'undefined' ? '' : window.location.pathname;
 }
 
+function stripQuery(value: string): string {
+  const index = value.indexOf('?');
+  return index === -1 ? value : value.slice(0, index);
+}
+
 export function createLogger(scope: string) {
   const log = (level: LogLevel, message: string, context: LogContext = {}, error?: unknown) => {
     const safe = scrub(context) as LogContext;
@@ -129,12 +137,13 @@ export function createLogger(scope: string) {
       return;
     }
     console[level](`[${scope}] ${message}`, safe, error ?? '');
+    const path = currentPath();
     enqueue({
       level: level === 'warn' ? 'warning' : 'error',
       message: truncate(message),
       scope,
-      route: currentPath(),
-      url: currentPath(),
+      route: path,
+      url: typeof safe.url === 'string' ? stripQuery(safe.url) : path,
       request_id: typeof safe.request_id === 'string' ? safe.request_id : newRequestId(),
       context: safe,
       stack: error instanceof Error ? error.stack?.slice(0, 8000) : undefined,

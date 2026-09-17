@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import {
   Badge,
   Button,
@@ -50,8 +50,8 @@ export function SystemLogsPage() {
   const items = query.data.pages.flatMap((page) => page.items);
 
   const renderRow = (entry: EventLogEntry) => (
-    <>
-      <Table.Tr key={entry.id} onClick={() => setExpanded(expanded === entry.id ? null : entry.id)}>
+    <Fragment key={entry.id}>
+      <Table.Tr onClick={() => setExpanded(expanded === entry.id ? null : entry.id)}>
         <Table.Td>{new Date(entry.created_at).toLocaleString()}</Table.Td>
         <Table.Td>
           <Badge color={entry.level === 'error' ? 'red' : 'gray'}>{entry.level}</Badge>
@@ -62,13 +62,13 @@ export function SystemLogsPage() {
         <Table.Td>{entry.message}</Table.Td>
       </Table.Tr>
       {expanded === entry.id ? (
-        <Table.Tr key={`${entry.id}-detail`}>
+        <Table.Tr>
           <Table.Td colSpan={6}>
             <Code block>{JSON.stringify(entry, null, 2)}</Code>
           </Table.Td>
         </Table.Tr>
       ) : null}
-    </>
+    </Fragment>
   );
 
   return (
