@@ -27,6 +27,10 @@ call) against a sample product.
 | 6 | Budget/limit config | `feed_source.configuration.ai_rules = {enabled, limit, budget}`, written via the existing `PUT /feed-sources/{id}` |
 | 7 | Preview | For **both** template and custom modes: render messages + validation warnings against a staging sample, no AI call |
 | 8 | DB schema | No migration: rule config and budget live in existing JSONB columns; new state is in-memory |
+| 9 | Same-rule ordering | An `ai` action must be the last action targeting its output field(s) in a rule; `validate_config` rejects a following action on an overlapping field (deferred execution cannot honor `ai → append`) |
+| 10 | Precedence vs enrichment | `RuleAiStep` runs after `PluginStep`, so rule AI output overrides feed values and pinned enrichment values for the same field. `EnrichmentStep` only stores suggestions and never mutates a product, so it cannot overwrite a rule result in the same run |
+| 11 | Budget counting | `limit` = max distinct products touched; `budget` = max actual AI calls (`status == "ok"`). Budget exhaustion may leave one product partially applied (see §6) |
+| 12 | Pinned template | `templateId` is honored (the rule pins that exact template), not "latest"; a missing/inactive template falls back to the task's active template, then builtin, with a warning |
 
 ## Architecture
 
@@ -89,7 +93,9 @@ properties; `required` stays `["op", "field"]` with op-specific checks in `valid
   ```
 
   `_pending_entry` captures `product_id`, `field`, `taskType`, `promptSource`, `templateId`,
-  `system`, `user`, `variables`. Without `run_state` (direct unit calls) the op is a no-op.
+  `system`, `user`, `variables`. A missing `run_state` is treated as a wiring bug, not a silent
+  no-op: `plugin.py` gains `logging` + a module `logger` and emits
+  `logger.warning("rules: ai action on product %s dropped (no run_state)", pid)` before skipping.
 - `apply_action` treats `'ai'` as a **passthrough** (`return dict(product)`) and
   `_ACTION_REQUIRED_KEYS["ai"] = ("field",)` so direct callers and existing tests do not break.
 
@@ -108,7 +114,11 @@ New constants and branch:
     `field` (the write target);
   - custom prompts are validated with `validate_template(variables, system, user, variables)`
     (the declared set doubles as canonical, so any product field the author declares is
-    allowed).
+    allowed);
+  - **ordering**: an `ai` action must be the last action in the rule targeting its output
+    field(s) — for `template` the mapped `TASK_FIELDS` fields, for `custom` the `field`.
+    `validate_config` rejects any following action in the same rule whose `field` overlaps that
+    set (deferred execution makes `ai → append` on the same field meaningless).
 
 ### 4. Generic result model (`app/ai/schemas.py`)
 
@@ -134,7 +144,13 @@ async def run_inline_task(
 
 Same collaborators, fallback semantics, usage logging, and cache path as `run_task`
 (`NativeCache.request_kwargs("rule_value")` + `render_messages` + `model_validate(RuleValueResult)`),
-so repeated identical inputs are cache hits. `run_task` is unchanged.
+so repeated identical inputs are cache hits.
+
+`run_task` gains an optional `template_id: int | None = None`. When set, `_resolve_template`
+loads that exact row instead of the active one, after checking it belongs to the feed source's
+client or global scope (`PromptTemplate.client_id in (None, client_id)`). A missing or inactive
+pinned row falls back to the active template, then the builtin, with a warning. The cache is
+unaffected (rendered messages key the entry).
 
 ### 6. Phase 2 — `RuleAiStep` (`app/pipeline/steps.py`, `app/pipeline/rule_ai.py`)
 
@@ -143,20 +159,28 @@ New module `app/pipeline/rule_ai.py` holds the engine; `RuleAiStep` is thin, mir
 
 - Config: `(feed_source.configuration or {}).get("ai_rules")`; skip when missing, `enabled` is
   falsy, `self._ai_service is None`, or `run_state.rule_ai_pending` is empty.
-- `limit` = max products touched (default 50), `budget` = max actual calls (default 50),
-  matching `EnrichmentStep` (`steps.py:338`). `spent` counts only `status == "ok"`; cache hits
-  are free and do not consume budget.
+- `limit` = max distinct products touched (default 50); `budget` = max actual AI calls
+  (default 50). Products are processed in order and, within a product, their pending entries in
+  order. `spent` counts only `status == "ok"`; cache hits are free and do not consume budget.
+  When `budget` is reached mid-product, that product's remaining entries and all later products
+  are skipped — a product can be partially applied, which is accepted because each entry writes
+  an independent field. `applied`/`spent` in the statistics make the partial state observable.
 - For each pending entry, in order:
-  - `template`: `ai_service.run_task(taskType, variables, client_id=…, feed_source_id=…)`,
-    `variables` from `CANONICAL_VARIABLES[taskType]`; result fields mapped via `TASK_FIELDS`
-    (`title`→`title`, `description`→`description`, `category_classification`→
-    `google_product_category`, `attribute_enrichment`→ its mapped fields).
+  - `template`: `ai_service.run_task(taskType, variables, template_id=templateId, client_id=…,
+    feed_source_id=…)`, `variables` from `CANONICAL_VARIABLES[taskType]`; result fields mapped
+    via `TASK_FIELDS` (`title`→`title`, `description`→`description`,
+    `category_classification`→`google_product_category`, `attribute_enrichment`→ its mapped
+    fields).
   - `custom` / `rule_value`: `ai_service.run_inline_task(system, user, variables, …)`;
     result string written to `field`.
   - For both modes the variable values are read from the current product (template:
     `CANONICAL_VARIABLES[taskType]`; custom: the entry's declared `variables`); no step between
-    `PluginStep` and `RuleAiStep` mutates product fields, so phase-2 values match the match.
+    `PluginStep` and `RuleAiStep` mutates product fields, so phase-2 values match phase 1.
   - `fallback` or exception → `failed += 1`, product unchanged, loop continues.
+- Precedence: `RuleAiStep` runs after `PluginStep`, so its output overwrites feed values and
+  pinned enrichment values for the same field. `EnrichmentStep` (after) only stores suggestions
+  and never mutates `run_state.products` (`steps.py:341-359`), so it cannot overwrite a rule
+  result in the same run.
 - Writes into `run_state.products` by matching `product_id`, then persists changed products
   with `apply_plugin_outcomes(session_factory, feed_source_id, ingestion_run_id,
   [PluginOutcome(pid, pk, "processed", final), …])` (same call PluginStep uses), because
@@ -187,10 +211,13 @@ prefixes are only `/config` and `/data`, so these paths are allowed.
   - Body: `{feed_source_id, taskType, templateId? | (system, user, variables?), product_id?}`;
     `templateId` XOR the inline draft (422 otherwise), same rule as `ai_admin.preview`.
   - Sample product: `product_id` on the feed source, else the first active staging product
-    (`staging/persistence` query pattern), 404 when none.
+    (`staging/persistence` query pattern). 404 `detail` distinguishes `"feed source not found"`
+    from `"no sample product found"` so the frontend renders different messages.
   - Renders with `render_messages(system, user, values, lenient=True)`, validates with
     `validate_template`; returns `{messages, used_variables, warnings, errors}` — the same
-    shape as `PromptPreviewResult` (`frontend/src/api/types.ts:447`). No AI call, no usage row.
+    shape as `PromptPreviewResult` (`frontend/src/api/types.ts:447`). `warnings` additionally
+    list declared variables absent from the sample product (unknown/typo fields). No AI call,
+    no usage row.
 
 ## Frontend
 
@@ -207,8 +234,11 @@ Add `'ai'` to `ACTION_OPS`/`OP_KEYS` and render a new `RuleAiActionEditor` branc
   `Select` fed by `useRuleAiTemplates(feedSourceId, taskType)`; an informational label shows
   the mapped output field(s).
 - Custom mode: `taskType` is fixed to `rule_value`; system + user `Textarea`s and a variables
-  editor (chips from product/registry fields), with inline `validate_template`-style warnings;
-  a `FieldSelect` picks the write target (`field`).
+  editor whose chips come from `useRegistryAttributes` (the same source as `FieldSelect`), with
+  inline warnings for unknown or unused variables. This is the primary guard against typos,
+  because server-side `validate_config` is scope-agnostic (global/client rules have no feed
+  source and thus no field registry); see §8 for the preview-time unknown-field warning. A
+  `FieldSelect` picks the write target (`field`).
 - `Preview` button opens `AiPromptPreview`.
 
 ### 3. Preview (`frontend/src/features/rules/AiPromptPreview.tsx`, new)
@@ -248,16 +278,23 @@ labels, task labels, field labels, and preview strings.
 ## Testing
 
 Backend (`uv run pytest`):
-- Rules plugin: `op=ai` records a pending entry and leaves the product unchanged; no
-  `run_state` ⇒ no-op; `validate_config` accepts valid template/custom actions and rejects
-  unknown `taskType`, missing `templateId`, missing `system`/`user`, and generic actions
-  without `field`.
+- Rules plugin: `op=ai` records a pending entry and leaves the product unchanged; a missing
+  `run_state` emits a warning (caplog) and no-ops; `validate_config` accepts valid
+  template/custom actions and rejects unknown `taskType`, missing `templateId`, missing
+  `system`/`user`, generic actions without `field`, and a later action targeting the same field
+  as a preceding `ai` action.
 - `RuleAiStep`: writes structured fields via `TASK_FIELDS`; writes generic `field`; respects
-  `limit`/`budget`; counts cache hits without spending; `fallback` leaves the product intact
-  and counts `failed`; persists via `apply_plugin_outcomes` (staging row updated).
+  `limit` (distinct products) and `budget` (ok calls); counts cache hits without spending;
+  budget exhaustion mid-product leaves the first field applied and the rest untouched;
+  `fallback` leaves the product intact and counts `failed`; persists via
+  `apply_plugin_outcomes` (staging row updated); overrides a pinned enrichment value for the
+  same field.
 - `run_inline_task`: renders and validates like `run_task`, hits the cache on repeat.
+- `run_task(template_id=…)`: uses the pinned template, rejects a template scoped to another
+  client, and falls back with a warning when the pinned row is missing/inactive.
 - Routes: templates scoped to client+global and access-checked; preview XOR validation,
-  sample product fallback, warnings, and no AI call.
+  distinct 404 details for missing feed source vs. missing sample, unknown-field warnings, and
+  no AI call.
 - Pipeline: `default_steps` order; a re-run with identical input produces the same export
   (cache-backed stability) and one `ai_rules` statistics block.
 - Contract test (`tests/test_plugin_contract.py`) covers the extended config schema.
@@ -265,9 +302,11 @@ Backend (`uv run pytest`):
 
 Frontend (`npm run test`, `npm run typecheck`):
 - `ast.test.ts`: `normalizeAction` round-trips `ai` fields; rejects unknown op.
-- `RuleAiActionEditor`: source/task switches, template select, custom draft, field select for
-  `rule_value`; preview button payload (template vs inline).
-- `AiPromptPreview`: renders messages/warnings from a mocked response.
+- `RuleAiActionEditor`: source/task switches, template select, custom draft, registry-backed
+  variable chips with an unknown-variable warning, field select for `rule_value`; preview button
+  payload (template vs inline).
+- `AiPromptPreview`: renders messages/warnings from a mocked response, including the
+  unknown/typo variable warning and the distinct not-found messages.
 - `RulesUI`: save payload includes the `ai` action with all fields.
 
 ## Documentation
@@ -283,6 +322,9 @@ Frontend (`npm run test`, `npm run typecheck`):
 
 - No per-action limit/budget; one feed-source-level `ai_rules` block.
 - `rule_value` is inline-only; no DB templates for free-form prompts.
+- No save-time server validation of custom `variables` against the field registry: the plugin
+  `validate_config` contract is scope-agnostic and global/client-scoped rules have no feed
+  source, so this is enforced in the frontend editor and surfaced by the preview instead.
 - No new DB columns/migration.
 - No AI call in preview (render-only, matching the admin preview).
 - Re-running phase 2 on the same input relies on the cache for stability; output is not part
