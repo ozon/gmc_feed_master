@@ -1,10 +1,11 @@
-import { Button, Group, Modal, MultiSelect, Select, Stack, Text, Textarea } from '@mantine/core';
+import { Button, Group, MultiSelect, Select, Stack, Text, Textarea } from '@mantine/core';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldSelect } from '../../components/FieldSelect';
 import type { GroupedFieldOptions } from '../../api/fieldOptions';
 import type { RuleAction } from '../../../../plugins/core/rules/frontend/ast';
-import { useRuleAiPreview, useRuleAiTemplates } from './hooks';
+import { AiPromptPreview } from './AiPromptPreview';
+import { useRuleAiTemplates } from './hooks';
 
 const STRUCTURED_TASKS = [
   'title_optimization',
@@ -41,7 +42,6 @@ export function RuleAiActionEditor({
     feedSourceId,
     source === 'template' ? action.taskType : undefined,
   );
-  const preview = useRuleAiPreview();
 
   const knownFields = useMemo(
     () => fieldOptions.flatMap((group) => group.items.map((item) => item.value)),
@@ -82,7 +82,7 @@ export function RuleAiActionEditor({
 
   function runPreview() {
     if (!feedSourceId) return;
-    preview.mutate(previewPayload(), { onSuccess: () => setPreviewOpen(true) });
+    setPreviewOpen(true);
   }
 
   return (
@@ -129,7 +129,7 @@ export function RuleAiActionEditor({
             w={200}
           />
         )}
-        <Button variant="light" size="xs" onClick={runPreview} loading={preview.isPending}>
+        <Button variant="light" size="xs" onClick={runPreview}>
           {t('ai.preview')}
         </Button>
       </Group>
@@ -166,24 +166,11 @@ export function RuleAiActionEditor({
         </Stack>
       )}
 
-      <Modal
+      <AiPromptPreview
         opened={previewOpen}
         onClose={() => setPreviewOpen(false)}
-        title={t('ai.previewTitle')}
-        size="lg"
-      >
-        <Stack gap="xs" data-testid="ai-preview">
-          {(preview.data?.messages ?? []).map((message, index) => (
-            <Text key={index} size="xs" style={{ whiteSpace: 'pre-wrap' }}>
-              <strong>{message.role}</strong>: {message.content}
-            </Text>
-          ))}
-          {(preview.data?.warnings ?? []).map((warning, index) => (
-            <Text key={`w-${index}`} size="xs" c="orange">{warning}</Text>
-          ))}
-          {preview.isError ? <Text size="xs" c="red">{String(preview.error)}</Text> : null}
-        </Stack>
-      </Modal>
+        payload={previewPayload()}
+      />
     </Stack>
   );
 }
