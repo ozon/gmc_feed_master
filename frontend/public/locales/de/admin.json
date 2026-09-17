@@ -50,6 +50,11 @@
     "pluginEnabled": "Aktiviert"
   },
   "ai": {
+    "legacy": "Legacy",
+    "catalogStatus": "Katalog aktualisiert {{when}}",
+    "catalogNeverSynced": "Katalog noch nicht synchronisiert",
+    "catalogError": "Katalog-Refresh fehlgeschlagen",
+    "catalogRefresh": "Katalog aktualisieren",
     "wizard": {
       "title": "AI-Anbieter hinzufügen",
       "editTitle": "AI-Anbieter bearbeiten",

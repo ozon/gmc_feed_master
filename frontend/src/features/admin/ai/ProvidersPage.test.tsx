@@ -41,6 +41,15 @@ const catalog = {
   sync: { last_attempt_at: null, last_success_at: null, last_error: null, source: 'bundled' },
 };
 
+const legacyProviders = [
+  {
+    id: 9, name: 'legacy', provider_type: 'openai_compatible',
+    base_url: 'http://localhost:11434/v1', model: 'llama3',
+    input_price_per_mtok: null, output_price_per_mtok: null,
+    max_concurrency: 4, timeout_s: 30, enabled: true, tier: 'bulk',
+  },
+];
+
 beforeAll(async () => {
   await i18n.loadNamespaces('admin');
 });
@@ -100,5 +109,52 @@ describe('ProvidersPage', () => {
 
     await waitFor(() => expect(posts).toHaveLength(1));
     expect(posts[0]).toMatchObject({ model: 'openai/gpt-4o', provider_type: 'litellm' });
+  });
+
+  it('marks legacy providers and opens the wizard with the custom preset', async () => {
+    stubFetch((url) => {
+      if (url === '/admin/ai/providers') return jsonResponse(legacyProviders);
+      if (url === '/admin/ai/provider-presets') return jsonResponse([
+        ...presets,
+        {
+          vendor_key: 'custom', label: 'OpenAI-kompatibel (custom)', model_prefix: 'openai',
+          default_base_url: '', requires_base_url: true,
+          api_key_env_hint: '', docs_url: '', supports_catalog: false,
+        },
+      ]);
+      if (url.startsWith('/admin/ai/model-catalog')) return jsonResponse(catalog);
+      return jsonResponse({});
+    });
+    render(<ProvidersPage />);
+    await waitFor(() => expect(screen.getByTestId('ai-legacy-badge-9')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('ai-edit-provider-9'));
+    await waitFor(() => expect(screen.getByTestId('ai-wizard')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('ai-wizard-next'));
+    fireEvent.click(screen.getByTestId('ai-wizard-next'));
+    expect(await screen.findByTestId('ai-wizard-model-custom')).toBeInTheDocument();
+  });
+
+  it('renders the catalog status and triggers a refresh', async () => {
+    const refreshes: string[] = [];
+    stubFetch((url, init) => {
+      if (url === '/admin/ai/providers') return jsonResponse(providers);
+      if (url === '/admin/ai/provider-presets') return jsonResponse(presets);
+      if (url === '/admin/ai/model-catalog/refresh' && init?.method === 'POST') {
+        refreshes.push(url);
+        return jsonResponse({ last_attempt_at: null, last_success_at: null, last_error: null, source: 'github' });
+      }
+      if (url.startsWith('/admin/ai/model-catalog')) {
+        return jsonResponse({
+          entries: [], sync: { last_attempt_at: null, last_success_at: null, last_error: 'boom', source: 'bundled' },
+        });
+      }
+      return jsonResponse({});
+    });
+    render(<ProvidersPage />);
+    await waitFor(() => expect(screen.getByTestId('ai-catalog-status')).toBeInTheDocument());
+    expect(screen.getByTestId('ai-catalog-status')).toHaveTextContent('Catalog refresh failed');
+    fireEvent.click(screen.getByTestId('ai-catalog-refresh'));
+    await waitFor(() => expect(refreshes).toHaveLength(1));
   });
 });

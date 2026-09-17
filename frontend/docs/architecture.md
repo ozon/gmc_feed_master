@@ -136,6 +136,7 @@ export function useSavePipeline(feedSourceId) {
 - `AdminClientsPage` — Clients tab panel: client CRUD moved here from the dashboard (now read-only listing for everyone); the dashboard's `ClientModal`/`DeleteClientModal` components are reused there.
 - `AdminUsersPage` — Users tab panel: user table (role badge, assigned-client count, active switch), create/edit modal with role select + client multi-select, reset-password modal.
 - `AdminSettingsPage` — Settings tab panel: editable retention days (`/admin/settings`), scheduler job overview (`/admin/scheduler`), plugin enable/disable toggles (reuses `useUpdatePluginEnabled`).
+- **AI provider wizard** — `features/admin/ai/ProviderWizard.tsx` is a 3-step Mantine `Stepper` (provider preset → API key → model) backed by `useProviderPresets()` and `useModelCatalog(vendor)`; advanced fields (tier, concurrency, timeout, prices, enabled) sit in a collapsed accordion and prices prefill from the selected catalog entry. `ProvidersPage.tsx` keeps the provider table (Legacy badge for `openai_compatible` rows) and shows the catalog sync status with a manual refresh button. Presets and catalog are server state and live only in TanStack Query.
 - Backend enforces the same rules (404 for unassigned client/feed-source access, 403 for admin-only operations, `/admin/*` admin-only) — the frontend guard is UX only.
 
 ## State Boundaries

@@ -50,6 +50,11 @@
     "pluginEnabled": "Enabled"
   },
   "ai": {
+    "legacy": "Legacy",
+    "catalogStatus": "Catalog updated {{when}}",
+    "catalogNeverSynced": "Catalog not synced yet",
+    "catalogError": "Catalog refresh failed",
+    "catalogRefresh": "Refresh catalog",
     "wizard": {
       "title": "Add AI provider",
       "editTitle": "Edit AI provider",
