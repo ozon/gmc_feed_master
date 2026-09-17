@@ -180,6 +180,7 @@ flowchart TD
 | `QualityFinding` details | Latest run per feed source only; per-severity counts in `ExportRun` |
 | `StagingProduct` (removed) | Purged `global_settings.staging_removal_retention_days` (default 90) after `removed_at` |
 | `AiUsageLog` | `global_settings.ai_usage_retention_days` (default 90) |
+| `EventLog` | `global_settings.event_log_retention_days` (default 180) |
 
 Retention days live in the single-row `global_settings` table (lazy-seeded, admin-editable via `PUT /admin/settings`); the purge jobs fall back to 90 per column when the row is absent.
 

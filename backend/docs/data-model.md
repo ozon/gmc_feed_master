@@ -58,6 +58,7 @@ Unique `(user_id, client_id)`. Many-to-many: a `user` sees only their assigned c
 | `staging_history_retention_days` | Integer | Default 90 |
 | `ingestion_run_retention_days` | Integer | Default 90 |
 | `ai_usage_retention_days` | Integer | Default 90 |
+| `event_log_retention_days` | Integer | Default 180 |
 | `ai_cache_type` | String(20) | `local` or `disk` (redis is selected by env) |
 | `ai_cache_namespace` | String(100) | Cache-key namespace prefix, default `gmc-ai` |
 | `ai_cache_ttl_taxonomy_s` | Integer | Taxonomy-task cache TTL, default 2592000 |
@@ -403,6 +404,7 @@ New StagingProduct row (status=active), full reprocess (no prior hash)
 | `StagingProduct` (removed) | `global_settings.staging_removal_retention_days` (default 90) after `removed_at` |
 | `QualityFinding` (detail) | Latest run per feed_source only |
 | `ExportRun` counts | Persist indefinitely (small) |
+| `EventLog` | `global_settings.event_log_retention_days` (default 180; fallback 180 when no row) |
 | `Session` | Sliding (configurable idle) + absolute (configurable) |
 | `ImageDimension` | No auto-expiry; keyed by URL |
 

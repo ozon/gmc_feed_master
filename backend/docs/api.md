@@ -37,7 +37,7 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 - `POST /admin/users/{user_id}/password` (204) — set new password `{new_password}` (revokes the user's sessions); 404 unknown user
 
 ### Settings
-- `GET /admin/settings` — `{staging_removal_retention_days, staging_history_retention_days, ingestion_run_retention_days, ai_usage_retention_days}`; seeds the single `global_settings` row with 90s on first read
+- `GET /admin/settings` — `{staging_removal_retention_days, staging_history_retention_days, ingestion_run_retention_days, ai_usage_retention_days, event_log_retention_days}`; seeds the single `global_settings` row with 90s (and 180 for `event_log_retention_days`) on first read
 - `PUT /admin/settings` — update retention days (each ≥ 1; 422 otherwise). The nightly purge jobs read these values (fallback 90 while no row exists)
 
 ### AI Administration
