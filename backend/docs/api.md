@@ -48,6 +48,10 @@ All routes require the admin role. `api_key` is never included in any response.
 - `PATCH /admin/ai/providers/{id}` — partial update; `api_key` absent = unchanged, explicit `""` = cleared
 - `DELETE /admin/ai/providers/{id}` (204) — delete config; runs read config at call time, so deletion just makes the next AI call fall back
 - `POST /admin/ai/providers/{id}/test` — live probe completion (`"Reply with OK"`); returns `{"status": "ok", latency_ms, prompt_tokens, completion_tokens}` or `{"status": "error", "error_code"}`
+- `GET /admin/ai/provider-presets` — wizard presets `[{vendor_key, label, model_prefix, default_base_url, requires_base_url, api_key_env_hint, docs_url, supports_catalog}]`
+- `GET /admin/ai/model-catalog?vendor=&mode=chat` — `{entries: [{model_id, vendor, display_name, context_window, max_output_tokens, input_price_per_mtok, output_price_per_mtok, supports_vision, supports_function_calling, is_recommended}], sync: {last_attempt_at, last_success_at, last_error, source}}`; lazily seeds from the installed LiteLLM price data when empty
+- `POST /admin/ai/model-catalog/refresh` — fetch the upstream LiteLLM catalog; on failure keeps the last-good catalog and records `last_error` in the sync payload
+- `POST /admin/ai/providers` / `PATCH /admin/ai/providers/{id}` — `provider_type` is normalized to `litellm` on write; a legacy `openai_compatible` payload with an unprefixed model is stored as `openai/<model>`
 - `GET /admin/ai/usage?group_by=client|feed_source|task_type|day&client_id=&feed_source_id=&task_type=&from=&to=` — aggregated `{"rows": [{group_key, calls, cache_hits, prompt_tokens, completion_tokens, cost_usd}]}`; 422 on other group_by values
 - `GET /admin/ai/usage/summary?client_id=&feed_source_id=&task_type=&from=&to=` — totals `{calls, cache_hits, hit_ratio, prompt_tokens, completion_tokens, cost_usd, saved_prompt_tokens, saved_completion_tokens, cost_saved_usd}` (savings are the cache-hit portion)
 - `GET /admin/ai/usage/timeseries?from=&to=` — per-day aggregated rows (`group_by=day` shape) for charting

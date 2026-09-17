@@ -118,3 +118,39 @@ class AiSettingsUpdate(BaseModel):
 
 class CacheClearRequest(BaseModel):
     namespace: str | None = Field(default=None, max_length=100)
+
+
+class ProviderPresetOut(BaseModel):
+    vendor_key: str
+    label: str
+    model_prefix: str
+    default_base_url: str
+    requires_base_url: bool
+    api_key_env_hint: str
+    docs_url: str
+    supports_catalog: bool
+
+
+class ModelCatalogEntryOut(BaseModel):
+    model_id: str
+    vendor: str
+    display_name: str
+    context_window: int | None
+    max_output_tokens: int | None
+    input_price_per_mtok: Decimal | None
+    output_price_per_mtok: Decimal | None
+    supports_vision: bool
+    supports_function_calling: bool
+    is_recommended: bool
+
+
+class ModelCatalogSyncOut(BaseModel):
+    last_attempt_at: datetime | None
+    last_success_at: datetime | None
+    last_error: str | None
+    source: str | None
+
+
+class ModelCatalogOut(BaseModel):
+    entries: list[ModelCatalogEntryOut]
+    sync: ModelCatalogSyncOut

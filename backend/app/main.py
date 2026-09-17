@@ -202,6 +202,9 @@ def create_app(
         image_http_client = getattr(application.state, "image_http_client", None)
         if image_http_client is not None:
             await image_http_client.aclose()
+        catalog_http_client = getattr(application.state, "catalog_http_client", None)
+        if catalog_http_client is not None:
+            await catalog_http_client.aclose()
         if getattr(application.state, "db_engine", None) is not None:
             await application.state.db_engine.dispose()
 
@@ -262,6 +265,7 @@ def create_app(
 
         image_http_client = httpx.AsyncClient()
         app.state.image_http_client = image_http_client
+        app.state.catalog_http_client = httpx.AsyncClient()
         active_fetcher = fetcher if fetcher is not None else HttpFetcher()
         app.state.fetcher = active_fetcher
         image_probe = ImageProbeImpl(app.state.db_session_factory, image_http_client)

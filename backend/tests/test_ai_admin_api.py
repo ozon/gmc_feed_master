@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
+import httpx
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
@@ -229,3 +232,85 @@ async def test_ai_cache_and_usage_endpoints(admin_http) -> None:
     cleared = await admin_http.post("/admin/ai/cache/clear", json={})
     assert cleared.status_code == 200
     assert "removed" in cleared.json()
+
+
+@pytest.mark.asyncio
+async def test_provider_presets_endpoint(admin_http):
+    response = await admin_http.get("/admin/ai/provider-presets")
+    assert response.status_code == 200
+    keys = [preset["vendor_key"] for preset in response.json()]
+    assert keys == ["openai", "anthropic", "google", "openrouter", "mistral", "groq", "custom"]
+    custom = response.json()[-1]
+    assert custom["requires_base_url"] is True
+    assert custom["supports_catalog"] is False
+
+
+@pytest.mark.asyncio
+async def test_model_catalog_seeds_and_filters(admin_http, monkeypatch):
+    from app.ai import model_catalog
+
+    monkeypatch.setattr(model_catalog, "load_bundled", lambda: [
+        model_catalog.CatalogEntry(
+            vendor="openai", model_id="openai/gpt-4o", display_name="gpt-4o",
+            mode="chat", context_window=128000, max_output_tokens=16384,
+            input_price_per_mtok=Decimal("2.500000"),
+            output_price_per_mtok=Decimal("10.000000"),
+            supports_vision=True, supports_function_calling=True,
+        ),
+        model_catalog.CatalogEntry(
+            vendor="anthropic", model_id="anthropic/claude", display_name="claude",
+            mode="chat", context_window=200000, max_output_tokens=8192,
+            input_price_per_mtok=None, output_price_per_mtok=None,
+            supports_vision=False, supports_function_calling=True,
+        ),
+    ])
+    response = await admin_http.get("/admin/ai/model-catalog", params={"vendor": "openai"})
+    assert response.status_code == 200
+    body = response.json()
+    assert [entry["model_id"] for entry in body["entries"]] == ["openai/gpt-4o"]
+    entry = body["entries"][0]
+    assert entry["is_recommended"] is True
+    assert entry["supports_vision"] is True
+    assert body["sync"]["source"] == "bundled"
+
+
+@pytest.mark.asyncio
+async def test_model_catalog_refresh_endpoint(settings_app, admin_http, monkeypatch):
+    from app.ai import model_catalog
+
+    app, _ = settings_app
+    entries = [
+        model_catalog.CatalogEntry(
+            vendor="openai", model_id=f"openai/model-{i}", display_name=f"model-{i}",
+            mode="chat", context_window=1000, max_output_tokens=100,
+            input_price_per_mtok=None, output_price_per_mtok=None,
+            supports_vision=False, supports_function_calling=False,
+        )
+        for i in range(60)
+    ]
+    monkeypatch.setattr(model_catalog, "parse_catalog", lambda raw: entries)
+
+    def handler(request):
+        return httpx.Response(200, json={"ok": True})
+
+    app.state.catalog_http_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    response = await admin_http.post("/admin/ai/model-catalog/refresh")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["source"] == "github"
+    assert body["last_error"] is None
+
+
+@pytest.mark.asyncio
+async def test_create_provider_normalizes_legacy_type(settings_app, admin_http):
+    _, factory = settings_app
+    create = await admin_http.post("/admin/ai/providers", json={
+        "name": "legacy", "provider_type": "openai_compatible",
+        "base_url": "https://api.example.com/v1", "api_key": "k", "model": "gpt-4o-mini",
+    })
+    assert create.status_code == 201
+    provider_id = create.json()["id"]
+    async with factory() as session:
+        row = await session.get(AiProviderConfig, provider_id)
+        assert row.provider_type == "litellm"
+        assert row.model == "openai/gpt-4o-mini"

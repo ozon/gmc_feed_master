@@ -265,7 +265,29 @@ Retention: Last N per feed source (default 30, includes rollback versions).
 | `timeout_s` | Integer | Per-request timeout |
 | `enabled` | Boolean | Disabled configs are skipped |
 
-Enabled rows are grouped by `tier` into LiteLLM Router model groups (`bulk`, `precision`) with automatic `bulk → precision` failover; swapping providers is a config-row change, not a code change.
+Enabled rows are grouped by `tier` into LiteLLM Router model groups (`bulk`, `precision`) with automatic `bulk → precision` failover; swapping providers is a config-row change, not a code change. Writes normalize `provider_type` to `litellm`; legacy `openai_compatible` rows stay readable and map to `openai/<model>` at Router build.
+
+### AiModelCatalog
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | Integer | PK |
+| `vendor` | String(50) | Preset vendor key (`openai`, `anthropic`, `google`, `openrouter`, `mistral`, `groq`) |
+| `model_id` | String(255) | Unique LiteLLM model string (`vendor/model`) |
+| `display_name` | String(255) | Trailing model segment |
+| `mode` | String(20) | `chat` or `completion` |
+| `context_window` / `max_output_tokens` | Integer | Nullable |
+| `input_price_per_mtok` / `output_price_per_mtok` | Numeric(12,6) | Nullable; converted from LiteLLM per-token cost |
+| `supports_vision` / `supports_function_calling` | Boolean | |
+
+Snapshot of LiteLLM's `model_prices_and_context_window.json`. Lazily seeded from the installed `litellm.model_cost` when empty, replaced wholesale by the daily `system-ai-model-catalog-refresh` job or `POST /admin/ai/model-catalog/refresh`; a failed refresh keeps the last-good catalog.
+
+### AiModelCatalogSync
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | Integer | PK, singleton (`id = 1`) |
+| `last_attempt_at` / `last_success_at` | DateTime(tz) | Nullable; drives the admin freshness badge |
+| `last_error` | Text | Nullable; refresh failure detail |
+| `source` | String(50) | `bundled` or `github` |
 
 > Result caching is not a table: `AiService` uses LiteLLM's native cache (`local`/`disk`/`redis`, namespaced per task type with TTLs). The former `ai_result_cache` table was dropped in migration `m16` (`b1a2c3d4e5f6`).
 

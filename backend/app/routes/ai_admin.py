@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from datetime import datetime
 from typing import Annotated, Any
 
@@ -9,6 +10,14 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..access import CurrentUser, require_admin
+from ..ai.model_catalog import (
+    ensure_seeded,
+    get_entries,
+    get_sync_state,
+    is_recommended,
+    refresh,
+)
+from ..ai.presets import PROVIDER_PRESETS, normalize_provider_input
 from ..ai.tasks import CANONICAL_VARIABLES
 from ..ai.templates import parse_placeholders, render_messages, validate_template
 from ..ai.usage import aggregate_usage, summarize_usage
@@ -25,9 +34,13 @@ from ..schemas.ai_admin import (
     AiSettingsOut,
     AiSettingsUpdate,
     CacheClearRequest,
+    ModelCatalogEntryOut,
+    ModelCatalogOut,
+    ModelCatalogSyncOut,
     PromptTemplateCreate,
     PromptTemplateOut,
     PromptTemplatePreviewRequest,
+    ProviderPresetOut,
 )
 
 router = APIRouter()
@@ -37,6 +50,7 @@ AdminUser = Annotated[CurrentUser, Depends(require_admin)]
 UsageGroupBy = Annotated[str, Query(pattern="^(client|feed_source|task_type|day)$")]
 UsageFrom = Annotated[datetime | None, Query(alias="from")]
 UsageTo = Annotated[datetime | None, Query(alias="to")]
+CatalogMode = Annotated[str, Query(pattern="^(chat|completion)$")]
 
 
 def _require_db(db_session: AsyncSession | None) -> AsyncSession:
@@ -47,6 +61,18 @@ def _require_db(db_session: AsyncSession | None) -> AsyncSession:
 
 def _is_deadlock(exc: OperationalError) -> bool:
     return "deadlock" in str(getattr(exc, "orig", exc)).lower()
+
+
+def _normalize_provider(values: dict[str, Any]) -> dict[str, Any]:
+    model = values.get("model")
+    if model is None:
+        return values
+    provider_type, normalized = normalize_provider_input(
+        model, str(values.get("provider_type", "litellm"))
+    )
+    values["provider_type"] = provider_type
+    values["model"] = normalized
+    return values
 
 
 def _ai_service(request: Request):
@@ -75,7 +101,7 @@ async def create_provider(
 ) -> AiProviderOut:
     session = _require_db(db_session)
     async with session.begin():
-        row = AiProviderConfig(**payload.model_dump())
+        row = AiProviderConfig(**_normalize_provider(payload.model_dump()))
         session.add(row)
         await session.flush()
     service = getattr(request.app.state, "ai_service", None)
@@ -97,7 +123,7 @@ async def update_provider(
         row = await session.get(AiProviderConfig, provider_id)
         if row is None:
             raise HTTPException(status_code=404, detail="provider not found")
-        updates = payload.model_dump(exclude_unset=True)
+        updates = _normalize_provider(payload.model_dump(exclude_unset=True))
         if "api_key" in updates:
             row.api_key = updates.pop("api_key")
         for key, value in updates.items():
@@ -535,3 +561,68 @@ async def cache_clear(
     service = _ai_service(request)
     removed = await service.clear_cache(payload.namespace)
     return {"removed": removed}
+
+
+@router.get("/admin/ai/provider-presets", response_model=list[ProviderPresetOut])
+async def list_provider_presets(_admin: AdminUser) -> list[ProviderPresetOut]:
+    return [ProviderPresetOut(**asdict(preset)) for preset in PROVIDER_PRESETS]
+
+
+@router.get("/admin/ai/model-catalog", response_model=ModelCatalogOut)
+async def get_model_catalog(
+    request: Request,
+    _admin: AdminUser,
+    db_session: DbSession,
+    vendor: str | None = None,
+    mode: CatalogMode = "chat",
+) -> ModelCatalogOut:
+    session = _require_db(db_session)
+    factory = request.app.state.db_session_factory
+    if factory is not None:
+        await ensure_seeded(factory)
+    rows = await get_entries(session, vendor=vendor, mode=mode)
+    state = await get_sync_state(session)
+    sync = ModelCatalogSyncOut(
+        last_attempt_at=state.last_attempt_at if state else None,
+        last_success_at=state.last_success_at if state else None,
+        last_error=state.last_error if state else None,
+        source=state.source if state else None,
+    )
+    return ModelCatalogOut(
+        entries=[
+            ModelCatalogEntryOut(
+                model_id=row.model_id,
+                vendor=row.vendor,
+                display_name=row.display_name,
+                context_window=row.context_window,
+                max_output_tokens=row.max_output_tokens,
+                input_price_per_mtok=row.input_price_per_mtok,
+                output_price_per_mtok=row.output_price_per_mtok,
+                supports_vision=row.supports_vision,
+                supports_function_calling=row.supports_function_calling,
+                is_recommended=is_recommended(row.vendor, row.model_id),
+            )
+            for row in rows
+        ],
+        sync=sync,
+    )
+
+
+@router.post("/admin/ai/model-catalog/refresh", response_model=ModelCatalogSyncOut)
+async def refresh_model_catalog(
+    request: Request,
+    _admin: AdminUser,
+    db_session: DbSession,
+) -> ModelCatalogSyncOut:
+    _require_db(db_session)
+    factory = request.app.state.db_session_factory
+    client = getattr(request.app.state, "catalog_http_client", None)
+    if factory is None or client is None:
+        raise HTTPException(status_code=503, detail="model catalog unavailable")
+    state = await refresh(factory, client, request.app.state.clock.now())
+    return ModelCatalogSyncOut(
+        last_attempt_at=state.last_attempt_at,
+        last_success_at=state.last_success_at,
+        last_error=state.last_error,
+        source=state.source,
+    )
