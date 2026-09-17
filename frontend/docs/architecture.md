@@ -234,7 +234,7 @@ cd frontend && npm run dev
 - `.env.example` is the canonical list of frontend env vars; copy it to `.env.local` (gitignored). `VITE_ALLOWED_HOSTS` is comma-separated — Vite rejects any Host header not listed, so reaching the dev server by hostname means adding it here.
 - To serve the app through Caddy instead, run `make dev-caddy` (HTTP, no TLS) and set `DEV_HOST` to the same host. The two knobs are deliberately paired: `VITE_ALLOWED_HOSTS` governs Vite, `DEV_HOST` governs Caddy's site label.
 
-- Vite proxies `/auth/*`, `/health`, `/admin`, `/clients`, `/feed-sources`, `/dashboard`, `/plugins`, `/registry`, `/export` to `http://127.0.0.1:8000` (production Caddyfiles mirror this list, including `/admin/*`)
+- Vite proxies `/auth/*`, `/health`, `/admin`, `/clients`, `/feed-sources`, `/dashboard`, `/plugins`, `/registry`, `/export` to `VITE_API_TARGET` (default `http://127.0.0.1:8000`; set it in `.env` to match a backend on another port) — production Caddyfiles mirror this proxy list, including `/admin/*`
 - HTTPS required for `Secure` session cookie
 
 ## Key Files

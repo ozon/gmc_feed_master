@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
     .split(',')
     .map((host) => host.trim())
     .filter(Boolean);
+  const apiTarget = env.VITE_API_TARGET?.trim() || 'http://127.0.0.1:8000';
 
   if (Boolean(certPath) !== Boolean(keyPath)) {
     throw new Error('VITE_HTTPS_CERT and VITE_HTTPS_KEY must be set together');
@@ -47,39 +48,39 @@ export default defineConfig(({ mode }) => {
         : {}),
       proxy: {
         '/admin': {
-          target: 'http://127.0.0.1:8000',
+          target: apiTarget,
           changeOrigin: true,
         },
         '/auth': {
-          target: 'http://127.0.0.1:8000',
+          target: apiTarget,
           changeOrigin: true,
         },
         '/health': {
-          target: 'http://127.0.0.1:8000',
+          target: apiTarget,
           changeOrigin: true,
         },
         '/clients': {
-          target: 'http://127.0.0.1:8000',
+          target: apiTarget,
           changeOrigin: true,
         },
         '/feed-sources': {
-          target: 'http://127.0.0.1:8000',
+          target: apiTarget,
           changeOrigin: true,
         },
         '/dashboard': {
-          target: 'http://127.0.0.1:8000',
+          target: apiTarget,
           changeOrigin: true,
         },
         '/plugins': {
-          target: 'http://127.0.0.1:8000',
+          target: apiTarget,
           changeOrigin: true,
         },
         '/registry': {
-          target: 'http://127.0.0.1:8000',
+          target: apiTarget,
           changeOrigin: true,
         },
         '/export': {
-          target: 'http://127.0.0.1:8000',
+          target: apiTarget,
           changeOrigin: true,
         },
       },
