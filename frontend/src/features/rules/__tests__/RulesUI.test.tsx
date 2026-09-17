@@ -41,6 +41,9 @@ function renderUI() {
         ],
       });
     }
+    if (url.startsWith('/feed-sources/1')) {
+      return jsonResponse({ id: 1, configuration: { ai_rules: { enabled: true, limit: 50, budget: 50 } } });
+    }
     if (url.startsWith('/registry/attributes')) {
       return jsonResponse([
         { name: 'title', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
@@ -118,5 +121,10 @@ describe('RulesUI', () => {
     expect(screen.queryByTestId('then-row-0')).not.toBeInTheDocument();
     await user.click(await screen.findByTestId('then-add-footer'));
     expect(await screen.findByTestId('then-row-0')).toBeInTheDocument();
+  });
+
+  it('renders the AI rules budget section', async () => {
+    renderUI();
+    expect(await screen.findByText('AI rules')).toBeInTheDocument();
   });
 });
