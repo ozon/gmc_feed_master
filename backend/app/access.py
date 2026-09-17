@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import structlog
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -66,6 +67,7 @@ async def get_current_user(
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> CurrentUser:
     user = await _load_user(db_session, request_user)
+    structlog.contextvars.bind_contextvars(actor=user.username, actor_role=user.role)
     if db_session is not None:
         # Close the implicitly-begun read transaction so handlers can start
         # their own `session.begin()` without InvalidRequestError.

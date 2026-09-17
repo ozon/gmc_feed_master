@@ -6,6 +6,8 @@ from collections.abc import Sequence
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+import structlog
+
 from ..models.feed_source import FeedSource
 from ..models.ingestion import IngestionRun
 from .locks import LockRegistry
@@ -62,6 +64,11 @@ class PipelineRunner:
                 return None
 
             run_id = await self._start(feed_source_id, run_id)
+            structlog.contextvars.bind_contextvars(
+                run_id=run_id,
+                feed_source_id=feed_source_id,
+                client_id=feed_source.client_id,
+            )
             processed_count = 0
             failed_count = 0
             statistics: dict = {}
@@ -101,6 +108,9 @@ class PipelineRunner:
                 statistics=statistics,
             )
         finally:
+            structlog.contextvars.unbind_contextvars(
+                "run_id", "feed_source_id", "client_id"
+            )
             lock.release()
 
     async def _feed_source_exists(self, feed_source_id: int) -> bool:
