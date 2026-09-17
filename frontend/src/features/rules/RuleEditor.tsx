@@ -210,7 +210,16 @@ export function RuleEditor({
                         promptSource: 'template',
                         taskType: 'title_optimization',
                       }
-                    : { op: nextOp, field: action.field };
+                    : {
+                        ...action,
+                        op: nextOp,
+                        promptSource: undefined,
+                        taskType: undefined,
+                        templateId: undefined,
+                        system: undefined,
+                        user: undefined,
+                        variables: undefined,
+                      };
                 onPatchThen(next);
               }}
               data-testid={`then-op-${index}`}
