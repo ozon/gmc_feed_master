@@ -1449,3 +1449,18 @@ Inline code review of the cycle found one critical and one important issue; both
 - `GET /plugins/rules/ai/templates` lists scoped templates and `POST /plugins/rules/ai/preview` renders the prompt with zero AI cost.
 
 **Rationale:** Preserves the synchronous pipeline contract while reusing the existing AI cache/usage/fallback machinery, and the render-only preview lets authors inspect the exact messages — including missing custom variables — before any run spends budget.
+
+### 2026-09-17 — Structured logging and audit trail
+
+**Topic:** Central structured logging (new `structlog` dependency) and an append-only audit/error store.
+
+**Decision:**
+- **`structlog` is added**, but the surface stays stdlib: `app/logging_setup.py:configure_logging()` bridges structlog through `logging` via `ProcessorFormatter`, so the existing `logging.getLogger(__name__)` call sites across `app/` are unchanged. JSON to stdout by default; `LOG_FORMAT=console` for dev; `LOG_LEVEL` default `INFO`. Uvicorn loggers propagate through the same formatter; `_ExportTokenRedactor` stays on `uvicorn.access`.
+- **Contextvar propagation**, not parameter passing: `RequestContextMiddleware` binds `request_id`/`method`/`path` (validating or minting `X-Request-ID`, echoing the response header), `get_current_user` binds `actor`/`actor_role`, and `PipelineRunner.run` binds `run_id`/`feed_source_id`/`client_id`. The foreign pre-chain's `merge_contextvars` makes existing stdlib log lines carry them.
+- **One append-only `event_log` table** with `category` ∈ `audit`/`server_error`/`client_error`, `source` ∈ `backend`/`frontend`. `client_id`/`feed_source_id` are plain nullable telemetry integers, not FKs (mirrors `ai_usage_logs`). Service helpers: `record_event`, `audit`, `record_client_error`, `record_server_error`, `purge_expired_events`.
+- **Retention**: `global_settings.event_log_retention_days` (default 180; settings fallback 180), enforced by the nightly `system-event-log-purge` job on `PURGE_CRON`.
+- **API under `/logs/*`, not `/logs`**: the SPA owns the bare route, so `GET /logs/entries` (admin-only, cursor-paginated) and `POST /logs/client` (authenticated, redacted, 32 KB body cap, 60/60 s per-user fixed window) live on a subpath and only `handle /logs/*` is proxied in both Caddyfiles. The admin viewer and nav item are `RequireAdmin`-gated.
+- **Frontend errors ship to `/logs/client`**: `frontend/src/logging/logger.ts` sends `warn`/`error` (debug/info console-only) batched via `sendBeacon` (+ `keepalive` fetch fallback); `window.onerror`/`unhandledrejection`/`AppErrorBoundary` report through it; `X-Request-ID` correlates frontend failures with backend lines.
+- **Operator flag (out of scope, found during this work):** the pre-existing `POST /chat` backend route is absent from both `Caddyfile` and `Caddyfile.dev`, so the chat widget cannot reach the backend when served through Caddy. Needs a `handle /chat` block; flagged, not changed.
+
+**Rationale:** A full call-site rewrite was the alternative and was rejected. Bridging structlog through stdlib gets structured JSON and correlation without touching hundreds of loggers, and the contextvar layer means `run_id`/`request_id`/`actor` appear on the existing lines for free. One table with a `category` column keeps audit and error queries in one indexed store while the `/logs/*` prefix avoids the SPA route collision.

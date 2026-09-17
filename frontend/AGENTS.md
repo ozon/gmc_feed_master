@@ -20,6 +20,9 @@ npm run typecheck        # tsc -b
 - **Pipeline builder** — dnd-kit in `src/features/pipeline/`; workspace state is local React state.
 - **Routing** — `src/app/router.tsx` with lazy-loaded pages; session guard via `RequireSession`.
 - **Error handling** — `notifyApiError` in `src/app/notifications.ts` maps 422 field errors to form fields.
+- **Logging** — `src/logging/logger.ts`. Use `createLogger(scope)`; `debug`/`info` stay in the console, `warn`/`error` are also batched and shipped to `POST /logs/client` (redacted client-side). Report unexpected throws with `captureException(error, { scope, ...context })`. Never use bare `console.error` for shipped errors, and never log secrets/PII (the denylist is a backstop, not a licence).
+- **Error boundaries** — `AppErrorBoundary` (`src/app/AppErrorBoundary.tsx`) wraps the app and reports render errors; `PluginErrorBoundary` keeps per-plugin isolation (ADR-0004) and also reports. Add a boundary around any new independent surface rather than letting a throw unmount the app.
+- **Correlation** — `src/api/client.ts` attaches an `X-Request-ID` per request and logs failed calls with it; don't create raw `fetch` calls that bypass `client.ts` (they lose correlation and auth handling).
 
 ## Testing
 - Unit: `src/**/*.test.tsx` with vitest + React Testing Library

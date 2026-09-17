@@ -28,6 +28,14 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 - `GET /auth/me` — returns `{"username": str, "role": "admin"|"user", "client_ids": list[int] | null}` (`null` = admin/unrestricted; a sorted list of assigned client ids for users)
 - `POST /auth/interaction` — refreshes session idle timer
 
+## Logs
+Paths live under `/logs/*`, **not** `/logs`: the SPA owns the bare `/logs` route, so both `Caddyfile` and `Caddyfile.dev` proxy only the `handle /logs/*` pattern (Caddy's match excludes the bare path, so the admin viewer page still loads from the SPA).
+
+- `GET /logs/entries` — **admin-only** (`require_admin`). Query params: `category`, `level`, `source`, `logger`, `actor`, `client_id`, `feed_source_id`, `request_id`, `run_id`, `q` (message substring), `from`, `to`, `limit` (default 100, clamped 1–500), `cursor` (id). Returns `{items: [...], next_cursor}` ordered by `id desc`; `next_cursor` is the last returned id when more rows exist.
+- `POST /logs/client` — **any authenticated user** (`require_user`). Accepts a batch of frontend error entries (redacted server-side, each `context` capped at 8000 chars), writes `category=client_error`, returns `204`. Body size is capped at 32 000 bytes (413 over) and submissions are limited to 60 per 60 s per user (429 over) via an in-memory fixed window (single-worker assumption).
+
+`GET /admin/settings` / `PUT /admin/settings` include `event_log_retention_days` (default 180; the retention rows are described under Admin → Settings below).
+
 ## Admin Area (admin only)
 
 ### Users
@@ -38,7 +46,7 @@ All endpoints (except `/health` and `/export/{token}.xml`) require a valid sessi
 
 ### Settings
 - `GET /admin/settings` — `{staging_removal_retention_days, staging_history_retention_days, ingestion_run_retention_days, ai_usage_retention_days, event_log_retention_days}`; seeds the single `global_settings` row with 90s (and 180 for `event_log_retention_days`) on first read
-- `PUT /admin/settings` — update retention days (each ≥ 1; 422 otherwise). The nightly purge jobs read these values (fallback 90 while no row exists)
+- `PUT /admin/settings` — update retention days (each ≥ 1; 422 otherwise). The nightly purge jobs read these values (fallback 90 while no row exists; `event_log_retention_days` falls back to 180)
 
 ### AI Administration
 All routes require the admin role. `api_key` is never included in any response.

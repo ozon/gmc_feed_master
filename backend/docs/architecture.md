@@ -218,7 +218,20 @@ Key properties:
 - Deactivation instead of deletion (`users.is_active`): login rejected, sessions die on next request. Password resets bump `revocation_generation`, killing existing sessions.
 - Login-time seed user is admin; the m11 migration promoted pre-existing users.
 
+## Logging and Observability
+- **Structured JSON to stdout by default.** `app/logging_setup.py:configure_logging(settings)` (idempotent, called first in `create_app()`) installs a root stdout `StreamHandler` whose `structlog.stdlib.ProcessorFormatter` renders both structlog and stdlib records. `LOG_FORMAT=console` selects the dev `ConsoleRenderer`; `LOG_LEVEL` defaults to `INFO`.
+- **structlog bridged through stdlib.** Existing `logging.getLogger(__name__)` call sites are unchanged: a `foreign_pre_chain` (`merge_contextvars`, level, logger name, timestamp, positional args, redaction) makes foreign stdlib records render through the same chain. Uvicorn loggers propagate through the root formatter; `_ExportTokenRedactor` stays on `uvicorn.access`.
+- **Redaction processor.** Case-insensitive key denylist → `[REDACTED]`; string values > 2048 chars truncate with `…[truncated]`; recursion depth 3. A backstop, not a guarantee — never log request/response bodies for `app/auth/` or ingest credentials.
+- **Contextvars.** `RequestContextMiddleware` validates/creates `X-Request-ID` (`[A-Za-z0-9._-]{8,64}`, else `uuid4`), binds `request_id`/`method`/`path`, echoes the header, and clears in `finally`. `get_current_user` binds `actor`/`actor_role`; `PipelineRunner.run` binds `run_id`/`feed_source_id`/`client_id` for the run (so existing step loggers satisfy the `run_id` tracing rule automatically). Unhandled exceptions are logged and persisted as `category=server_error`.
+- **Unified `event_log` store (append-only).** One table with `category` ∈ `audit` | `server_error` | `client_error`; `backend/app/event_log/service.py` exposes `record_event`, `audit`, `record_client_error`, `record_server_error`, `purge_expired_events`. Audit rows are emitted at auth, user admin, client/feed CRUD, field mapping, plugin/pipeline config, AI admin, and export/publish sites (reads and per-row pipeline churn excluded).
+- **Retention & purge.** `global_settings.event_log_retention_days` (default 180, settings fallback 180) enforced by the nightly `system-event-log-purge` job on `PURGE_CRON`, mirroring the staging/ingestion/AI purge jobs.
+- **Logs API.** `GET /logs/entries` (admin-only) and `POST /logs/client` (any authenticated user; redacted, size-capped, rate-limited). Paths live under `/logs/*` because the SPA owns bare `/logs`; both Caddyfiles proxy the prefix.
+
 ## Key Files
+- `app/logging_setup.py` — `configure_logging`, redaction processor, `redact_mapping`
+- `app/middleware/request_context.py` — `RequestContextMiddleware` (request id + contextvars + server-error persistence)
+- `app/event_log/service.py` — event/audit record + purge helpers
+- `app/routes/logs.py` — `GET /logs/entries`, `POST /logs/client`
 - `app/main.py` — App factory, lifespan, router mounting (scope-enforcement dependencies), scheduler startup
 - `app/access.py` — Authorization layer (`CurrentUser`, `get_current_user`, `require_admin`, `enforce_scope_access`)
 - `app/routes/admin.py` — Admin area: user CRUD, password reset, global settings, scheduler overview

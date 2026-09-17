@@ -70,7 +70,7 @@ Unique `(user_id, client_id)`. Many-to-many: a `user` sees only their assigned c
 | `ai_instructor_max_retries` | Integer | Default 2 |
 | `updated_at` | DateTime | |
 
-Row is seeded lazily on first `GET /admin/settings` (the migration does not insert it). The nightly purge jobs read these values; fallback is 90 days per column while no row exists. Editable via `PUT /admin/settings` (retention) and `GET/PUT /admin/ai/settings` (the `ai_*` columns, hot-applied to the running AI service).
+Row is seeded lazily on first `GET /admin/settings` (the migration does not insert it). The nightly purge jobs read these values; fallback is 90 days per column while no row exists (`event_log_retention_days` falls back to 180). Editable via `PUT /admin/settings` (retention) and `GET/PUT /admin/ai/settings` (the `ai_*` columns, hot-applied to the running AI service).
 
 ### Client
 | Column | Type | Notes |
@@ -313,6 +313,26 @@ Snapshot of LiteLLM's `model_prices_and_context_window.json`. Lazily seeded from
 
 One row per AI call including cache hits (tokens 0). **Retention**: purged nightly after `ai_usage_retention_days`. Aggregated via `GET /admin/ai/usage`.
 
+### EventLog
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | BigInteger | PK, monotonic — cursor-pagination key |
+| `created_at` | DateTime(tz) | Server default `now()`, indexed |
+| `category` | String(20) | `audit` / `server_error` / `client_error` |
+| `level` | String(10) | `debug` / `info` / `warning` / `error` / `critical` |
+| `source` | String(20) | `backend` / `frontend` |
+| `logger` | String(120) | Nullable |
+| `actor` | String(120) | Nullable |
+| `actor_role` | String(20) | Nullable |
+| `client_id` | Integer | Nullable; plain telemetry integer, **not an FK** (mirrors `ai_usage_logs`) |
+| `feed_source_id` | Integer | Nullable; plain telemetry integer, **not an FK** |
+| `request_id` | String(64) | Nullable, indexed |
+| `run_id` | Integer | Nullable |
+| `message` | Text | Not null |
+| `context` | JSONB | Not null, server default `'{}'` |
+
+Indexes: `created_at`, `(category, created_at)`, `request_id`, `feed_source_id`. Append-only by application convention (no update/delete path; a DB trigger/revoke would be required for tamper resistance). Written by `app/event_log/service.py`; `audit` pulls actor/role/context from contextvars, and the request-context middleware persists unhandled exceptions as `server_error`. Read via the admin-only `GET /logs/entries`. **Retention**: purged nightly by `system-event-log-purge` after `event_log_retention_days`.
+
 ### PromptTemplate
 | Column | Type | Notes |
 |--------|------|-------|
@@ -416,3 +436,5 @@ Retention days are DB-backed (single `global_settings` row, admin-editable via `
 - `app/staging/delta.py` — `classify()` hash comparison logic
 - `app/staging/persistence.py` — `apply_staging_delta()`, `apply_plugin_outcomes()`, `load_export_bound()`
 - `app/staging/purge.py` — `purge_expired()`, `purge_expired_ingestion_runs()`
+- `app/models/event_log.py` — `EventLog` append-only audit/error table
+- `app/event_log/service.py` — `record_event()`, `audit()`, `record_client_error()`, `record_server_error()`, `purge_expired_events()`

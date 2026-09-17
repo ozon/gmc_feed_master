@@ -139,6 +139,15 @@ export function useSavePipeline(feedSourceId) {
 - **AI provider wizard** — `features/admin/ai/ProviderWizard.tsx` is a 3-step Mantine `Stepper` (provider preset → API key → model) backed by `useProviderPresets()` and `useModelCatalog(vendor)`; advanced fields (tier, concurrency, timeout, prices, enabled) sit in a collapsed accordion and prices prefill from the selected catalog entry. `ProvidersPage.tsx` keeps the provider table (Legacy badge for `openai_compatible` rows) and shows the catalog sync status with a manual refresh button. Presets and catalog are server state and live only in TanStack Query.
 - Backend enforces the same rules (404 for unassigned client/feed-source access, 403 for admin-only operations, `/admin/*` admin-only) — the frontend guard is UX only.
 
+## Logging & Error Reporting
+
+- **Logger util** (`src/logging/logger.ts`, no dependency): `createLogger(scope)` returns `debug`/`info` (console only) and `warn`/`error` (console **and** queued for shipping). `captureException(error, context)` reports an unknown throw; `installGlobalErrorHandlers()` wires `window.onerror`, `unhandledrejection`, `pagehide`, and `visibilitychange`.
+- **Redaction mirrors the backend**: key denylist (`password`, `token`, `secret`, `authorization`, `api_key`, …) → `[REDACTED]`, string values > 2000 chars truncated, recursion depth 3.
+- **Shipping**: `warn`/`error` entries batch on size (10) and interval (5 s) and POST to `/logs/client` via `navigator.sendBeacon`, falling back to `fetch(..., { keepalive: true, credentials: 'include' })`. `flushLogs()` forces a flush; `resetLogQueue()` clears (tests).
+- **Correlation**: `src/api/client.ts` attaches `X-Request-ID` (`crypto.randomUUID()`) to every request; a failed response logs an `api` error carrying that id, the method, the query-stripped URL, and the status. Frontend-only errors mint a local id, so every shipped entry has a `request_id`. Context: `request_id`, route, url path, truncated userAgent — no PII.
+- **Top-level boundary**: `AppErrorBoundary` (`src/app/AppErrorBoundary.tsx`) wraps `<App/>` in `src/App.tsx` and reports via `captureException`; `PluginErrorBoundary` keeps its per-plugin isolation role (ADR-0004) and additionally reports through the logger.
+- **Admin viewer**: `/logs` → lazy `SystemLogsPage` (`features/systemLogs/`), gated by `RequireAdmin` and hidden from the non-admin nav. Read-only Mantine table over `useEventLogs` (`GET /logs/entries`), with category/level/source/actor/request-id/message filters, a row-expand detail (`JSON.stringify(entry)`), and "load more" cursor pagination. Server state lives only in TanStack Query (`queryKeys.eventLogs`).
+
 ## State Boundaries
 
 | Data | Location | Mutation |
@@ -235,11 +244,14 @@ cd frontend && npm run dev
 - To serve the app through Caddy instead, run `make dev-caddy` (HTTP, no TLS) and set `DEV_HOST` to the same host. The two knobs are deliberately paired: `VITE_ALLOWED_HOSTS` governs Vite, `DEV_HOST` governs Caddy's site label.
 
 - Vite proxies `/auth/*`, `/health`, `/admin`, `/clients`, `/feed-sources`, `/dashboard`, `/plugins`, `/registry`, `/export` to `VITE_API_TARGET` (default `http://127.0.0.1:8000`; set it in `.env` to match a backend on another port) — production Caddyfiles mirror this proxy list, including `/admin/*`
+- **Known gap (operator flag, out of scope here):** the Vite proxy list does **not** include `/logs`, so under `npm run dev` the logger's `POST /logs/client` and the viewer's `GET /logs/entries` never reach the backend (Vite serves the SPA fallback). `/logs/*` **is** proxied by both Caddyfiles. `POST /chat` is absent from the Vite proxy **and** both Caddyfiles, so the chat widget cannot reach the backend through either dev/prod proxy. Both need proxy entries added.
 - HTTPS required for `Secure` session cookie
 
 ## Key Files
-- `src/main.tsx` — App entry, providers
+- `src/main.tsx` — App entry, providers, global error handlers
 - `src/App.tsx` — MantineProvider, LocaleProvider, Suspense
+- `src/app/AppErrorBoundary.tsx` — top-level render-error boundary (reports via `captureException`)
+- `src/logging/logger.ts` — custom logger, redaction, error shipping, `X-Request-ID` generator
 - `src/app/router.tsx` — Routes, session guard, lazy loading
 - `src/api/queryClient.ts` — QueryClient config (no retry, no background refetch)
 - `src/api/queryKeys.ts` — Hierarchical query key factory
