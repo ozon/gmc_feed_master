@@ -50,6 +50,29 @@
     "pluginEnabled": "Aktiviert"
   },
   "ai": {
+    "wizard": {
+      "title": "AI-Anbieter hinzufügen",
+      "editTitle": "AI-Anbieter bearbeiten",
+      "steps": { "provider": "Anbieter", "key": "API-Key", "model": "Modell" },
+      "docsHint": "API-Key erstellen",
+      "baseUrl": "Base-URL",
+      "modelHeading": "Modell wählen",
+      "modelCustom": "Modellname",
+      "sortBy": "Sortieren nach",
+      "sortPrice": "Preis",
+      "sortContext": "Kontextfenster",
+      "recommended": "Empfohlen",
+      "vision": "Vision",
+      "tools": "Tools",
+      "advanced": "Erweiterte Optionen",
+      "inputPrice": "Input-Preis / Mtok",
+      "outputPrice": "Output-Preis / Mtok",
+      "finish": "Anlegen & testen",
+      "testOk": "Verbindung OK ({{latency}} ms)",
+      "testFailed": "Test fehlgeschlagen: {{code}}",
+      "back": "Zurück",
+      "next": "Weiter"
+    },
     "section": {
       "providers": "Provider",
       "usage": "Nutzung",

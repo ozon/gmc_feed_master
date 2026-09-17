@@ -50,6 +50,29 @@
     "pluginEnabled": "Enabled"
   },
   "ai": {
+    "wizard": {
+      "title": "Add AI provider",
+      "editTitle": "Edit AI provider",
+      "steps": { "provider": "Provider", "key": "API key", "model": "Model" },
+      "docsHint": "Create an API key",
+      "baseUrl": "Base URL",
+      "modelHeading": "Choose a model",
+      "modelCustom": "Model name",
+      "sortBy": "Sort by",
+      "sortPrice": "Price",
+      "sortContext": "Context window",
+      "recommended": "Recommended",
+      "vision": "Vision",
+      "tools": "Tools",
+      "advanced": "Advanced options",
+      "inputPrice": "Input price / Mtok",
+      "outputPrice": "Output price / Mtok",
+      "finish": "Create & test",
+      "testOk": "Connection OK ({{latency}} ms)",
+      "testFailed": "Test failed: {{code}}",
+      "back": "Back",
+      "next": "Next"
+    },
     "section": {
       "providers": "Providers",
       "usage": "Usage",

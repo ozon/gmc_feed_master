@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
 import { stubFetch } from '../../../test/fetch';
-import { ProvidersPage } from './ProvidersPage';
+import { ProviderWizard } from './ProviderWizard';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -12,20 +12,16 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-const providers = [
-  {
-    id: 1, name: 'primary', provider_type: 'litellm',
-    base_url: '', model: 'openai/gpt-4o-mini',
-    input_price_per_mtok: null, output_price_per_mtok: null,
-    max_concurrency: 4, timeout_s: 30, enabled: true, tier: 'bulk',
-  },
-];
-
 const presets = [
   {
     vendor_key: 'openai', label: 'OpenAI', model_prefix: 'openai',
     default_base_url: '', requires_base_url: false,
     api_key_env_hint: 'OPENAI_API_KEY', docs_url: 'https://docs', supports_catalog: true,
+  },
+  {
+    vendor_key: 'custom', label: 'OpenAI-kompatibel (custom)', model_prefix: 'openai',
+    default_base_url: '', requires_base_url: true,
+    api_key_env_hint: '', docs_url: '', supports_catalog: false,
   },
 ];
 
@@ -46,51 +42,36 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  stubFetch((url) => {
-    if (url === '/admin/ai/providers') return jsonResponse(providers);
+  stubFetch((url, init) => {
     if (url === '/admin/ai/provider-presets') return jsonResponse(presets);
     if (url.startsWith('/admin/ai/model-catalog')) return jsonResponse(catalog);
+    if (url === '/admin/ai/providers' && init?.method === 'POST') {
+      return jsonResponse({ ...catalog.entries[0], id: 5, name: 'x', tier: 'bulk', enabled: true }, 201);
+    }
+    if (url === '/admin/ai/providers/5/test') {
+      return jsonResponse({ status: 'ok', latency_ms: 12 });
+    }
     return jsonResponse({});
   });
 });
 
-describe('ProvidersPage', () => {
-  it('renders the provider table', async () => {
-    render(<ProvidersPage />);
-    await waitFor(() => expect(screen.getByTestId('ai-providers-table')).toBeInTheDocument());
-    expect(screen.getByText('primary')).toBeInTheDocument();
-    expect(screen.getByTestId('ai-provider-row-1')).toHaveTextContent('Bulk');
-  });
-
-  it('shows empty state when no providers exist', async () => {
-    stubFetch((url) => {
-      if (url === '/admin/ai/providers') return jsonResponse([]);
-      if (url === '/admin/ai/provider-presets') return jsonResponse(presets);
-      return jsonResponse({});
-    });
-    render(<ProvidersPage />);
-    await waitFor(() =>
-      expect(screen.getByText('No AI providers configured')).toBeInTheDocument(),
-    );
-  });
-
-  it('creates a provider through the wizard', async () => {
+describe('ProviderWizard', () => {
+  it('creates a provider in 3 steps and auto-tests it', async () => {
     const posts: unknown[] = [];
     stubFetch((url, init) => {
-      if (url === '/admin/ai/providers' && init?.method === 'POST') {
-        posts.push(JSON.parse(String(init.body)));
-        return jsonResponse({ ...providers[0], id: 2, model: 'openai/gpt-4o' }, 201);
-      }
-      if (url === '/admin/ai/providers/2/test') return jsonResponse({ status: 'ok', latency_ms: 9 });
-      if (url === '/admin/ai/providers') return jsonResponse(providers);
       if (url === '/admin/ai/provider-presets') return jsonResponse(presets);
       if (url.startsWith('/admin/ai/model-catalog')) return jsonResponse(catalog);
+      if (url === '/admin/ai/providers' && init?.method === 'POST') {
+        posts.push(JSON.parse(String(init.body)));
+        return jsonResponse({ ...catalog.entries[0], id: 5 }, 201);
+      }
+      if (url === '/admin/ai/providers/5/test') {
+        return jsonResponse({ status: 'ok', latency_ms: 12 });
+      }
       return jsonResponse({});
     });
-    render(<ProvidersPage />);
-    await waitFor(() => expect(screen.getByTestId('ai-providers-table')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByTestId('ai-add-provider'));
+    render(<ProviderWizard opened provider={null} presetKey="openai" onClose={() => {}} />);
     fireEvent.click(await screen.findByTestId('ai-wizard-preset-openai'));
     fireEvent.click(screen.getByTestId('ai-wizard-next'));
     fireEvent.change(screen.getByTestId('ai-wizard-api-key'), { target: { value: 'sk-test' } });
@@ -99,6 +80,25 @@ describe('ProvidersPage', () => {
     fireEvent.click(screen.getByTestId('ai-wizard-finish'));
 
     await waitFor(() => expect(posts).toHaveLength(1));
-    expect(posts[0]).toMatchObject({ model: 'openai/gpt-4o', provider_type: 'litellm' });
+    expect(posts[0]).toMatchObject({
+      provider_type: 'litellm',
+      model: 'openai/gpt-4o',
+      api_key: 'sk-test',
+      tier: 'bulk',
+    });
+    await waitFor(() => expect(screen.getByTestId('ai-wizard-result')).toBeInTheDocument());
+  });
+
+  it('requires base_url and a free model for the custom preset', async () => {
+    render(<ProviderWizard opened provider={null} presetKey="custom" onClose={() => {}} />);
+    fireEvent.click(await screen.findByTestId('ai-wizard-preset-custom'));
+    fireEvent.click(screen.getByTestId('ai-wizard-next'));
+    fireEvent.change(screen.getByTestId('ai-wizard-api-key'), { target: { value: 'k' } });
+    expect(screen.getByTestId('ai-wizard-next')).toBeDisabled();
+    fireEvent.change(screen.getByTestId('ai-wizard-base-url'), {
+      target: { value: 'http://localhost:11434/v1' },
+    });
+    fireEvent.click(screen.getByTestId('ai-wizard-next'));
+    expect(await screen.findByTestId('ai-wizard-model-custom')).toBeInTheDocument();
   });
 });
