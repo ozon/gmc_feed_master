@@ -40,6 +40,7 @@ from .routes import (
     export_history_router,
     export_public_router,
     field_mapping_router,
+    logs_router,
     plugins_router,
     quality_router,
     registry_router,
@@ -258,6 +259,7 @@ def create_app(
     app.include_router(admin_router)
     app.include_router(ai_admin_router)
     app.include_router(chat_router)
+    app.include_router(logs_router)
     app.state.settings = settings
     app.state.session_store = session_store
     app.state.session_store_injected = session_store is not None
