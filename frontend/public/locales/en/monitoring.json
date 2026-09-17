@@ -28,8 +28,6 @@
     "empty": "No findings — all products pass quality checks.",
     "severityFilter": "Severity",
     "severityPlaceholder": "All severities",
-    "codeFilter": "Code",
-    "codePlaceholder": "All codes",
     "total": "Total: {{count}}",
     "groupBy": "Group by",
     "groupRule": "Rule",
