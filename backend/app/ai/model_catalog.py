@@ -58,6 +58,8 @@ def parse_catalog(raw: dict[str, Any]) -> list[CatalogEntry]:
         if not isinstance(value, dict):
             continue
         provider = value.get("litellm_provider")
+        if not isinstance(provider, str):
+            continue
         vendor = SUPPORTED_VENDORS.get(provider)
         if vendor is None:
             continue
