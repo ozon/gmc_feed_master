@@ -94,3 +94,28 @@ describe('pinning', () => {
     expect(enforcePinning(fixed)).toEqual(fixed);
   });
 });
+
+import { normalizeAction } from '../../../../../plugins/core/rules/frontend/ast';
+
+describe('normalizeAction ai', () => {
+  it('keeps ai template fields and allows a missing field', () => {
+    const action = normalizeAction({
+      op: 'ai', promptSource: 'template', taskType: 'title_optimization', templateId: 5,
+    });
+    expect(action).toEqual({
+      op: 'ai', promptSource: 'template', taskType: 'title_optimization', templateId: 5,
+      field: '',
+    });
+  });
+
+  it('keeps ai custom fields', () => {
+    const action = normalizeAction({
+      op: 'ai', promptSource: 'custom', taskType: 'rule_value', field: 'title',
+      system: 's', user: 'u {{title}}', variables: ['title'],
+    });
+    expect(action).toEqual({
+      op: 'ai', promptSource: 'custom', taskType: 'rule_value', field: 'title',
+      system: 's', user: 'u {{title}}', variables: ['title'],
+    });
+  });
+});

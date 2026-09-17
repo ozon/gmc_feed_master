@@ -3,7 +3,7 @@ export type ConditionOp =
   | 'equals' | 'contains' | 'starts_with' | 'ends_with' | 'regex' | 'exists' | 'empty'
   | 'gt' | 'lt' | 'gte' | 'lte' | 'between';
 
-export type ActionOp = 'set' | 'replace' | 'append' | 'prepend' | 'remove' | 'clear';
+export type ActionOp = 'set' | 'replace' | 'append' | 'prepend' | 'remove' | 'clear' | 'ai';
 
 export type RuleCondition = {
   op: ConditionOp;
@@ -21,6 +21,12 @@ export type RuleAction = {
   find?: string;
   with?: string;
   caseSensitive?: boolean;
+  promptSource?: 'template' | 'custom';
+  taskType?: string;
+  templateId?: number;
+  system?: string;
+  user?: string;
+  variables?: string[];
 };
 
 export type Rule = {
@@ -40,7 +46,9 @@ export const CONDITION_NUMERIC_OPS = ['gt', 'lt', 'gte', 'lte', 'between'] as co
 const CONDITION_OPS: ReadonlySet<string> = new Set([
   'all', 'and', 'or', 'exists', 'empty', ...CONDITION_TEXT_OPS, ...CONDITION_NUMERIC_OPS,
 ]);
-const ACTION_OPS: ReadonlySet<string> = new Set(['set', 'replace', 'append', 'prepend', 'remove', 'clear']);
+const ACTION_OPS: ReadonlySet<string> = new Set([
+  'set', 'replace', 'append', 'prepend', 'remove', 'clear', 'ai',
+]);
 
 function newId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
@@ -64,16 +72,33 @@ function normalizeCondition(value: unknown): RuleCondition {
   return cond;
 }
 
-function normalizeAction(value: unknown): RuleAction | null {
+export function normalizeAction(value: unknown): RuleAction | null {
   if (typeof value !== 'object' || value === null) return null;
   const raw = value as Record<string, unknown>;
   if (typeof raw.op !== 'string' || !ACTION_OPS.has(raw.op)) return null;
-  if (typeof raw.field !== 'string' || !raw.field) return null;
-  const action: RuleAction = { op: raw.op as ActionOp, field: raw.field };
+  const op = raw.op as ActionOp;
+  const isAi = op === 'ai';
+  if (!isAi && (typeof raw.field !== 'string' || !raw.field)) return null;
+  const action: RuleAction = {
+    op,
+    field: typeof raw.field === 'string' ? raw.field : '',
+  };
   if (typeof raw.value === 'string') action.value = raw.value;
   if (typeof raw.find === 'string') action.find = raw.find;
   if (typeof raw.with === 'string') action.with = raw.with;
   if (typeof raw.caseSensitive === 'boolean') action.caseSensitive = raw.caseSensitive;
+  if (isAi) {
+    if (raw.promptSource === 'template' || raw.promptSource === 'custom') {
+      action.promptSource = raw.promptSource;
+    }
+    if (typeof raw.taskType === 'string') action.taskType = raw.taskType;
+    if (typeof raw.templateId === 'number') action.templateId = raw.templateId;
+    if (typeof raw.system === 'string') action.system = raw.system;
+    if (typeof raw.user === 'string') action.user = raw.user;
+    if (Array.isArray(raw.variables)) {
+      action.variables = raw.variables.filter((v): v is string => typeof v === 'string');
+    }
+  }
   return action;
 }
 
