@@ -46,7 +46,37 @@
     "append": "anhängen",
     "prepend": "voranstellen",
     "remove": "Feld entfernen",
-    "clear": "Feld leeren"
+    "clear": "Feld leeren",
+    "ai": "mit KI setzen"
+  },
+  "ai": {
+    "source": "Prompt-Quelle",
+    "template": "Vorlage",
+    "custom": "Eigene",
+    "task": "KI-Aufgabe",
+    "templatePick": "Prompt-Vorlage",
+    "outputFields": "Schreibt: {{fields}}",
+    "targetField": "Zielfeld",
+    "system": "System-Prompt",
+    "user": "User-Prompt",
+    "variables": "Variablen",
+    "preview": "Vorschau",
+    "previewTitle": "Prompt-Vorschau",
+    "tasks": {
+      "title_optimization": "Titel optimieren",
+      "description_optimization": "Beschreibung optimieren",
+      "category_classification": "Kategorie klassifizieren",
+      "attribute_enrichment": "Attribute extrahieren",
+      "rule_value": "Freitext"
+    },
+    "budget": {
+      "title": "KI-Regeln",
+      "enabled": "KI-Regelaktionen aktivieren",
+      "limit": "Max. Produkte pro Lauf",
+      "budget": "Max. KI-Aufrufe pro Lauf",
+      "saved": "KI-Regeln-Einstellungen gespeichert",
+      "saveFailed": "KI-Regeln-Einstellungen speichern fehlgeschlagen"
+    }
   },
   "fields": {
     "find": "Suchen",

@@ -4,6 +4,7 @@ import copy
 import logging
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -290,3 +291,105 @@ def test_action_indexed_above_max_index_rejected():
                           "value": "x"}],
             }],
         })
+
+
+# --- ai action tests (Task 1) ---
+
+
+def _ai_state():
+    return SimpleNamespace(rule_ai_pending=[])
+
+
+def _ai_ctx(state):
+    return SimpleNamespace(
+        client_id=0, feed_source_id=0, run_id=0,
+        logger=logging.getLogger("test"), run_state=state,
+    )
+
+
+def test_ai_action_records_pending_and_leaves_product():
+    state = _ai_state()
+    config = {"rules": [{
+        "id": "r1", "name": "n", "isActive": True, "when": {"op": "all"},
+        "then": [{
+            "op": "ai", "promptSource": "custom", "taskType": "rule_value",
+            "field": "title", "system": "sys", "user": "u {{title}}",
+            "variables": ["title"],
+        }],
+    }]}
+    out = RulesPlugin().process({"id": "p1", "title": "x"}, config, {}, _ai_ctx(state))
+    assert out == {"id": "p1", "title": "x"}
+    assert state.rule_ai_pending == [{
+        "product_id": "p1", "field": "title", "taskType": "rule_value",
+        "promptSource": "custom", "templateId": None, "system": "sys",
+        "user": "u {{title}}", "variables": ["title"],
+    }]
+
+
+def test_ai_action_without_run_state_warns(caplog):
+    config = {"rules": [{
+        "id": "r1", "name": "n", "isActive": True, "when": {"op": "all"},
+        "then": [{
+            "op": "ai", "promptSource": "template",
+            "taskType": "title_optimization", "templateId": 3,
+        }],
+    }]}
+    with caplog.at_level(logging.WARNING, logger="plugin"):
+        out = RulesPlugin().process({"id": "p1", "title": "x"}, config, {}, _ctx())
+    assert out == {"id": "p1", "title": "x"}
+    assert "no run_state" in caplog.text
+
+
+def test_apply_action_ai_is_passthrough():
+    product = {"title": "x"}
+    assert apply_action(product, {"op": "ai", "field": "title"}) == product
+
+
+def test_validate_ai_template_action_ok():
+    validate_config({"rules": [{
+        "id": "r", "name": "n", "when": {"op": "all"},
+        "then": [{"op": "ai", "promptSource": "template",
+                  "taskType": "title_optimization", "templateId": 5}],
+    }]})
+
+
+def test_validate_ai_custom_action_ok():
+    validate_config({"rules": [{
+        "id": "r", "name": "n", "when": {"op": "all"},
+        "then": [{"op": "ai", "promptSource": "custom", "taskType": "rule_value",
+                  "field": "title", "system": "Be helpful.", "user": "Rewrite {{title}}",
+                  "variables": ["title"]}],
+    }]})
+
+
+@pytest.mark.parametrize("action", [
+    {"op": "ai", "promptSource": "template", "taskType": "title_optimization"},
+    {"op": "ai", "promptSource": "template", "taskType": "rule_value", "templateId": 1},
+    {"op": "ai", "promptSource": "custom", "taskType": "title_optimization", "field": "t",
+     "system": "s", "user": "u", "variables": ["t"]},
+    {"op": "ai", "promptSource": "custom", "taskType": "rule_value",
+     "system": "s", "user": "u {{t}}", "variables": ["t"]},
+    {"op": "ai", "promptSource": "custom", "taskType": "rule_value",
+     "field": "additional_image_link.1", "system": "s", "user": "u {{t}}",
+     "variables": ["t"]},
+    {"op": "ai", "promptSource": "custom", "taskType": "rule_value", "field": "t",
+     "system": "s", "user": "u {{missing}}", "variables": ["t"]},
+])
+def test_validate_ai_rejects_bad_actions(action):
+    with pytest.raises(ValueError):
+        validate_config({"rules": [{
+            "id": "r", "name": "n", "when": {"op": "all"}, "then": [action],
+        }]})
+
+
+def test_validate_ai_rejects_action_after_ai_on_same_field():
+    with pytest.raises(ValueError, match="preceding 'ai'"):
+        validate_config({"rules": [{
+            "id": "r", "name": "n", "when": {"op": "all"},
+            "then": [
+                {"op": "ai", "promptSource": "custom", "taskType": "rule_value",
+                 "field": "title", "system": "s", "user": "u {{title}}",
+                 "variables": ["title"]},
+                {"op": "append", "field": "title", "value": "!"},
+            ],
+        }]})

@@ -14,3 +14,4 @@ class RunContext:
     run_id: int
     logger: logging.Logger
     original_product: dict[str, Any] | None = None
+    run_state: Any = None

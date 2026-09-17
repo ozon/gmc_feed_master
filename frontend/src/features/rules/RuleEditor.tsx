@@ -23,17 +23,19 @@ import {
   type RuleAction,
   type RuleCondition,
 } from '../../../../plugins/core/rules/frontend/ast';
+import { RuleAiActionEditor } from './RuleAiActionEditor';
 
 const TEXT_OPS: readonly string[] = ['exists', 'empty', ...CONDITION_TEXT_OPS];
 const NUMERIC_OPS: readonly string[] = CONDITION_NUMERIC_OPS;
 const LEAF_OPS: readonly string[] = [...TEXT_OPS, ...NUMERIC_OPS];
 const GROUP_OPS: readonly string[] = ['and', 'or'];
 const ALL_CONDITION_OPS: readonly string[] = [...GROUP_OPS, ...LEAF_OPS];
-const ACTION_OPS: readonly string[] = ['set', 'replace', 'append', 'prepend', 'remove', 'clear'];
+const ACTION_OPS: readonly string[] = ['set', 'replace', 'append', 'prepend', 'remove', 'clear', 'ai'];
 
 export type RuleEditorProps = {
   rule: Rule | null;
   fieldOptions: GroupedFieldOptions;
+  feedSourceId?: number;
   onPatch: (patch: Partial<Rule>) => void;
   onPatchWhen: (when: RuleCondition) => void;
   onPatchThen: (then: RuleAction[]) => void;
@@ -68,6 +70,7 @@ const OP_KEYS = [
   'ops.prepend',
   'ops.remove',
   'ops.clear',
+  'ops.ai',
 ] as const;
 type OpKey = (typeof OP_KEYS)[number];
 
@@ -86,6 +89,7 @@ function opOptions(t: TFunction<'rules'>, ops: readonly string[]): Option[] {
 export function RuleEditor({
   rule,
   fieldOptions,
+  feedSourceId,
   onPatch,
   onPatchWhen,
   onPatchThen,
@@ -196,14 +200,43 @@ export function RuleEditor({
               data={opOptions(t, ACTION_OPS)}
               value={action.op}
               onChange={(v) => {
+                const nextOp = (v ?? 'set') as RuleAction['op'];
                 const next = [...rule.then];
-                next[index] = { ...action, op: (v ?? 'set') as RuleAction['op'] };
+                next[index] =
+                  nextOp === 'ai'
+                    ? {
+                        op: 'ai',
+                        field: action.field || '',
+                        promptSource: 'template',
+                        taskType: 'title_optimization',
+                      }
+                    : {
+                        ...action,
+                        op: nextOp,
+                        promptSource: undefined,
+                        taskType: undefined,
+                        templateId: undefined,
+                        system: undefined,
+                        user: undefined,
+                        variables: undefined,
+                      };
                 onPatchThen(next);
               }}
               data-testid={`then-op-${index}`}
               w={180}
             />
-            {action.op === 'replace' ? (
+            {action.op === 'ai' ? (
+              <RuleAiActionEditor
+                action={action}
+                fieldOptions={fieldOptions}
+                feedSourceId={feedSourceId}
+                onChange={(next) => {
+                  const nextThen = [...rule.then];
+                  nextThen[index] = next;
+                  onPatchThen(nextThen);
+                }}
+              />
+            ) : action.op === 'replace' ? (
               <>
                 <TextInput
                   aria-label={t('fields.find')}

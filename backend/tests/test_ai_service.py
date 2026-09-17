@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pydantic import BaseModel
+from typing_extensions import Self
 
 from app.ai import service as ai_service_module
 from app.ai.router import RouterSettings
-from app.ai.service import AiResult, AiService
+from app.ai.service import AiResult, AiService, resolve_template_by_id
 
 
 class _FakeModel(BaseModel):
@@ -175,3 +177,148 @@ async def test_apply_settings_keeps_previous_on_cache_failure(service, monkeypat
     with pytest.raises(ValueError):
         await service.apply_settings(row)
     assert service._cache is before
+
+
+from app.ai.schemas import RuleValueResult
+
+
+@pytest.mark.asyncio
+async def test_run_task_passes_pinned_template_id(service, monkeypatch) -> None:
+    resolve = AsyncMock(return_value=ai_service_module.ResolvedTemplate("sys", "user", "v1"))
+    monkeypatch.setattr(service, "_resolve_template", resolve)
+    monkeypatch.setattr(service, "_load_deployments", AsyncMock(return_value=_provider_rows()))
+    instructor_client = MagicMock()
+    instructor_client.create_with_completion = AsyncMock(
+        return_value=(_FakeModel(value="ok"), SimpleNamespace(usage=None, model="m"))
+    )
+    monkeypatch.setattr(service, "_instructor", lambda: instructor_client)
+
+    await service.run_task("title_optimization", {"title": "t"}, template_id=7)
+    resolve.assert_awaited_once_with("title_optimization", None, 7)
+
+
+class _FakeTemplateSessionFactory:
+    """Minimal async-context-manager session exposing an async get()."""
+
+    def __init__(self, row: Any, *, error: bool = False) -> None:
+        self._row = row
+        self._error = error
+
+    def __call__(self) -> _FakeTemplateSessionFactory:
+        return self
+
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(self, *exc: object) -> bool:
+        return False
+
+    async def get(self, model: Any, pk: Any) -> Any:
+        if self._error:
+            raise RuntimeError("db down")
+        return self._row
+
+
+def _template_row(**overrides: Any) -> SimpleNamespace:
+    base: dict[str, Any] = {
+        "id": 7,
+        "version": 3,
+        "is_active": True,
+        "client_id": None,
+        "system_prompt": "sys",
+        "user_prompt": "usr",
+    }
+    base.update(overrides)
+    return SimpleNamespace(**base)
+
+
+@pytest.mark.asyncio
+async def test_resolve_template_by_id_active_global_row() -> None:
+    factory: Any = _FakeTemplateSessionFactory(_template_row())
+    resolved = await resolve_template_by_id(factory, 7, None)
+    assert resolved == ai_service_module.ResolvedTemplate("sys", "usr", "tmpl:7:v3")
+
+
+@pytest.mark.asyncio
+async def test_resolve_template_by_id_inactive_row_is_none() -> None:
+    factory: Any = _FakeTemplateSessionFactory(_template_row(is_active=False))
+    assert await resolve_template_by_id(factory, 7, None) is None
+
+
+@pytest.mark.asyncio
+async def test_resolve_template_by_id_other_client_row_is_none() -> None:
+    factory: Any = _FakeTemplateSessionFactory(_template_row(client_id=42))
+    assert await resolve_template_by_id(factory, 7, 99) is None
+
+
+@pytest.mark.asyncio
+async def test_resolve_template_by_id_matching_client_row() -> None:
+    factory: Any = _FakeTemplateSessionFactory(_template_row(client_id=42))
+    resolved = await resolve_template_by_id(factory, 7, 42)
+    assert resolved == ai_service_module.ResolvedTemplate("sys", "usr", "tmpl:7:v3")
+
+
+@pytest.mark.asyncio
+async def test_resolve_template_by_id_missing_row_is_none() -> None:
+    factory: Any = _FakeTemplateSessionFactory(None)
+    assert await resolve_template_by_id(factory, 7, None) is None
+
+
+@pytest.mark.asyncio
+async def test_resolve_template_by_id_db_error_is_none() -> None:
+    factory: Any = _FakeTemplateSessionFactory(None, error=True)
+    assert await resolve_template_by_id(factory, 7, None) is None
+
+
+@pytest.mark.asyncio
+async def test_run_inline_task_returns_value(service, monkeypatch) -> None:
+    monkeypatch.setattr(service, "_load_deployments", AsyncMock(return_value=_provider_rows()))
+    instructor_client = MagicMock()
+    instructor_client.create_with_completion = AsyncMock(
+        return_value=(
+            RuleValueResult(value="Blue"),
+            SimpleNamespace(
+                usage=SimpleNamespace(prompt_tokens=3, completion_tokens=2), model="m"
+            ),
+        )
+    )
+    monkeypatch.setattr(service, "_instructor", lambda: instructor_client)
+
+    result = await service.run_inline_task("sys", "Title {{title}}", {"title": "Hat"})
+    assert result.status == "ok"
+    assert result.value.value == "Blue"
+    assert result.prompt_tokens == 3
+
+
+@pytest.mark.asyncio
+async def test_run_inline_task_missing_variable_is_fallback(service, monkeypatch) -> None:
+    monkeypatch.setattr(service, "_load_deployments", AsyncMock(return_value=_provider_rows()))
+    result = await service.run_inline_task("sys", "Title {{title}}", {})
+    assert result.status == "fallback"
+    assert result.error_code == "invalid_task"
+
+
+@pytest.mark.asyncio
+async def test_run_inline_task_lenient_renders_missing_variable_empty(service, monkeypatch) -> None:
+    monkeypatch.setattr(service, "_load_deployments", AsyncMock(return_value=_provider_rows()))
+    instructor_client = MagicMock()
+    instructor_client.create_with_completion = AsyncMock(
+        return_value=(
+            RuleValueResult(value="Blue"),
+            SimpleNamespace(usage=None, model="m"),
+        )
+    )
+    monkeypatch.setattr(service, "_instructor", lambda: instructor_client)
+
+    result = await service.run_inline_task("sys", "Title {{title}}", {}, lenient=True)
+    assert result.status == "ok"
+    messages = instructor_client.create_with_completion.await_args.kwargs["messages"]
+    assert '<data key="title"></data>' in messages[1]["content"]
+
+
+@pytest.mark.asyncio
+async def test_run_inline_task_no_provider_is_fallback(service, monkeypatch) -> None:
+    monkeypatch.setattr(service, "_load_deployments", AsyncMock(return_value=[]))
+    result = await service.run_inline_task("sys", "u", {})
+    assert result.status == "fallback"
+    assert result.error_code == "no_provider"

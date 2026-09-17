@@ -25,6 +25,7 @@ import {
 } from '../../../../plugins/core/rules/frontend/ast';
 import { RuleList } from './RuleList';
 import { RuleEditor } from './RuleEditor';
+import { RuleAiBudget } from './RuleAiBudget';
 import { applyDragEnd } from './dndUtils';
 
 export type RulesUIProps = { pluginId: string; scope: PluginScope };
@@ -34,6 +35,7 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
   const { t: tCommon } = useTranslation('common');
   const config = usePluginConfig(pluginId, scope);
   const saveConfig = useSavePluginConfig(pluginId, scope);
+  const feedSourceId = scope.feedSourceId;
   const registryQuery = useRegistryAttributes(scope.feedSourceId);
   const fieldOptions = useMemo(
     () => buildFieldOptions(fromRegistryAttributes(registryQuery.data ?? [])),
@@ -139,6 +141,7 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
           </Button>
         </Group>
       </Group>
+      <RuleAiBudget feedSourceId={feedSourceId} />
       <Grid>
         <Grid.Col span={5}>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -207,6 +210,7 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
           <RuleEditor
             rule={selected}
             fieldOptions={fieldOptions}
+            feedSourceId={feedSourceId}
             onPatch={(patch) => {
               if (selected) patchRule(selected.id, patch);
             }}

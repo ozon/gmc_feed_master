@@ -12,6 +12,7 @@ from app.pipeline import (
     PipelineStep,
     PluginStep,
     QualityCheckStep,
+    RuleAiStep,
     RunState,
     StagingStep,
     StepContext,
@@ -68,7 +69,7 @@ def test_default_steps_export_dir_fallback_matches_settings_default():
 
 def test_step_names_are_distinct(_steps):
     names = [step.name for step in _steps]
-    assert len(set(names)) == 7
+    assert len(set(names)) == 8
 
 
 def test_default_steps_order(_steps):
@@ -77,6 +78,7 @@ def test_default_steps_order(_steps):
         MappingStep,
         StagingStep,
         PluginStep,
+        RuleAiStep,
         EnrichmentStep,
         QualityCheckStep,
         ExportStep,
@@ -86,6 +88,7 @@ def test_default_steps_order(_steps):
         "mapping",
         "staging",
         "run_plugins",
+        "rule_ai",
         "ai_enrichment",
         "quality_check",
         "export",

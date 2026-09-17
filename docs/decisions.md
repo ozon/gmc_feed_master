@@ -1436,3 +1436,16 @@ Inline code review of the cycle found one critical and one important issue; both
 - The wizard keeps advanced fields (tier, concurrency, timeout, prices, enabled) in a collapsed accordion, and defers connection testing to Finish: it creates the provider and immediately calls the existing `POST /admin/ai/providers/{id}/test`, rather than adding a stateless dry-run probe endpoint.
 
 **Rationale:** The raw form required knowing internal details (`provider_type`, the LiteLLM `vendor/model` format) that the router hides. Seeding from the bundled price data means the wizard works offline on first boot and can never offer a model the installed LiteLLM can't route; the GitHub refresh keeps it current without a new dependency. Dropping derivable per-row columns removes state that can silently go stale. Reusing the existing test endpoint avoids a second probe path to maintain.
+
+### 2026-09-17 — AI action in the rules plugin
+
+**Topic:** Letting rules produce AI values without breaking the synchronous pipeline.
+
+**Decision:**
+- `op=ai` actions are executed in two phases: `PluginStep` records pending actions in `RunState.rule_ai_pending`, and `RuleAiStep` (between `PluginStep` and `EnrichmentStep`) drains them through `AiService`, writes the target fields, and persists to staging.
+- Template mode pins a template id, falling back to the active template then the builtin; custom mode uses an inline-only `rule_value` task with the prompt stored in the rule JSONB (no admin rights needed).
+- Budget and limit live in `feed_source.configuration.ai_rules` (`{enabled, limit, budget}`); cache hits are free.
+- `validate_config` enforces that an `ai` action is the last action targeting its output field(s).
+- `GET /plugins/rules/ai/templates` lists scoped templates and `POST /plugins/rules/ai/preview` renders the prompt with zero AI cost.
+
+**Rationale:** Preserves the synchronous pipeline contract while reusing the existing AI cache/usage/fallback machinery, and the render-only preview lets authors inspect the exact messages — including missing custom variables — before any run spends budget.

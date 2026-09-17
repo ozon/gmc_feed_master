@@ -46,7 +46,37 @@
     "append": "append",
     "prepend": "prepend",
     "remove": "remove field",
-    "clear": "clear field"
+    "clear": "clear field",
+    "ai": "set with AI"
+  },
+  "ai": {
+    "source": "Prompt source",
+    "template": "Template",
+    "custom": "Custom",
+    "task": "AI task",
+    "templatePick": "Prompt template",
+    "outputFields": "Writes: {{fields}}",
+    "targetField": "Target field",
+    "system": "System prompt",
+    "user": "User prompt",
+    "variables": "Variables",
+    "preview": "Preview",
+    "previewTitle": "Prompt preview",
+    "tasks": {
+      "title_optimization": "Optimize title",
+      "description_optimization": "Optimize description",
+      "category_classification": "Classify category",
+      "attribute_enrichment": "Extract attributes",
+      "rule_value": "Free text"
+    },
+    "budget": {
+      "title": "AI rules",
+      "enabled": "Enable AI rule actions",
+      "limit": "Max products per run",
+      "budget": "Max AI calls per run",
+      "saved": "AI rules settings saved",
+      "saveFailed": "Failed to save AI rules settings"
+    }
   },
   "fields": {
     "find": "Find",

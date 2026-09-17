@@ -368,11 +368,12 @@ content_hash = SHA256(json_dumps(canonical_product, sort_keys=True))
 ```
 config_hash = SHA256(json_dumps({
     "pipeline": [{"plugin": id, "version": ver, "instance_config": {...}, "resolved_config": {...}, "resolved_data": {...}} ...],
-    "plugin_versions": {plugin_id: version}
+    "plugin_versions": {plugin_id: version},
+    "ai_rules": feed_source.configuration.ai_rules  // only when present
 }, sort_keys=True))
 ```
-- Captures: ordered pipeline, instance configs, resolved PluginConfig/PluginData (three-tier merge), plugin versions
-- Any change → full reprocessing of affected feed source products
+- Captures: ordered pipeline, instance configs, resolved PluginConfig/PluginData (three-tier merge), plugin versions, and `feed_source.configuration.ai_rules` when present
+- Any change → full reprocessing of affected feed source products. Including `ai_rules` means toggling AI rule actions re-enqueues otherwise-unchanged products so `RuleAiStep` runs
 - The Category plugin attaches `_category_provenance` and `_category_rule_id` sidecars to `staging_products.processed_data`; they are stripped from the content hash (`strip_derived`) and never rendered to XML, and are read by the plugin's stats/matches routes.
 
 ### Removed Product Lifecycle

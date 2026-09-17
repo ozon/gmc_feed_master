@@ -40,6 +40,7 @@ class RunState:
     product_pks: dict[str, int] = field(default_factory=dict)
     dropped: list[dict[str, Any]] = field(default_factory=list)
     ai_suggestions: dict[str, dict[str, str]] = field(default_factory=dict)
+    rule_ai_pending: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -163,7 +164,11 @@ class StagingStep:
             bundle = await resolve_config_bundle(session, feed_source)
         ctx.run_state.client_id = feed_source.client_id
         ctx.run_state.config_bundle = bundle
-        config_hash_value = content_hash(bundle)
+        hash_input = dict(bundle)
+        ai_rules = (feed_source.configuration or {}).get("ai_rules")
+        if ai_rules is not None:
+            hash_input["ai_rules"] = ai_rules
+        config_hash_value = content_hash(hash_input)
 
         stored = await load_stored_rows(ctx.session_factory, ctx.feed_source_id)
         delta = classify(ctx.run_state.products, stored, config_hash_value)
@@ -223,6 +228,7 @@ class PluginStep:
                     feed_source_id=ctx.feed_source_id,
                     run_id=ctx.ingestion_run_id,
                     logger=ctx.logger,
+                    run_state=ctx.run_state,
                 )
                 run_states[instance["plugin"]] = prepare(
                     instance["resolved_config"], instance["resolved_data"], rctx
@@ -243,6 +249,7 @@ class PluginStep:
                     run_id=ctx.ingestion_run_id,
                     logger=ctx.logger,
                     original_product=original,
+                    run_state=ctx.run_state,
                 )
                 try:
                     if accepts_state.get(instance["plugin"]):
@@ -363,6 +370,70 @@ class EnrichmentStep:
                     "spent": outcome.spent,
                 }
             },
+        )
+
+
+class RuleAiStep:
+    name = "rule_ai"
+
+    def __init__(self, ai_service: Any = None) -> None:
+        self._ai_service = ai_service
+
+    async def execute(self, ctx: StepContext) -> StepResult:
+        from .rule_ai import apply_rule_ai_actions
+
+        async with ctx.session_factory() as session, session.begin():
+            feed_source = await session.get(FeedSource, ctx.feed_source_id)
+        if feed_source is None:
+            raise LookupError(f"feed source {ctx.feed_source_id} not found")
+
+        cfg = (feed_source.configuration or {}).get("ai_rules") or {}
+        pending = ctx.run_state.rule_ai_pending
+        if not cfg.get("enabled") or self._ai_service is None:
+            return StepResult(statistics={"ai_rules": {
+                "enabled": False, "products": 0, "applied": 0, "failed": 0, "spent": 0,
+            }})
+        if not pending:
+            return StepResult(statistics={"ai_rules": {
+                "enabled": True, "products": 0, "applied": 0, "failed": 0, "spent": 0,
+            }})
+
+        limit = max(1, int(cfg.get("limit", 50)))
+        budget = max(1, int(cfg.get("budget", 50)))
+        changed, outcome = await apply_rule_ai_actions(
+            ai_service=self._ai_service,
+            products=ctx.run_state.products,
+            pending=pending,
+            limit=limit,
+            budget=budget,
+            client_id=ctx.run_state.client_id,
+            feed_source_id=ctx.feed_source_id,
+        )
+        if changed:
+            ctx.run_state.products = [
+                changed.get(str(p.get("id", "")), p) for p in ctx.run_state.products
+            ]
+        if changed and not ctx.dry_run:
+            outcomes = [
+                PluginOutcome(pid, ctx.run_state.product_pks[pid], "processed", prod)
+                for pid, prod in changed.items()
+                if pid in ctx.run_state.product_pks
+            ]
+            if outcomes:
+                await apply_plugin_outcomes(
+                    ctx.session_factory, ctx.feed_source_id,
+                    ctx.ingestion_run_id, outcomes,
+                )
+        return StepResult(
+            processed_count=outcome.applied,
+            failed_count=outcome.failed,
+            statistics={"ai_rules": {
+                "enabled": True,
+                "products": outcome.products,
+                "applied": outcome.applied,
+                "failed": outcome.failed,
+                "spent": outcome.spent,
+            }},
         )
 
 
@@ -555,6 +626,7 @@ def default_steps(
         MappingStep(registry),
         StagingStep(),
         PluginStep(plugin_registry),
+        RuleAiStep(ai_service),
         EnrichmentStep(ai_service),
         QualityCheckStep(registry, clock, image_probe, ai_service),
         ExportStep(registry, store, clock, base_url),
