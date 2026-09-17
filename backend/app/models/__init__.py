@@ -6,6 +6,7 @@ from .ai import (
     PromptTemplate,
 )
 from .client import Client
+from .event_log import EventLog
 from .export import ExportRun, ExportVersion
 from .feed_source import FeedSource
 from .global_setting import GlobalSetting
@@ -19,4 +20,4 @@ from .staging import StagingHistory, StagingProduct
 from .user import User
 from .user_client import UserClient
 
-__all__ = ["AiModelCatalog", "AiModelCatalogSync", "AiProviderConfig", "AiUsageLog", "Client", "ExportRun", "ExportVersion", "FeedSource", "GlobalSetting", "ImageDimension", "IngestionRun", "ModuleInstance", "ModulePipeline", "Plugin", "PluginConfig", "PluginData", "PromptTemplate", "QualityFinding", "Session", "StagingHistory", "StagingProduct", "User", "UserClient"]
+__all__ = ["AiModelCatalog", "AiModelCatalogSync", "AiProviderConfig", "AiUsageLog", "Client", "EventLog", "ExportRun", "ExportVersion", "FeedSource", "GlobalSetting", "ImageDimension", "IngestionRun", "ModuleInstance", "ModulePipeline", "Plugin", "PluginConfig", "PluginData", "PromptTemplate", "QualityFinding", "Session", "StagingHistory", "StagingProduct", "User", "UserClient"]
