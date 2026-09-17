@@ -103,6 +103,7 @@ async def test_get_scheduler_lists_system_jobs(settings_app, admin_http):
     assert "system-staging-purge" in jobs
     assert "system-ingestion-run-purge" in jobs
     assert "system-ai-purge" in jobs
+    assert "system-event-log-purge" in jobs
 
 
 @pytest.mark.asyncio
