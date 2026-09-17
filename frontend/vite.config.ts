@@ -83,6 +83,10 @@ export default defineConfig(({ mode }) => {
           target: apiTarget,
           changeOrigin: true,
         },
+        '/logs': {
+          target: apiTarget,
+          changeOrigin: true,
+        },
       },
     },
     test: {
