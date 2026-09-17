@@ -35,7 +35,8 @@ class PipelineRunner:
     ) -> int | None:
         if self._lock_registry.is_locked(feed_source_id):
             logger.warning(
-                "previous run still active: skipping run for feed source %s",
+                "previous run still active: skipping run %s for feed source %s",
+                run_id,
                 feed_source_id,
             )
             if run_id is None and not await self._feed_source_exists(feed_source_id):
