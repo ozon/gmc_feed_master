@@ -38,7 +38,7 @@ Spec: `docs/superpowers/specs/2026-09-17-ai-provider-wizard-model-catalog-design
 - Consumes: nothing.
 - Produces: `ProviderPreset` (frozen dataclass with fields `vendor_key, label, model_prefix, default_base_url, requires_base_url, api_key_env_hint, docs_url, supports_catalog`), `PROVIDER_PRESETS: tuple[ProviderPreset, ...]`, `get_preset(vendor_key: str) -> ProviderPreset | None`, `normalize_provider_input(model: str, provider_type: str) -> tuple[str, str]` returning `(provider_type, model)`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/tests/test_ai_presets.py`:
 
@@ -87,12 +87,12 @@ def test_normalize_provider_input(model: str, provider_type: str, expected: tupl
     assert normalize_provider_input(model, provider_type) == expected
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_ai_presets.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'app.ai.presets'`
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Create `backend/app/ai/presets.py`:
 
@@ -200,17 +200,17 @@ def normalize_provider_input(model: str, provider_type: str) -> tuple[str, str]:
     return "litellm", model
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `uv run pytest tests/test_ai_presets.py -v`
 Expected: PASS (8 passed)
 
-- [ ] **Step 5: Lint and typecheck**
+- [x] **Step 5: Lint and typecheck**
 
 Run: `uv run ruff check . ../plugins && uv run mypy .`
 Expected: exit 0
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/app/ai/presets.py backend/tests/test_ai_presets.py
@@ -231,7 +231,7 @@ git commit -m "feat(ai): provider presets and write normalization (GFM-12)"
 - Consumes: nothing.
 - Produces: `AiModelCatalog` (columns `id, vendor, model_id, display_name, mode, context_window, max_output_tokens, input_price_per_mtok, output_price_per_mtok, supports_vision, supports_function_calling`), `AiModelCatalogSync` (singleton columns `id, last_attempt_at, last_success_at, last_error, source`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/tests/test_ai_model_catalog_models.py`:
 
@@ -296,12 +296,12 @@ async def test_catalog_model_id_is_unique(db_factory) -> None:
             session.add(_row("openai/gpt-4o"))
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_ai_model_catalog_models.py -v`
 Expected: FAIL with `ImportError: cannot import name 'AiModelCatalog' from 'app.models.ai'`
 
-- [ ] **Step 3: Add the ORM models**
+- [x] **Step 3: Add the ORM models**
 
 Append to `backend/app/models/ai.py` (the module already imports `Boolean, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint, func, text` and `Decimal`, `Mapped`, `mapped_column`):
 
@@ -334,7 +334,7 @@ class AiModelCatalogSync(Base):
     source: Mapped[str | None] = mapped_column(String(50), nullable=True)
 ```
 
-- [ ] **Step 4: Register the models for Alembic discovery**
+- [x] **Step 4: Register the models for Alembic discovery**
 
 In `backend/app/models/__init__.py`, change the `ai` import line and `__all__`:
 
@@ -344,7 +344,7 @@ from .ai import AiModelCatalog, AiModelCatalogSync, AiProviderConfig, AiUsageLog
 
 Add `"AiModelCatalog", "AiModelCatalogSync",` to `__all__` immediately after `"AiProviderConfig", "AiUsageLog",` (keep the list alphabetically ordered as it already is).
 
-- [ ] **Step 5: Generate the migration**
+- [x] **Step 5: Generate the migration**
 
 Run from `backend/`:
 
@@ -392,22 +392,22 @@ def downgrade() -> None:
 
 Leave the generated `revision` / `down_revision` identifiers untouched; confirm `down_revision` is `"b1a2c3d4e5f6"` (the previous head).
 
-- [ ] **Step 6: Verify no schema drift**
+- [x] **Step 6: Verify no schema drift**
 
 Run: `uv run alembic check`
 Expected: `No new upgrade operations detected.`
 
-- [ ] **Step 7: Run test to verify it passes**
+- [x] **Step 7: Run test to verify it passes**
 
 Run: `uv run pytest tests/test_ai_model_catalog_models.py -v`
 Expected: PASS (2 passed)
 
-- [ ] **Step 8: Lint and typecheck**
+- [x] **Step 8: Lint and typecheck**
 
 Run: `uv run ruff check . ../plugins && uv run mypy .`
 Expected: exit 0
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add backend/app/models/ai.py backend/app/models/__init__.py backend/alembic/versions backend/tests/test_ai_model_catalog_models.py
@@ -426,7 +426,7 @@ git commit -m "feat(ai): model catalog tables and migration (GFM-12)"
 - Consumes: nothing.
 - Produces: `CatalogEntry` (frozen dataclass: `vendor, model_id, display_name, mode, context_window, max_output_tokens, input_price_per_mtok, output_price_per_mtok, supports_vision, supports_function_calling`), `SUPPORTED_VENDORS: dict[str, str]`, `RECOMMENDED_MODELS: dict[str, set[str]]`, `LITELLM_CATALOG_URL: str`, `MIN_CATALOG_ENTRIES: int`, `parse_catalog(raw: dict[str, Any]) -> list[CatalogEntry]`, `load_bundled() -> list[CatalogEntry]`, `is_recommended(vendor: str, model_id: str) -> bool`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/tests/test_ai_model_catalog.py`:
 
@@ -534,12 +534,12 @@ def test_is_recommended() -> None:
     assert is_recommended("custom", "openai/anything") is False
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_ai_model_catalog.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'app.ai.model_catalog'`
 
-- [ ] **Step 3: Write the parsing implementation**
+- [x] **Step 3: Write the parsing implementation**
 
 Create `backend/app/ai/model_catalog.py`:
 
@@ -641,17 +641,17 @@ def is_recommended(vendor: str, model_id: str) -> bool:
     return model_id in RECOMMENDED_MODELS.get(vendor, set())
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `uv run pytest tests/test_ai_model_catalog.py -v`
 Expected: PASS (8 passed)
 
-- [ ] **Step 5: Lint and typecheck**
+- [x] **Step 5: Lint and typecheck**
 
 Run: `uv run ruff check . ../plugins && uv run mypy .`
 Expected: exit 0
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/app/ai/model_catalog.py backend/tests/test_ai_model_catalog.py
@@ -670,7 +670,7 @@ git commit -m "feat(ai): model catalog parser and recommendations (GFM-12)"
 - Consumes: `CatalogEntry`, `parse_catalog`, `load_bundled`, `is_recommended`, `LITELLM_CATALOG_URL`, `MIN_CATALOG_ENTRIES` (Task 3); `AiModelCatalog`, `AiModelCatalogSync` (Task 2).
 - Produces: `CatalogSyncState` (frozen dataclass: `last_attempt_at, last_success_at, last_error, source`), `MODEL_CATALOG_REFRESH_JOB_ID`, `MODEL_CATALOG_REFRESH_CRON`, `ensure_seeded(session_factory) -> None`, `replace_catalog_entries(session, entries) -> None`, `get_entries(session, vendor, mode) -> list[AiModelCatalog]`, `get_sync_state(session) -> CatalogSyncState | None`, `refresh(session_factory, http_client, now) -> CatalogSyncState`, `make_refresh_job(session_factory, http_client, clock) -> Callable[[], Awaitable[None]]`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `backend/tests/test_ai_model_catalog.py`:
 
@@ -818,12 +818,12 @@ async def test_refresh_job_runs(db_factory) -> None:
         assert state.last_attempt_at == clock.now()
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_ai_model_catalog.py -v`
 Expected: FAIL with `ImportError: cannot import name 'CatalogEntry'` (or `'ensure_seeded'`)
 
-- [ ] **Step 3a: Move the persistence imports to the top of the module**
+- [x] **Step 3a: Move the persistence imports to the top of the module**
 
 Ruff's `E402` forbids module-level imports below definitions, so **replace the entire top import block** of `backend/app/ai/model_catalog.py` with:
 
@@ -849,7 +849,7 @@ logger = logging.getLogger(__name__)
 
 (The `LITELLM_CATALOG_URL` / `SUPPORTED_VENDORS` / `RECOMMENDED_MODELS` constants and everything from Task 3 stay immediately below this block, unchanged.)
 
-- [ ] **Step 3b: Append the persistence implementation**
+- [x] **Step 3b: Append the persistence implementation**
 
 Append the following **below** the Task 3 code (no import lines inside this block):
 
@@ -988,17 +988,17 @@ def make_refresh_job(
     return job
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `uv run pytest tests/test_ai_model_catalog.py -v`
 Expected: PASS (14 passed)
 
-- [ ] **Step 5: Lint and typecheck**
+- [x] **Step 5: Lint and typecheck**
 
 Run: `uv run ruff check . ../plugins && uv run mypy .`
 Expected: exit 0
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/app/ai/model_catalog.py backend/tests/test_ai_model_catalog.py
@@ -1020,7 +1020,7 @@ git commit -m "feat(ai): catalog seeding, refresh, and job factory (GFM-12)"
 - Consumes: `PROVIDER_PRESETS` (Task 1); `ensure_seeded`, `get_entries`, `get_sync_state`, `refresh`, `is_recommended` (Tasks 3–4); `normalize_provider_input` (Task 1).
 - Produces: `ProviderPresetOut`, `ModelCatalogEntryOut`, `ModelCatalogSyncOut`, `ModelCatalogOut`; endpoints `GET /admin/ai/provider-presets`, `GET /admin/ai/model-catalog`, `POST /admin/ai/model-catalog/refresh`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `backend/tests/test_ai_admin_api.py`:
 
@@ -1110,12 +1110,12 @@ async def test_create_provider_normalizes_legacy_type(settings_app, admin_http):
 
 Add `from decimal import Decimal` and `import httpx` to the imports at the top of `backend/tests/test_ai_admin_api.py`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_ai_admin_api.py -v -k "presets or model_catalog or normalizes_legacy"`
 Expected: FAIL with 404 (endpoints missing)
 
-- [ ] **Step 3: Add the schemas**
+- [x] **Step 3: Add the schemas**
 
 Append to `backend/app/schemas/ai_admin.py`:
 
@@ -1156,7 +1156,7 @@ class ModelCatalogOut(BaseModel):
     sync: ModelCatalogSyncOut
 ```
 
-- [ ] **Step 4: Add the routes and normalization**
+- [x] **Step 4: Add the routes and normalization**
 
 In `backend/app/routes/ai_admin.py`, add to the imports:
 
@@ -1280,7 +1280,7 @@ async def refresh_model_catalog(
     )
 ```
 
-- [ ] **Step 5: Wire the HTTP client lifecycle**
+- [x] **Step 5: Wire the HTTP client lifecycle**
 
 In `backend/app/main.py`, next to `app.state.image_http_client = image_http_client` (inside the `if app.state.db_session_factory is not None:` block), add:
 
@@ -1296,12 +1296,12 @@ In the `lifespan` shutdown section, next to the `image_http_client` close, add:
             await catalog_http_client.aclose()
 ```
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `uv run pytest tests/test_ai_admin_api.py -v`
 Expected: PASS (all existing + 4 new)
 
-- [ ] **Step 7: Update the backend docs**
+- [x] **Step 7: Update the backend docs**
 
 In `backend/docs/api.md`, after the existing provider bullets (around line 47), add:
 
@@ -1319,12 +1319,12 @@ In `backend/docs/data-model.md`, after the `ai_provider_configs` table (around l
 | `ai_model_catalog_sync` | Singleton (`id=1`) freshness state: `last_attempt_at`, `last_success_at`, `last_error`, `source` (`bundled` \| `github`) |
 ```
 
-- [ ] **Step 8: Lint and typecheck**
+- [x] **Step 8: Lint and typecheck**
 
 Run: `uv run ruff check . ../plugins && uv run mypy .`
 Expected: exit 0
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add backend/app/schemas/ai_admin.py backend/app/routes/ai_admin.py backend/app/main.py backend/tests/test_ai_admin_api.py backend/docs/api.md backend/docs/data-model.md
@@ -1344,7 +1344,7 @@ git commit -m "feat(ai): catalog and preset admin API, provider normalization (G
 - Consumes: `make_refresh_job`, `MODEL_CATALOG_REFRESH_JOB_ID`, `MODEL_CATALOG_REFRESH_CRON` (Task 4).
 - Produces: no new API; the app registers `system-ai-model-catalog-refresh` at startup.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `backend/tests/test_ai_admin_api.py`:
 
@@ -1357,12 +1357,12 @@ async def test_model_catalog_refresh_job_constants():
     assert model_catalog.MODEL_CATALOG_REFRESH_CRON == "0 4 * * *"
 ```
 
-- [ ] **Step 2: Run test to verify it fails (or confirms Task 4)
+- [x] **Step 2: Run test to verify it fails (or confirms Task 4)
 
 Run: `uv run pytest tests/test_ai_admin_api.py::test_model_catalog_refresh_job_constants -v`
 Expected: PASS once Task 4 is merged; if it fails, Task 4's constants are missing. The job's runtime behavior is covered by `test_refresh_job_runs` in `test_ai_model_catalog.py`; this test only pins the identifiers the lifespan registers.
 
-- [ ] **Step 3: Register the job in lifespan**
+- [x] **Step 3: Register the job in lifespan**
 
 In `backend/app/main.py`, inside the `if scheduler_service is not None:` block, after the AI purge job registration, add:
 
@@ -1383,12 +1383,12 @@ In `backend/app/main.py`, inside the `if scheduler_service is not None:` block, 
                 )
 ```
 
-- [ ] **Step 4: Run the backend suite**
+- [x] **Step 4: Run the backend suite**
 
 Run: `uv run pytest tests/test_ai_admin_api.py tests/test_ai_model_catalog.py -v`
 Expected: PASS
 
-- [ ] **Step 5: Update the docs**
+- [x] **Step 5: Update the docs**
 
 In `backend/docs/architecture.md`, in the AI section near the router transport paragraph (around line 188), add:
 
@@ -1408,12 +1408,12 @@ Append to `docs/decisions.md` (matching the existing Topic / Decision / Rational
 **Rationale:** The bundled catalog works offline and matches the installed LiteLLM model strings exactly; GitHub refresh keeps it current without a new dependency. Dropping per-row freshness/recommended columns removes state that can drift. Reusing the existing test endpoint avoids a second probe path.
 ```
 
-- [ ] **Step 6: Lint and typecheck**
+- [x] **Step 6: Lint and typecheck**
 
 Run: `uv run ruff check . ../plugins && uv run mypy .`
 Expected: exit 0
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add backend/app/main.py backend/tests/test_ai_admin_api.py backend/docs/architecture.md docs/decisions.md
@@ -1434,7 +1434,7 @@ git commit -m "feat(ai): schedule model catalog refresh job (GFM-12)"
 - Consumes: backend endpoints from Task 5.
 - Produces: `ProviderPreset`, `ModelCatalogEntry`, `ModelCatalogSync`, `ModelCatalog` types; `queryKeys.ai.providerPresets`, `queryKeys.ai.modelCatalog(vendor, mode)`; hooks `useProviderPresets()`, `useModelCatalog(vendor: string | null, mode?: 'chat' | 'completion')`, `useRefreshModelCatalog()`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `frontend/src/api/aiCatalogHooks.test.tsx`:
 
@@ -1507,12 +1507,12 @@ describe('AI catalog hooks', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run from `frontend/`: `npm run test -- src/api/aiCatalogHooks.test.tsx`
 Expected: FAIL — `useProviderPresets` is not exported
 
-- [ ] **Step 3: Add the types**
+- [x] **Step 3: Add the types**
 
 Append to `frontend/src/api/types.ts`:
 
@@ -1554,7 +1554,7 @@ export type ModelCatalog = {
 };
 ```
 
-- [ ] **Step 4: Add the query keys**
+- [x] **Step 4: Add the query keys**
 
 In `frontend/src/api/queryKeys.ts`, inside the `ai` object, after `usageTimeseries`, add:
 
@@ -1564,7 +1564,7 @@ In `frontend/src/api/queryKeys.ts`, inside the `ai` object, after `usageTimeseri
       ['ai', 'model-catalog', vendor, mode] as const,
 ```
 
-- [ ] **Step 5: Add the hooks**
+- [x] **Step 5: Add the hooks**
 
 In `frontend/src/api/hooks.ts`, add `ModelCatalog`, `ProviderPreset` to the `import type { ... } from './types'` list, then append after `useTestAiProvider`:
 
@@ -1604,17 +1604,17 @@ Then widen the existing `useUpdateAiProvider` payload type so the wizard can pas
       provider_type?: 'litellm' | 'openai_compatible';
 ```
 
-- [ ] **Step 6: Run test to verify it passes**
+- [x] **Step 6: Run test to verify it passes**
 
 Run: `npm run test -- src/api/aiCatalogHooks.test.tsx`
 Expected: PASS (3 passed)
 
-- [ ] **Step 7: Typecheck**
+- [x] **Step 7: Typecheck**
 
 Run: `npm run typecheck`
 Expected: exit 0
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add frontend/src/api/types.ts frontend/src/api/queryKeys.ts frontend/src/api/hooks.ts frontend/src/api/aiCatalogHooks.test.tsx
@@ -1636,7 +1636,7 @@ git commit -m "feat(api): AI provider preset and model catalog hooks (GFM-12)"
 - Consumes: `useProviderPresets`, `useModelCatalog`, `useCreateAiProvider`, `useUpdateAiProvider`, `useTestAiProvider` (Task 7); `ProviderPreset`, `ModelCatalogEntry` (Task 7).
 - Produces: `ProviderWizard` component with props `{ opened: boolean; provider: AiProvider | null; presetKey: string; onClose: () => void }`.
 
-- [ ] **Step 1: Write the failing wizard test**
+- [x] **Step 1: Write the failing wizard test**
 
 Create `frontend/src/features/admin/ai/ProviderWizard.test.tsx`:
 
@@ -1747,12 +1747,12 @@ describe('ProviderWizard', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npm run test -- src/features/admin/ai/ProviderWizard.test.tsx`
 Expected: FAIL — cannot resolve `./ProviderWizard`
 
-- [ ] **Step 3: Add i18n keys**
+- [x] **Step 3: Add i18n keys**
 
 In `frontend/public/locales/en/admin.json`, add a `wizard` object inside `ai`:
 
@@ -1810,7 +1810,7 @@ In `frontend/public/locales/de/admin.json`, add the same keys inside `ai`:
 }
 ```
 
-- [ ] **Step 4: Write the wizard component**
+- [x] **Step 4: Write the wizard component**
 
 Create `frontend/src/features/admin/ai/ProviderWizard.tsx`:
 
@@ -2154,7 +2154,7 @@ export function ProviderWizard({
 }
 ```
 
-- [ ] **Step 5: Wire the wizard into ProvidersPage**
+- [x] **Step 5: Wire the wizard into ProvidersPage**
 
 Rewrite `frontend/src/features/admin/ai/ProvidersPage.tsx` to drop `ProviderModal` and use `ProviderWizard`. Keep the table, the test-result line, and the existing actions. Replace the state and modal section with:
 
@@ -2307,7 +2307,7 @@ export function ProvidersPage() {
 }
 ```
 
-- [ ] **Step 6: Rewrite the ProvidersPage test**
+- [x] **Step 6: Rewrite the ProvidersPage test**
 
 Replace `frontend/src/features/admin/ai/ProvidersPage.test.tsx` with:
 
@@ -2418,17 +2418,17 @@ describe('ProvidersPage', () => {
 });
 ```
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 Run: `npm run test -- src/features/admin/ai/`
 Expected: PASS
 
-- [ ] **Step 8: Typecheck and build**
+- [x] **Step 8: Typecheck and build**
 
 Run: `npm run typecheck`
 Expected: exit 0
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add frontend/src/features/admin/ai/ProviderWizard.tsx frontend/src/features/admin/ai/ProvidersPage.tsx frontend/src/features/admin/ai/ProviderWizard.test.tsx frontend/src/features/admin/ai/ProvidersPage.test.tsx frontend/public/locales/en/admin.json frontend/public/locales/de/admin.json
@@ -2449,7 +2449,7 @@ git commit -m "feat(admin): 3-step AI provider wizard (GFM-12)"
 - Consumes: `useRefreshModelCatalog`, `useModelCatalog` (Task 7); `ProviderWizard` (Task 8).
 - Produces: catalog status line with a Refresh button; a Legacy badge on `openai_compatible` rows.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `frontend/src/features/admin/ai/ProvidersPage.test.tsx`:
 
@@ -2511,12 +2511,12 @@ it('renders the catalog status and triggers a refresh', async () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npm run test -- src/features/admin/ai/ProvidersPage.test.tsx`
 Expected: FAIL — `ai-legacy-badge-9` not found
 
-- [ ] **Step 3: Add i18n keys**
+- [x] **Step 3: Add i18n keys**
 
 Inside `ai` in both locale files, add:
 
@@ -2538,7 +2538,7 @@ German:
 "catalogRefresh": "Katalog aktualisieren"
 ```
 
-- [ ] **Step 4: Add the badge and status line**
+- [x] **Step 4: Add the badge and status line**
 
 In `frontend/src/features/admin/ai/ProvidersPage.tsx`:
 
@@ -2604,12 +2604,12 @@ Add the Legacy badge in the model cell:
 
 Replace the existing `<Table.Td>{provider.model}</Table.Td>` with the block above. Add `Text` to the `@mantine/core` import.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `npm run test -- src/features/admin/ai/ProvidersPage.test.tsx`
 Expected: PASS
 
-- [ ] **Step 6: Update the frontend docs**
+- [x] **Step 6: Update the frontend docs**
 
 In `frontend/docs/architecture.md`, add a short subsection under the admin area:
 
@@ -2619,12 +2619,12 @@ In `frontend/docs/architecture.md`, add a short subsection under the admin area:
 `features/admin/ai/ProviderWizard.tsx` is a 3-step Mantine `Stepper` (provider preset → API key → model) backed by `useProviderPresets()` and `useModelCatalog(vendor)`; advanced fields sit in a collapsed accordion. `ProvidersPage.tsx` keeps the provider table (Legacy badge for `openai_compatible` rows) and shows the catalog sync status with a manual refresh button. Provider presets and the model catalog are server state and live only in TanStack Query.
 ```
 
-- [ ] **Step 7: Full frontend gate**
+- [x] **Step 7: Full frontend gate**
 
 Run: `npm run test && npm run build`
 Expected: tests pass; typecheck + production build succeed
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add frontend/src/features/admin/ai/ProvidersPage.tsx frontend/src/features/admin/ai/ProvidersPage.test.tsx frontend/public/locales/en/admin.json frontend/public/locales/de/admin.json frontend/docs/architecture.md
@@ -2637,7 +2637,7 @@ git commit -m "feat(admin): legacy badge and catalog status (GFM-12)"
 
 **Files:** none (verification only)
 
-- [ ] **Step 1: Backend gate**
+- [x] **Step 1: Backend gate**
 
 Run from `backend/`:
 
@@ -2656,7 +2656,7 @@ jq -c 'select(.["$report_type"]=="TestReport" and .when=="call" and .outcome=="f
 
 Expected: `0`
 
-- [ ] **Step 2: Frontend gate**
+- [x] **Step 2: Frontend gate**
 
 Run from `frontend/`:
 
@@ -2667,16 +2667,16 @@ npm run build
 
 Expected: all tests pass; build succeeds
 
-- [ ] **Step 3: Regression sanity**
+- [x] **Step 3: Regression sanity**
 
 Run: `uv run pytest tests/test_ai_router.py -v`
 Expected: PASS (legacy `openai_compatible` deployment, no double prefix, disabled-row skip unchanged)
 
-- [ ] **Step 4: Docs check**
+- [x] **Step 4: Docs check**
 
 Confirm each of these was updated in the same commit chain: `backend/docs/data-model.md`, `backend/docs/api.md`, `backend/docs/architecture.md`, `docs/decisions.md`, `frontend/docs/architecture.md`.
 
-- [ ] **Step 5: Final commit (only if verification required doc fixes)**
+- [x] **Step 5: Final commit (only if verification required doc fixes)**
 
 ```bash
 git add -A
