@@ -248,7 +248,9 @@ export function AppShell() {
   const globalNav = [
     { to: '/', label: t('nav.fleetOverview'), icon: IconDashboard },
     { to: '/#clients', label: t('nav.clients'), icon: IconUsers },
-    { to: '/logs', label: t('nav.systemLogs'), icon: IconListDetails },
+    ...(session?.role === 'admin'
+      ? [{ to: '/logs', label: t('nav.systemLogs'), icon: IconListDetails }]
+      : []),
     { to: '/rules', label: t('nav.globalRules'), icon: IconGavel },
   ];
 

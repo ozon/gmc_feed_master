@@ -16,6 +16,7 @@ vi.mock('../../api/hooks', async (importOriginal) => ({
       staging_removal_retention_days: 90,
       staging_history_retention_days: 90,
       ingestion_run_retention_days: 90,
+      event_log_retention_days: 90,
     },
     isPending: false,
     isError: false,

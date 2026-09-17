@@ -38,6 +38,7 @@ export const queryKeys = {
       ['feed-source', feedSourceId, 'category-product', productId] as const,
     languages: ['category', 'taxonomy-languages'] as const,
   },
+  eventLogs: (filters: unknown) => ['logs', 'entries', filters] as const,
   adminUsers: ['admin', 'users'] as const,
   adminSettings: ['admin', 'settings'] as const,
   adminScheduler: ['admin', 'scheduler'] as const,

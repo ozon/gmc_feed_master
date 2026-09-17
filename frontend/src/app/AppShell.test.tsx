@@ -118,7 +118,7 @@ const plugins = [
 ];
 
 function authenticatedHandler(url: string) {
-  if (url === '/auth/me') return jsonResponse({ username: 'operator' });
+  if (url === '/auth/me') return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
   if (url === '/dashboard/summary') return jsonResponse(summary);
   if (url === '/plugins') return jsonResponse(plugins);
   if (url.startsWith('/feed-sources/') && url.includes('/products')) {
@@ -172,6 +172,20 @@ describe('AppShell', () => {
     expect(screen.getByRole('link', { name: /fleet overview/i })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: /system logs/i })).toHaveAttribute('href', '/logs');
     expect(screen.getByRole('link', { name: /global rules/i })).toHaveAttribute('href', '/rules');
+  });
+
+  it('hides the system logs nav item for non-admins', async () => {
+    stubFetch((url) => {
+      if (url === '/auth/me') {
+        return jsonResponse({ username: 'operator', role: 'user', client_ids: [1] });
+      }
+      if (url === '/dashboard/summary') return jsonResponse(summary);
+      if (url === '/plugins') return jsonResponse(plugins);
+      return jsonResponse({});
+    });
+    render(<App />);
+    await screen.findByRole('heading', { name: 'Dashboard' });
+    expect(screen.queryByRole('link', { name: /system logs/i })).not.toBeInTheDocument();
   });
 
   it('shows the Dashboard nav item with exact feed base href in feed scope', async () => {

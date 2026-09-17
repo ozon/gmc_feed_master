@@ -341,6 +341,7 @@ describe('feed index and placeholder routes', () => {
       if (url === '/auth/me') return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
       if (url === '/dashboard/summary') return jsonResponse(emptySummary);
       if (url === '/plugins') return jsonResponse([]);
+      if (url.startsWith('/logs/entries')) return jsonResponse({ items: [], next_cursor: null });
       return handler(url);
     });
   }

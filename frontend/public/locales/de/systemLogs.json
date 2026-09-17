@@ -1,4 +1,20 @@
 {
   "title": "Systemprotokolle",
-  "comingSoon": "Systemprotokolle folgen in Kürze."
+  "loadMore": "Mehr laden",
+  "filters": {
+    "category": "Kategorie",
+    "level": "Stufe",
+    "source": "Quelle",
+    "actor": "Akteur",
+    "requestId": "Anfrage-ID",
+    "search": "Nachricht enthält"
+  },
+  "columns": {
+    "time": "Zeit",
+    "level": "Stufe",
+    "category": "Kategorie",
+    "source": "Quelle",
+    "actor": "Akteur",
+    "message": "Nachricht"
+  }
 }

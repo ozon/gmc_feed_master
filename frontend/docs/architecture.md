@@ -119,14 +119,14 @@ export function useSavePipeline(feedSourceId) {
     │   ├── /admin/clients               → AdminPage (Clients tab)
     │   ├── /admin/settings              → AdminPage (Settings tab)
     │   └── /admin/ai                    → AdminPage (AI tab: providers + settings + prompt library + usage)
-    ├── /logs                               → SystemLogsPage (placeholder)
+    ├── /logs                               → SystemLogsPage (RequireAdmin; filterable cursor-paginated event log viewer)
     ├── /rules                              → GlobalRulesPage (placeholder)
     └── *                                 → NotFoundPage
 ```
 
 - **Lazy loading** for all feature pages (`React.lazy` + `Suspense`)
 - **Session guard**: `RequireSession` redirects to `/login` on 401
-- **Admin guard**: `RequireAdmin` redirects non-admins (session `role !== 'admin'`) away from `/admin/*`
+- **Admin guard**: `RequireAdmin` redirects non-admins (session `role !== 'admin'`) away from `/admin/*` and `/logs`
 - **Unauthorized handler**: Clears session queries, redirects with `from` state
 
 ## Admin Area & Role-aware UI
@@ -181,7 +181,7 @@ export function useSavePipeline(feedSourceId) {
   - Custom component via `manifest.frontend.component` (build-time import)
   - Registry map in `src/features/plugin/customComponents.ts` — keyed by plugin id (currently `rules` → `RulesUI`, `filter` → `FilterUI`, `custom_labels` → `CustomLabelsUI`)
   - Fallback: if plugin id has no registry entry, renders schema form
-- **Navigation**: The sidebar is scope-swapped. In global scope (no feed selected) it shows Fleet Overview (`/`), Clients (`/#clients`), System Logs (`/logs`), Global Rules (`/rules`), plus the Admin entry for admins. In feed scope it shows Dashboard (the exact feed base route), then Setup, plugin entries (enabled plugins with `manifest.frontend.component`), Products, Pipeline, Monitoring, Export. The header feed dropdown (FeedBreadcrumb) switches between the client's feed sources and offers an "All clients" reset to `/`. Plugin entries appear only in feed context and are labeled via `pluginNames.*` i18n keys with `plugin.name` as fallback, with icons resolved via `getPluginIcon`. Each plugin has two surfaces (ADR-0007): its Plugin Page (dashboard/tool) and its Setup surface embedded in the Pipeline Editor — `PluginConfigPanel` embeds the plugin's registered Setup component from `CONFIG_COMPONENTS` (`src/features/plugin/configComponents.ts`) with a tier switcher (Feed / Client / Global); plugins with only a custom page component show a hint and an "Open plugin page" link in the panel. Plugin routes (`/plugins/:id`, `/clients/:c/plugins/:id`, `/clients/:c/feeds/:f/plugins/:id`) remain as deep links (ScopeContextBar tier hrefs, bookmarks).
+- **Navigation**: The sidebar is scope-swapped. In global scope (no feed selected) it shows Fleet Overview (`/`), Clients (`/#clients`), Global Rules (`/rules`), plus the Admin entry and System Logs (`/logs`) for admins only. In feed scope it shows Dashboard (the exact feed base route), then Setup, plugin entries (enabled plugins with `manifest.frontend.component`), Products, Pipeline, Monitoring, Export. The header feed dropdown (FeedBreadcrumb) switches between the client's feed sources and offers an "All clients" reset to `/`. Plugin entries appear only in feed context and are labeled via `pluginNames.*` i18n keys with `plugin.name` as fallback, with icons resolved via `getPluginIcon`. Each plugin has two surfaces (ADR-0007): its Plugin Page (dashboard/tool) and its Setup surface embedded in the Pipeline Editor — `PluginConfigPanel` embeds the plugin's registered Setup component from `CONFIG_COMPONENTS` (`src/features/plugin/configComponents.ts`) with a tier switcher (Feed / Client / Global); plugins with only a custom page component show a hint and an "Open plugin page" link in the panel. Plugin routes (`/plugins/:id`, `/clients/:c/plugins/:id`, `/clients/:c/feeds/:f/plugins/:id`) remain as deep links (ScopeContextBar tier hrefs, bookmarks).
 - **Plugin UIs with custom components**:
   - `rules` → `RulesUI` (`src/features/rules/`) — ordered rule list with dnd reordering, master pinning, i18n (`rules` namespace)
   - `filter` → `FilterUI` (`src/features/filter/`) — conjunctive scalar condition editor with live preview, dirty-guard + useBlocker, i18n (`filter` namespace)

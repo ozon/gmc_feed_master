@@ -38,6 +38,7 @@
     "removalRetention": "Aufbewahrung entfernter Produkte (Tage)",
     "historyRetention": "Aufbewahrung Staging-Historie (Tage)",
     "ingestionRetention": "Aufbewahrung Ingestion-Läufe (Tage)",
+    "eventLogRetention": "Aufbewahrung Ereignisprotokoll (Tage)",
     "save": "Speichern",
     "saved": "Einstellungen gespeichert",
     "saveFailed": "Speichern fehlgeschlagen",

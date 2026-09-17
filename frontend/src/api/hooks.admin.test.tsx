@@ -41,6 +41,7 @@ describe('admin hooks', () => {
       staging_removal_retention_days: 90,
       staging_history_retention_days: 90,
       ingestion_run_retention_days: 90,
+      event_log_retention_days: 90,
     });
     const { result } = renderHook(() => useAdminSettings());
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

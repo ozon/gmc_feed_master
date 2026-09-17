@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import {
-  keepPreviousData, useMutation, useQuery, useQueryClient,
+  keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient,
   type QueryClient,
 } from '@tanstack/react-query';
 import {
@@ -24,6 +24,8 @@ import type {
   ClientSummary,
   DashboardSummary,
   DiffOut,
+  EventLogFilters,
+  EventLogPage,
   ExportVersionOut,
   FeedDashboardData,
   FeedSourceFieldsResponse,
@@ -717,6 +719,23 @@ export function useResetUserPassword() {
   return useMutation({
     mutationFn: ({ id, newPassword }: { id: number; newPassword: string }) =>
       apiPost<void>(`/admin/users/${id}/password`, { new_password: newPassword }),
+  });
+}
+
+export function useEventLogs(filters: EventLogFilters) {
+  return useInfiniteQuery({
+    queryKey: queryKeys.eventLogs(filters),
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(filters)) {
+        if (value !== undefined && value !== '') params.set(key, String(value));
+      }
+      if (pageParam !== undefined) params.set('cursor', String(pageParam));
+      const query = params.toString();
+      return apiGet<EventLogPage>(`/logs/entries${query ? `?${query}` : ''}`);
+    },
+    initialPageParam: undefined as number | undefined,
+    getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
   });
 }
 

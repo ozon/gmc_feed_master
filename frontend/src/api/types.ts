@@ -303,6 +303,37 @@ export type GlobalSettings = {
   staging_removal_retention_days: number;
   staging_history_retention_days: number;
   ingestion_run_retention_days: number;
+  event_log_retention_days: number;
+};
+
+export type EventLogEntry = {
+  id: number;
+  created_at: string;
+  category: 'audit' | 'server_error' | 'client_error';
+  level: string;
+  source: 'backend' | 'frontend';
+  logger: string | null;
+  actor: string | null;
+  actor_role: string | null;
+  client_id: number | null;
+  feed_source_id: number | null;
+  request_id: string | null;
+  run_id: number | null;
+  message: string;
+  context: Record<string, unknown>;
+};
+
+export type EventLogPage = { items: EventLogEntry[]; next_cursor: number | null };
+
+export type EventLogFilters = {
+  category?: string;
+  level?: string;
+  source?: string;
+  actor?: string;
+  request_id?: string;
+  q?: string;
+  feed_source_id?: number;
+  limit?: number;
 };
 
 export type SchedulerJob = { id: string; trigger: string };

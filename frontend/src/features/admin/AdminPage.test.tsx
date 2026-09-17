@@ -24,6 +24,7 @@ const settings = {
   staging_removal_retention_days: 90,
   staging_history_retention_days: 90,
   ingestion_run_retention_days: 90,
+  event_log_retention_days: 90,
 };
 
 function handler(url: string): Response {

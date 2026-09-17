@@ -38,6 +38,7 @@
     "removalRetention": "Removed-product retention (days)",
     "historyRetention": "Staging history retention (days)",
     "ingestionRetention": "Ingestion run retention (days)",
+    "eventLogRetention": "Event log retention (days)",
     "save": "Save",
     "saved": "Settings saved",
     "saveFailed": "Saving settings failed",

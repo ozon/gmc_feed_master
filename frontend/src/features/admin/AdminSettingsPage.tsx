@@ -24,12 +24,14 @@ export function AdminSettingsPage() {
   const [removal, setRemoval] = useState(90);
   const [history, setHistory] = useState(90);
   const [ingestion, setIngestion] = useState(90);
+  const [eventLogs, setEventLogs] = useState(90);
 
   useEffect(() => {
     if (settingsQuery.data) {
       setRemoval(settingsQuery.data.staging_removal_retention_days);
       setHistory(settingsQuery.data.staging_history_retention_days);
       setIngestion(settingsQuery.data.ingestion_run_retention_days);
+      setEventLogs(settingsQuery.data.event_log_retention_days);
     }
   }, [settingsQuery.data]);
 
@@ -59,6 +61,12 @@ export function AdminSettingsPage() {
           min={1}
           onChange={(v) => setIngestion(Number(v) || 1)}
         />
+        <NumberInput
+          label={t('settings.eventLogRetention')}
+          value={eventLogs}
+          min={1}
+          onChange={(v) => setEventLogs(Number(v) || 1)}
+        />
         <Button
           loading={saveSettings.isPending}
           onClick={() =>
@@ -67,6 +75,7 @@ export function AdminSettingsPage() {
                 staging_removal_retention_days: removal,
                 staging_history_retention_days: history,
                 ingestion_run_retention_days: ingestion,
+                event_log_retention_days: eventLogs,
               },
               {
                 onSuccess: () => notifySuccess(t('settings.saved')),

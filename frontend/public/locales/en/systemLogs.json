@@ -1,4 +1,20 @@
 {
   "title": "System Logs",
-  "comingSoon": "System logs are coming soon."
+  "loadMore": "Load more",
+  "filters": {
+    "category": "Category",
+    "level": "Level",
+    "source": "Source",
+    "actor": "Actor",
+    "requestId": "Request ID",
+    "search": "Message contains"
+  },
+  "columns": {
+    "time": "Time",
+    "level": "Level",
+    "category": "Category",
+    "source": "Source",
+    "actor": "Actor",
+    "message": "Message"
+  }
 }
