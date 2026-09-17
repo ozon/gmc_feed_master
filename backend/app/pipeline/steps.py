@@ -369,6 +369,70 @@ class EnrichmentStep:
         )
 
 
+class RuleAiStep:
+    name = "rule_ai"
+
+    def __init__(self, ai_service: Any = None) -> None:
+        self._ai_service = ai_service
+
+    async def execute(self, ctx: StepContext) -> StepResult:
+        from .rule_ai import apply_rule_ai_actions
+
+        async with ctx.session_factory() as session, session.begin():
+            feed_source = await session.get(FeedSource, ctx.feed_source_id)
+        if feed_source is None:
+            raise LookupError(f"feed source {ctx.feed_source_id} not found")
+
+        cfg = (feed_source.configuration or {}).get("ai_rules") or {}
+        pending = ctx.run_state.rule_ai_pending
+        if not cfg.get("enabled") or self._ai_service is None:
+            return StepResult(statistics={"ai_rules": {
+                "enabled": False, "products": 0, "applied": 0, "failed": 0, "spent": 0,
+            }})
+        if not pending:
+            return StepResult(statistics={"ai_rules": {
+                "enabled": True, "products": 0, "applied": 0, "failed": 0, "spent": 0,
+            }})
+
+        limit = max(1, int(cfg.get("limit", 50)))
+        budget = max(1, int(cfg.get("budget", 50)))
+        changed, outcome = await apply_rule_ai_actions(
+            ai_service=self._ai_service,
+            products=ctx.run_state.products,
+            pending=pending,
+            limit=limit,
+            budget=budget,
+            client_id=ctx.run_state.client_id,
+            feed_source_id=ctx.feed_source_id,
+        )
+        if changed:
+            ctx.run_state.products = [
+                changed.get(str(p.get("id", "")), p) for p in ctx.run_state.products
+            ]
+        if changed and not ctx.dry_run:
+            outcomes = [
+                PluginOutcome(pid, ctx.run_state.product_pks[pid], "processed", prod)
+                for pid, prod in changed.items()
+                if pid in ctx.run_state.product_pks
+            ]
+            if outcomes:
+                await apply_plugin_outcomes(
+                    ctx.session_factory, ctx.feed_source_id,
+                    ctx.ingestion_run_id, outcomes,
+                )
+        return StepResult(
+            processed_count=outcome.applied,
+            failed_count=outcome.failed,
+            statistics={"ai_rules": {
+                "enabled": True,
+                "products": outcome.products,
+                "applied": outcome.applied,
+                "failed": outcome.failed,
+                "spent": outcome.spent,
+            }},
+        )
+
+
 class QualityCheckStep:
     name = "quality_check"
 
@@ -558,6 +622,7 @@ def default_steps(
         MappingStep(registry),
         StagingStep(),
         PluginStep(plugin_registry),
+        RuleAiStep(ai_service),
         EnrichmentStep(ai_service),
         QualityCheckStep(registry, clock, image_probe, ai_service),
         ExportStep(registry, store, clock, base_url),

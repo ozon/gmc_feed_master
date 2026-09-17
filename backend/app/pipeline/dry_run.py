@@ -18,7 +18,14 @@ from ..models.export import ExportRun
 from ..models.feed_source import FeedSource
 from ..qc.engine import Finding, QcContext, run_engine
 from ..staging.config_resolver import resolve_config_bundle
-from .steps import EnrichmentStep, IngestStep, PluginStep, RunState, StepContext
+from .steps import (
+    EnrichmentStep,
+    IngestStep,
+    PluginStep,
+    RuleAiStep,
+    RunState,
+    StepContext,
+)
 
 DRY_RUN_SAMPLE_CAP = 50
 
@@ -70,6 +77,7 @@ async def run_dry_run(
     run_state.client_id = feed_source.client_id
 
     await PluginStep(plugin_registry).execute(ctx)
+    await RuleAiStep(ai_service).execute(ctx)
     processed = list(run_state.products)
 
     await EnrichmentStep(ai_service).execute(ctx)
