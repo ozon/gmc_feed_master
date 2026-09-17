@@ -164,7 +164,11 @@ class StagingStep:
             bundle = await resolve_config_bundle(session, feed_source)
         ctx.run_state.client_id = feed_source.client_id
         ctx.run_state.config_bundle = bundle
-        config_hash_value = content_hash(bundle)
+        hash_input = dict(bundle)
+        ai_rules = (feed_source.configuration or {}).get("ai_rules")
+        if ai_rules is not None:
+            hash_input["ai_rules"] = ai_rules
+        config_hash_value = content_hash(hash_input)
 
         stored = await load_stored_rows(ctx.session_factory, ctx.feed_source_id)
         delta = classify(ctx.run_state.products, stored, config_hash_value)

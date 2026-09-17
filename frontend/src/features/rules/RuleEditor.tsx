@@ -200,8 +200,17 @@ export function RuleEditor({
               data={opOptions(t, ACTION_OPS)}
               value={action.op}
               onChange={(v) => {
+                const nextOp = (v ?? 'set') as RuleAction['op'];
                 const next = [...rule.then];
-                next[index] = { ...action, op: (v ?? 'set') as RuleAction['op'] };
+                next[index] =
+                  nextOp === 'ai'
+                    ? {
+                        op: 'ai',
+                        field: action.field || '',
+                        promptSource: 'template',
+                        taskType: 'title_optimization',
+                      }
+                    : { op: nextOp, field: action.field };
                 onPatchThen(next);
               }}
               data-testid={`then-op-${index}`}

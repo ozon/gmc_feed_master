@@ -299,6 +299,24 @@ async def test_run_inline_task_missing_variable_is_fallback(service, monkeypatch
 
 
 @pytest.mark.asyncio
+async def test_run_inline_task_lenient_renders_missing_variable_empty(service, monkeypatch) -> None:
+    monkeypatch.setattr(service, "_load_deployments", AsyncMock(return_value=_provider_rows()))
+    instructor_client = MagicMock()
+    instructor_client.create_with_completion = AsyncMock(
+        return_value=(
+            RuleValueResult(value="Blue"),
+            SimpleNamespace(usage=None, model="m"),
+        )
+    )
+    monkeypatch.setattr(service, "_instructor", lambda: instructor_client)
+
+    result = await service.run_inline_task("sys", "Title {{title}}", {}, lenient=True)
+    assert result.status == "ok"
+    messages = instructor_client.create_with_completion.await_args.kwargs["messages"]
+    assert '<data key="title"></data>' in messages[1]["content"]
+
+
+@pytest.mark.asyncio
 async def test_run_inline_task_no_provider_is_fallback(service, monkeypatch) -> None:
     monkeypatch.setattr(service, "_load_deployments", AsyncMock(return_value=[]))
     result = await service.run_inline_task("sys", "u", {})

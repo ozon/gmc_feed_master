@@ -18,7 +18,7 @@ from app.models.feed_source import FeedSource
 from app.models.ingestion import IngestionRun
 from app.models.staging import StagingProduct
 from app.pipeline.rule_ai import RuleAiOutcome, apply_rule_ai_actions
-from app.pipeline.steps import RuleAiStep, RunState, StepContext
+from app.pipeline.steps import RuleAiStep, RunState, StagingStep, StepContext
 
 
 def _result(value, status="ok"):
@@ -32,16 +32,19 @@ class FakeAi:
         self.calls: list[dict] = []
 
     async def run_task(self, task_type, variables, *, client_id=None, feed_source_id=None,
-                       template_id=None):
-        self.calls.append({"task": task_type, "template_id": template_id, "vars": dict(variables)})
+                       template_id=None, lenient=False):
+        self.calls.append({
+            "task": task_type, "template_id": template_id,
+            "vars": dict(variables), "lenient": lenient,
+        })
         item = self._script.pop(0)
         if isinstance(item, Exception):
             raise item
         return item
 
     async def run_inline_task(self, system, user, variables, *, client_id=None,
-                              feed_source_id=None):
-        self.calls.append({"inline": system, "vars": dict(variables)})
+                              feed_source_id=None, lenient=False):
+        self.calls.append({"inline": system, "vars": dict(variables), "lenient": lenient})
         item = self._script.pop(0)
         if isinstance(item, Exception):
             raise item
@@ -74,6 +77,7 @@ async def test_template_entry_maps_task_fields() -> None:
     assert changed["p1"]["title"] == "Red Wool Socks"
     assert outcome == RuleAiOutcome(products=1, applied=1, failed=0, spent=1)
     assert ai.calls[0]["template_id"] == 5
+    assert ai.calls[0]["lenient"] is True
 
 
 @pytest.mark.asyncio
@@ -232,3 +236,27 @@ async def test_step_dry_run_does_not_persist(db) -> None:
     async with factory() as session:
         row = await session.get(StagingProduct, ids["pks"]["p1"])
         assert row.processed_data["title"] == "p1"
+
+
+@pytest.mark.asyncio
+async def test_staging_hashes_ai_rules_so_flip_reenqueues_unchanged(db) -> None:
+    factory, ids = db
+    step = StagingStep()
+
+    async def run_once():
+        state = RunState(products=_products())
+        ctx = StepContext(
+            feed_source_id=ids["feed_id"], session_factory=factory,
+            logger=logging.getLogger("test"), run_state=state,
+            ingestion_run_id=ids["run_id"],
+        )
+        return await step.execute(ctx)
+
+    assert (await run_once()).processed_count == 2
+    assert (await run_once()).processed_count == 0
+
+    async with factory() as session, session.begin():
+        feed = await session.get(FeedSource, ids["feed_id"])
+        feed.configuration = {"ai_rules": {"enabled": True, "limit": 10}}
+
+    assert (await run_once()).processed_count == 2

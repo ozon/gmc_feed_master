@@ -108,6 +108,25 @@ async def test_templates_rejects_unknown_task_type(app_factory):
     assert resp.status_code == 422
 
 
+async def test_templates_generic_task_returns_empty(app_factory):
+    client = await _login(app_factory)
+    feed = await _feed(app_factory[1], client)
+    resp = await client.get(
+        f"/plugins/rules/ai/templates?feed_source_id={feed['id']}&task_type=rule_value"
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"items": []}
+
+
+async def test_templates_rejects_non_consumable_task_type(app_factory):
+    client = await _login(app_factory)
+    feed = await _feed(app_factory[1], client)
+    resp = await client.get(
+        f"/plugins/rules/ai/templates?feed_source_id={feed['id']}&task_type=policy_check"
+    )
+    assert resp.status_code == 422
+
+
 async def test_preview_renders_template_without_ai_call(app_factory):
     client = await _login(app_factory)
     feed = await _feed(app_factory[1], client)
@@ -180,6 +199,16 @@ async def test_preview_inline_draft_rejects_structured_task(app_factory):
     })
     assert resp.status_code == 422
     assert resp.json()["detail"] == "inline draft requires taskType 'rule_value'"
+
+
+async def test_preview_rejects_non_consumable_template_task(app_factory):
+    client = await _login(app_factory)
+    feed = await _feed(app_factory[1], client)
+    resp = await client.post("/plugins/rules/ai/preview", json={
+        "feed_source_id": feed["id"], "taskType": "policy_check", "templateId": 1,
+    })
+    assert resp.status_code == 422
+    assert resp.json()["detail"] == "unknown task type 'policy_check'"
 
 
 async def test_preview_no_sample_product_is_distinct_404(app_factory):

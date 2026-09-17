@@ -263,6 +263,7 @@ class AiService:
         client_id: int | None = None,
         feed_source_id: int | None = None,
         template_id: int | None = None,
+        lenient: bool = False,
     ) -> AiResult:
         if task_type not in TASK_SPECS:
             await self._log_error(task_type, client_id, feed_source_id, "invalid_task")
@@ -270,7 +271,7 @@ class AiService:
                             prompt_tokens=0, completion_tokens=0)
         try:
             template = await self._resolve_template(task_type, client_id, template_id)
-            messages = render_messages(template.system, template.user, variables)
+            messages = render_messages(template.system, template.user, variables, lenient=lenient)
         except TaskSpecError:
             logger.exception("ai task %s could not render; falling back", task_type)
             await self._log_error(task_type, client_id, feed_source_id, "invalid_task")
@@ -293,9 +294,10 @@ class AiService:
         *,
         client_id: int | None = None,
         feed_source_id: int | None = None,
+        lenient: bool = False,
     ) -> AiResult:
         try:
-            messages = render_messages(system, user, variables)
+            messages = render_messages(system, user, variables, lenient=lenient)
         except TaskSpecError:
             logger.exception("ai inline task could not render; falling back")
             await self._log_error(GENERIC_AI_TASK, client_id, feed_source_id, "invalid_task")

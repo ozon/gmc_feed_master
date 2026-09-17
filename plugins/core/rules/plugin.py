@@ -398,6 +398,12 @@ def _validate_ai_action(action: dict[str, Any], path: str) -> None:
             )
     if not isinstance(action.get("field"), str) or not action.get("field"):
         raise ValueError(f"{path}: op 'ai' custom requires a non-empty field")
+    try:
+        _attr, index, sub = _parse_indexed(action["field"])
+    except ValueError as exc:
+        raise ValueError(f"{path}: op 'ai' custom field {action['field']!r} is invalid") from exc
+    if index is not None or sub is not None:
+        raise ValueError(f"{path}: op 'ai' custom field must be a top-level field")
 
 
 def _pending_entry(product: dict[str, Any], action: dict[str, Any]) -> dict[str, Any]:
@@ -580,7 +586,9 @@ class RulesPlugin:
             if db_session is None:
                 raise HTTPException(status_code=503, detail="database unavailable")
             await ensure_feed_source_access(db_session, user, feed_source_id)
-            if task_type not in CANONICAL_VARIABLES:
+            if task_type == GENERIC_AI_TASK:
+                return {"items": []}
+            if task_type not in STRUCTURED_AI_TASKS:
                 raise HTTPException(status_code=422, detail=f"unknown task type {task_type!r}")
             async with db_session.begin():
                 feed = await db_session.get(FeedSource, feed_source_id)
@@ -632,7 +640,7 @@ class RulesPlugin:
                 if feed is None:
                     raise HTTPException(status_code=404, detail="feed source not found")
                 if payload.templateId is not None:
-                    if payload.taskType not in CANONICAL_VARIABLES:
+                    if payload.taskType not in STRUCTURED_AI_TASKS:
                         raise HTTPException(
                             status_code=422,
                             detail=f"unknown task type {payload.taskType!r}",

@@ -1,5 +1,5 @@
 import { beforeAll, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
@@ -54,4 +54,27 @@ it('switching to custom emits a rule_value action', async () => {
   const next = onChange.mock.calls.at(-1)?.[0] as RuleAction;
   expect(next.taskType).toBe('rule_value');
   expect(next.templateId).toBeUndefined();
+});
+
+it('defaults a template action without taskType and previews title_optimization', async () => {
+  const user = userEvent.setup();
+  const posts: unknown[] = [];
+  stubFetch((url, init) => {
+    if (url.startsWith('/plugins/rules/ai/templates')) {
+      return jsonResponse({ items: [] });
+    }
+    if (url.startsWith('/plugins/rules/ai/preview')) {
+      posts.push(init?.body ? JSON.parse(String(init.body)) : null);
+      return jsonResponse({ messages: [], used_variables: [], warnings: [], errors: [] });
+    }
+    return jsonResponse({});
+  });
+  const action: RuleAction = { op: 'ai', field: '', promptSource: 'template' };
+  render(
+    <RuleAiActionEditor action={action} fieldOptions={options} feedSourceId={1} onChange={vi.fn()} />,
+  );
+
+  await user.click(screen.getByText('Preview'));
+  await waitFor(() => expect(posts).toHaveLength(1));
+  expect(posts[0]).toMatchObject({ taskType: 'title_optimization' });
 });

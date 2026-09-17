@@ -33,6 +33,7 @@ async def _run_entry(
         result = await ai_service.run_task(
             task_type, variables, client_id=client_id,
             feed_source_id=feed_source_id, template_id=entry.get("templateId"),
+            lenient=True,
         )
     else:
         variables = {
@@ -40,7 +41,7 @@ async def _run_entry(
         }
         result = await ai_service.run_inline_task(
             entry.get("system") or "", entry.get("user") or "", variables,
-            client_id=client_id, feed_source_id=feed_source_id,
+            client_id=client_id, feed_source_id=feed_source_id, lenient=True,
         )
     if result.value is None:
         return {}, result.status

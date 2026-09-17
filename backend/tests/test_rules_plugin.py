@@ -369,6 +369,9 @@ def test_validate_ai_custom_action_ok():
      "system": "s", "user": "u", "variables": ["t"]},
     {"op": "ai", "promptSource": "custom", "taskType": "rule_value",
      "system": "s", "user": "u {{t}}", "variables": ["t"]},
+    {"op": "ai", "promptSource": "custom", "taskType": "rule_value",
+     "field": "additional_image_link.1", "system": "s", "user": "u {{t}}",
+     "variables": ["t"]},
     {"op": "ai", "promptSource": "custom", "taskType": "rule_value", "field": "t",
      "system": "s", "user": "u {{missing}}", "variables": ["t"]},
 ])

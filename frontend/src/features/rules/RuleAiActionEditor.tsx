@@ -40,7 +40,7 @@ export function RuleAiActionEditor({
 
   const templates = useRuleAiTemplates(
     feedSourceId,
-    source === 'template' ? action.taskType : undefined,
+    source === 'template' ? action.taskType ?? STRUCTURED_TASKS[0] : undefined,
   );
 
   const knownFields = useMemo(
@@ -75,7 +75,8 @@ export function RuleAiActionEditor({
       };
     }
     return {
-      feed_source_id: feedSourceId ?? 0, taskType: action.taskType ?? '',
+      feed_source_id: feedSourceId ?? 0,
+      taskType: action.taskType ?? STRUCTURED_TASKS[0],
       templateId: action.templateId,
     };
   }

@@ -66,6 +66,8 @@ npm run typecheck                             # tsc -b
 - `docs/decisions/0007-plugin-setup-and-page-two-surface.md` — ADR: Plugin Setup + Plugin Page Two-Surface Model
 - `docs/decisions/0008-labelizer-product-preview-and-batch-lookup.md` — ADR: Labelizer product preview + batch value lookup
 - `docs/decisions/0009-basic-rbac.md` — ADR: Two roles, client assignment, admin area
+- `docs/decisions/0010-litellm-instructor-ai-transport.md` — ADR: LiteLLM + Instructor as AI transport/structured-output layer
+- `docs/decisions/0011-ai-action-rules-plugin.md` — ADR: AI action in the rules plugin
 - `backend/docs/architecture.md` — Pipeline stages, delta mechanics, plugin system
 - `backend/docs/data-model.md` — Entities, contenthash/confighash, retention rules
 - `backend/docs/api.md` — Endpoint reference, reserved plugin routes

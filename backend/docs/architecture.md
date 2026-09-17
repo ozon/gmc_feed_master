@@ -66,6 +66,7 @@ flowchart TD
   - Ordered pipeline definition (plugin instances + instance configs)
   - Resolved `PluginConfig` + `PluginData` (three-tier merge)
   - Plugin versions
+  - `feed_source.configuration.ai_rules` when present — toggling AI rule actions reprocesses otherwise-unchanged products so `RuleAiStep` runs
 
 **Implication**: Any plugin config/data/version change triggers reprocessing on next run. Global-scope config change triggers reprocessing across all feed sources of all clients using that plugin (accepted trade-off).
 
