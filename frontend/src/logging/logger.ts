@@ -24,6 +24,9 @@ const SENSITIVE = [
   'apikey',
   'session',
   'credential',
+  'private_key',
+  'access_key',
+  'refresh_token',
 ];
 const MAX_VALUE = 2000;
 const MAX_DEPTH = 3;
