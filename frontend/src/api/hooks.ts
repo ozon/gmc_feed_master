@@ -32,6 +32,8 @@ import type {
   FieldMappingDoc,
   GlobalSettings,
   IngestionRunRow,
+  ModelCatalog,
+  ModelCatalogSync,
   PipelineDoc,
   PluginConfigResponse,
   PluginInfo,
@@ -40,6 +42,7 @@ import type {
   ProductsPageResponse,
   PromptPreviewResult,
   PromptTemplate,
+  ProviderPreset,
   QualityFindingsResponse,
   QualityHistoryRow,
   RegistryAttribute,
@@ -765,6 +768,7 @@ export function useUpdateAiProvider() {
   return useMutation({
     mutationFn: ({ id, ...payload }: {
       id: number;
+      provider_type?: 'litellm' | 'openai_compatible';
       api_key?: string;
       name?: string;
       base_url?: string;
@@ -796,6 +800,32 @@ export function useTestAiProvider() {
   return useMutation({
     mutationFn: (id: number) =>
       apiPost<AiTestResult>(`/admin/ai/providers/${id}/test`),
+  });
+}
+
+export function useProviderPresets() {
+  return useQuery({
+    queryKey: queryKeys.ai.providerPresets,
+    queryFn: () => apiGet<ProviderPreset[]>('/admin/ai/provider-presets'),
+  });
+}
+
+export function useModelCatalog(vendor: string | null, mode: 'chat' | 'completion' = 'chat') {
+  return useQuery({
+    queryKey: queryKeys.ai.modelCatalog(vendor, mode),
+    queryFn: () =>
+      apiGet<ModelCatalog>(`/admin/ai/model-catalog?vendor=${vendor}&mode=${mode}`),
+    enabled: vendor !== null,
+  });
+}
+
+export function useRefreshModelCatalog() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiPost<ModelCatalogSync>('/admin/ai/model-catalog/refresh'),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['ai', 'model-catalog'] });
+    },
   });
 }
 

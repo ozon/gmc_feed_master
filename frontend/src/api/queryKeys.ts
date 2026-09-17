@@ -50,5 +50,8 @@ export const queryKeys = {
     cacheStats: ['ai', 'cache', 'stats'] as const,
     usageSummary: (params: unknown) => ['ai', 'usage-summary', params] as const,
     usageTimeseries: (params: unknown) => ['ai', 'usage-timeseries', params] as const,
+    providerPresets: ['ai', 'provider-presets'] as const,
+    modelCatalog: (vendor: string | null, mode: string) =>
+      ['ai', 'model-catalog', vendor, mode] as const,
   },
 };

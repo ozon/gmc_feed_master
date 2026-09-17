@@ -321,6 +321,42 @@ export type AiProvider = {
   enabled: boolean;
 };
 
+export type ProviderPreset = {
+  vendor_key: string;
+  label: string;
+  model_prefix: string;
+  default_base_url: string;
+  requires_base_url: boolean;
+  api_key_env_hint: string;
+  docs_url: string;
+  supports_catalog: boolean;
+};
+
+export type ModelCatalogEntry = {
+  model_id: string;
+  vendor: string;
+  display_name: string;
+  context_window: number | null;
+  max_output_tokens: number | null;
+  input_price_per_mtok: string | null;
+  output_price_per_mtok: string | null;
+  supports_vision: boolean;
+  supports_function_calling: boolean;
+  is_recommended: boolean;
+};
+
+export type ModelCatalogSync = {
+  last_attempt_at: string | null;
+  last_success_at: string | null;
+  last_error: string | null;
+  source: string | null;
+};
+
+export type ModelCatalog = {
+  entries: ModelCatalogEntry[];
+  sync: ModelCatalogSync;
+};
+
 export type AiUsageGroupBy = 'client' | 'feed_source' | 'task_type' | 'day';
 
 export type AiUsageFilterParams = {
