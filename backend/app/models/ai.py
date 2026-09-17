@@ -96,3 +96,31 @@ class PromptTemplate(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+
+class AiModelCatalog(Base):
+    __tablename__ = "ai_model_catalog"
+    __table_args__ = (
+        UniqueConstraint("model_id", name="uq_ai_model_catalog_model_id"),
+        Index("ix_ai_model_catalog_vendor_mode", "vendor", "mode"),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    vendor: Mapped[str] = mapped_column(String(50), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    display_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    mode: Mapped[str] = mapped_column(String(20), nullable=False, default="chat", server_default="chat")
+    context_window: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    input_price_per_mtok: Mapped[Decimal | None] = mapped_column(Numeric(12, 6), nullable=True)
+    output_price_per_mtok: Mapped[Decimal | None] = mapped_column(Numeric(12, 6), nullable=True)
+    supports_vision: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+    supports_function_calling: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+
+
+class AiModelCatalogSync(Base):
+    __tablename__ = "ai_model_catalog_sync"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source: Mapped[str | None] = mapped_column(String(50), nullable=True)
