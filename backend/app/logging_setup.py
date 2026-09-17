@@ -62,11 +62,16 @@ def _redact(value: Any, depth: int) -> Any:
     return value
 
 
+def redact_mapping(data: dict[str, Any]) -> dict[str, Any]:
+    """Return a redacted/truncated copy of ``data``; never mutates the input."""
+    # ponytail: depth-3 recursion cap, raise if nested payloads appear.
+    return _redact(data, 0)
+
+
 def redact_sensitive(
     logger: Any, method_name: str, event_dict: MutableMapping[str, Any]
 ) -> dict[str, Any]:
-    # ponytail: depth-3 recursion cap, raise if nested payloads appear.
-    return _redact(event_dict, 0)
+    return redact_mapping(dict(event_dict))
 
 
 def configure_logging(settings: Settings | None) -> None:

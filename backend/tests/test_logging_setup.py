@@ -5,7 +5,7 @@ import logging
 import structlog
 
 from app.config import Settings
-from app.logging_setup import redact_sensitive
+from app.logging_setup import redact_mapping, redact_sensitive
 
 
 def _test_settings() -> Settings:
@@ -31,6 +31,13 @@ def test_redact_sensitive_keys_and_nesting():
     assert out["nested"]["access_token"] == "[REDACTED]"
     assert out["nested"]["keep"] == "value"
     assert out["items"][0]["api_key"] == "[REDACTED]"
+
+
+def test_redact_mapping_returns_new_dict_without_mutating_input():
+    source = {"password": "hunter2", "nested": {"token": "abc"}}
+    out = redact_mapping(source)
+    assert out == {"password": "[REDACTED]", "nested": {"token": "[REDACTED]"}}
+    assert source == {"password": "hunter2", "nested": {"token": "abc"}}
 
 
 def test_redact_sensitive_truncates_long_strings():
