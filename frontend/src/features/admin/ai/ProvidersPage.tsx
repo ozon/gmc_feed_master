@@ -10,6 +10,7 @@ import {
 import { notifyMutationError, notifySuccess } from '../../../app/notifications';
 import { EmptyState, ErrorState, LoadingState } from '../../../components/StateViews';
 import type { AiProvider } from '../../../api/types';
+import { ProviderWizard, type ProviderWizardSubmitPayload } from './ProviderWizard';
 
 type ProviderPayload = {
   name: string;
@@ -22,6 +23,12 @@ type ProviderPayload = {
   api_key?: string;
 };
 
+/**
+ * GFM-12: new providers go through the 3-step `ProviderWizard`
+ * (Anbieter -> API-Key -> Modell); editing an existing row keeps the
+ * original field-by-field `ProviderModal`, since legacy `openai_compatible`
+ * rows may not map cleanly onto a single preset.
+ */
 export function ProvidersPage() {
   const { t } = useTranslation('admin');
   const providersQuery = useAiProviders();
@@ -37,12 +44,31 @@ export function ProvidersPage() {
   if (providersQuery.isError) {
     return <ErrorState onRetry={() => void providersQuery.refetch()} />;
   }
+
   const providers = providersQuery.data ?? [];
+
+  function handleWizardSubmit(payload: ProviderWizardSubmitPayload) {
+    createProvider.mutate(
+      {
+        ...payload,
+        enabled: true,
+        input_price_per_mtok: payload.input_price_per_mtok,
+        output_price_per_mtok: payload.output_price_per_mtok,
+      },
+      {
+        onSuccess: () => {
+          notifySuccess(t('ai.saved'));
+          setCreating(false);
+        },
+        onError: (error) => notifyMutationError(error, t('ai.saveFailed')),
+      },
+    );
+  }
 
   return (
     <Stack>
       <Group justify="space-between">
-        <Title order={4}>{t('ai.providersTitle')}</Title>
+        <Title order={3}>{t('ai.providersTitle')}</Title>
         <Button
           leftSection={<IconPlus size={16} />}
           data-testid="ai-add-provider"
@@ -51,10 +77,11 @@ export function ProvidersPage() {
           {t('ai.add')}
         </Button>
       </Group>
+
       {providers.length === 0 ? (
-        <EmptyState message={t('ai.empty')} />
+        <EmptyState title={t('ai.noProviders')} />
       ) : (
-        <Table data-testid="ai-providers-table" striped>
+        <Table>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>{t('ai.columns.name')}</Table.Th>
@@ -66,28 +93,30 @@ export function ProvidersPage() {
           </Table.Thead>
           <Table.Tbody>
             {providers.map((provider) => (
-              <Table.Tr key={provider.id} data-testid={`ai-provider-row-${provider.id}`}>
-                <Table.Td>{provider.name}</Table.Td>
+              <Table.Tr key={provider.id}>
+                <Table.Td>
+                  <Group gap="xs">
+                    {provider.name}
+                    {provider.provider_type === 'openai_compatible' && (
+                      <Badge size="xs" color="gray" variant="light">{t('ai.legacy', 'Legacy')}</Badge>
+                    )}
+                  </Group>
+                </Table.Td>
                 <Table.Td>{provider.model}</Table.Td>
                 <Table.Td>
-                  <Badge variant="light" color={provider.tier === 'precision' ? 'grape' : 'blue'}>
-                    {t(`ai.tier.${provider.tier}`)}
-                  </Badge>
+                  <Badge>{t(`ai.tier.${provider.tier}`)}</Badge>
                 </Table.Td>
                 <Table.Td>
                   <Switch
-                    aria-label={t('ai.columns.enabled')}
                     checked={provider.enabled}
-                    onChange={(event) =>
-                      updateProvider.mutate(
-                        { id: provider.id, enabled: event.currentTarget.checked },
-                        { onError: (error) => notifyMutationError(error, t('ai.saveFailed')) },
-                      )
-                    }
+                    onChange={(event) => updateProvider.mutate(
+                      { id: provider.id, enabled: event.currentTarget.checked },
+                      { onError: (error) => notifyMutationError(error, t('ai.saveFailed')) },
+                    )}
                   />
                 </Table.Td>
                 <Table.Td>
-                  <Group gap="xs" wrap="nowrap">
+                  <Group gap={4} justify="flex-end">
                     <ActionIcon
                       variant="subtle"
                       aria-label={t('ai.test')}
@@ -103,23 +132,17 @@ export function ProvidersPage() {
                     >
                       <IconBolt size={16} />
                     </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      aria-label={t('ai.edit')}
-                      onClick={() => setEditing(provider)}
-                    >
+                    <ActionIcon variant="subtle" aria-label={t('ai.edit')} onClick={() => setEditing(provider)}>
                       <IconPencil size={16} />
                     </ActionIcon>
                     <ActionIcon
                       variant="subtle"
                       color="red"
                       aria-label={t('ai.delete')}
-                      onClick={() =>
-                        deleteProvider.mutate(provider.id, {
-                          onSuccess: () => notifySuccess(t('ai.deleted')),
-                          onError: (error) => notifyMutationError(error, t('ai.deleteFailed')),
-                        })
-                      }
+                      onClick={() => deleteProvider.mutate(provider.id, {
+                        onSuccess: () => notifySuccess(t('ai.deleted')),
+                        onError: (error) => notifyMutationError(error, t('ai.deleteFailed')),
+                      })}
                     >
                       <IconTrash size={16} />
                     </ActionIcon>
@@ -130,49 +153,52 @@ export function ProvidersPage() {
           </Table.Tbody>
         </Table>
       )}
-      {testResult ? <div data-testid="ai-test-result">{testResult}</div> : null}
+
+      {testResult ? <Badge color="gray">{testResult}</Badge> : null}
+
+      <Modal opened={creating} onClose={() => setCreating(false)} title={t('ai.add')} size="lg">
+        <ProviderWizard
+          submitting={createProvider.isPending}
+          onSubmit={handleWizardSubmit}
+          onTestConnection={async (payload) => {
+            const created = await createProvider.mutateAsync({
+              ...payload,
+              enabled: false,
+              input_price_per_mtok: payload.input_price_per_mtok,
+              output_price_per_mtok: payload.output_price_per_mtok,
+            });
+            return testProvider.mutateAsync(created.id);
+          }}
+        />
+      </Modal>
+
       <ProviderModal
-        key={editing?.id ?? (creating ? 'create' : 'closed')}
-        opened={creating || editing !== null}
+        opened={editing !== null}
         provider={editing}
-        onClose={() => {
-          setCreating(false);
-          setEditing(null);
-        }}
+        onClose={() => setEditing(null)}
         onSubmit={(payload) => {
-          const close = () => {
-            setCreating(false);
-            setEditing(null);
-          };
-          if (editing) {
-            updateProvider.mutate(
-              { id: editing.id, ...payload },
-              {
-                onSuccess: () => {
-                  notifySuccess(t('ai.saved'));
-                  close();
-                },
-                onError: (error) => notifyMutationError(error, t('ai.saveFailed')),
+          if (!editing) return;
+          updateProvider.mutate(
+            { id: editing.id, ...payload },
+            {
+              onSuccess: () => {
+                notifySuccess(t('ai.saved'));
+                setEditing(null);
               },
-            );
-          } else {
-            createProvider.mutate(
-              { ...payload, enabled: true, input_price_per_mtok: null, output_price_per_mtok: null },
-              {
-                onSuccess: () => {
-                  notifySuccess(t('ai.saved'));
-                  close();
-                },
-                onError: (error) => notifyMutationError(error, t('ai.saveFailed')),
-              },
-            );
-          }
+              onError: (error) => notifyMutationError(error, t('ai.saveFailed')),
+            },
+          );
         }}
       />
     </Stack>
   );
 }
 
+/**
+ * Field-by-field edit modal, unchanged from the pre-wizard flow. Used only
+ * for editing existing providers (including legacy `openai_compatible`
+ * rows), which don't necessarily map onto a single wizard preset.
+ */
 function ProviderModal({
   opened, provider, onClose, onSubmit,
 }: {
@@ -190,20 +216,20 @@ function ProviderModal({
   const [baseUrl, setBaseUrl] = useState(provider?.base_url ?? '');
   const [model, setModel] = useState(provider?.model ?? '');
   const [apiKey, setApiKey] = useState('');
-  const [maxConcurrency, setMaxConcurrency] = useState<number>(provider?.max_concurrency ?? 4);
-  const [timeoutS, setTimeoutS] = useState<number>(provider?.timeout_s ?? 30);
+  const [maxConcurrency, setMaxConcurrency] = useState(provider?.max_concurrency ?? 4);
+  const [timeoutS, setTimeoutS] = useState(provider?.timeout_s ?? 30);
 
   return (
     <Modal opened={opened} onClose={onClose} title={provider ? t('ai.edit') : t('ai.add')}>
       <Stack>
         <TextInput
-          label={t('ai.columns.name')}
+          label={t('ai.fields.name')}
           value={name}
           onChange={(e) => setName(e.currentTarget.value)}
           data-testid="ai-modal-name"
         />
         <Select
-          label={t('ai.providerType')}
+          label={t('ai.fields.providerType')}
           value={providerType}
           onChange={(value) => setProviderType((value ?? 'litellm') as AiProvider['provider_type'])}
           data-testid="ai-modal-provider-type"
@@ -213,7 +239,7 @@ function ProviderModal({
           ]}
         />
         <Select
-          label={t('ai.columns.tier')}
+          label={t('ai.fields.tier')}
           value={tier}
           onChange={(value) => setTier((value ?? 'bulk') as AiProvider['tier'])}
           data-testid="ai-modal-tier"
@@ -223,52 +249,48 @@ function ProviderModal({
           ]}
         />
         <TextInput
-          label={t('ai.baseUrl')}
+          label={t('ai.fields.baseUrl')}
           value={baseUrl}
           onChange={(e) => setBaseUrl(e.currentTarget.value)}
         />
         <TextInput
-          label={t('ai.columns.model')}
+          label={t('ai.fields.model')}
           value={model}
           onChange={(e) => setModel(e.currentTarget.value)}
           data-testid="ai-modal-model"
         />
         <TextInput
-          label={t('ai.apiKey')}
-          placeholder={provider ? t('ai.apiKeyUnchanged') : ''}
+          label={t('ai.fields.apiKey')}
           value={apiKey}
           onChange={(e) => setApiKey(e.currentTarget.value)}
+          placeholder={provider ? t('ai.fields.apiKeyUnchanged') : undefined}
         />
         <NumberInput
-          label={t('ai.maxConcurrency')}
+          label={t('ai.fields.maxConcurrency')}
           value={maxConcurrency}
-          min={1}
-          max={64}
           onChange={(value) => setMaxConcurrency(typeof value === 'number' ? value : 4)}
         />
         <NumberInput
-          label={t('ai.timeoutS')}
+          label={t('ai.fields.timeoutS')}
           value={timeoutS}
-          min={1}
-          max={600}
           onChange={(value) => setTimeoutS(typeof value === 'number' ? value : 30)}
         />
-        <Button
-          disabled={!name || !model}
-          data-testid="ai-modal-save"
-          onClick={() => onSubmit({
-            name,
-            provider_type: providerType,
-            tier,
-            base_url: baseUrl,
-            model,
-            max_concurrency: maxConcurrency,
-            timeout_s: timeoutS,
-            ...(apiKey !== '' ? { api_key: apiKey } : {}),
-          })}
-        >
-          {t('ai.save')}
-        </Button>
+        <Group justify="flex-end">
+          <Button
+            onClick={() => onSubmit({
+              name,
+              provider_type: providerType,
+              tier,
+              base_url: baseUrl,
+              model,
+              max_concurrency: maxConcurrency,
+              timeout_s: timeoutS,
+              ...(apiKey !== '' ? { api_key: apiKey } : {}),
+            })}
+          >
+            {t('ai.save')}
+          </Button>
+        </Group>
       </Stack>
     </Modal>
   );
