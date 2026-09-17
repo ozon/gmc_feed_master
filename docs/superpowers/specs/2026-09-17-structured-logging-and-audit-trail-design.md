@@ -87,8 +87,8 @@ New model `backend/app/models/event_log.py`, table `event_log`:
 | `logger` | varchar(120) | nullable |
 | `actor` | varchar(120) | nullable |
 | `actor_role` | varchar(20) | nullable |
-| `client_id` | integer FK | `clients(id) ON DELETE SET NULL`, nullable |
-| `feed_source_id` | integer FK | `feed_sources(id) ON DELETE SET NULL`, nullable |
+| `client_id` | integer | nullable, plain telemetry integer (not FK — mirrors `ai_usage_logs`) |
+| `feed_source_id` | integer | nullable, plain telemetry integer (not FK — mirrors `ai_usage_logs`) |
 | `request_id` | varchar(64) | nullable, indexed |
 | `run_id` | integer | nullable |
 | `message` | text | not null |
