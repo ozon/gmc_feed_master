@@ -178,12 +178,21 @@ def create_app(
                     AI_PURGE_JOB_ID, PURGE_CRON, run_ai_purge
                 )
 
-                from .event_log import EVENT_LOG_PURGE_JOB_ID, purge_expired_events
+                from .event_log import (
+                    DEFAULT_EVENT_LOG_RETENTION_DAYS,
+                    EVENT_LOG_PURGE_JOB_ID,
+                    purge_expired_events,
+                )
 
                 async def run_event_log_purge() -> None:
                     counts = await purge_expired_events(
                         application.state.db_session_factory,
                         datetime.now(timezone.utc),
+                        default_days=(
+                            settings.event_log_retention_days
+                            if settings is not None
+                            else DEFAULT_EVENT_LOG_RETENTION_DAYS
+                        ),
                     )
                     logging.getLogger(__name__).info(
                         "event log purge: %s rows", counts.rows

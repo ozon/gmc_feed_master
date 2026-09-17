@@ -2,7 +2,7 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 export type LogContext = Record<string, unknown>;
 
 type LogEntry = {
-  level: LogLevel;
+  level: 'warning' | 'error';
   message: string;
   scope: string;
   route: string;
@@ -130,7 +130,7 @@ export function createLogger(scope: string) {
     }
     console[level](`[${scope}] ${message}`, safe, error ?? '');
     enqueue({
-      level,
+      level: level === 'warn' ? 'warning' : 'error',
       message: truncate(message),
       scope,
       route: currentPath(),

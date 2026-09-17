@@ -141,19 +141,20 @@ class EventLogPurgeCounts:
     rows: int
 
 
-async def _retention_days(session: AsyncSession) -> int:
+async def _retention_days(session: AsyncSession, default_days: int) -> int:
     row = await session.get(GlobalSetting, 1)
     if row is None:
-        return DEFAULT_EVENT_LOG_RETENTION_DAYS
+        return default_days
     return row.event_log_retention_days
 
 
 async def purge_expired_events(
     session_factory: Callable[[], AsyncSession],
     now: datetime,
+    default_days: int = DEFAULT_EVENT_LOG_RETENTION_DAYS,
 ) -> EventLogPurgeCounts:
     async with session_factory() as session, session.begin():
-        days = await _retention_days(session)
+        days = await _retention_days(session, default_days)
         result = await session.execute(
             delete(EventLog).where(EventLog.created_at < now - timedelta(days=days))
         )

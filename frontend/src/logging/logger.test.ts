@@ -39,6 +39,21 @@ describe('logger', () => {
     });
   });
 
+  it('ships warn as warning (backend ships "warning", not "warn")', () => {
+    const log = createLogger('test');
+    log.warn('careful');
+    flushLogs();
+    expect(beaconMock).toHaveBeenCalledTimes(1);
+    const [url, blob] = beaconMock.mock.calls[0] as unknown as [string, Blob];
+    expect(url).toBe('/logs/client');
+    return blob.text().then((text) => {
+      const payload = JSON.parse(text) as {
+        entries: Array<{ level: string }>;
+      };
+      expect(payload.entries[0].level).toBe('warning');
+    });
+  });
+
   it('generates a request id', () => {
     expect(newRequestId().length).toBeGreaterThan(8);
   });
