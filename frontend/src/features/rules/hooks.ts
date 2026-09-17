@@ -58,13 +58,20 @@ export function useSaveAiRules(feedSourceId: number | undefined) {
   const queryClient = useQueryClient();
   const feed = useFeedSource(feedSourceId);
   return useMutation({
-    mutationFn: (aiRules: AiRulesConfig) =>
-      apiPut<FeedSourceRow>(`/feed-sources/${feedSourceId}`, {
+    mutationFn: async (aiRules: AiRulesConfig) => {
+      const current =
+        feed.data ??
+        (await queryClient.fetchQuery({
+          queryKey: queryKeys.feedSource(feedSourceId ?? 0).detail,
+          queryFn: () => apiGet<FeedSourceRow>(`/feed-sources/${feedSourceId}`),
+        }));
+      return apiPut<FeedSourceRow>(`/feed-sources/${feedSourceId}`, {
         configuration: {
-          ...((feed.data?.configuration ?? {}) as Record<string, unknown>),
+          ...((current?.configuration ?? {}) as Record<string, unknown>),
           ai_rules: aiRules,
         },
-      }),
+      });
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.feedSource(feedSourceId ?? 0).detail,
