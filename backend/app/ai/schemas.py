@@ -90,6 +90,10 @@ class ImageQualityResult(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
 
 
+class RuleValueResult(BaseModel):
+    value: str
+
+
 RESPONSE_MODELS: dict[str, type[BaseModel]] = {
     "title_optimization": OptimizedTitle,
     "description_optimization": OptimizedDescription,
