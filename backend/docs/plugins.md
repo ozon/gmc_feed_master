@@ -215,6 +215,25 @@ Config document: `{"rules": [{id, name, isMasterRule, isActive, when, then}]}`.
   numeric args raise `ValueError`); `process` evaluates conditions against the current
   product state (post-previous-plugins) and applies actions in order (copy-on-write);
   never mutates `ctx.original_product`.
+- **AI actions (`op: "ai"`, phase one)** — an `ai` action is recorded, not executed:
+  `process()` appends a pending entry to `ctx.run_state.rule_ai_pending` (via
+  `RunContext.run_state`, the per-run state object) and leaves the product untouched.
+  `promptSource: "template"` requires a `taskType` in `STRUCTURED_AI_TASKS` plus an
+  integer `templateId`; `promptSource: "custom"` requires `taskType: "rule_value"`,
+  non-empty `system`/`user`, a non-empty `variables` list, and a non-empty output
+  `field`. Placeholders in the draft must be declared in `variables`; an `ai` action
+  must be the last write to its field. With no `run_state` (e.g. a bare `process()`
+  call) the action is dropped with a warning. `RuleAiStep` (opt-in via
+  `configuration.ai_rules = {enabled, limit, budget}`) drains `rule_ai_pending`
+  through `AiService` (`run_task(template_id=…)` for pinned templates,
+  `run_inline_task` for custom drafts) and writes the resolved target fields into the
+  product. `ok` spends one budget unit, `cache_hit` is free, `fallback`/raised errors
+  count as failures and never abort other products.
+- `register_routes` contributes `GET /ai/templates` (scoped template list) and
+  `POST /ai/preview` (render-only, no AI call) — see `docs/api.md`. Local Pydantic
+  request models are resolved into the handler's `__annotations__` before route
+  registration, because module-level `from __future__ import annotations` defeats
+  FastAPI's `eval_str` for function-local classes (same pattern as CategoryPlugin).
 
 ### Filter Plugin (`plugins/core/filter/`)
 

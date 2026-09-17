@@ -544,3 +544,162 @@ class RulesPlugin:
                     continue
                 current = apply_action(current, action)
         return current
+
+    def register_routes(self, router: Any) -> None:
+        from fastapi import Depends, HTTPException, Query
+        from pydantic import BaseModel
+        from sqlalchemy import or_, select
+
+        from app.access import CurrentUser, ensure_feed_source_access, get_current_user
+        from app.ai.tasks import CANONICAL_VARIABLES
+        from app.ai.templates import (
+            parse_placeholders,
+            render_messages,
+            validate_template,
+        )
+        from app.db.engine import get_db_session
+        from app.models.ai import PromptTemplate
+        from app.models.feed_source import FeedSource
+        from app.models.staging import StagingProduct
+
+        class PreviewRequest(BaseModel):
+            feed_source_id: int
+            taskType: str
+            templateId: int | None = None
+            system: str | None = None
+            user: str | None = None
+            variables: list[str] | None = None
+            product_id: str | None = None
+
+        async def ai_templates(
+            feed_source_id: int = Query(...),
+            task_type: str = Query(...),
+            user: CurrentUser = Depends(get_current_user),
+            db_session: Any = Depends(get_db_session),
+        ) -> dict[str, Any]:
+            if db_session is None:
+                raise HTTPException(status_code=503, detail="database unavailable")
+            await ensure_feed_source_access(db_session, user, feed_source_id)
+            if task_type not in CANONICAL_VARIABLES:
+                raise HTTPException(status_code=422, detail=f"unknown task type {task_type!r}")
+            async with db_session.begin():
+                feed = await db_session.get(FeedSource, feed_source_id)
+                if feed is None:
+                    raise HTTPException(status_code=404, detail="feed source not found")
+                statement = select(PromptTemplate).where(
+                    PromptTemplate.task_type == task_type
+                )
+                if feed.client_id is not None:
+                    statement = statement.where(or_(
+                        PromptTemplate.client_id.is_(None),
+                        PromptTemplate.client_id == feed.client_id,
+                    ))
+                else:
+                    statement = statement.where(PromptTemplate.client_id.is_(None))
+                statement = statement.order_by(PromptTemplate.version.desc())
+                rows = (await db_session.execute(statement)).scalars().all()
+            return {"items": [
+                {"id": r.id, "name": r.name, "task_type": r.task_type,
+                 "client_id": r.client_id, "version": r.version, "is_active": r.is_active}
+                for r in rows
+            ]}
+
+        async def ai_preview(
+            payload: PreviewRequest,
+            user: CurrentUser = Depends(get_current_user),
+            db_session: Any = Depends(get_db_session),
+        ) -> dict[str, Any]:
+            if db_session is None:
+                raise HTTPException(status_code=503, detail="database unavailable")
+            await ensure_feed_source_access(db_session, user, payload.feed_source_id)
+            has_draft = (
+                payload.system is not None
+                or payload.user is not None
+                or payload.variables is not None
+            )
+            if payload.templateId is not None and has_draft:
+                raise HTTPException(
+                    status_code=422, detail="provide either templateId or an inline draft"
+                )
+            if payload.templateId is None and not (
+                payload.system is not None and payload.user is not None
+            ):
+                raise HTTPException(
+                    status_code=422, detail="inline draft requires system and user"
+                )
+            async with db_session.begin():
+                feed = await db_session.get(FeedSource, payload.feed_source_id)
+                if feed is None:
+                    raise HTTPException(status_code=404, detail="feed source not found")
+                if payload.templateId is not None:
+                    if payload.taskType not in CANONICAL_VARIABLES:
+                        raise HTTPException(
+                            status_code=422,
+                            detail=f"unknown task type {payload.taskType!r}",
+                        )
+                    row = await db_session.get(PromptTemplate, payload.templateId)
+                    if row is None or row.task_type != payload.taskType:
+                        raise HTTPException(status_code=422, detail="template not usable")
+                    if row.client_id is not None and row.client_id != feed.client_id:
+                        raise HTTPException(status_code=422, detail="template not usable")
+                    system = row.system_prompt
+                    user_prompt = row.user_prompt
+                    declared = list(row.variables)
+                    canonical = list(CANONICAL_VARIABLES[payload.taskType])
+                else:
+                    if payload.taskType != GENERIC_AI_TASK:
+                        raise HTTPException(
+                            status_code=422,
+                            detail="inline draft requires taskType 'rule_value'",
+                        )
+                    system = payload.system or ""
+                    user_prompt = payload.user or ""
+                    declared = list(payload.variables or [])
+                    canonical = list(declared)
+                statement = select(StagingProduct).where(
+                    StagingProduct.feed_source_id == payload.feed_source_id,
+                    StagingProduct.status == "active",
+                    StagingProduct.excluded.is_(False),
+                )
+                if payload.product_id is not None:
+                    statement = statement.where(
+                        StagingProduct.product_id == payload.product_id
+                    )
+                statement = statement.order_by(StagingProduct.id).limit(1)
+                staged = (await db_session.execute(statement)).scalar_one_or_none()
+                if staged is None:
+                    raise HTTPException(status_code=404, detail="no sample product found")
+                product = staged.raw_data or {}
+
+            validation = validate_template(canonical, system, user_prompt, declared)
+            if validation.errors:
+                raise HTTPException(status_code=422, detail={
+                    "errors": validation.errors, "warnings": validation.warnings,
+                })
+            values = {name: product.get(name) for name in canonical}
+            warnings = list(validation.warnings)
+            for name in canonical:
+                if values[name] is None:
+                    warnings.append(
+                        f"variable {name!r} is missing in the sample product; rendered empty"
+                    )
+            messages = render_messages(system, user_prompt, values, lenient=True)
+            used = sorted(parse_placeholders(system) | parse_placeholders(user_prompt))
+            return {"messages": messages, "used_variables": used,
+                    "warnings": warnings, "errors": []}
+
+        ai_templates.__annotations__.update({
+            "feed_source_id": int, "task_type": str, "user": CurrentUser,
+            "return": dict[str, Any],
+        })
+        router.get("/ai/templates", response_model=None)(ai_templates)
+
+        # `from __future__ import annotations` (module level) turns the local
+        # PreviewRequest annotation into a string; FastAPI's eval_str cannot see
+        # function locals, so the body model would silently degrade to a query
+        # param. Resolve it explicitly (same pattern as CategoryPlugin).
+        ai_preview.__annotations__.update({
+            "payload": PreviewRequest, "user": CurrentUser,
+            "return": dict[str, Any],
+        })
+        router.post("/ai/preview", response_model=None)(ai_preview)
