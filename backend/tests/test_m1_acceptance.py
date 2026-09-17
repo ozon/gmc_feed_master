@@ -43,6 +43,8 @@ EXPECTED_TABLES = {
     "ai_provider_configs",
     "ai_usage_logs",
     "prompt_templates",
+    "ai_model_catalog",
+    "ai_model_catalog_sync",
 }
 
 
