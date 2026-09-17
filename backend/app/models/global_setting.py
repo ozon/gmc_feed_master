@@ -13,6 +13,9 @@ class GlobalSetting(Base):
     staging_history_retention_days: Mapped[int] = mapped_column(Integer, nullable=False, default=90)
     ingestion_run_retention_days: Mapped[int] = mapped_column(Integer, nullable=False, default=90)
     ai_usage_retention_days: Mapped[int] = mapped_column(Integer, nullable=False, default=90)
+    event_log_retention_days: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=180, server_default="180"
+    )
     ai_cache_type: Mapped[str] = mapped_column(String(20), nullable=False, default="local", server_default="local")
     ai_cache_namespace: Mapped[str] = mapped_column(String(100), nullable=False, default="gmc-ai", server_default="gmc-ai")
     ai_cache_ttl_taxonomy_s: Mapped[int] = mapped_column(Integer, nullable=False, default=2592000, server_default="2592000")

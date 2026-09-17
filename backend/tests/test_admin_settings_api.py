@@ -61,6 +61,7 @@ async def test_get_settings_seeds_defaults(settings_app, admin_http):
         "staging_history_retention_days": 90,
         "ingestion_run_retention_days": 90,
         "ai_usage_retention_days": 90,
+        "event_log_retention_days": 180,
     }
 
 
@@ -71,6 +72,7 @@ async def test_put_settings_persists(settings_app, admin_http):
         "staging_history_retention_days": 45,
         "ingestion_run_retention_days": 60,
         "ai_usage_retention_days": 15,
+        "event_log_retention_days": 180,
     })
     assert response.status_code == 200
     assert response.json()["staging_removal_retention_days"] == 30
@@ -86,6 +88,7 @@ async def test_put_settings_rejects_non_positive(settings_app, admin_http):
         "staging_history_retention_days": 90,
         "ingestion_run_retention_days": 90,
         "ai_usage_retention_days": 90,
+        "event_log_retention_days": 180,
     })
     assert response.status_code == 422
 
