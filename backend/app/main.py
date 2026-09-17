@@ -352,15 +352,20 @@ def create_app(
             )
         except HTTPException:
             if db_session is not None:
-                # authenticate leaves an implicit read transaction open; close
-                # it so the audit row can commit.
-                await db_session.rollback()
-                async with db_session.begin():
-                    await audit(
-                        db_session,
-                        "auth.login.failure",
-                        target_type="user",
-                        target_id=credentials.username,
+                try:
+                    # authenticate leaves an implicit read transaction open; close
+                    # it so the audit row can commit.
+                    await db_session.rollback()
+                    async with db_session.begin():
+                        await audit(
+                            db_session,
+                            "auth.login.failure",
+                            target_type="user",
+                            target_id=credentials.username,
+                        )
+                except Exception:
+                    logging.getLogger(__name__).warning(
+                        "login failure audit write failed", exc_info=True
                     )
             raise
         token = await create_session(store, app.state.clock, user_id)
@@ -412,19 +417,21 @@ def create_app(
                 detail="Password changes require the configured PostgreSQL persistence boundary",
             )
         token = request.cookies[SESSION_COOKIE_NAME]
-        if db_session is None or not await change_password(
-            db_session, request_user, payload.current_password, payload.new_password
-        ):
+        if db_session is None:
             raise HTTPException(status_code=401, detail="Invalid credentials")
-        await invalidate_session(request.app.state.session_store, token)
-        clear_session_cookie(response)
         async with db_session.begin():
+            if not await change_password(
+                db_session, request_user, payload.current_password, payload.new_password
+            ):
+                raise HTTPException(status_code=401, detail="Invalid credentials")
             await audit(
                 db_session,
                 "auth.password.change",
                 target_type="user",
                 target_id=request_user,
             )
+        await invalidate_session(request.app.state.session_store, token)
+        clear_session_cookie(response)
         return {"status": "ok"}
 
     @app.get("/auth/me")

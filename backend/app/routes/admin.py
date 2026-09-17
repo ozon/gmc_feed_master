@@ -64,18 +64,18 @@ async def create_user(
 ) -> AdminUserOut:
     session = _require_db(db_session)
     try:
-        user = await user_repo.create_user(
-            session,
-            payload.username,
-            payload.password,
-            payload.role,
-            payload.client_ids,
-            payload.is_active,
-        )
+        async with session.begin():
+            user = await user_repo.create_user(
+                session,
+                payload.username,
+                payload.password,
+                payload.role,
+                payload.client_ids,
+                payload.is_active,
+            )
+            await audit(session, "user.create", target_type="user", target_id=user.id)
     except IntegrityError as exc:
         raise HTTPException(status_code=409, detail="username already exists") from exc
-    async with session.begin():
-        await audit(session, "user.create", target_type="user", target_id=user.id)
     return _user_out(user, payload.client_ids)
 
 
@@ -87,18 +87,19 @@ async def update_user(
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> AdminUserOut:
     session = _require_db(db_session)
-    user = await user_repo.update_user(
-        session,
-        user_id,
-        role=payload.role,
-        is_active=payload.is_active,
-        client_ids=payload.client_ids,
-    )
-    if user is None:
-        raise HTTPException(status_code=404, detail="user not found")
     async with session.begin():
+        user = await user_repo.update_user(
+            session,
+            user_id,
+            role=payload.role,
+            is_active=payload.is_active,
+            client_ids=payload.client_ids,
+        )
+        if user is None:
+            raise HTTPException(status_code=404, detail="user not found")
         await audit(session, "user.update", target_type="user", target_id=user_id)
-    return _user_out(user, await _user_client_ids(session, user.id))
+        client_ids = await _user_client_ids(session, user.id)
+    return _user_out(user, client_ids)
 
 
 @router.post("/admin/users/{user_id}/password", status_code=204)
@@ -109,10 +110,12 @@ async def set_password(
     db_session: AsyncSession | None = Depends(get_db_session),
 ) -> None:
     session = _require_db(db_session)
-    if not await user_repo.set_user_password(session, user_id, payload.new_password):
-        raise HTTPException(status_code=404, detail="user not found")
     async with session.begin():
-        await audit(session, "user.password.reset", target_type="user", target_id=user_id)
+        if not await user_repo.set_user_password(session, user_id, payload.new_password):
+            raise HTTPException(status_code=404, detail="user not found")
+        await audit(
+            session, "user.password.reset", target_type="user", target_id=user_id
+        )
 
 
 @router.get("/admin/settings", response_model=GlobalSettingsOut)

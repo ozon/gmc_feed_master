@@ -87,3 +87,33 @@ async def test_user_create_is_audited_with_actor(settings_app):
         assert row.actor == "operator"
         assert row.actor_role == "admin"
         assert row.context["target_type"] == "user"
+
+
+async def test_user_create_audit_failure_rolls_back(settings_app, monkeypatch):
+    app, factory = settings_app
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    await client.post(
+        "/auth/login", json={"username": "operator", "password": "admin-pass"}
+    )
+
+    async def _failing_audit(*args, **kwargs):
+        raise RuntimeError("audit unavailable")
+
+    monkeypatch.setattr("app.routes.admin.audit", _failing_audit)
+    with pytest.raises(RuntimeError, match="audit unavailable"):
+        await client.post(
+            "/admin/users",
+            json={
+                "username": "atomic",
+                "password": "pw",
+                "role": "user",
+                "client_ids": [],
+            },
+        )
+    await client.aclose()
+
+    async with factory() as session:
+        row = (
+            await session.execute(select(User).where(User.username == "atomic"))
+        ).scalar_one_or_none()
+        assert row is None
