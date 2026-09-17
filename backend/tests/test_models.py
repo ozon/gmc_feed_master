@@ -16,6 +16,7 @@ def test_m1_table_set_is_complete():
         "ai_provider_configs", "ai_usage_logs",
         "prompt_templates",
         "ai_model_catalog", "ai_model_catalog_sync",
+        "event_log",
     }
 
 
