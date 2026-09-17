@@ -884,19 +884,9 @@ def upgrade() -> None:
     )
     op.create_index("ix_event_log_request_id", "event_log", ["request_id"])
     op.create_index("ix_event_log_feed_source_id", "event_log", ["feed_source_id"])
-    op.add_column(
-        "global_settings",
-        sa.Column(
-            "event_log_retention_days",
-            sa.Integer(),
-            nullable=False,
-            server_default="180",
-        ),
-    )
 
 
 def downgrade() -> None:
-    op.drop_column("global_settings", "event_log_retention_days")
     op.drop_index("ix_event_log_feed_source_id", table_name="event_log")
     op.drop_index("ix_event_log_request_id", table_name="event_log")
     op.drop_index("ix_event_log_category_created_at", table_name="event_log")
@@ -928,6 +918,7 @@ git commit -m "feat(logging): event_log model and migration"
 **Files:**
 - Create: `backend/app/event_log/__init__.py`
 - Create: `backend/app/event_log/service.py`
+- Create: `backend/alembic/versions/20260917_0002_m18_event_log_retention.py`
 - Modify: `backend/app/models/global_setting.py`
 - Modify: `backend/app/schemas/admin.py`
 - Modify: `backend/app/routes/admin.py:111-153`
@@ -1017,6 +1008,44 @@ Add to `backend/app/models/global_setting.py`:
     event_log_retention_days: Mapped[int] = mapped_column(
         Integer, nullable=False, default=180, server_default="180"
     )
+```
+
+Add `backend/alembic/versions/20260917_0002_m18_event_log_retention.py`:
+
+```python
+"""m18 event log retention setting
+
+Revision ID: 20260917_0002
+Revises: 20260917_0001
+Create Date: 2026-09-17
+"""
+
+from collections.abc import Sequence
+
+import sqlalchemy as sa
+
+from alembic import op
+
+revision: str = "20260917_0002"
+down_revision: str | Sequence[str] | None = "20260917_0001"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
+
+
+def upgrade() -> None:
+    op.add_column(
+        "global_settings",
+        sa.Column(
+            "event_log_retention_days",
+            sa.Integer(),
+            nullable=False,
+            server_default="180",
+        ),
+    )
+
+
+def downgrade() -> None:
+    op.drop_column("global_settings", "event_log_retention_days")
 ```
 
 ```python
