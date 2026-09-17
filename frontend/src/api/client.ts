@@ -1,3 +1,5 @@
+import { createLogger, newRequestId } from '../logging/logger';
+
 export type User = { username: string; role: 'admin' | 'user'; client_ids: number[] | null };
 
 export class ApiError extends Error {
@@ -51,14 +53,30 @@ async function parseError(response: Response): Promise<ApiError> {
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, { ...init, credentials: 'include' });
+  const requestId = newRequestId();
+  const response = await fetch(url, {
+    ...init,
+    credentials: 'include',
+    headers: { ...(init?.headers ?? {}), 'X-Request-ID': requestId },
+  });
   if (!response.ok) {
     const authExempt =
       url.startsWith('/auth/login') || url.startsWith('/auth/password');
     if (response.status === 401 && unauthorizedHandler && !authExempt) {
       unauthorizedHandler();
     }
-    throw await parseError(response);
+    const error = await parseError(response);
+    createLogger('api').error(
+      'request failed',
+      {
+        request_id: requestId,
+        method: init?.method ?? 'GET',
+        url: url.split('?')[0],
+        status: response.status,
+      },
+      error,
+    );
+    throw error;
   }
   if (response.status === 204) return undefined as T;
   const contentType = response.headers.get('content-type');
@@ -76,14 +94,30 @@ async function requestWithHeaders<T>(
   url: string,
   init?: RequestInit,
 ): Promise<{ data: T; headers: Headers }> {
-  const response = await fetch(url, { ...init, credentials: 'include' });
+  const requestId = newRequestId();
+  const response = await fetch(url, {
+    ...init,
+    credentials: 'include',
+    headers: { ...(init?.headers ?? {}), 'X-Request-ID': requestId },
+  });
   if (!response.ok) {
     const authExempt =
       url.startsWith('/auth/login') || url.startsWith('/auth/password');
     if (response.status === 401 && unauthorizedHandler && !authExempt) {
       unauthorizedHandler();
     }
-    throw await parseError(response);
+    const error = await parseError(response);
+    createLogger('api').error(
+      'request failed',
+      {
+        request_id: requestId,
+        method: init?.method ?? 'GET',
+        url: url.split('?')[0],
+        status: response.status,
+      },
+      error,
+    );
+    throw error;
   }
   const text = await response.text();
   const data = (text ? JSON.parse(text) : undefined) as T;

@@ -8,6 +8,7 @@ import {
   login,
   setUnauthorizedHandler,
 } from './client';
+import { resetLogQueue } from '../logging/logger';
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -19,6 +20,7 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 beforeEach(() => {
+  resetLogQueue();
   vi.stubGlobal('fetch', fetchMock);
   fetchMock.mockReset();
   setUnauthorizedHandler(null);
@@ -90,5 +92,21 @@ describe('api client', () => {
   it('still resolves undefined for 204 responses', async () => {
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
     await expect(apiGet('/clients/3')).resolves.toBeUndefined();
+  });
+
+  it('attaches an X-Request-ID header to every request', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ username: 'operator' }));
+    await getCurrentUser();
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    const headers = init.headers as Record<string, string>;
+    expect(headers['X-Request-ID']).toBeTruthy();
+  });
+
+  it('logs failed API calls', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ detail: 'nope' }, 500));
+    const logger = await import('../logging/logger');
+    const spy = vi.spyOn(logger, 'createLogger');
+    await apiGet('/dashboard/summary').catch(() => undefined);
+    expect(spy).toHaveBeenCalledWith('api');
   });
 });
