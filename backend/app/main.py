@@ -28,6 +28,7 @@ from .clock import Clock, SystemClock
 from .config import Settings, get_settings
 from .db.engine import create_engine, create_session_factory, get_db_session
 from .ingest import HttpFetcher
+from .logging_setup import configure_logging
 from .persistence.sessions import PostgresSessionStore
 from .persistence.users import change_password, seed_initial_user
 from .routes import (
@@ -93,6 +94,7 @@ def create_app(
     fetcher: HttpFetcher | None = None,
     plugins_dir: Path | str | None = None,
 ) -> FastAPI:
+    configure_logging(settings)
     if settings is None and session_store is None and db_session_factory is None:
         settings = _configured_settings()
 
