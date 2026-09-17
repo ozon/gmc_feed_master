@@ -1423,3 +1423,16 @@ Inline code review of the cycle found one critical and one important issue; both
 - Rule guidance lives in i18n (`rules.*` in `monitoring.json`), since the rule set is fixed and owned by the backend QC rules. A frontend test reads `backend/app/qc/{rules,ai_rules}.py` and fails if a backend `rule_id` has no catalog entry.
 
 **Rationale:** The findings page showed raw rule codes with no guidance and no way to reach the product behind a finding, and severity styling was duplicated across four surfaces. A single module removes the drift and delivers the ergonomics without new dependencies or schema changes. The per-feed quality counts reuse the export runs the summary already loads, so the badge is free.
+
+### 2026-09-17 — AI provider wizard & model catalog (GFM-12)
+
+**Topic:** Provider creation UX and the model list behind it.
+
+**Decision:**
+- The catalog seeds from the installed `litellm.model_cost` (offline, and guaranteed to match the model strings the installed `litellm.Router` accepts) and refreshes daily from the upstream LiteLLM GitHub JSON (`system-ai-model-catalog-refresh`, `0 4 * * *`) plus the manual `POST /admin/ai/model-catalog/refresh`. Refresh is fail-open: a network or format failure keeps the last-good catalog and records `last_error` for the admin badge.
+- `provider_type` is normalized to `litellm` on write; a legacy `openai_compatible` payload with an unprefixed model is stored as `openai/<model>`. Router mapping is unchanged, so existing rows keep working.
+- The catalog holds models only. Freshness (`last_attempt_at`, `last_success_at`, `last_error`, `source`) lives in the singleton `ai_model_catalog_sync`; `is_recommended` is computed at read from a static per-vendor list. Per-row freshness/recommended columns are deliberately omitted because they can drift.
+- The Azure preset and `api_version` plumbing are deferred to a follow-up (no `api_version` column this cycle).
+- The wizard keeps advanced fields (tier, concurrency, timeout, prices, enabled) in a collapsed accordion, and defers connection testing to Finish: it creates the provider and immediately calls the existing `POST /admin/ai/providers/{id}/test`, rather than adding a stateless dry-run probe endpoint.
+
+**Rationale:** The raw form required knowing internal details (`provider_type`, the LiteLLM `vendor/model` format) that the router hides. Seeding from the bundled price data means the wizard works offline on first boot and can never offer a model the installed LiteLLM can't route; the GitHub refresh keeps it current without a new dependency. Dropping derivable per-row columns removes state that can silently go stale. Reusing the existing test endpoint avoids a second probe path to maintain.

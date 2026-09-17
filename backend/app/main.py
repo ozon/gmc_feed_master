@@ -173,6 +173,21 @@ def create_app(
                     AI_PURGE_JOB_ID, PURGE_CRON, run_ai_purge
                 )
 
+                from .ai.model_catalog import (
+                    MODEL_CATALOG_REFRESH_CRON,
+                    MODEL_CATALOG_REFRESH_JOB_ID,
+                    make_refresh_job,
+                )
+
+                catalog_job = make_refresh_job(
+                    application.state.db_session_factory,
+                    application.state.catalog_http_client,
+                    application.state.clock,
+                )
+                scheduler_service.register_system_job(
+                    MODEL_CATALOG_REFRESH_JOB_ID, MODEL_CATALOG_REFRESH_CRON, catalog_job
+                )
+
                 from .pipeline.reconcile import reconcile_interrupted_runs
 
                 reconciled = await reconcile_interrupted_runs(

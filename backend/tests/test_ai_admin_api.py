@@ -314,3 +314,11 @@ async def test_create_provider_normalizes_legacy_type(settings_app, admin_http):
         row = await session.get(AiProviderConfig, provider_id)
         assert row.provider_type == "litellm"
         assert row.model == "openai/gpt-4o-mini"
+
+
+@pytest.mark.asyncio
+async def test_model_catalog_refresh_job_constants():
+    from app.ai import model_catalog
+
+    assert model_catalog.MODEL_CATALOG_REFRESH_JOB_ID == "system-ai-model-catalog-refresh"
+    assert model_catalog.MODEL_CATALOG_REFRESH_CRON == "0 4 * * *"
