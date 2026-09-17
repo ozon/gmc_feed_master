@@ -121,6 +121,26 @@ The rules UI is reachable at the feed-scoped route
 `/clients/:clientId/feeds/:feedSourceId/plugins/:pluginId`, and `PluginPage` derives
 the scope tier from route params (most-specific wins).
 
+#### Rules AI action editor (`op=ai`)
+
+`RuleAiActionEditor` (`frontend/src/features/rules/RuleAiActionEditor.tsx`) renders inside
+the rule editor when an action's op is `ai`:
+
+- **Source toggle** (`template` / `custom`). Switching resets the action's prompt fields to
+  that mode's shape (`switchSource`).
+- **Template mode:** a task select (the structured tasks: title/description optimization,
+  category classification, attribute enrichment) and a template select populated by
+  `GET /plugins/rules/ai/templates`; the task's output fields are shown read-only. A template
+  id is pinned via `run_task(template_id=…)`, falling back to the active then builtin template.
+- **Custom mode:** the inline-only `rule_value` task — system and user prompt textareas plus a
+  multi-select of variables drawn from the feed's known fields, and a target `FieldSelect` for
+  the output field.
+- **Preview:** a Preview button opens `AiPromptPreview`, which posts the current draft to
+  `POST /plugins/rules/ai/preview` (render-only, zero AI cost) and shows the rendered
+  `messages` (role + content), any `warnings` for missing variables, and the error alert.
+- Template mode does not expose the target field (the task fixes it); saving requires a feed
+  source so the editor still reflects the pinned/inline prompt the run phase will use.
+
 ### First-Party Reference: Filter (`plugins/core/filter/frontend/component.tsx`)
 
 The Filter module is the second core plugin with a custom UI. FilterUI is a
