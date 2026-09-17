@@ -13,6 +13,7 @@ from ..access import CurrentUser, get_current_user, require_admin
 from ..auth import require_user
 from ..config import Settings, get_settings
 from ..db.engine import get_db_session
+from ..event_log import audit
 from ..export.service import generate_export_token
 from ..export.store import ExportFileStore
 from ..models.client import Client
@@ -82,6 +83,10 @@ async def create_client(
     try:
         async with session.begin():
             session.add(client)
+            await session.flush()
+            await audit(
+                session, "client.create", target_type="client", target_id=client.id
+            )
     except IntegrityError as exc:
         raise HTTPException(status_code=409, detail="client name already exists") from exc
     return client
@@ -120,6 +125,9 @@ async def update_client(
                 raise HTTPException(status_code=404, detail="client not found")
             for key, value in updates.items():
                 setattr(client, key, value)
+            await audit(
+                session, "client.update", target_type="client", target_id=client_id
+            )
     except IntegrityError as exc:
         raise HTTPException(status_code=409, detail="client name already exists") from exc
     await session.refresh(client)
@@ -148,6 +156,13 @@ async def create_feed_source(
         if await session.get(Client, client_id) is None:
             raise HTTPException(status_code=404, detail="client not found")
         session.add(feed_source)
+        await session.flush()
+        await audit(
+            session,
+            "feed_source.create",
+            target_type="feed_source",
+            target_id=feed_source.id,
+        )
     scheduler = _scheduler(request)
     if scheduler is not None and feed_source.cron_expression:
         scheduler.register(feed_source)
@@ -208,6 +223,12 @@ async def update_feed_source(
             raise HTTPException(status_code=404, detail="feed source not found")
         for key, value in updates.items():
             setattr(feed_source, key, value)
+        await audit(
+            session,
+            "feed_source.update",
+            target_type="feed_source",
+            target_id=feed_source_id,
+        )
     await session.refresh(feed_source)
     scheduler = _scheduler(request)
     if scheduler is not None and "cron_expression" in updates:
@@ -234,6 +255,12 @@ async def delete_feed_source(
         if feed_source is None:
             raise HTTPException(status_code=404, detail="feed source not found")
         await delete_feed_source_cascade(session, feed_source_id)
+        await audit(
+            session,
+            "feed_source.delete",
+            target_type="feed_source",
+            target_id=feed_source_id,
+        )
     scheduler = _scheduler(request)
     if scheduler is not None:
         scheduler.unregister(feed_source_id)
@@ -268,6 +295,9 @@ async def delete_client(
         if locks is not None and any(locks.is_locked(fid) for fid in feed_ids):
             raise HTTPException(status_code=409, detail="client has a feed source with an active run")
         deleted_ids = await delete_client_cascade(session, client_id)
+        await audit(
+            session, "client.delete", target_type="client", target_id=client_id
+        )
     scheduler = _scheduler(request)
     settings = _resolve_settings(request)
     store = ExportFileStore(settings.export_dir)
@@ -299,6 +329,12 @@ async def rotate_export_token(
         feed_source.export_token = generate_export_token()
         await session.flush()
         token = feed_source.export_token
+        await audit(
+            session,
+            "feed_source.export_token.rotate",
+            target_type="feed_source",
+            target_id=feed_source_id,
+        )
     settings = _resolve_settings(request)
     return {"export_token": token, "export_url": _export_url(settings, token)}
 
@@ -319,6 +355,13 @@ async def trigger_run(
             raise HTTPException(status_code=404, detail="feed source not found")
         run = IngestionRun(feed_source_id=feed_source_id, status="pending")
         session.add(run)
+        await session.flush()
+        await audit(
+            session,
+            "feed_source.run.trigger",
+            target_type="feed_source",
+            target_id=feed_source_id,
+        )
     run_id = run.id
     task = asyncio.create_task(runner.execute(feed_source_id, run_id=run_id))
     background_tasks = getattr(request.app.state, "background_tasks", None)

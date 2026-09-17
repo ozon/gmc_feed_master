@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import require_user
 from ..db.engine import get_db_session
+from ..event_log import audit
 from ..models.feed_source import FeedSource
 from ..models.pipeline import ModuleInstance, ModulePipeline
 from ..models.plugin import Plugin
@@ -162,6 +163,12 @@ async def put_pipeline(
                                "configuration": item.configuration,
                                "enabled": item.enabled})
         pipeline.definition = {"instances": definition}
+        await audit(
+            session,
+            "pipeline.update",
+            target_type="feed_source",
+            target_id=feed_source_id,
+        )
 
     return {"instances": instances_out}
 
@@ -201,4 +208,10 @@ async def patch_pipeline_instance(
              "enabled": row.enabled}
             for row, plugin in rows
         ]}
+        await audit(
+            session,
+            "pipeline.instance.update",
+            target_type="feed_source",
+            target_id=feed_source_id,
+        )
     return {"id": instance_id, "enabled": payload.enabled}

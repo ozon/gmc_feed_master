@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..access import CurrentUser, require_admin
 from ..db.engine import get_db_session
+from ..event_log import audit
 from ..models.global_setting import GlobalSetting
 from ..models.user_client import UserClient
 from ..persistence import users as user_repo
@@ -73,6 +74,8 @@ async def create_user(
         )
     except IntegrityError as exc:
         raise HTTPException(status_code=409, detail="username already exists") from exc
+    async with session.begin():
+        await audit(session, "user.create", target_type="user", target_id=user.id)
     return _user_out(user, payload.client_ids)
 
 
@@ -93,6 +96,8 @@ async def update_user(
     )
     if user is None:
         raise HTTPException(status_code=404, detail="user not found")
+    async with session.begin():
+        await audit(session, "user.update", target_type="user", target_id=user_id)
     return _user_out(user, await _user_client_ids(session, user.id))
 
 
@@ -106,6 +111,8 @@ async def set_password(
     session = _require_db(db_session)
     if not await user_repo.set_user_password(session, user_id, payload.new_password):
         raise HTTPException(status_code=404, detail="user not found")
+    async with session.begin():
+        await audit(session, "user.password.reset", target_type="user", target_id=user_id)
 
 
 @router.get("/admin/settings", response_model=GlobalSettingsOut)
@@ -153,6 +160,9 @@ async def put_settings_row(
         row.ingestion_run_retention_days = payload.ingestion_run_retention_days
         row.ai_usage_retention_days = payload.ai_usage_retention_days
         row.event_log_retention_days = payload.event_log_retention_days
+        await audit(
+            session, "settings.update", target_type="global_settings", target_id=1
+        )
     return row
 
 

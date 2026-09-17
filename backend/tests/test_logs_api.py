@@ -108,12 +108,14 @@ async def test_entries_pagination_cursor(settings_app):
     app, factory = settings_app
     from app.event_log import record_event
 
+    admin_client = await _login(app, "operator", "admin-pass")
+    # Login is itself audited; reset so the page contains exactly the seeded rows.
     async with factory() as session, session.begin():
+        await session.execute(delete(EventLog))
         for i in range(3):
             await record_event(
                 session, category="audit", level="info", source="backend", message=f"m{i}"
             )
-    admin_client = await _login(app, "operator", "admin-pass")
     first = (await admin_client.get("/logs/entries?limit=2")).json()
     assert len(first["items"]) == 2
     assert first["next_cursor"] is not None

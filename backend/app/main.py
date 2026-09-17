@@ -27,6 +27,7 @@ from .auth import (
 from .clock import Clock, SystemClock
 from .config import Settings, get_settings
 from .db.engine import create_engine, create_session_factory, get_db_session
+from .event_log import audit
 from .ingest import HttpFetcher
 from .logging_setup import configure_logging
 from .middleware import RequestContextMiddleware
@@ -343,13 +344,36 @@ def create_app(
         store: SessionStore = Depends(_store),
         db_session: AsyncSession | None = Depends(get_db_session),
     ) -> dict[str, str]:
-        user_id = await authenticate(
-            credentials,
-            settings,
-            None if request.app.state.session_store_injected else db_session,
-        )
+        try:
+            user_id = await authenticate(
+                credentials,
+                settings,
+                None if request.app.state.session_store_injected else db_session,
+            )
+        except HTTPException:
+            if db_session is not None:
+                # authenticate leaves an implicit read transaction open; close
+                # it so the audit row can commit.
+                await db_session.rollback()
+                async with db_session.begin():
+                    await audit(
+                        db_session,
+                        "auth.login.failure",
+                        target_type="user",
+                        target_id=credentials.username,
+                    )
+            raise
         token = await create_session(store, app.state.clock, user_id)
         set_session_cookie(response, token, settings.session_absolute_hours * 60 * 60)
+        if db_session is not None:
+            await db_session.rollback()
+            async with db_session.begin():
+                await audit(
+                    db_session,
+                    "auth.login.success",
+                    target_type="user",
+                    target_id=user_id,
+                )
         return {"username": user_id}
 
     @app.post("/auth/logout")
@@ -358,12 +382,20 @@ def create_app(
         response: Response,
         request_user: str = Depends(require_user),
         store: SessionStore = Depends(_store),
+        db_session: AsyncSession | None = Depends(get_db_session),
     ) -> dict[str, str]:
         # Dependencies validate the token before it is invalidated.
-        del request_user
         token = request.cookies[SESSION_COOKIE_NAME]
         await invalidate_session(store, token)
         clear_session_cookie(response)
+        if db_session is not None:
+            async with db_session.begin():
+                await audit(
+                    db_session,
+                    "auth.logout",
+                    target_type="user",
+                    target_id=request_user,
+                )
         return {"status": "ok"}
 
     @app.post("/auth/password")
@@ -386,6 +418,13 @@ def create_app(
             raise HTTPException(status_code=401, detail="Invalid credentials")
         await invalidate_session(request.app.state.session_store, token)
         clear_session_cookie(response)
+        async with db_session.begin():
+            await audit(
+                db_session,
+                "auth.password.change",
+                target_type="user",
+                target_id=request_user,
+            )
         return {"status": "ok"}
 
     @app.get("/auth/me")

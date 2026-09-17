@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..access import CurrentUser, get_current_user, require_admin
 from ..auth import require_user
 from ..db.engine import get_db_session
+from ..event_log import audit
 from ..models.client import Client
 from ..models.feed_source import FeedSource
 from ..models.plugin import Plugin, PluginConfig, PluginData
@@ -159,6 +160,9 @@ async def update_plugin_enabled(
                     f"{'s' if count != 1 else ''}",
                 )
         plugin.enabled = payload.enabled
+        await audit(
+            session, "plugin.enabled.update", target_type="plugin", target_id=plugin_id
+        )
     return {"status": "ok"}
 
 
@@ -377,6 +381,12 @@ async def _put_payload(
                 )
             )
             await session.flush()
+            action = (
+                "plugin.config.update"
+                if column_name == "config"
+                else "plugin.data.update"
+            )
+            await audit(session, action, target_type="plugin", target_id=plugin_id)
         except IntegrityError:
             raise HTTPException(
                 status_code=409,

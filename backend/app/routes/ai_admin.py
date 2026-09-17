@@ -23,6 +23,7 @@ from ..ai.templates import parse_placeholders, render_messages, validate_templat
 from ..ai.usage import aggregate_usage, summarize_usage
 from ..config import get_settings
 from ..db.engine import get_db_session
+from ..event_log import audit
 from ..models.ai import AiProviderConfig, PromptTemplate
 from ..models.client import Client
 from ..models.global_setting import GlobalSetting
@@ -104,6 +105,9 @@ async def create_provider(
         row = AiProviderConfig(**_normalize_provider(payload.model_dump()))
         session.add(row)
         await session.flush()
+        await audit(
+            session, "ai.provider.create", target_type="ai_provider", target_id=row.id
+        )
     service = getattr(request.app.state, "ai_service", None)
     if service is not None:
         service.invalidate()
@@ -129,6 +133,12 @@ async def update_provider(
         for key, value in updates.items():
             setattr(row, key, value)
         await session.flush()
+        await audit(
+            session,
+            "ai.provider.update",
+            target_type="ai_provider",
+            target_id=provider_id,
+        )
     await session.refresh(row)
     service = getattr(request.app.state, "ai_service", None)
     if service is not None:
@@ -149,6 +159,12 @@ async def delete_provider(
         if row is None:
             raise HTTPException(status_code=404, detail="provider not found")
         await session.delete(row)
+        await audit(
+            session,
+            "ai.provider.delete",
+            target_type="ai_provider",
+            target_id=provider_id,
+        )
     service = getattr(request.app.state, "ai_service", None)
     if service is not None:
         service.invalidate(provider_id)
@@ -290,6 +306,12 @@ async def create_prompt_template(
                     session, payload.task_type, payload.client_id, keep_id=row.id
                 )
                 row.is_active = True
+            await audit(
+                session,
+                "ai.prompt_template.create",
+                target_type="ai_prompt_template",
+                target_id=row.id,
+            )
     except IntegrityError as exc:
         raise HTTPException(
             status_code=409, detail="concurrent template modification; retry"
@@ -321,6 +343,12 @@ async def activate_prompt_template(
                 session, row.task_type, row.client_id, keep_id=row.id
             )
             row.is_active = True
+            await audit(
+                session,
+                "ai.prompt_template.activate",
+                target_type="ai_prompt_template",
+                target_id=template_id,
+            )
     except IntegrityError as exc:
         raise HTTPException(
             status_code=409, detail="concurrent activation; retry"
@@ -498,6 +526,9 @@ async def put_ai_settings(
                 await service.apply_settings(row)
             except Exception as exc:  # rollback keeps the previous config active
                 raise HTTPException(status_code=422, detail=str(exc)) from exc
+        await audit(
+            session, "ai.settings.update", target_type="ai_settings", target_id=1
+        )
     settings = get_settings()
     return _settings_out(row, bool(settings.redis_url or settings.redis_host))
 

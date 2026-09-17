@@ -11,6 +11,7 @@ from ..access import require_feed_source
 from ..auth import require_user
 from ..config import Settings, get_settings
 from ..db.engine import get_db_session
+from ..event_log import audit
 from ..export.service import ExportService
 from ..export.store import ExportFileStore
 from ..schemas.export import DiffOut, ExportVersionOut
@@ -91,8 +92,16 @@ async def export_rollback(
     async with session.begin():
         await require_feed_source(session, feed_source_id)
     try:
-        return await _service(request, settings).rollback(
+        result = await _service(request, settings).rollback(
             feed_source_id, version_number, load_registry()
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    async with session.begin():
+        await audit(
+            session,
+            "export.rollback",
+            target_type="feed_source",
+            target_id=feed_source_id,
+        )
+    return result

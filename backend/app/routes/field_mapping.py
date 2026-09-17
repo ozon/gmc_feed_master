@@ -10,6 +10,7 @@ from registry.loader import load_registry
 
 from ..auth import require_user
 from ..db.engine import get_db_session
+from ..event_log import audit
 from ..mapping.document import MappingDocument, MappingDocumentError, MappingEntry
 from ..mapping.indexed_path import parse_indexed_path
 from ..mapping.matcher import (
@@ -249,6 +250,12 @@ async def update_field_mapping(
         }
         document.custom_fields = list(payload.custom_fields)
         feed_source.field_mapping = document.to_json()
+        await audit(
+            session,
+            "field_mapping.update",
+            target_type="feed_source",
+            target_id=feed_source_id,
+        )
         return document
 
 
@@ -277,4 +284,10 @@ async def auto_map_fields(
         )
         document.auto_mapped = True
         feed_source.field_mapping = document.to_json()
+        await audit(
+            session,
+            "field_mapping.auto",
+            target_type="feed_source",
+            target_id=feed_source_id,
+        )
         return document
