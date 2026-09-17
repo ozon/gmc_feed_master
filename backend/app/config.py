@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,6 +24,9 @@ class Settings(BaseSettings):
     redis_password: str | None = None
     redis_ssl: bool = False
     ai_cache_dir: str = str(Path(__file__).resolve().parents[2] / ".cache" / "ai")
+    log_level: str = "INFO"
+    log_format: Literal["json", "console"] = "json"
+    event_log_retention_days: int = Field(default=180, gt=0)
 
     @property
     def async_database_url(self) -> str:
