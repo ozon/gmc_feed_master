@@ -61,7 +61,7 @@ Modified:
 **Interfaces:**
 - Produces: `Settings.log_level: str`, `Settings.log_format: Literal["json", "console"]`, `Settings.event_log_retention_days: int`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # backend/tests/test_config_logging.py
@@ -95,12 +95,12 @@ def test_logging_settings_env_override(monkeypatch):
     assert settings.event_log_retention_days == 30
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_config_logging.py -v`
 Expected: FAIL — `Settings` has no attribute `log_level`.
 
-- [ ] **Step 3: Add the dependency and settings**
+- [x] **Step 3: Add the dependency and settings**
 
 In `backend/pyproject.toml`, add to `dependencies` (keep alphabetical position near `sqlalchemy`):
 
@@ -130,12 +130,12 @@ LOG_FORMAT=json
 EVENT_LOG_RETENTION_DAYS=180
 ```
 
-- [ ] **Step 4: Sync dependencies and run the test**
+- [x] **Step 4: Sync dependencies and run the test**
 
 Run: `uv sync && uv run pytest tests/test_config_logging.py -v`
 Expected: PASS (2 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/pyproject.toml backend/uv.lock backend/app/config.py .env.example backend/tests/test_config_logging.py
@@ -155,7 +155,7 @@ git commit -m "feat(logging): add structlog dependency and logging settings"
 - Produces: `configure_logging(settings: Settings | None) -> None`; `redact_sensitive(logger, method_name, event_dict) -> dict`; `SENSITIVE_KEYS`; `MAX_VALUE_LEN`.
 - Consumes: `Settings.log_level`, `Settings.log_format` (Task 1).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # backend/tests/test_logging_setup.py
@@ -222,12 +222,12 @@ def test_stdlib_records_render_json_with_contextvars(monkeypatch):
     structlog.contextvars.clear_contextvars()
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_logging_setup.py -v`
 Expected: FAIL — module `app.logging_setup` does not exist.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```python
 # backend/app/logging_setup.py
@@ -372,12 +372,12 @@ def create_app(
         settings = _configured_settings()
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `uv run pytest tests/test_logging_setup.py -v`
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/logging_setup.py backend/app/main.py backend/tests/test_logging_setup.py
@@ -398,7 +398,7 @@ git commit -m "feat(logging): structlog configuration and redaction processor"
 - Produces: `RequestContextMiddleware`, `_resolve_request_id(raw: str | None) -> str`, `_REQUEST_ID_RE`.
 - Consumes: `app.state.db_session_factory` (for server-error persistence).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # backend/tests/test_request_context.py
@@ -435,12 +435,12 @@ def test_middleware_echoes_and_generates(client):
     assert replaced.headers["x-request-id"] != "bad id!"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_request_context.py -v`
 Expected: FAIL — module `app.middleware.request_context` does not exist.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```python
 # backend/app/middleware/__init__.py
@@ -536,12 +536,12 @@ In `backend/app/main.py`, import `from .middleware import RequestContextMiddlewa
     app.add_middleware(RequestContextMiddleware)
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `uv run pytest tests/test_request_context.py -v`
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/middleware backend/app/main.py backend/tests/test_request_context.py
@@ -561,7 +561,7 @@ git commit -m "feat(logging): request context middleware with request id"
 - Consumes: `structlog`.
 - Produces: contextvars `actor`, `actor_role` bound during authenticated requests; `run_id`, `feed_source_id`, `client_id` bound during a pipeline run.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # backend/tests/test_pipeline_run_logging.py
@@ -627,12 +627,12 @@ async def test_pipeline_run_binds_contextvars(session_factory, feed_source_id):
     assert "run_id" not in structlog.contextvars.get_contextvars()
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_pipeline_run_logging.py -v`
 Expected: FAIL — `KeyError: 'feed_source_id'`.
 
-- [ ] **Step 3: Bind contextvars**
+- [x] **Step 3: Bind contextvars**
 
 In `backend/app/access.py`, add `import structlog` to the imports and bind after the user is resolved in `get_current_user`:
 
@@ -702,17 +702,17 @@ In `backend/app/pipeline/runner.py`, add `import structlog` to the imports, then
             lock.release()
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `uv run pytest tests/test_pipeline_run_logging.py -v`
 Expected: PASS.
 
-- [ ] **Step 5: Run the backend gate**
+- [x] **Step 5: Run the backend gate**
 
 Run: `uv run ruff check . ../plugins && uv run mypy . && uv run pytest tests/test_pipeline_runner.py tests/test_request_context.py tests/test_logging_setup.py -q`
 Expected: exit 0.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/app/access.py backend/app/pipeline/runner.py backend/tests/test_pipeline_run_logging.py
@@ -735,7 +735,7 @@ git commit -m "feat(logging): bind actor and run context to log contextvars"
 - Produces: `EventLog` with fields `id, created_at, category, level, source, logger, actor, actor_role, client_id, feed_source_id, request_id, run_id, message, context`.
 - Consumes: migration head `1a5ebca06d61`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # backend/tests/test_event_log_model.py
@@ -768,12 +768,12 @@ async def test_event_log_roundtrip_defaults(factory):
         assert row.actor is None
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_event_log_model.py -v`
 Expected: FAIL — module `app.models.event_log` does not exist.
 
-- [ ] **Step 3: Write the model, migration, and registry**
+- [x] **Step 3: Write the model, migration, and registry**
 
 ```python
 # backend/app/models/event_log.py
@@ -894,7 +894,7 @@ def downgrade() -> None:
     op.drop_table("event_log")
 ```
 
-- [ ] **Step 4: Apply the migration and run the test**
+- [x] **Step 4: Apply the migration and run the test**
 
 Run:
 ```bash
@@ -904,7 +904,7 @@ uv run pytest tests/test_event_log_model.py -v
 ```
 Expected: `alembic check` reports no new upgrade operations; test PASSes.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/models/event_log.py backend/app/models/__init__.py backend/alembic/versions/20260917_0001_m18_event_log.py backend/tests/test_event_log_model.py
@@ -933,7 +933,7 @@ git commit -m "feat(logging): event_log model and migration"
   - `DEFAULT_EVENT_LOG_RETENTION_DAYS`, `EventLogPurgeCounts`, `purge_expired_events` (Task 7 uses the last one).
 - Consumes: `EventLog` (Task 5), `GlobalSetting`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # backend/tests/test_event_log_service.py
@@ -995,12 +995,12 @@ async def test_audit_pulls_actor_from_contextvars(factory):
         assert row.context["target_id"] == "operator"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_event_log_service.py -v`
 Expected: FAIL — `app.event_log` does not exist.
 
-- [ ] **Step 3: Write the service and retention plumbing**
+- [x] **Step 3: Write the service and retention plumbing**
 
 Add to `backend/app/models/global_setting.py`:
 
@@ -1226,7 +1226,7 @@ class GlobalSettingsOut(BaseModel):
 
 In `backend/app/routes/admin.py`, add `event_log_retention_days=180` to both `GlobalSetting(...)` constructions (lines ~120-126 and ~141-147) and add `row.event_log_retention_days = payload.event_log_retention_days` to `put_settings_row` alongside the other assignments.
 
-- [ ] **Step 4: Apply the migration and run the test**
+- [x] **Step 4: Apply the migration and run the test**
 
 Run:
 ```bash
@@ -1235,7 +1235,7 @@ uv run pytest tests/test_event_log_service.py tests/test_ai_admin_api.py -v
 ```
 Expected: `alembic check` clean; tests PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/event_log backend/app/models/global_setting.py backend/app/schemas/admin.py backend/app/routes/admin.py backend/tests/test_event_log_service.py
@@ -1255,7 +1255,7 @@ git commit -m "feat(logging): event store service and retention setting"
 - Consumes: `record_event` (Task 6), `GlobalSetting.event_log_retention_days` (Task 6).
 - Produces: `purge_expired_events(session_factory, now) -> EventLogPurgeCounts` with `.rows`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # backend/tests/test_event_log_purge.py
@@ -1298,12 +1298,12 @@ async def test_purge_removes_rows_older_than_retention(factory):
         assert [r.message for r in remaining] == ["new"]
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_event_log_purge.py -v`
 Expected: FAIL — `cannot import name 'purge_expired_events'`.
 
-- [ ] **Step 3: Implement the purge**
+- [x] **Step 3: Implement the purge**
 
 Append to `backend/app/event_log/service.py`:
 
@@ -1351,17 +1351,17 @@ In `backend/app/main.py` lifespan, alongside the other purge registrations (afte
                 )
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `uv run pytest tests/test_event_log_purge.py -v`
 Expected: PASS.
 
-- [ ] **Step 5: Run the backend gate**
+- [x] **Step 5: Run the backend gate**
 
 Run: `uv run ruff check . ../plugins && uv run mypy . && uv run alembic check && uv run pytest tests/test_event_log_purge.py tests/test_event_log_service.py tests/test_migrations.py -q`
 Expected: exit 0.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/app/event_log/service.py backend/app/main.py backend/tests/test_event_log_purge.py
@@ -1386,7 +1386,7 @@ git commit -m "feat(logging): event log retention purge job"
 - Consumes: `require_admin`, `require_user` (`app/access.py`, `app/auth.py`), `record_client_error` (Task 6), `EventLog` (Task 5).
 - Produces: `GET /logs/entries` returning `{items, next_cursor}`; `POST /logs/client` returning 204.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # backend/tests/test_logs_api.py
@@ -1507,12 +1507,12 @@ async def test_entries_pagination_cursor(settings_app):
     await admin_client.aclose()
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_logs_api.py -v`
 Expected: FAIL — 404 on `/logs/entries`.
 
-- [ ] **Step 3: Write schemas and router**
+- [x] **Step 3: Write schemas and router**
 
 ```python
 # backend/app/schemas/logs.py
@@ -1700,12 +1700,12 @@ Add the Caddy block to both `Caddyfile` and `Caddyfile.dev`, immediately before 
 
 `Caddyfile.dev` uses `reverse_proxy http://127.0.0.1:8000` (no variable) to match its other blocks.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `uv run pytest tests/test_logs_api.py -v`
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/schemas/logs.py backend/app/routes/logs.py backend/app/routes/__init__.py backend/app/main.py Caddyfile Caddyfile.dev backend/tests/test_logs_api.py
@@ -1771,7 +1771,7 @@ Action map — add exactly one call per handler:
 | `ai_admin.py` | prompt template create/update/delete | `ai.prompt_template.<verb>` | `ai_prompt_template` | id |
 | `export_history.py` | manual export POST | `export.publish` | `feed_source` | `feed_source_id` |
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 # backend/tests/test_audit_events.py
@@ -1866,12 +1866,12 @@ async def test_user_create_is_audited_with_actor(settings_app):
         assert row.context["target_type"] == "user"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_audit_events.py -v`
 Expected: FAIL — no audit rows.
 
-- [ ] **Step 3: Add the audit calls**
+- [x] **Step 3: Add the audit calls**
 
 Work through the action map above. For the login failure path in `backend/app/main.py`, wrap the `authenticate` call so a rejected login still writes an audit row before re-raising:
 
@@ -1917,17 +1917,17 @@ Note: `authenticate` raises `HTTPException` on bad credentials. If the real sign
 
 The remaining handlers follow the table: find the handler, and immediately after the mutation (and after the id is known/flushed) insert the single `await audit(...)` line shown in the shape above, reusing the handler's existing `session` and transaction.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `uv run pytest tests/test_audit_events.py -v`
 Expected: PASS (2 tests).
 
-- [ ] **Step 5: Run the backend gate**
+- [x] **Step 5: Run the backend gate**
 
 Run: `uv run ruff check . ../plugins && uv run mypy . && uv run pytest -q`
 Expected: full suite exit 0.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/app/routes backend/app/main.py backend/tests/test_audit_events.py
@@ -1954,7 +1954,7 @@ git commit -m "feat(logging): audit events for auth, admin, config, and exports"
 - Consumes: `GET /logs/entries` (Task 8), `useSession` (`hooks.ts`).
 - Produces: `useEventLogs(filters)` infinite query; `EventLogEntry` type; `GlobalSettings.event_log_retention_days`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Replace `frontend/src/features/systemLogs/SystemLogsPage.test.tsx`:
 
@@ -2044,12 +2044,12 @@ describe('useEventLogs', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npm run test -- SystemLogsPage hooks.logs`
 Expected: FAIL — `useEventLogs` not exported; page shows coming-soon.
 
-- [ ] **Step 3: Add types, keys, hooks, page, routing, settings**
+- [x] **Step 3: Add types, keys, hooks, page, routing, settings**
 
 Add to `frontend/src/api/types.ts`:
 
@@ -2313,17 +2313,17 @@ Extend `frontend/public/locales/en/systemLogs.json`:
 
 Apply matching German translations to `frontend/public/locales/de/systemLogs.json` with the same key structure.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npm run test -- SystemLogsPage hooks.logs && npm run typecheck`
 Expected: PASS; typecheck exit 0.
 
-- [ ] **Step 5: Run the frontend gate**
+- [x] **Step 5: Run the frontend gate**
 
 Run: `npm run build`
 Expected: exit 0.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/api frontend/src/features/systemLogs frontend/src/features/admin/AdminSettingsPage.tsx frontend/src/app/router.tsx frontend/src/app/AppShell.tsx frontend/public/locales
@@ -2345,7 +2345,7 @@ git commit -m "feat(logging): admin system logs viewer and settings retention fi
 - Produces: `createLogger(scope)`, `captureException(error, context)`, `newRequestId()`, `flushLogs()`, `resetLogQueue()`, `installGlobalErrorHandlers()`, `logger`.
 - Consumes: `POST /logs/client` (Task 8).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // frontend/src/logging/logger.test.ts
@@ -2396,12 +2396,12 @@ describe('logger', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npm run test -- logger`
 Expected: FAIL — module does not exist.
 
-- [ ] **Step 3: Implement the logger**
+- [x] **Step 3: Implement the logger**
 
 ```ts
 // frontend/src/logging/logger.ts
@@ -2603,12 +2603,12 @@ createRoot(document.getElementById('root')!).render(
 );
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npm run test -- logger`
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/logging frontend/src/main.tsx
@@ -2629,7 +2629,7 @@ git commit -m "feat(logging): frontend logger with batching and redaction"
 - Consumes: `createLogger`, `newRequestId`, `captureException`, `resetLogQueue` (Task 11).
 - Produces: every API request carries `X-Request-ID`; failed responses are logged; render errors are reported.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `frontend/src/api/client.test.ts` (inside the existing `describe`):
 
@@ -2691,12 +2691,12 @@ describe('AppErrorBoundary', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npm run test -- client AppErrorBoundary`
 Expected: FAIL — no header; module doesn't exist.
 
-- [ ] **Step 3: Implement correlation, logging, and the boundary**
+- [x] **Step 3: Implement correlation, logging, and the boundary**
 
 In `frontend/src/api/client.ts`, add the import and a logger:
 
@@ -2822,17 +2822,17 @@ export default function App() {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npm run test -- client AppErrorBoundary && npm run typecheck`
 Expected: PASS; typecheck exit 0.
 
-- [ ] **Step 5: Run the full frontend gate**
+- [x] **Step 5: Run the full frontend gate**
 
 Run: `npm run test && npm run build`
 Expected: exit 0.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/api/client.ts frontend/src/api/client.test.ts frontend/src/app/AppErrorBoundary.tsx frontend/src/app/AppErrorBoundary.test.tsx frontend/src/App.tsx
@@ -2853,11 +2853,11 @@ git commit -m "feat(logging): api request correlation and app error boundary"
 - Modify: `frontend/docs/architecture.md`
 - Modify: `frontend/AGENTS.md`
 
-- [ ] **Step 1: Write the ADR**
+- [x] **Step 1: Write the ADR**
 
 `docs/decisions/0012-structured-logging-and-audit-trail.md` — follow the format of `docs/decisions/0011-ai-action-rules-plugin.md` (Context / Decision / Consequences). Record: stdlib-first with a structlog bridge (existing call sites unchanged), contextvar propagation (`request_id`/`actor`/`run_id`), one append-only `event_log` table with `category` (audit/server_error/client_error), 180-day configurable retention, `/logs/*` API (not `/logs` because the SPA owns it), admin-only viewer, frontend errors shipped to `/logs/client`.
 
-- [ ] **Step 2: Update the docs**
+- [x] **Step 2: Update the docs**
 
 - `backend/docs/architecture.md`: add a "Logging and observability" section — JSON stdout, structlog bridge, contextvars, event_log table and purge.
 - `backend/docs/api.md`: document `GET /logs/entries` (admin) and `POST /logs/client`, noting the SPA collision and `/logs/*` prefix.
@@ -2867,7 +2867,7 @@ git commit -m "feat(logging): api request correlation and app error boundary"
 - `frontend/docs/architecture.md`: logger util, error shipping, request-id correlation, and the admin-gated `/logs` page.
 - `frontend/AGENTS.md`: note `src/logging/logger.ts` and the error-handling conventions.
 
-- [ ] **Step 3: Run the final gate**
+- [x] **Step 3: Run the final gate**
 
 Run:
 ```bash
@@ -2876,7 +2876,7 @@ cd ../frontend && npm run typecheck && npm run test && npm run build
 ```
 Expected: all exit 0.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docs/decisions/0012-structured-logging-and-audit-trail.md backend/docs frontend/docs backend/AGENTS.md frontend/AGENTS.md

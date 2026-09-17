@@ -64,8 +64,8 @@ per-row pipeline churn are deliberately not audited. Redaction and the `/logs/cl
 rate limit are abuse/leak mitigations, not guarantees — the rate limiter is an in-memory
 fixed window (60 requests / 60 s per user), which assumes the single-worker deployment.
 
-**Operator flag (found during this work, out of scope):** the pre-existing `POST /chat`
-backend route is absent from both `Caddyfile` and `Caddyfile.dev`. The Caddy routing
-allowlist does not proxy `/chat`, so when the app is served through Caddy the chat widget
-cannot reach the backend. `/chat` needs a `handle /chat` block (or a prefix allowance) in
-both files; flagged for the operator rather than changed here.
+**Follow-up (resolved):** the pre-existing `POST /chat` backend route was absent from both
+`Caddyfile` and `Caddyfile.dev`, and from the Vite dev proxy, so the chat widget could not
+reach the backend through either proxy. A `handle /chat` block was added to both Caddyfiles
+and `/chat` to the Vite proxy (same-day follow-up); `/chat` is now reachable in dev and
+production.
