@@ -29,6 +29,7 @@ from .config import Settings, get_settings
 from .db.engine import create_engine, create_session_factory, get_db_session
 from .ingest import HttpFetcher
 from .logging_setup import configure_logging
+from .middleware import RequestContextMiddleware
 from .persistence.sessions import PostgresSessionStore
 from .persistence.users import change_password, seed_initial_user
 from .routes import (
@@ -226,6 +227,7 @@ def create_app(
             await application.state.db_engine.dispose()
 
     app = FastAPI(lifespan=lifespan)
+    app.add_middleware(RequestContextMiddleware)
     app.include_router(clients_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(dashboard_router)
     app.include_router(dry_run_router, dependencies=[Depends(enforce_scope_access)])
