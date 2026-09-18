@@ -105,6 +105,8 @@ export function ExportPage() {
             isPending={diff.isPending && diff.isFetching}
             isError={diff.isError}
             onRetry={() => void diff.refetch()}
+            findingsA={versions.find((v) => v.version_number === versionA)?.findings}
+            findingsB={versions.find((v) => v.version_number === versionB)?.findings}
           />
         </>
       )}
