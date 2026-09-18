@@ -66,6 +66,47 @@ async def _export_rows(session_factory, feed_source_id):
         )).scalars())
 
 
+async def _finding_rows(session_factory, feed_source_id):
+    async with session_factory() as session:
+        return list((await session.execute(
+            select(
+                QualityFinding.ingestion_run_id,
+                QualityFinding.product_id,
+                QualityFinding.field,
+            )
+            .where(QualityFinding.feed_source_id == feed_source_id)
+            .order_by(QualityFinding.id)
+        )).all())
+
+
+async def test_persist_findings_retains_previous_runs(session_factory, feed_source_id):
+    run_one = [
+        Finding(rule_id="r", severity="critical", field="title", message="m", product_id="p1"),
+    ]
+    await persist_findings(session_factory, feed_source_id, 100, run_one, 1)
+    run_two = [
+        Finding(rule_id="r", severity="critical", field="gtin", message="m", product_id="p3"),
+    ]
+    await persist_findings(session_factory, feed_source_id, 101, run_two, 1)
+
+    rows = await _finding_rows(session_factory, feed_source_id)
+    assert {(r.ingestion_run_id, r.product_id, r.field) for r in rows} == {
+        (100, "p1", "title"),
+        (101, "p3", "gtin"),
+    }
+
+
+async def test_persist_findings_is_idempotent_per_run(session_factory, feed_source_id):
+    findings = [
+        Finding(rule_id="r", severity="critical", field="title", message="m", product_id="p1"),
+    ]
+    await persist_findings(session_factory, feed_source_id, 100, findings, 1)
+    await persist_findings(session_factory, feed_source_id, 100, findings, 1)
+
+    rows = await _finding_rows(session_factory, feed_source_id)
+    assert len(rows) == 1
+
+
 async def test_persist_findings_counts_fixed_new_remaining(session_factory, feed_source_id):
     run_one = [
         Finding(rule_id="r", severity="critical", field="title", message="m", product_id="p1"),

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.export import ExportRun
@@ -19,11 +19,24 @@ async def persist_findings(
 ) -> None:
     async with session_factory() as session, session.begin():
         # Delta vs the previous run's persisted findings (key: rule/product/field).
-        old_rows = (await session.execute(
-            select(QualityFinding.code, QualityFinding.product_id, QualityFinding.field)
-            .where(QualityFinding.feed_source_id == feed_source_id)
-        )).all()
-        old_keys = {(row.code, row.product_id, row.field) for row in old_rows}
+        previous_run_id = (await session.execute(
+            select(func.max(QualityFinding.ingestion_run_id)).where(
+                QualityFinding.feed_source_id == feed_source_id,
+                QualityFinding.ingestion_run_id < ingestion_run_id,
+            )
+        )).scalar_one_or_none()
+
+        old_keys: set[tuple[str, str, str | None]] = set()
+        if previous_run_id is not None:
+            old_rows = (await session.execute(
+                select(QualityFinding.code, QualityFinding.product_id, QualityFinding.field)
+                .where(
+                    QualityFinding.feed_source_id == feed_source_id,
+                    QualityFinding.ingestion_run_id == previous_run_id,
+                )
+            )).all()
+            old_keys = {(row.code, row.product_id, row.field) for row in old_rows}
+
         new_keys = {
             (finding.rule_id, finding.product_id or "cross_product", finding.field)
             for finding in findings
@@ -32,9 +45,11 @@ async def persist_findings(
         added = len(new_keys - old_keys)
         remaining = len(old_keys & new_keys)
 
-        # Feed-keyed delete
+        # Idempotent replace of this run's rows only; other runs are retained.
         await session.execute(
-            delete(QualityFinding).where(QualityFinding.feed_source_id == feed_source_id)
+            delete(QualityFinding).where(
+                QualityFinding.ingestion_run_id == ingestion_run_id
+            )
         )
 
         # Insert findings (product_id already attached by engine)

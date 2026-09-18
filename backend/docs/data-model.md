@@ -248,7 +248,7 @@ Retention: Last N per feed source (default 30, includes rollback versions).
 | `details` | JSONB | Additional context |
 | `created_at` | DateTime | |
 
-**Retention**: Detail rows for latest run only; counts persisted in `ExportRun`.
+**Retention**: Rows are kept per `ingestion_run_id` and deleted with the run by `purge_expired_ingestion_runs` (see the retention table below). They can outlive an `ExportVersion` pruned by history retention. Counts are persisted in `ExportRun`.
 
 ### AiProviderConfig
 | Column | Type | Notes |
@@ -422,7 +422,7 @@ New StagingProduct row (status=active), full reprocess (no prior hash)
 | `IngestionRun` | `global_settings.ingestion_run_retention_days` (default 90) |
 | `StagingHistory` | `global_settings.staging_history_retention_days` (default 90; cascades with StagingProduct purge) |
 | `StagingProduct` (removed) | `global_settings.staging_removal_retention_days` (default 90) after `removed_at` |
-| `QualityFinding` (detail) | Latest run per feed_source only |
+| `QualityFinding` (detail) | Retained per `ingestion_run_id`; purged with the ingestion run |
 | `ExportRun` counts | Persist indefinitely (small) |
 | `EventLog` | `global_settings.event_log_retention_days` (default 180; fallback 180 when no row) |
 | `Session` | Sliding (configurable idle) + absolute (configurable) |
