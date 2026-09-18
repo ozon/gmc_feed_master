@@ -29,6 +29,8 @@ const SENSITIVE = [
   'refresh_token',
 ];
 const MAX_VALUE = 2048;
+const MAX_MESSAGE = 2000;
+const TRUNCATION_SUFFIX = '…[truncated]';
 const MAX_DEPTH = 3;
 const MAX_BATCH = 10;
 const FLUSH_INTERVAL_MS = 5000;
@@ -38,8 +40,9 @@ function isSensitive(key: string): boolean {
   return SENSITIVE.some((marker) => lowered.includes(marker));
 }
 
-function truncate(value: string): string {
-  return value.length <= MAX_VALUE ? value : `${value.slice(0, MAX_VALUE)}…[truncated]`;
+function truncate(value: string, max = MAX_VALUE): string {
+  if (value.length <= max) return value;
+  return value.slice(0, max - TRUNCATION_SUFFIX.length) + TRUNCATION_SUFFIX;
 }
 
 function scrub(value: unknown, depth = 0): unknown {
@@ -140,7 +143,7 @@ export function createLogger(scope: string) {
     const path = currentPath();
     enqueue({
       level: level === 'warn' ? 'warning' : 'error',
-      message: truncate(message),
+      message: truncate(message, MAX_MESSAGE),
       scope,
       route: path,
       url: typeof safe.url === 'string' ? stripQuery(safe.url) : path,

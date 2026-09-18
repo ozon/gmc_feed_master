@@ -82,6 +82,17 @@ describe('logger', () => {
     });
   });
 
+  it('caps the shipped message at the 2000-char API limit', () => {
+    const log = createLogger('test');
+    log.error('x'.repeat(5000));
+    flushLogs();
+    const [, blob] = beaconMock.mock.calls[0] as unknown as [string, Blob];
+    return blob.text().then((text) => {
+      const payload = JSON.parse(text) as { entries: Array<{ message: string }> };
+      expect(payload.entries[0].message.length).toBeLessThanOrEqual(2000);
+    });
+  });
+
   it('generates a request id', () => {
     expect(newRequestId().length).toBeGreaterThan(8);
   });
