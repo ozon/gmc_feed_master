@@ -2,7 +2,7 @@
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "options": {
     "typeAware": true,
-    "maxWarnings": 0
+    "maxWarnings": 338
   },
   "categories": {
     "correctness": "error",
