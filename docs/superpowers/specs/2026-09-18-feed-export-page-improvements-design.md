@@ -71,6 +71,7 @@ body: { "export_token": "<value>" }
   - Invalid → 422 (pydantic).
 - Uniqueness: pre-check `select(FeedSource).where(FeedSource.export_token == value)`; on collision → `409 {"detail": "export token already in use"}`. Also catch `IntegrityError` on flush (the `uq_feed_sources_export_token` index) and map to the same 409, so a race is not a 500.
 - On success: set `feed_source.export_token`, flush, audit `feed_source.export_token.set`, return `{"export_token": token, "export_url": _export_url(settings, token)}`.
+- Audit reuses the **existing** `from app.event_log import audit` helper — the same one already on `main` and already called by `export_history.py:101` and by `rotate_export_token` at `clients.py:326`. No unmerged audit-trail dependency; the call is `await audit(session, "feed_source.export_token.set", target_type="feed_source", target_id=feed_source_id)` inside the same `session.begin()`. The conflict path (409) writes no audit row.
 - Add `ExportTokenOut(BaseModel)` (`export_token: str`, `export_url: str`) and use it as the `response_model` for **both** this route and the existing `rotate_export_token` (which keeps its behavior and path unchanged; only its response typing is tightened).
 - **Minimal validation is deliberate** (operator choice): a short slug like `shop` is allowed and is enumerable. The frontend shows a non-blocking weak-value hint (see below); the backend does not force unguessability.
 
@@ -83,7 +84,7 @@ body: { "export_token": "<value>" }
 - Extract the existing fetch/error-handling preamble of `request()` into a private `fetchWithContext(url, init): Promise<Response>` (adds `credentials: 'include'` and `X-Request-ID`, maps non-OK to `ApiError` via `parseError`, fires the unauthorized handler). `request()` and the new helper both use it, so correlation and auth behavior are not duplicated.
 - Add `apiGetText(url): Promise<string>` — `fetchWithContext` then `response.text()`. Used for preview and download.
 
-`frontend/src/api/queryKeys.ts` — add under `feedSource(id)`:
+`frontend/src/api/queryKeys.ts` — the current `feedSource(id)` factory has slots: `detail`, `products(params)`, `pipeline`, `runs`, `findings`, `qualityHistory`, `exportHistory`, `feedDashboard`, `exportDiff(params)`, `fieldMapping`, `mapping`, `fields`, `productLookup(params)`. Add the new key alongside the existing call-signature slot `exportDiff(params)`, following the same convention:
 
 ```ts
 exportVersionContent: (version: number) =>
@@ -148,7 +149,13 @@ exportVersionContent: (version: number) =>
 
 - Title row: `t('diffTitle', { version, against })` plus each version's timestamp.
 - **Summary stat cards** (`SimpleGrid`): products added / removed / changed / total fields changed, each a small `Card` with a count and label.
-- **Findings delta** card: for each severity, `old → new` with green/red emphasis based on sign; if either compared version has `findings === null` (rollback) or is absent from the version list, render the "not QC'd" note instead of a numeric delta. Data comes from the parent (`versions`) via two new props `findingsA` / `findingsB`; no backend change.
+- **Findings delta** card: for each severity, `old → new` with green/red emphasis based on sign; if either compared version has `findings === null` (rollback) or the version is absent from the list (pruned), render the "not QC'd" note instead of a numeric delta.
+- New props, typed against the existing API type:
+  ```ts
+  findingsA: ExportVersionOut['findings'];
+  findingsB: ExportVersionOut['findings'];
+  ```
+  `ExportPage.tsx` derives them from the history list it already holds — `versions.find(v => v.version_number === versionA)?.findings` (and `versionB`) — so a lookup miss yields `undefined`, treated the same as `null` ("not QC'd"). No backend change.
 - **Field breakdown**: fold `diff.changed[].fields` into `Map<field, productCount>`, sort desc by count, render as a compact list of `Badge`s with counts. Clicking a badge sets a `selectedField` state that filters the product list below; clicking again clears it.
 - **Added/removed**: replace the two full-width `Code` blocks with compact `Badge` rows showing the count and, in a collapsed `ScrollArea`, the IDs. Empty sections render nothing.
 - **Per-product list**: keep the `Accordion`, restyled slimmer — default-collapsed (controlled `value={[]}` initially), tighter padding, mono values, `JSON.stringify(v) === 'null'`/`undefined` rendered as dimmed `(empty)`, long values truncated with the full value in `title`.
@@ -212,7 +219,7 @@ Add keys to `frontend/public/locales/en/export.json` and `de/export.json` (all n
 - **Client-side field folding is O(changed products × fields).** Fine for current feeds; if it ever stalls, move to Approach B (server summary + pagination).
 - **Preview cap hides the tail.** Truncation is explicit and the full file is downloadable.
 - **`apiGetText` refactor of `request()`** touches a shared path; covered by existing API hook tests plus the new preview tests.
-- **Non-goals:** server-computed diff summaries/pagination, findings-detail diff, preview/download of the live feed from the URL block, per-version file size, and any new dependency or DB migration.
+- **Non-goals:** server-computed diff summaries/pagination, findings-detail diff, preview/download of the live feed from the URL block, per-version file size, any new dependency or DB migration, and any change to the existing `ExportVersionOut.source` enum (it is `'scheduled' | 'manual' | 'rollback'` in current code — a separate deferred spec/code discussion; do not touch it here).
 
 ## References
 
