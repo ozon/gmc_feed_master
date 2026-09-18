@@ -304,6 +304,14 @@ async def test_query_qc_findings_scopes_to_latest_run(seed, db, client_user):
         new_run = IngestionRun(feed_source_id=seed[2], status="completed")
         session.add_all([old_run, new_run])
         await session.flush()
+        session.add(ExportRun(
+            feed_source_id=seed[2], ingestion_run_id=old_run.id,
+            status="completed", product_count=1,
+        ))
+        session.add(ExportRun(
+            feed_source_id=seed[2], ingestion_run_id=new_run.id,
+            status="completed", product_count=1,
+        ))
         session.add(QualityFinding(
             feed_source_id=seed[2], ingestion_run_id=old_run.id,
             product_id="OLD", severity="critical", code="old_rule",
@@ -320,3 +328,30 @@ async def test_query_qc_findings_scopes_to_latest_run(seed, db, client_user):
         )
     codes = {f["code"] for f in result["findings"]}
     assert codes == {"new_rule"}
+
+
+async def test_query_qc_findings_clean_latest_run_returns_none(seed, db, client_user):
+    factory = db
+    async with factory() as session, session.begin():
+        old_run = IngestionRun(feed_source_id=seed[2], status="completed")
+        clean_run = IngestionRun(feed_source_id=seed[2], status="completed")
+        session.add_all([old_run, clean_run])
+        await session.flush()
+        session.add(ExportRun(
+            feed_source_id=seed[2], ingestion_run_id=old_run.id,
+            status="completed", product_count=1,
+        ))
+        session.add(ExportRun(
+            feed_source_id=seed[2], ingestion_run_id=clean_run.id,
+            status="completed", product_count=1,
+        ))
+        session.add(QualityFinding(
+            feed_source_id=seed[2], ingestion_run_id=old_run.id,
+            product_id="OLD", severity="critical", code="old_rule",
+            field=None, message="old", details={},
+        ))
+    async with factory() as session:
+        result = await execute_tool(
+            session, client_user, "query_qc_findings", {"feed_source_id": seed[2]}
+        )
+    assert result["findings"] == []

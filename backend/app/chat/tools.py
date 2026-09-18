@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from pydantic import BaseModel, Field, ValidationError
-from sqlalchemy import func, select, true
+from sqlalchemy import select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..access import CurrentUser
@@ -107,9 +107,10 @@ async def _query_qc_findings(
         if feed_source is None:
             return {"error": "feed source not found"}
         latest_run_id = (await session.execute(
-            select(func.max(QualityFinding.ingestion_run_id)).where(
-                QualityFinding.feed_source_id == args.feed_source_id
-            )
+            select(ExportRun.ingestion_run_id)
+            .where(ExportRun.feed_source_id == args.feed_source_id)
+            .order_by(ExportRun.id.desc())
+            .limit(1)
         )).scalar_one_or_none()
         stmt = stmt.where(
             QualityFinding.feed_source_id == args.feed_source_id,
