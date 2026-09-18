@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { Button, Stack, Title } from '@mantine/core';
-import { IconRotate } from '@tabler/icons-react';
+import { Button, Group, Stack, Text, TextInput, Title } from '@mantine/core';
+import { IconCheck, IconRotate } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { useRotateExportToken } from '../api/hooks';
-import { ApiError } from '../api/client';
+import { useRotateExportToken, useSession, useSetExportToken } from '../api/hooks';
 import { notifyMutationError, notifySuccess } from '../app/notifications';
 import { ConfirmModal } from './ConfirmModal';
 import { CopyField } from './CopyField';
+
+function isWeakToken(value: string): boolean {
+  return value.length < 8 || /^\d+$/.test(value);
+}
 
 export function ExportUrlBlock({
   feedSourceId,
@@ -18,9 +21,14 @@ export function ExportUrlBlock({
   onRotated?: () => void;
 }) {
   const { t } = useTranslation('export');
-  const { t: tCommon } = useTranslation('common');
+  const { data: session } = useSession();
+  const isAdmin = session?.role === 'admin';
   const rotateToken = useRotateExportToken();
+  const setToken = useSetExportToken(feedSourceId);
+  const currentToken = exportUrl.split('/export/')[1]?.replace(/\.xml$/, '') ?? '';
+  const [tokenValue, setTokenValue] = useState(currentToken);
   const [rotateOpened, setRotateOpened] = useState(false);
+  const [saveOpened, setSaveOpened] = useState(false);
 
   function handleRotate() {
     rotateToken.mutate(feedSourceId, {
@@ -35,18 +43,66 @@ export function ExportUrlBlock({
     });
   }
 
+  function handleSave() {
+    setToken.mutate(tokenValue, {
+      onSuccess: () => {
+        notifySuccess(t('tokenSaved'));
+        setSaveOpened(false);
+        onRotated?.();
+      },
+      onError: (error) => {
+        notifyMutationError(error, t('tokenSaveFailed'));
+      },
+    });
+  }
+
   return (
     <Stack gap="md">
       <Title order={4}>{t('urlTitle')}</Title>
       <CopyField label={t('publicUrl')} value={exportUrl} />
-      <Button
-        variant="light"
-        color="orange"
-        leftSection={<IconRotate size={16} />}
-        onClick={() => setRotateOpened(true)}
-      >
-        {t('rotate')}
-      </Button>
+      {isAdmin ? (
+        <>
+          <TextInput
+            label={t('customToken')}
+            value={tokenValue}
+            onChange={(event) => setTokenValue(event.currentTarget.value)}
+            data-testid="token-input"
+          />
+          {isWeakToken(tokenValue) ? (
+            <Text size="xs" c="dimmed">
+              {t('weakHint')}
+            </Text>
+          ) : null}
+          <Group>
+            <Button
+              variant="light"
+              leftSection={<IconCheck size={16} />}
+              onClick={() => setSaveOpened(true)}
+              disabled={tokenValue.length === 0}
+              data-testid="token-save"
+            >
+              {t('changeToken')}
+            </Button>
+            <Button
+              variant="light"
+              color="orange"
+              leftSection={<IconRotate size={16} />}
+              onClick={() => setRotateOpened(true)}
+            >
+              {t('generateRandom')}
+            </Button>
+          </Group>
+        </>
+      ) : (
+        <Button
+          variant="light"
+          color="orange"
+          leftSection={<IconRotate size={16} />}
+          onClick={() => setRotateOpened(true)}
+        >
+          {t('rotate')}
+        </Button>
+      )}
       <ConfirmModal
         opened={rotateOpened}
         title={t('rotate')}
@@ -55,6 +111,15 @@ export function ExportUrlBlock({
         loading={rotateToken.isPending}
         onConfirm={handleRotate}
         onClose={() => setRotateOpened(false)}
+      />
+      <ConfirmModal
+        opened={saveOpened}
+        title={t('changeToken')}
+        message={t('changeWarning')}
+        danger
+        loading={setToken.isPending}
+        onConfirm={handleSave}
+        onClose={() => setSaveOpened(false)}
       />
     </Stack>
   );

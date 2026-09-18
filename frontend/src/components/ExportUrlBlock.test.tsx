@@ -42,7 +42,11 @@ function renderWithQuery(ui: React.ReactNode) {
 
 describe('ExportUrlBlock', () => {
   it('renders the export URL and rotate button', () => {
-    fetchMock = stubFetch((url) => jsonResponse({}));
+    fetchMock = stubFetch((url) => {
+      if (url === '/auth/me')
+        return jsonResponse({ username: 'u', role: 'user', client_ids: null });
+      return jsonResponse({});
+    });
     renderWithQuery(<ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/1/abc" />);
 
     expect(screen.getByDisplayValue('http://localhost/export/1/abc')).toHaveAttribute('readonly');
@@ -52,6 +56,8 @@ describe('ExportUrlBlock', () => {
   it('calls rotate endpoint on confirm and shows success notification', async () => {
     const user = userEvent.setup();
     fetchMock = stubFetch((url) => {
+      if (url === '/auth/me')
+        return jsonResponse({ username: 'u', role: 'user', client_ids: null });
       if (url === '/feed-sources/1/export-token/rotate') {
         return jsonResponse({
           export_token: 'new123',
@@ -74,7 +80,11 @@ describe('ExportUrlBlock', () => {
 
   it('does not POST when rotate is cancelled', async () => {
     const user = userEvent.setup();
-    fetchMock = stubFetch((url) => jsonResponse({}));
+    fetchMock = stubFetch((url) => {
+      if (url === '/auth/me')
+        return jsonResponse({ username: 'u', role: 'user', client_ids: null });
+      return jsonResponse({});
+    });
 
     renderWithQuery(<ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/1/abc" />);
 
@@ -88,6 +98,8 @@ describe('ExportUrlBlock', () => {
   it('toasts rotateFailed when rotation fails without a server detail', async () => {
     const user = userEvent.setup();
     fetchMock = stubFetch((url) => {
+      if (url === '/auth/me')
+        return jsonResponse({ username: 'u', role: 'user', client_ids: null });
       if (url === '/feed-sources/1/export-token/rotate') {
         return new Response(null, { status: 500 });
       }
@@ -101,5 +113,53 @@ describe('ExportUrlBlock', () => {
     await user.click(confirm);
 
     expect(await screen.findByText('Could not rotate the export token.')).toBeInTheDocument();
+  });
+
+  it('shows the token editor for admins', async () => {
+    fetchMock = stubFetch((url) => {
+      if (url === '/auth/me')
+        return jsonResponse({ username: 'u', role: 'admin', client_ids: null });
+      return jsonResponse({});
+    });
+    renderWithQuery(<ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/1/abc" />);
+    expect(await screen.findByTestId('token-input')).toBeInTheDocument();
+    expect(screen.getByTestId('token-save')).toBeInTheDocument();
+  });
+
+  it('hides the token editor for non-admins', async () => {
+    fetchMock = stubFetch((url) => {
+      if (url === '/auth/me') return jsonResponse({ username: 'u', role: 'user', client_ids: [1] });
+      return jsonResponse({});
+    });
+    renderWithQuery(<ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/1/abc" />);
+    expect(await screen.findByRole('button', { name: /rotate/i })).toBeInTheDocument();
+    expect(screen.queryByTestId('token-input')).not.toBeInTheDocument();
+  });
+
+  it('PUTs the custom token as admin', async () => {
+    const user = userEvent.setup();
+    let body: string | null = null;
+    fetchMock = stubFetch((url, init) => {
+      if (url === '/auth/me')
+        return jsonResponse({ username: 'u', role: 'admin', client_ids: null });
+      if (url === '/feed-sources/1/export-token' && init?.method === 'PUT') {
+        body = typeof init.body === 'string' ? init.body : null;
+        return jsonResponse({
+          export_token: 'my-shop',
+          export_url: 'http://localhost/export/my-shop.xml',
+        });
+      }
+      return jsonResponse({});
+    });
+    renderWithQuery(<ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/1/abc" />);
+
+    const input = await screen.findByTestId('token-input');
+    await user.clear(input);
+    await user.type(input, 'my-shop');
+    await user.click(screen.getByTestId('token-save'));
+    const confirm = await screen.findByRole('button', { name: 'Confirm' });
+    await user.click(confirm);
+
+    await waitFor(() => expect(body).toBe(JSON.stringify({ export_token: 'my-shop' })));
   });
 });
