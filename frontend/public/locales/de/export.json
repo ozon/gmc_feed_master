@@ -17,7 +17,8 @@
     "rollback": "Zurücksetzen",
     "field": "Feld",
     "old": "Alt",
-    "new": "Neu"
+    "new": "Neu",
+    "actions": "Aktionen"
   },
   "findings": {
     "critical_one": "{{count}} kritisch",
@@ -52,5 +53,36 @@
   "versions": {
     "empty": "Noch keine Export-Versionen."
   },
-  "feedNotFound": "Feed-Quelle nicht gefunden."
+  "feedNotFound": "Feed-Quelle nicht gefunden.",
+  "preview": {
+    "title": "Vorschau Version {{version}}",
+    "openFor": "Version in der Vorschau öffnen",
+    "notRetained": "Diese Version wird nicht mehr aufbewahrt.",
+    "truncated": "Zeige die ersten {{shown}} von {{total}} Zeilen."
+  },
+  "download": {
+    "version": "Version herunterladen",
+    "failed": "Feed-Version konnte nicht heruntergeladen werden."
+  },
+  "liveBadge": "Live",
+  "generateRandom": "Zufällig erzeugen",
+  "customToken": "Eigener Export-URL-Wert",
+  "changeToken": "Übernehmen",
+  "changeWarning": "Das Ändern des Export-Tokens macht die aktuelle URL sofort ungültig. Alle Systeme, die die alte URL verwenden, funktionieren nicht mehr.",
+  "tokenSaved": "Export-URL aktualisiert.",
+  "tokenSaveFailed": "Export-URL konnte nicht aktualisiert werden.",
+  "weakHint": "Dieser Wert ist leicht zu erraten. Verwenden Sie einen längeren zufälligen Wert.",
+  "diff": {
+    "summary": {
+      "added": "Hinzugefügt",
+      "removed": "Entfernt",
+      "changed": "Geändert",
+      "fields": "Geänderte Felder"
+    },
+    "findingsDelta": "Qualitäts-Delta",
+    "notQcd": "nicht geprüft",
+    "byField": "Änderungen nach Feld",
+    "allFields": "Alle Felder",
+    "emptyValue": "(leer)"
+  }
 }

@@ -17,7 +17,8 @@
     "rollback": "Rollback",
     "field": "Field",
     "old": "Old",
-    "new": "New"
+    "new": "New",
+    "actions": "Actions"
   },
   "findings": {
     "critical_one": "{{count}} critical",
@@ -52,5 +53,36 @@
   "versions": {
     "empty": "No export versions yet."
   },
-  "feedNotFound": "Feed source not found."
+  "feedNotFound": "Feed source not found.",
+  "preview": {
+    "title": "Version {{version}} preview",
+    "openFor": "Preview version",
+    "notRetained": "This version is no longer retained.",
+    "truncated": "Showing the first {{shown}} of {{total}} lines."
+  },
+  "download": {
+    "version": "Download version",
+    "failed": "Could not download the feed version."
+  },
+  "liveBadge": "Live",
+  "generateRandom": "Generate random",
+  "customToken": "Custom export URL value",
+  "changeToken": "Apply",
+  "changeWarning": "Changing the export token invalidates the current URL immediately. All systems using the old URL will stop working.",
+  "tokenSaved": "Export URL updated.",
+  "tokenSaveFailed": "Could not update the export URL.",
+  "weakHint": "This value is easy to guess. Consider a longer random value.",
+  "diff": {
+    "summary": {
+      "added": "Added",
+      "removed": "Removed",
+      "changed": "Changed",
+      "fields": "Fields changed"
+    },
+    "findingsDelta": "Findings delta",
+    "notQcd": "Not QC'd",
+    "byField": "Changes by field",
+    "allFields": "All fields",
+    "emptyValue": "(empty)"
+  }
 }
