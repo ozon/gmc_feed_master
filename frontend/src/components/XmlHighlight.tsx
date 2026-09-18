@@ -49,6 +49,21 @@ function pushText(tokens: Token[], text: string): void {
   }
 }
 
+function findTagEnd(xml: string, start: number): number {
+  let quote: '"' | "'" | null = null;
+  for (let i = start; i < xml.length; i += 1) {
+    const ch = xml[i];
+    if (quote !== null) {
+      if (ch === quote) quote = null;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+    } else if (ch === '>') {
+      return i;
+    }
+  }
+  return -1;
+}
+
 function pushTag(tokens: Token[], segment: string): void {
   const open = TAG_RE.exec(segment);
   if (!open) {
@@ -106,7 +121,7 @@ export function tokenizeXml(xml: string): Token[] {
       i = stop;
       continue;
     }
-    const gt = xml.indexOf('>', lt);
+    const gt = findTagEnd(xml, lt);
     if (gt === -1) {
       pushText(tokens, xml.slice(lt));
       break;

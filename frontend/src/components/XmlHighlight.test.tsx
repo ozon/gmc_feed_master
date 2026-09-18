@@ -26,6 +26,13 @@ describe('tokenizeXml', () => {
     expect(() => tokenizeXml('a < b')).not.toThrow();
     expect(tokenizeXml('a < b').some((t) => t.kind === 'text')).toBe(true);
   });
+
+  it('keeps quoted ">" inside a tag', () => {
+    const tokens = tokenizeXml('<g:id content="a > b">x</g:id>');
+    expect(tokens.map((t) => t.text).join('')).toBe('<g:id content="a > b">x</g:id>');
+    expect(tokens.some((t) => t.kind === 'string' && t.text === '"a > b"')).toBe(true);
+    expect(tokens.some((t) => t.kind === 'text' && t.text === 'x')).toBe(true);
+  });
 });
 
 describe('sliceXmlLines', () => {
