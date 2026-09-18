@@ -543,25 +543,35 @@
 
 Filed by the M14 deferred-minors triage (`docs/reports/2026-09-16-deferred-minors-triage.md`). All are test-coverage or cosmetic-UX gaps, not user-visible defects. The other 17 ledger items triaged as fixed / obsolete / accepted-by-design need no work.
 
-### 11.1 [ ] Category `RulesTab`: cover the blocker "stay" branch [P3]
+### 11.1 [x] Category `RulesTab`: cover the blocker "stay" branch [P3]
 
 `frontend/src/features/category/RulesTab.tsx:228` uses `useBlocker(dirty)`. No test drives the "stay on page" branch (only the "leave" branch). Add a test that triggers navigation while dirty, chooses stay, and asserts the draft is preserved.
 
-### 11.2 [ ] Dashboard donut charts: assert data and series names [P3]
+**Done (2026-09-18):** already covered — `RulesTab.test.tsx` "Dirty guard: Cancel keeps the draft and stays on the page" (added in the M12 hardenings) opens the blocker, clicks Cancel, and asserts the page stays with the dirty Save still enabled. Verified 8/8 green; no new test needed.
+
+### 11.2 [x] Dashboard donut charts: assert data and series names [P3]
 
 No test renders a `DonutChart` with a data payload, so a broken `data`/`series` mapping would pass CI. Add a test in the dashboard/feed-dashboard suites asserting the rendered chart receives the expected rows and series names.
 
-### 11.3 [ ] `FeedSourceCard`: make the card a real link [P3]
+**Done (2026-09-18):** new `frontend/src/features/dashboard/FleetCharts.test.tsx` mocks `@mantine/charts` and asserts the exact donut rows (name/value/color), the trend `dataKey`, the `success`/`error` series names, and the `Other` aggregation past the 8-slice cap.
+
+### 11.3 [x] `FeedSourceCard`: make the card a real link [P3]
 
 `frontend/src/features/dashboard/FeedSourceCard.tsx:80` renders `component="a"` with no `href`, so middle-click / open-in-new-tab does nothing. Give the anchor a real `href` (and keep the `onClick` navigation) or drop `component="a"` and rely on the keyboard handler. Decide whether the lost middle-click is worth the change.
 
-### 11.4 [ ] Trend chart: handle a non-ascending day series [P3]
+**Done (2026-09-18):** the anchor now carries `href={\`/clients/${clientId}/feeds/${feed.id}\`}`; `onClick` calls `preventDefault()` before `navigate()` so left-click stays client-side while middle-click/new-tab work. New `FeedSourceCard.test.tsx` asserts the href.
+
+### 11.4 [x] Trend chart: handle a non-ascending day series [P3]
 
 The trend fill logic assumes ascending input. An export-only day sitting between raw-data days can produce a non-monotonic axis. Either sort defensively before filling or reject the case explicitly.
 
-### 11.5 [ ] Staging: cover the excluded-only case [P3]
+**Done (2026-09-18):** `fillDates` (`frontend/src/api/hooks.ts`) sorts a copy of the rows by `date` before using the first row as the axis origin; `hooks.test.ts` covers a reversed input pair and asserts an ascending, fully-populated output.
+
+### 11.5 [x] Staging: cover the excluded-only case [P3]
 
 No test seeds products that are *exclusively* excluded (all products filtered out), so the zero-export path for a fully-excluded feed is unexercised. Add a staging/QC test for it.
+
+**Done (2026-09-18):** `tests/test_export_bound.py::test_load_export_bound_returns_empty_when_all_active_rows_excluded` seeds two active-but-excluded products and asserts `load_export_bound` returns `[]`.
 
 ---
 
@@ -578,4 +588,4 @@ No test seeds products that are *exclusively* excluded (all products filtered ou
 
 ---
 
-_Generated 2026-08-29 after M10-d merge (`aa86c10`). Updated 2026-08-30 after the `m11-followups` cycle (merged at `4bdc3a8`): 22 tasks across 8 sections, 7 complete (1.1, 2.1, 2.3, 3.1, 3.2, 4.1, 7.1), 2 new (1.7, 1.8). Updated 2026-08-31 after the `m11a-p1s` cycle (merged at `457fc2f`): 9 complete — all P1s closed (3.4, 1.7 done; WIP landed as 5 commits). Updated 2026-09-01 after the `m11b-correctness` cycle (merged at `d9d5eab`): 12 complete (1.2, 3.3, 1.8, shutdown drain), 2 new (1.9, 1.10). Updated 2026-09-01 after the `m11c-micro` cycle: 14 complete (1.9, 1.10). Updated 2026-09-01 after the `m11d-micro` cycle: 16 complete (1.5, 1.6). Updated 2026-09-02 after the `m11e-dnd` cycle: 18 complete (1.3, 1.4) — section 1 fully closed. Updated 2026-09-07 after the labelizer polish cycle (head `30970ae`, all on main): Section 9 added (6 BACKLOG items from the final-review triage); labelizer deferred minors from the 2026-09-05 cycles all closed. Updated 2026-09-08: mypy 2.3.1 added to the backend dev group with `[tool.mypy]` config + 42-error baseline (`backend/docs/mypy-baseline.md`, tracked as Section 10.1) — fixes deferred per operator decision. Updated 2026-09-10 (section9-polish cycle): 9.1–9.3, 9.5–9.6, 9B.3 closed (branch `section9-polish`); 9.4 blocked._
+_Generated 2026-08-29 after M10-d merge (`aa86c10`). Updated 2026-08-30 after the `m11-followups` cycle (merged at `4bdc3a8`): 22 tasks across 8 sections, 7 complete (1.1, 2.1, 2.3, 3.1, 3.2, 4.1, 7.1), 2 new (1.7, 1.8). Updated 2026-08-31 after the `m11a-p1s` cycle (merged at `457fc2f`): 9 complete — all P1s closed (3.4, 1.7 done; WIP landed as 5 commits). Updated 2026-09-01 after the `m11b-correctness` cycle (merged at `d9d5eab`): 12 complete (1.2, 3.3, 1.8, shutdown drain), 2 new (1.9, 1.10). Updated 2026-09-01 after the `m11c-micro` cycle: 14 complete (1.9, 1.10). Updated 2026-09-01 after the `m11d-micro` cycle: 16 complete (1.5, 1.6). Updated 2026-09-02 after the `m11e-dnd` cycle: 18 complete (1.3, 1.4) — section 1 fully closed. Updated 2026-09-07 after the labelizer polish cycle (head `30970ae`, all on main): Section 9 added (6 BACKLOG items from the final-review triage); labelizer deferred minors from the 2026-09-05 cycles all closed. Updated 2026-09-08: mypy 2.3.1 added to the backend dev group with `[tool.mypy]` config + 42-error baseline (`backend/docs/mypy-baseline.md`, tracked as Section 10.1) — fixes deferred per operator decision. Updated 2026-09-10 (section9-polish cycle): 9.1–9.3, 9.5–9.6, 9B.3 closed (branch `section9-polish`); 9.4 blocked. Updated 2026-09-18 (section11 micro-cycle, on `main`): Section 11 fully closed — 11.1 verified already covered, 11.2/11.5 added missing coverage, 11.3 gave `FeedSourceCard` a real `href`, 11.4 made `fillDates` sort defensively._

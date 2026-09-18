@@ -36,4 +36,17 @@ describe('fillChartDates', () => {
   it('returns empty array for empty input', () => {
     expect(fillChartDates([], 14)).toEqual([]);
   });
+
+  it('sorts non-ascending rows before filling', () => {
+    const rows = [
+      { date: '2026-09-04', success: 2, error: 1 },
+      { date: '2026-09-01', success: 1, error: 0 },
+    ];
+    const filled = fillChartDates(rows, 4);
+    expect(filled.map((r) => r.date)).toEqual([
+      '2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04',
+    ]);
+    expect(filled[0]).toEqual({ date: '2026-09-01', success: 1, error: 0 });
+    expect(filled[3]).toEqual({ date: '2026-09-04', success: 2, error: 1 });
+  });
 });

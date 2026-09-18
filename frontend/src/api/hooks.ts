@@ -215,9 +215,10 @@ export function fillDates<T extends { date: string }>(
   defaultFor: (date: string) => T,
 ): T[] {
   if (rows.length === 0) return [];
-  const byDate = new Map(rows.map((r) => [r.date, r]));
+  const sorted = [...rows].sort((a, b) => a.date.localeCompare(b.date));
+  const byDate = new Map(sorted.map((r) => [r.date, r]));
   const out: T[] = [];
-  const first = new Date(`${rows[0].date}T00:00:00Z`);
+  const first = new Date(`${sorted[0].date}T00:00:00Z`);
   for (let i = 0; i < days; i += 1) {
     const key = new Date(first.getTime() + i * 86_400_000).toISOString().slice(0, 10);
     out.push(byDate.get(key) ?? defaultFor(key));

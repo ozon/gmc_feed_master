@@ -61,3 +61,37 @@ async def test_load_export_bound_filters_and_falls_back(session_factory):
         ("a", "raw-a"),
         ("b", "proc-b"),
     ]
+
+
+async def test_load_export_bound_returns_empty_when_all_active_rows_excluded(session_factory):
+    async with session_factory() as session, session.begin():
+        client = Client(name="C")
+        session.add(client)
+        await session.flush()
+        feed_source = FeedSource(
+            client_id=client.id,
+            name="F",
+            source_format="tsv",
+            export_token="tok-all-excluded",
+        )
+        session.add(feed_source)
+        await session.flush()
+        run = IngestionRun(feed_source_id=feed_source.id, status="completed")
+        session.add(run)
+        await session.flush()
+        for product_id in ("x", "y"):
+            session.add(
+                StagingProduct(
+                    feed_source_id=feed_source.id,
+                    ingestion_run_id=run.id,
+                    product_id=product_id,
+                    content_hash="c" + product_id,
+                    config_hash="g" + product_id,
+                    status="active",
+                    raw_data={"id": product_id},
+                    excluded=True,
+                )
+            )
+        feed_source_id = feed_source.id
+
+    assert await load_export_bound(session_factory, feed_source_id) == []
