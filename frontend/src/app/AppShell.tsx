@@ -149,7 +149,7 @@ function UserMenu() {
             leftSection={<IconLogout size={14} />}
             onClick={() =>
               logoutMutation.mutate(undefined, {
-                onSuccess: () => navigate('/login'),
+                onSuccess: () => void navigate('/login'),
                 onError: (error) => notifyMutationError(error, t('errors.logoutFailed')),
               })
             }

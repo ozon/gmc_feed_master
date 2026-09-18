@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
-import { stubFetch } from '../../../test/fetch';
+import { requestBody, stubFetch } from '../../../test/fetch';
 import { ProviderWizard } from './ProviderWizard';
 
 function jsonResponse(body: unknown, status = 200) {
@@ -81,7 +81,7 @@ describe('ProviderWizard', () => {
       if (url === '/admin/ai/provider-presets') return jsonResponse(presets);
       if (url.startsWith('/admin/ai/model-catalog')) return jsonResponse(catalog);
       if (url === '/admin/ai/providers' && init?.method === 'POST') {
-        posts.push(JSON.parse(String(init.body)));
+        posts.push(JSON.parse(requestBody(init)));
         return jsonResponse({ ...catalog.entries[0], id: 5 }, 201);
       }
       if (url === '/admin/ai/providers/5/test') {

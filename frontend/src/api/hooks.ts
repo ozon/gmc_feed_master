@@ -123,7 +123,7 @@ export function useDashboardSummary() {
     queryKey: queryKeys.dashboardSummary,
     queryFn: () => apiGet<DashboardSummary>('/dashboard/summary'),
     refetchInterval: (query) => {
-      const data = query.state.data as DashboardSummary | undefined;
+      const data = query.state.data;
       const anyRunning = data?.clients?.some((client) =>
         client.feed_sources?.some((feed) => feed.last_run_status === 'running'),
       );
@@ -295,7 +295,7 @@ export function useLogout() {
   return useMutation({
     mutationFn: logout,
     onSettled: () => {
-      void queryClient.removeQueries({ queryKey: queryKeys.session });
+      queryClient.removeQueries({ queryKey: queryKeys.session });
     },
   });
 }
@@ -583,8 +583,7 @@ export function usePluginData(pluginId: string, scope?: PluginScope, enabled = t
       );
       return { payload: data, version: pluginVersionFromHeaders(headers) };
     },
-    select: (cache: PluginPayloadCache) =>
-      pluginQuerySelect<Record<string, unknown>>(cache) as Record<string, unknown> | undefined,
+    select: (cache: PluginPayloadCache) => pluginQuerySelect<Record<string, unknown>>(cache),
   });
 }
 

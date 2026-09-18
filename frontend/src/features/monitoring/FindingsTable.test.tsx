@@ -48,7 +48,7 @@ describe('FindingsTable', () => {
 
   it('calls onOpenProduct when a product is clicked', async () => {
     const user = userEvent.setup();
-    const onOpenProduct = vi.fn();
+    const onOpenProduct = vi.fn<() => void>();
     render(<FindingsTable findings={findings} onOpenProduct={onOpenProduct} />);
     await user.click(screen.getByRole('button', { name: 'Open product p1' }));
     expect(onOpenProduct).toHaveBeenCalledWith('p1');

@@ -5,7 +5,7 @@ import i18n from '../i18n';
 import { mapFieldErrors, notifyApiError } from './notifyApiError';
 import { notifyApiError as notifyApiErrorViaNotifications } from './notifications';
 
-const showMock = vi.fn();
+const showMock = vi.fn<typeof notifications.show>();
 
 beforeEach(() => {
   showMock.mockClear();

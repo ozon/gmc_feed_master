@@ -42,7 +42,7 @@ type FilterConfig = {
 type PreviewResult = { total: number; pass: number; fail: number };
 
 const OPS: FilterOp[] = ['equals', 'not_equals', 'contains', 'not_contains', 'exists', 'empty'];
-const TEXT_OPS: FilterOp[] = ['equals', 'not_equals', 'contains', 'not_contains'];
+const TEXT_OPS = new Set<FilterOp>(['equals', 'not_equals', 'contains', 'not_contains']);
 
 export type FilterUIProps = { pluginId: string; scope: PluginScope };
 
@@ -103,7 +103,7 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
   });
 
   const hasIncomplete = draft.conditions.some(
-    (c) => !c.field || (TEXT_OPS.includes(c.op) && (c.arg === undefined || c.arg === '')),
+    (c) => !c.field || (TEXT_OPS.has(c.op) && (c.arg === undefined || c.arg === '')),
   );
 
   async function refreshPreview(): Promise<PreviewResult | null> {
@@ -122,11 +122,11 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
   const configLoaded = config.data !== undefined;
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [previewTick, setPreviewTick] = useState(0);
+  const activePreview = configLoaded && !hasIncomplete ? preview : null;
 
   // Live preview: one debounced (400ms) refetch after the config loads or the draft settles.
   useEffect(() => {
     if (!configLoaded || hasIncomplete) {
-      setPreview(null);
       return;
     }
     const timer = setTimeout(() => setPreviewTick((n) => n + 1), 400);
@@ -142,7 +142,7 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
     const payload: FilterConfig = {
       isActive: draft.isActive,
       conditions: draft.conditions.map(({ field, op, arg, caseSensitive }) =>
-        TEXT_OPS.includes(op)
+        TEXT_OPS.has(op)
           ? { field, op, arg: arg ?? '', caseSensitive: caseSensitive ?? true }
           : { field, op },
       ),
@@ -206,10 +206,10 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
               aria-label={t('operator')}
               data={OPS.map((op) => ({ value: op, label: t(`ops.${op}`) }))}
               value={condition.op}
-              onChange={(v) => patchCondition(index, { op: (v ?? 'equals') as FilterOp })}
+              onChange={(v) => patchCondition(index, { op: v ?? 'equals' })}
               w={180}
             />
-            {TEXT_OPS.includes(condition.op) ? (
+            {TEXT_OPS.has(condition.op) ? (
               <>
                 <TextInput
                   aria-label={t('value')}
@@ -264,11 +264,11 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
           <Text size="sm" c="dimmed">
             {t('incomplete')}
           </Text>
-        ) : preview ? (
+        ) : activePreview ? (
           <Text size="sm">
-            {t('previewPass', { pass: preview.pass, total: preview.total })}{' '}
+            {t('previewPass', { pass: activePreview.pass, total: activePreview.total })}{' '}
             <Badge size="xs" variant="light" color="gray">
-              {preview.fail}
+              {activePreview.fail}
             </Badge>
           </Text>
         ) : (

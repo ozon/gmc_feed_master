@@ -6,8 +6,8 @@ import { ConfirmModal } from './ConfirmModal';
 
 describe('ConfirmModal', () => {
   it('confirms and cancels', async () => {
-    const onConfirm = vi.fn();
-    const onClose = vi.fn();
+    const onConfirm = vi.fn<() => void>();
+    const onClose = vi.fn<() => void>();
     const user = userEvent.setup();
     render(
       <ConfirmModal
@@ -28,8 +28,8 @@ describe('ConfirmModal', () => {
   });
 
   it('disables confirm until typeToConfirm matches exactly', async () => {
-    const onConfirm = vi.fn();
-    const onClose = vi.fn();
+    const onConfirm = vi.fn<() => void>();
+    const onClose = vi.fn<() => void>();
     const user = userEvent.setup();
     render(
       <ConfirmModal

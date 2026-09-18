@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Accordion,
   ActionIcon,
@@ -207,11 +207,9 @@ export function CustomLabelsUI({
       ),
     [effectiveRules],
   );
-  useEffect(() => {
-    if (!slotTouched && populatedSlots.length > 0 && !populatedSlots.includes(selectedSlot)) {
-      setSelectedSlot(populatedSlots[0]);
-    }
-  }, [slotTouched, populatedSlots, selectedSlot]);
+  if (!slotTouched && populatedSlots.length > 0 && !populatedSlots.includes(selectedSlot)) {
+    setSelectedSlot(populatedSlots[0]);
+  }
   const shadow = useMemo(
     () => computeShadowing(effectiveRules, effectiveIds),
     [effectiveRules, effectiveIds],
@@ -365,7 +363,7 @@ export function CustomLabelsUI({
             value={effectiveIds[rule.id] ?? ''}
             dirty={dirtyIds && (effectiveIds[rule.id] ?? '') !== (serverIds[rule.id]?.value ?? '')}
             inheritedFrom={
-              serverIds[rule.id]?.inherited === true &&
+              serverIds[rule.id]?.inherited &&
               (effectiveIds[rule.id] ?? '') === serverIds[rule.id].value
                 ? serverIds[rule.id].sourceTier
                 : null
@@ -415,7 +413,7 @@ export function CustomLabelsUI({
           <Button
             variant="light"
             onClick={() => {
-              const rule = newRule(t('newRuleName'), editableTier!);
+              const rule = newRule(t('newRuleName'), editableTier);
               setRules([...effectiveRules, rule]);
               setSelectedId(rule.id);
             }}
@@ -515,7 +513,7 @@ export function CustomLabelsUI({
               <SegmentedControl
                 aria-label={t('matchMode.label')}
                 value={selected.matchMode ?? 'values'}
-                onChange={(mode) => patchSelected({ matchMode: mode as 'values' | 'all' })}
+                onChange={(mode) => patchSelected({ matchMode: mode })}
                 disabled={!ruleEditable(selected)}
                 data={[
                   { value: 'values', label: t('matchMode.values') },

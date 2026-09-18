@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Badge,
   Button,
@@ -35,15 +35,14 @@ export function AdminSettingsPage() {
   const [history, setHistory] = useState(90);
   const [ingestion, setIngestion] = useState(90);
   const [eventLogs, setEventLogs] = useState(90);
-
-  useEffect(() => {
-    if (settingsQuery.data) {
-      setRemoval(settingsQuery.data.staging_removal_retention_days);
-      setHistory(settingsQuery.data.staging_history_retention_days);
-      setIngestion(settingsQuery.data.ingestion_run_retention_days);
-      setEventLogs(settingsQuery.data.event_log_retention_days);
-    }
-  }, [settingsQuery.data]);
+  const [prevSettingsData, setPrevSettingsData] = useState(settingsQuery.data);
+  if (settingsQuery.data && settingsQuery.data !== prevSettingsData) {
+    setPrevSettingsData(settingsQuery.data);
+    setRemoval(settingsQuery.data.staging_removal_retention_days);
+    setHistory(settingsQuery.data.staging_history_retention_days);
+    setIngestion(settingsQuery.data.ingestion_run_retention_days);
+    setEventLogs(settingsQuery.data.event_log_retention_days);
+  }
 
   if (settingsQuery.isPending) return <LoadingState />;
   if (settingsQuery.isError) return <ErrorState onRetry={() => void settingsQuery.refetch()} />;

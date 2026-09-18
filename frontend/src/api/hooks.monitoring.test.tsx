@@ -5,7 +5,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { useRunDryRun } from './hooks';
 import { queryClient as defaultClient } from './queryClient';
 import { queryKeys } from './queryKeys';
-import { stubFetch } from '../test/fetch';
+import { requestBody, stubFetch } from '../test/fetch';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -24,7 +24,7 @@ describe('useRunDryRun', () => {
     let captured: { url: string; body: unknown } | null = null;
     stubFetch((url, init) => {
       if (url === '/feed-sources/1/dry-run' && init?.method === 'POST') {
-        captured = { url, body: JSON.parse(String(init.body)) };
+        captured = { url, body: JSON.parse(requestBody(init)) };
         return jsonResponse({ dropped: 0, processed: 5, findings: [] });
       }
       return jsonResponse({});

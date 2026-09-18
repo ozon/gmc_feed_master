@@ -44,7 +44,9 @@ export function useLabelizerPreview(input: {
   const draftKey = JSON.stringify({ rules, slotIds });
 
   const payloadRef = useRef({ feedSourceId, rules, slotIds });
-  payloadRef.current = { feedSourceId, rules, slotIds };
+  useEffect(() => {
+    payloadRef.current = { feedSourceId, rules, slotIds };
+  });
 
   useEffect(
     () => () => {
@@ -56,6 +58,7 @@ export function useLabelizerPreview(input: {
   useEffect(() => {
     if (!enabled) {
       seq.current++;
+      // oxlint-disable-next-line react/set-state-in-effect -- resetting preview state when disabled is intentional; there is no external system to derive it from
       setResult(null);
       setErrors(null);
       setUnavailable(false);
@@ -70,6 +73,7 @@ export function useLabelizerPreview(input: {
     if (!enabled || tick === 0) return;
     const mySeq = ++seq.current;
     const { feedSourceId, rules, slotIds } = payloadRef.current;
+    // oxlint-disable-next-line react/set-state-in-effect -- pending flags must flip synchronously at request start; no external system provides them
     setIsPending(true);
     setErrors(null);
     void apiPost<PreviewResult>('/plugins/custom_labels/preview', {

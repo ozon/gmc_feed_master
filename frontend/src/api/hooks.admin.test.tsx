@@ -4,9 +4,9 @@ vi.mock('./client', async () => {
   const actual = await vi.importActual<typeof import('./client')>('./client');
   return {
     ...actual,
-    apiGet: vi.fn(),
-    apiPost: vi.fn(),
-    apiPatch: vi.fn(),
+    apiGet: vi.fn<typeof actual.apiGet>(),
+    apiPost: vi.fn<typeof actual.apiPost>(),
+    apiPatch: vi.fn<typeof actual.apiPatch>(),
   };
 });
 

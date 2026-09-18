@@ -7,7 +7,7 @@ import { CopyField } from './CopyField';
 describe('CopyField', () => {
   it('copies the value to the clipboard', async () => {
     const user = userEvent.setup();
-    const writeText = vi.fn().mockResolvedValue(undefined);
+    const writeText = vi.fn<() => void>().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText },
       configurable: true,

@@ -130,8 +130,8 @@ describe('PluginConfigPanel', () => {
       <PluginConfigPanel
         instance={instance}
         plugin={plugin}
-        onChange={vi.fn()}
-        onRemove={vi.fn()}
+        onChange={vi.fn<(next: Record<string, unknown>) => void>()}
+        onRemove={vi.fn<() => void>()}
       />,
     );
     expect(screen.getByText('Upper')).toBeInTheDocument();
@@ -144,8 +144,8 @@ describe('PluginConfigPanel', () => {
       <PluginConfigPanel
         instance={{ ...instance, enabled: false }}
         plugin={plugin}
-        onChange={vi.fn()}
-        onRemove={vi.fn()}
+        onChange={vi.fn<(next: Record<string, unknown>) => void>()}
+        onRemove={vi.fn<() => void>()}
       />,
     );
     expect(screen.getByTestId('config-panel')).toBeInTheDocument();
@@ -154,13 +154,13 @@ describe('PluginConfigPanel', () => {
 
   it('edits configuration through the form', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
+    const onChange = vi.fn<(next: Record<string, unknown>) => void>();
     render(
       <PluginConfigPanel
         instance={instance}
         plugin={plugin}
         onChange={onChange}
-        onRemove={vi.fn()}
+        onRemove={vi.fn<() => void>()}
       />,
     );
     const input = await screen.findByLabelText(/suffix/i);
@@ -171,7 +171,12 @@ describe('PluginConfigPanel', () => {
 
   it('renders an empty state when no instance is selected', () => {
     render(
-      <PluginConfigPanel instance={null} plugin={plugin} onChange={vi.fn()} onRemove={vi.fn()} />,
+      <PluginConfigPanel
+        instance={null}
+        plugin={plugin}
+        onChange={vi.fn<(next: Record<string, unknown>) => void>()}
+        onRemove={vi.fn<() => void>()}
+      />,
     );
     expect(screen.getByText(/select a plugin/i)).toBeInTheDocument();
   });
@@ -183,8 +188,8 @@ describe('PluginConfigPanel', () => {
         plugin={setupPlugin}
         clientId="3"
         feedSourceId="9"
-        onChange={vi.fn()}
-        onRemove={vi.fn()}
+        onChange={vi.fn<(next: Record<string, unknown>) => void>()}
+        onRemove={vi.fn<() => void>()}
       />,
     );
     const probe = screen.getByTestId('probe-component');
@@ -200,8 +205,8 @@ describe('PluginConfigPanel', () => {
         plugin={setupPlugin}
         clientId="3"
         feedSourceId="9"
-        onChange={vi.fn()}
-        onRemove={vi.fn()}
+        onChange={vi.fn<(next: Record<string, unknown>) => void>()}
+        onRemove={vi.fn<() => void>()}
       />,
     );
     await user.click(screen.getByRole('radio', { name: /client/i }));
@@ -217,8 +222,8 @@ describe('PluginConfigPanel', () => {
         plugin={setupPlugin}
         clientId="3"
         feedSourceId="9"
-        onChange={vi.fn()}
-        onRemove={vi.fn()}
+        onChange={vi.fn<(next: Record<string, unknown>) => void>()}
+        onRemove={vi.fn<() => void>()}
       />,
     );
     const alert = screen.getByTestId('config-readonly-alert');
@@ -237,8 +242,8 @@ describe('PluginConfigPanel', () => {
         plugin={feedEditablePlugin}
         clientId="3"
         feedSourceId="9"
-        onChange={vi.fn()}
-        onRemove={vi.fn()}
+        onChange={vi.fn<(next: Record<string, unknown>) => void>()}
+        onRemove={vi.fn<() => void>()}
       />,
     );
     expect(screen.queryByTestId('config-readonly-alert')).not.toBeInTheDocument();
@@ -249,8 +254,8 @@ describe('PluginConfigPanel', () => {
       <PluginConfigPanel
         instance={instance}
         plugin={plugin}
-        onChange={vi.fn()}
-        onRemove={vi.fn()}
+        onChange={vi.fn<(next: Record<string, unknown>) => void>()}
+        onRemove={vi.fn<() => void>()}
       />,
     );
     expect(screen.queryByTestId('config-tier-switcher')).not.toBeInTheDocument();
@@ -265,8 +270,8 @@ describe('PluginConfigPanel', () => {
           plugin={labelizerPlugin}
           clientId="3"
           feedSourceId="9"
-          onChange={vi.fn()}
-          onRemove={vi.fn()}
+          onChange={vi.fn<(next: Record<string, unknown>) => void>()}
+          onRemove={vi.fn<() => void>()}
         />
       </MemoryRouter>,
     );
@@ -285,8 +290,8 @@ describe('PluginConfigPanel', () => {
           plugin={bothPlugin}
           clientId="3"
           feedSourceId="9"
-          onChange={vi.fn()}
-          onRemove={vi.fn()}
+          onChange={vi.fn<(next: Record<string, unknown>) => void>()}
+          onRemove={vi.fn<() => void>()}
         />
       </MemoryRouter>,
     );
@@ -301,8 +306,8 @@ describe('PluginConfigPanel', () => {
       <PluginConfigPanel
         instance={instance}
         plugin={plugin}
-        onChange={vi.fn()}
-        onRemove={vi.fn()}
+        onChange={vi.fn<(next: Record<string, unknown>) => void>()}
+        onRemove={vi.fn<() => void>()}
       />,
     );
     expect(screen.getByLabelText(/suffix/i)).toBeInTheDocument();
@@ -318,8 +323,8 @@ describe('PluginConfigPanel', () => {
         plugin={setupPlugin}
         clientId="3"
         feedSourceId="9"
-        onChange={vi.fn()}
-        onRemove={vi.fn()}
+        onChange={vi.fn<(next: Record<string, unknown>) => void>()}
+        onRemove={vi.fn<() => void>()}
       />,
     );
     expect(screen.getByTestId('plugin-error-boundary')).toBeInTheDocument();

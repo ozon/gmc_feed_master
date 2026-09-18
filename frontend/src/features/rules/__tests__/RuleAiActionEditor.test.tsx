@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
-import { stubFetch } from '../../../test/fetch';
+import { requestBody, stubFetch } from '../../../test/fetch';
 import { RuleAiActionEditor } from '../RuleAiActionEditor';
 import type { RuleAction } from '../../../../../plugins/core/rules/frontend/ast';
 
@@ -50,7 +50,7 @@ it('lists templates in template mode', async () => {
       action={action}
       fieldOptions={options}
       feedSourceId={1}
-      onChange={vi.fn()}
+      onChange={vi.fn<(action: RuleAction) => void>()}
     />,
   );
   expect(await screen.findByText('T1')).toBeInTheDocument();
@@ -59,7 +59,7 @@ it('lists templates in template mode', async () => {
 it('switching to custom emits a rule_value action', async () => {
   const user = userEvent.setup();
   stubFetch(() => jsonResponse({}));
-  const onChange = vi.fn();
+  const onChange = vi.fn<(action: RuleAction) => void>();
   const action: RuleAction = {
     op: 'ai',
     field: 'title',
@@ -90,7 +90,7 @@ it('defaults a template action without taskType and previews title_optimization'
       return jsonResponse({ items: [] });
     }
     if (url.startsWith('/plugins/rules/ai/preview')) {
-      posts.push(init?.body ? JSON.parse(String(init.body)) : null);
+      posts.push(init?.body ? JSON.parse(requestBody(init)) : null);
       return jsonResponse({ messages: [], used_variables: [], warnings: [], errors: [] });
     }
     return jsonResponse({});
@@ -101,7 +101,7 @@ it('defaults a template action without taskType and previews title_optimization'
       action={action}
       fieldOptions={options}
       feedSourceId={1}
-      onChange={vi.fn()}
+      onChange={vi.fn<(action: RuleAction) => void>()}
     />,
   );
 

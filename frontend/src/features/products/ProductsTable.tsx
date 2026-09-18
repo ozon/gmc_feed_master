@@ -160,6 +160,7 @@ export function ProductsTable({
                   }
                 }}
                 tabIndex={0}
+                // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- table row is the click target; <button> is not valid as a <tr> parent-child structure
                 role="button"
                 aria-label={t('rowDetailsAriaLabel', {
                   title: row.original.title ?? row.original.product_id,
@@ -167,7 +168,7 @@ export function ProductsTable({
                 style={{ cursor: 'pointer' }}
               >
                 {row.getVisibleCells().map((cell) => {
-                  const colId = cell.column.id as ProductColumnId;
+                  const colId = cell.column.id;
                   const value = cell.getValue() as string;
                   if (colId === 'state') {
                     if (!value) {

@@ -6,7 +6,7 @@ vi.mock('../../api/hooks', async () => {
   const actual = await vi.importActual<typeof import('../../api/hooks')>('../../api/hooks');
   return {
     ...actual,
-    useSession: vi.fn(() => ({
+    useSession: vi.fn<() => unknown>(() => ({
       data: { username: 'bob', role: 'user', client_ids: [1] },
       status: 'success',
     })),

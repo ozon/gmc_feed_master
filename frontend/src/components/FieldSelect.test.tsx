@@ -22,7 +22,7 @@ const fields: FieldDescriptor[] = [
 const options = buildFieldOptions(fields);
 
 function setup(overrides?: Partial<React.ComponentProps<typeof FieldSelect>>) {
-  const onChange = vi.fn();
+  const onChange = vi.fn<() => void>();
   render(
     <FieldSelect
       value=""

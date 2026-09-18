@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Button,
   Group,
@@ -65,7 +65,7 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
       currency: feed.currency ?? '',
       volume_drop_threshold_pct: feed.volume_drop_threshold_pct,
       history_retention_count: feed.history_retention_count,
-    } as SettingsFormValues,
+    },
     onSubmit: async ({ value }) => {
       const payload: Record<string, unknown> = {};
       if (value.name !== feed.name) payload.name = value.name;
@@ -90,7 +90,7 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
             | Record<string, unknown>
             | undefined
         )?.username as string | undefined) ?? '';
-      const existingCfg = (feed.configuration ?? {}) as Record<string, unknown>;
+      const existingCfg = feed.configuration ?? {};
       const cfgUpdate: Record<string, unknown> = {};
       if (username !== originalUsername || password) {
         const existingBa = (existingCfg.basic_auth ?? {}) as Record<string, unknown>;
@@ -125,7 +125,9 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
     },
   });
 
-  useEffect(() => {
+  const [prevFeed, setPrevFeed] = useState(feed);
+  if (prevFeed !== feed) {
+    setPrevFeed(feed);
     const cfg = feed.configuration as Record<string, unknown> | undefined;
     const ba = cfg?.basic_auth as Record<string, unknown> | undefined;
     setUsername((ba?.username as string) ?? '');
@@ -134,7 +136,7 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
     setAiQcEnabled(Boolean(aiQc?.enabled));
     setAiQcBudget(Number(aiQc?.budget ?? 50));
     setServerError(null);
-  }, [feed]);
+  }
 
   const cronPresets = CRON_PRESETS.map((p) => ({
     value: p.value,

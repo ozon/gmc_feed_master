@@ -454,7 +454,7 @@ function ConditionNodeEditor({
   }
 
   // Leaf: [Field Select][Operator Select][Value Input]
-  const isNumeric = (NUMERIC_OPS as readonly string[]).includes(node.op);
+  const isNumeric = NUMERIC_OPS.includes(node.op);
   const isBetween = node.op === 'between';
   const hasValueInput = !(node.op === 'exists' || node.op === 'empty');
   const patch = (partial: Partial<RuleCondition>) => onChange({ ...node, ...partial });
@@ -474,8 +474,7 @@ function ConditionNodeEditor({
         value={TEXT_OPS.includes(node.op) || NUMERIC_OPS.includes(node.op) ? node.op : null}
         onChange={(v) => {
           if (!v) return;
-          if ((NUMERIC_OPS as readonly string[]).includes(v))
-            patch({ op: v as RuleCondition['op'], arg: 0 });
+          if (NUMERIC_OPS.includes(v)) patch({ op: v as RuleCondition['op'], arg: 0 });
           else patch({ op: v as RuleCondition['op'], arg: '' });
         }}
         w={160}

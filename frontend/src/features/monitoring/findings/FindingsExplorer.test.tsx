@@ -64,7 +64,7 @@ describe('FindingsExplorer', () => {
 
   it('shows the flat sortable table and opens a product', async () => {
     const user = userEvent.setup();
-    const onOpenProduct = vi.fn();
+    const onOpenProduct = vi.fn<() => void>();
     render(<FindingsExplorer findings={findings} onOpenProduct={onOpenProduct} />);
     await user.click(screen.getByRole('radio', { name: 'Flat' }));
     const table = await screen.findByTestId('findings-table');

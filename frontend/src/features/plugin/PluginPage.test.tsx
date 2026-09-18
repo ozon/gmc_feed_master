@@ -6,7 +6,7 @@ import { createMemoryRouter, MemoryRouter, Route, Routes, RouterProvider } from 
 import { QueryClient } from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
-import { stubFetch } from '../../test/fetch';
+import { requestBody, stubFetch } from '../../test/fetch';
 import { PluginPage } from './PluginPage';
 import { queryClient } from '../../api/queryClient';
 
@@ -113,7 +113,7 @@ describe('PluginPage', () => {
     stubFetch((url, init) => {
       if (url === '/plugins') return jsonResponse([plugin]);
       if (url.startsWith('/plugins/example_upper/config') && init?.method === 'PUT') {
-        putBody = JSON.parse(String(init.body));
+        putBody = JSON.parse(requestBody(init));
         return jsonResponse({ suffix: 'X' });
       }
       if (url.startsWith('/plugins/example_upper/config')) {
@@ -168,6 +168,7 @@ describe('PluginPage', () => {
               isMasterRule: true,
               isActive: true,
               when: { op: 'all' },
+              // oxlint-disable-next-line unicorn/no-thenable -- rule AST field 'then' holds actions, not a Promise thenable
               then: [{ op: 'set', field: 'condition', value: 'new' }],
             },
           ],

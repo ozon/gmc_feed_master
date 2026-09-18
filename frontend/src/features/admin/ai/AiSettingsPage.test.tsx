@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
-import { stubFetch } from '../../../test/fetch';
+import { requestBody, stubFetch } from '../../../test/fetch';
 import { AiSettingsPage } from './AiSettingsPage';
 
 function jsonResponse(body: unknown, status = 200) {
@@ -68,7 +68,7 @@ describe('AiSettingsPage', () => {
     const puts: unknown[] = [];
     stubFetch((url, init) => {
       if (url === '/admin/ai/settings' && init?.method === 'PUT') {
-        puts.push(JSON.parse(String(init.body)));
+        puts.push(JSON.parse(requestBody(init)));
         return jsonResponse({ ...settings, ai_router_num_retries: 7 });
       }
       if (url === '/admin/ai/settings') return jsonResponse(settings);

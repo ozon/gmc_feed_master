@@ -80,10 +80,10 @@ function renderAt(overrides?: Partial<ComponentProps<typeof PluginList>>) {
     instances,
     plugins,
     selectedClientId: 'upper-0',
-    onSelect: vi.fn(),
-    onToggleEnabled: vi.fn(),
-    onAdd: vi.fn(),
-    onReorderDragEnd: vi.fn(),
+    onSelect: vi.fn<() => void>(),
+    onToggleEnabled: vi.fn<() => void>(),
+    onAdd: vi.fn<() => void>(),
+    onReorderDragEnd: vi.fn<() => void>(),
     ...overrides,
   };
   return render(
@@ -112,8 +112,8 @@ describe('PluginList', () => {
 
   it('calls onToggleEnabled when the per-instance switch flips', async () => {
     const user = userEvent.setup();
-    const onToggleEnabled = vi.fn();
-    const onSelect = vi.fn();
+    const onToggleEnabled = vi.fn<() => void>();
+    const onSelect = vi.fn<() => void>();
     renderAt({ onToggleEnabled, onSelect });
     await user.click(screen.getByTestId('plugin-toggle-lower-1'));
     expect(onToggleEnabled).toHaveBeenCalledWith('lower-1', true);
@@ -122,7 +122,7 @@ describe('PluginList', () => {
 
   it('does not select the row when toggling its switch', async () => {
     const user = userEvent.setup();
-    const onSelect = vi.fn();
+    const onSelect = vi.fn<() => void>();
     renderAt({ onSelect });
     await user.click(screen.getByTestId('plugin-toggle-lower-1'));
     expect(onSelect).not.toHaveBeenCalled();
@@ -136,7 +136,7 @@ describe('PluginList', () => {
 
   it('calls onAdd with the plugin id', async () => {
     const user = userEvent.setup();
-    const onAdd = vi.fn();
+    const onAdd = vi.fn<() => void>();
     renderAt({ onAdd });
     await user.click(screen.getByTestId('add-plugin-fresh'));
     expect(onAdd).toHaveBeenCalledWith('fresh');

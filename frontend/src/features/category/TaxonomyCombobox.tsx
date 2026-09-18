@@ -20,10 +20,10 @@ export function TaxonomyCombobox({
   const { t } = useTranslation('category');
   const [query, setQuery] = useState('');
   const [entries, setEntries] = useState<TaxonomyEntry[]>([]);
+  const visibleEntries = disabled || !query.trim() ? [] : entries;
 
   useEffect(() => {
     if (disabled || !query.trim()) {
-      setEntries([]);
       return;
     }
     let cancelled = false;
@@ -50,7 +50,7 @@ export function TaxonomyCombobox({
       clearable
       disabled={disabled}
       filter={({ options }) => options}
-      data={entries.map((entry) => ({
+      data={visibleEntries.map((entry) => ({
         value: entry.id,
         label: `${entry.id} — ${entry.path}`,
       }))}

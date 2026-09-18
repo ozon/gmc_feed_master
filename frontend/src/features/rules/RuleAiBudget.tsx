@@ -1,5 +1,5 @@
 import { Group, NumberInput, Stack, Switch, Text } from '@mantine/core';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { notifyApiError, notifySuccess } from '../../app/notifications';
 import { useFeedSource } from '../../api/hooks';
@@ -12,13 +12,14 @@ export function RuleAiBudget({ feedSourceId }: { feedSourceId?: number }) {
   const feed = useFeedSource(feedSourceId);
   const save = useSaveAiRules(feedSourceId);
   const [value, setValue] = useState<AiRulesConfig>(DEFAULTS);
-
-  useEffect(() => {
-    const stored = (feed.data?.configuration as Record<string, unknown> | undefined)?.ai_rules;
+  const [prevFeedData, setPrevFeedData] = useState(feed.data);
+  if (prevFeedData !== feed.data) {
+    setPrevFeedData(feed.data);
+    const stored = feed.data?.configuration?.ai_rules;
     if (stored && typeof stored === 'object') {
       setValue({ ...DEFAULTS, ...(stored as Partial<AiRulesConfig>) });
     }
-  }, [feed.data]);
+  }
 
   function commit(next: AiRulesConfig) {
     setValue(next);

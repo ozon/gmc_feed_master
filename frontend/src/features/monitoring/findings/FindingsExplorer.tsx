@@ -133,7 +133,7 @@ export function FindingsExplorer({ findings, onOpenProduct }: Props) {
       <Group align="flex-end">
         <SegmentedControl
           value={mode}
-          onChange={(value) => setMode(value as GroupMode)}
+          onChange={(value) => setMode(value)}
           data={[
             { value: 'rule', label: t('findings.groupRule') },
             { value: 'attribute', label: t('findings.groupAttribute') },

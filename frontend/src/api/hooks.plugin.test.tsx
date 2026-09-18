@@ -12,7 +12,7 @@ import {
 import { ApiError } from './client';
 import { queryClient as defaultClient } from './queryClient';
 import { queryKeys } from './queryKeys';
-import { stubFetch } from '../test/fetch';
+import { requestBody, stubFetch } from '../test/fetch';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -31,7 +31,7 @@ describe('useUpdatePluginEnabled', () => {
     let captured: { url: string; body: unknown } | null = null;
     stubFetch((url, init) => {
       if (url === '/plugins/example_upper/enabled' && init?.method === 'PUT') {
-        captured = { url, body: JSON.parse(String(init.body)) };
+        captured = { url, body: JSON.parse(requestBody(init)) };
         return jsonResponse({ id: 'example_upper', enabled: false });
       }
       return jsonResponse({});
@@ -77,7 +77,7 @@ describe('useSavePluginConfig', () => {
     let captured: { url: string; body: unknown } | null = null;
     stubFetch((url, init) => {
       if (url.startsWith('/plugins/example_upper/config') && init?.method === 'PUT') {
-        captured = { url, body: JSON.parse(String(init.body)) };
+        captured = { url, body: JSON.parse(requestBody(init)) };
         return jsonResponse({ suffix: 'X' });
       }
       return jsonResponse({});
@@ -127,7 +127,7 @@ describe('useSavePluginData', () => {
     let captured: { url: string; body: unknown } | null = null;
     stubFetch((url, init) => {
       if (url === '/plugins/custom_labels/data?feed_source_id=7' && init?.method === 'PUT') {
-        captured = { url, body: JSON.parse(String(init.body)) };
+        captured = { url, body: JSON.parse(requestBody(init)) };
         return jsonResponse({ status: 'ok' });
       }
       return jsonResponse({});

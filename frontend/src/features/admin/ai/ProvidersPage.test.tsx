@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
-import { stubFetch } from '../../../test/fetch';
+import { requestBody, stubFetch } from '../../../test/fetch';
 import { ProvidersPage } from './ProvidersPage';
 
 function jsonResponse(body: unknown, status = 200) {
@@ -110,7 +110,7 @@ describe('ProvidersPage', () => {
     const posts: unknown[] = [];
     stubFetch((url, init) => {
       if (url === '/admin/ai/providers' && init?.method === 'POST') {
-        posts.push(JSON.parse(String(init.body)));
+        posts.push(JSON.parse(requestBody(init)));
         return jsonResponse({ ...providers[0], id: 2, model: 'openai/gpt-4o' }, 201);
       }
       if (url === '/admin/ai/providers/2/test')

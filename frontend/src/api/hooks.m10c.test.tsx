@@ -42,7 +42,7 @@ beforeEach(() => {
 
 describe('m10-c hooks', () => {
   it('useCreateClient posts a new client and invalidates the clients key', async () => {
-    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+    fetchMock.mockImplementation(async (input) => {
       const url = String(input);
       if (url === '/clients') return jsonResponse(clientFixture);
       if (url === '/dashboard/summary') {
@@ -81,7 +81,7 @@ describe('m10-c hooks', () => {
   });
 
   it('useProductList fetches with the exact raw-stage query string', async () => {
-    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+    fetchMock.mockImplementation(async (input) => {
       const url = String(input);
       if (url === '/feed-sources/2/products?page=2&page_size=50&q=sock&status=removed') {
         return jsonResponse({ items: [], total: 0, page: 2, page_size: 50 });
@@ -110,7 +110,7 @@ describe('m10-c hooks', () => {
       queryKey: mappingKey,
       queryFn: () => Promise.resolve(doc),
     });
-    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+    fetchMock.mockImplementation(async (input) => {
       const url = String(input);
       if (url === '/feed-sources/2/field-mapping/auto') {
         return jsonResponse({ version: 2, auto_mapped: true, source_fields: [], mappings: {} });
@@ -128,7 +128,7 @@ describe('m10-c hooks', () => {
   });
 
   it('useFeedSourceFields does not fetch when feedSourceId is empty', async () => {
-    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+    fetchMock.mockImplementation(async (input) => {
       throw new Error(`Unexpected fetch in test: ${String(input)}`);
     });
     const { result } = renderHook(() => useFeedSourceFields(''), { queryClient });

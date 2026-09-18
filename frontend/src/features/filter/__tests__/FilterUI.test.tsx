@@ -6,7 +6,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
-import { stubFetch } from '../../../test/fetch';
+import { requestBody, stubFetch } from '../../../test/fetch';
 import FilterUI from '../../../../../plugins/core/filter/frontend/component';
 
 function jsonResponse(body: unknown, status = 200) {
@@ -160,7 +160,7 @@ describe('FilterUI', () => {
     renderWithStub((url, init) => {
       if (url.startsWith('/plugins/filter/config')) {
         if (init?.method === 'PUT') {
-          const body = JSON.parse(String(init.body));
+          const body = JSON.parse(requestBody(init));
           puts.push({ url, body });
           serverConfig = body;
           return jsonResponse(serverConfig);

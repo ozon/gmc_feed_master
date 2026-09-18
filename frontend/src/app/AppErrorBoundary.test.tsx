@@ -4,7 +4,7 @@ import { render } from '../test/render';
 import { captureException } from '../logging/logger';
 import { AppErrorBoundary } from './AppErrorBoundary';
 
-vi.mock('../logging/logger', () => ({ captureException: vi.fn() }));
+vi.mock('../logging/logger', () => ({ captureException: vi.fn<() => void>() }));
 
 function Boom(): never {
   throw new Error('kaboom');

@@ -30,7 +30,7 @@ describe('FeedSourceCard', () => {
         <FeedSourceCard clientId={1} feed={feed} />
       </MemoryRouter>,
     );
-    const card = screen.getByRole('button', { name: /Main Feed/ });
+    const card = screen.getByRole('link', { name: /Main Feed/ });
     expect(card).toHaveAttribute('href', '/clients/1/feeds/2');
   });
 });

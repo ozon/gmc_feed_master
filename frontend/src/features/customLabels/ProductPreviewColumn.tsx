@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { RefObject } from 'react';
 import type { ProductLookupMatch } from '../../api/types';
 import { ROW_HEIGHT, VIEWPORT_ROWS, availabilityColor, windowRange } from './productPreview';
+import { formatSampleValue } from './ids';
 import type { ShadowOwnerInfo } from './shadowing';
 
 export type ProductPreviewColumnProps = {
@@ -195,7 +196,7 @@ function MatchBody({
       </Badge>
       {extraFields.map((fieldName) => (
         <Text key={fieldName} size="xs" c="dimmed" truncate maw={160}>
-          {sample[fieldName] == null ? '' : String(sample[fieldName])}
+          {formatSampleValue(sample[fieldName])}
         </Text>
       ))}
       {sample.status === 'removed' && (

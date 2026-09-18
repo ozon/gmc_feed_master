@@ -65,12 +65,7 @@ export function ExportVersionList({
             </Table.Td>
             <Table.Td>
               <Badge color={SOURCE_COLOR[version.source] ?? 'gray'} variant="light">
-                {t(
-                  `source.${version.source}` as
-                    | 'source.scheduled'
-                    | 'source.manual'
-                    | 'source.rollback',
-                )}
+                {t(`source.${version.source}`)}
               </Badge>
             </Table.Td>
             <Table.Td>

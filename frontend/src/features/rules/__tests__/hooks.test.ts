@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import type { QueryClient } from '@tanstack/react-query';
 import { makeTestQueryClient, renderHook } from '../../../test/render';
-import { stubFetch } from '../../../test/fetch';
+import { requestBody, stubFetch } from '../../../test/fetch';
 import { queryKeys } from '../../../api/queryKeys';
 import { useSaveAiRules } from '../hooks';
 
@@ -33,7 +33,7 @@ beforeEach(() => {
 function putBody(): { configuration: Record<string, unknown> } {
   const putCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'PUT');
   expect(putCall).toBeTruthy();
-  return JSON.parse(String(putCall![1]?.body));
+  return JSON.parse(requestBody(putCall![1]));
 }
 
 describe('useSaveAiRules', () => {

@@ -38,7 +38,7 @@ function useEnrichmentData(pluginId: string, feedSourceId: number | undefined) {
       const version = raw && raw !== '' ? Number.parseInt(raw, 10) : null;
       const empty: EnrichmentData = { suggestions: {}, pinned: {} };
       return {
-        payload: (data && typeof data === 'object' ? data : empty) as EnrichmentData,
+        payload: data && typeof data === 'object' ? data : empty,
         version,
       };
     },

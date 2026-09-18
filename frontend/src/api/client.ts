@@ -54,10 +54,12 @@ async function parseError(response: Response): Promise<ApiError> {
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const requestId = newRequestId();
+  const headers = new Headers(init?.headers);
+  headers.set('X-Request-ID', requestId);
   const response = await fetch(url, {
     ...init,
     credentials: 'include',
-    headers: { ...(init?.headers ?? {}), 'X-Request-ID': requestId },
+    headers,
   });
   if (!response.ok) {
     const authExempt = url.startsWith('/auth/login') || url.startsWith('/auth/password');
@@ -91,10 +93,12 @@ async function requestWithHeaders<T>(
   init?: RequestInit,
 ): Promise<{ data: T; headers: Headers }> {
   const requestId = newRequestId();
+  const headers = new Headers(init?.headers);
+  headers.set('X-Request-ID', requestId);
   const response = await fetch(url, {
     ...init,
     credentials: 'include',
-    headers: { ...(init?.headers ?? {}), 'X-Request-ID': requestId },
+    headers,
   });
   if (!response.ok) {
     const authExempt = url.startsWith('/auth/login') || url.startsWith('/auth/password');

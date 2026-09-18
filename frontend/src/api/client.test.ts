@@ -57,7 +57,7 @@ describe('api client', () => {
   });
 
   it('invokes the unauthorized handler on non-login 401', async () => {
-    const handler = vi.fn();
+    const handler = vi.fn<() => void>();
     setUnauthorizedHandler(handler);
     fetchMock.mockResolvedValueOnce(jsonResponse({ detail: 'Not authenticated' }, 401));
     await apiGet('/dashboard/summary').catch(() => undefined);
@@ -65,7 +65,7 @@ describe('api client', () => {
   });
 
   it('does not invoke the handler for a failed login', async () => {
-    const handler = vi.fn();
+    const handler = vi.fn<() => void>();
     setUnauthorizedHandler(handler);
     fetchMock.mockResolvedValueOnce(jsonResponse({ detail: 'Invalid credentials' }, 401));
     await login('a', 'b').catch(() => undefined);
@@ -73,7 +73,7 @@ describe('api client', () => {
   });
 
   it('does not invoke the handler for a failed password change', async () => {
-    const handler = vi.fn();
+    const handler = vi.fn<() => void>();
     setUnauthorizedHandler(handler);
     fetchMock.mockResolvedValueOnce(jsonResponse({ detail: 'Invalid credentials' }, 401));
     await changePassword('wrong', 'new').catch(() => undefined);
@@ -102,8 +102,8 @@ describe('api client', () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ username: 'operator' }));
     await getCurrentUser();
     const init = fetchMock.mock.calls[0][1] as RequestInit;
-    const headers = init.headers as Record<string, string>;
-    expect(headers['X-Request-ID']).toBeTruthy();
+    const headers = new Headers(init.headers);
+    expect(headers.get('X-Request-ID')).toBeTruthy();
   });
 
   it('logs failed API calls', async () => {

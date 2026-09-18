@@ -38,6 +38,15 @@ export function formatIdList(raw: string): string {
 
 export type TemplateSegment = { kind: 'lit'; text: string } | { kind: 'tok'; path: string };
 
+export function formatSampleValue(value: unknown, fallback = ''): string {
+  if (value == null) return fallback;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return `${value}`;
+  }
+  return JSON.stringify(value) ?? fallback;
+}
+
 export function compileTemplate(template: string): TemplateSegment[] {
   const segments: TemplateSegment[] = [];
   let pos = 0;
@@ -55,6 +64,8 @@ export function renderPreview(
   sample: Record<string, unknown> = { brand: 'Brand', id: '123' },
 ): string {
   return compileTemplate(template)
-    .map((seg) => (seg.kind === 'lit' ? seg.text : String(sample[seg.path] ?? `{${seg.path}}`)))
+    .map((seg) =>
+      seg.kind === 'lit' ? seg.text : formatSampleValue(sample[seg.path], `{${seg.path}}`),
+    )
     .join('');
 }

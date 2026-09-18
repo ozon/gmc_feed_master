@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { QueryClient } from '@tanstack/react-query';
 import { render } from '../../test/render';
-import { stubFetch } from '../../test/fetch';
+import { requestBody, stubFetch } from '../../test/fetch';
 import { useProductLookup } from '../../api/hooks';
 
 function jsonResponse(body: unknown, status = 200) {
@@ -58,7 +58,7 @@ describe('useProductLookup', () => {
     const bodies: unknown[] = [];
     stubFetch((url, init) => {
       if (url.includes('/products/lookup')) {
-        bodies.push(JSON.parse(String(init?.body)));
+        bodies.push(JSON.parse(requestBody(init)));
         return jsonResponse(RESPONSE);
       }
       return jsonResponse({});

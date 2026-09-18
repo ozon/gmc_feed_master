@@ -5,28 +5,28 @@ import { localeResponse } from './fetch';
 
 configure({ asyncUtilTimeout: 5000 });
 
-const { getComputedStyle } = window;
-window.getComputedStyle = (elt) => getComputedStyle(elt);
+const originalGetComputedStyle = window.getComputedStyle.bind(window);
+window.getComputedStyle = (elt) => originalGetComputedStyle(elt);
 window.HTMLElement.prototype.scrollIntoView = () => {};
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation((query) => ({
+  value: vi.fn<(query: string) => MediaQueryList>().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
+    addListener: vi.fn<MediaQueryList['addListener']>(),
+    removeListener: vi.fn<MediaQueryList['removeListener']>(),
+    addEventListener: vi.fn<MediaQueryList['addEventListener']>(),
+    removeEventListener: vi.fn<MediaQueryList['removeEventListener']>(),
+    dispatchEvent: vi.fn<MediaQueryList['dispatchEvent']>(),
   })),
 });
 
 if (!document.fonts) {
   Object.defineProperty(document, 'fonts', {
     writable: true,
-    value: { addEventListener: vi.fn(), removeEventListener: vi.fn() },
+    value: { addEventListener: vi.fn<() => void>(), removeEventListener: vi.fn<() => void>() },
   });
 }
 
@@ -76,8 +76,7 @@ if (typeof window.localStorage === 'undefined' || window.localStorage === null) 
 
 vi.stubGlobal(
   'fetch',
-  vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
+  vi.fn(async (url: string) => {
     const locale = localeResponse(url);
     if (locale) return locale;
     throw new Error(`Unexpected fetch in test: ${url}`);

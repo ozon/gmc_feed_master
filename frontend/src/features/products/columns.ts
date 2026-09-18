@@ -83,7 +83,7 @@ export function formatCellValue(
   if (id in row && id !== 'raw_data' && id !== 'processed_data') {
     const value = row[id as keyof ProductListItem];
     if (value == null) return '';
-    return String(value);
+    return typeof value === 'object' ? JSON.stringify(value) : String(value);
   }
   const source = stage === 'processed' && row.processed_data ? row.processed_data : row.raw_data;
   const raw = source?.[id];

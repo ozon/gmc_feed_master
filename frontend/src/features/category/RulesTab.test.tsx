@@ -280,8 +280,8 @@ describe('RulesTab', () => {
     await screen.findByText('c1');
     await userEvent.click(screen.getByRole('button', { name: 'Add rule' }));
     const saveButton = screen.getByRole('button', { name: 'Save' });
-    userEvent.click(saveButton);
-    userEvent.click(saveButton);
+    void userEvent.click(saveButton);
+    void userEvent.click(saveButton);
     await waitFor(() =>
       expect(
         fetchMock.mock.calls.filter(([url]) => String(url).includes('/plugins/category/validate')),

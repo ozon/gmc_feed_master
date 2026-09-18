@@ -19,8 +19,8 @@ export function MonitoringDryRunPage() {
     <Stack gap="md" pt="md">
       <DryRunForm
         run={run}
-        onResult={async (next, error) => {
-          await withLoadingNotification(
+        onResult={(next, error) => {
+          void withLoadingNotification(
             'dry-run',
             t('dryRun.running'),
             async () => {

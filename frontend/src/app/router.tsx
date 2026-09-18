@@ -1,4 +1,4 @@
-import { lazy, useEffect, useRef } from 'react';
+import { lazy, useEffect, useState } from 'react';
 import { Button, Center, Stack, Text, Title } from '@mantine/core';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -101,9 +101,7 @@ export function NotFoundPage() {
   return (
     <Center px="md">
       <Stack align="center" gap="sm" mih="50vh" justify="center">
-        <Title order={3} role="heading">
-          {t('notFoundTitle')}
-        </Title>
+        <Title order={3}>{t('notFoundTitle')}</Title>
         <Button variant="light" component={Link} to="/">
           {t('notFoundHome')}
         </Button>
@@ -204,11 +202,7 @@ export function makeUnauthorizedHandler(router: UnauthorizedRouter): () => void 
 }
 
 export function AppRouter() {
-  const routerRef = useRef<ReturnType<typeof createBrowserRouter> | null>(null);
-  if (routerRef.current === null) {
-    routerRef.current = createBrowserRouter(routes);
-  }
-  const router = routerRef.current;
+  const [router] = useState(() => createBrowserRouter(routes));
 
   useEffect(() => {
     setUnauthorizedHandler(makeUnauthorizedHandler(router));

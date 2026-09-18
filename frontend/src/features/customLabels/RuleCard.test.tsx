@@ -30,7 +30,7 @@ const RULE: ScopedSlotRule = {
 };
 
 function renderCard(over: Partial<Parameters<typeof RuleCard>[0]> = {}) {
-  const onSetIds = vi.fn();
+  const onSetIds = vi.fn<(value: string) => void>();
   const initialValue = over.value ?? '';
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   function Harness() {

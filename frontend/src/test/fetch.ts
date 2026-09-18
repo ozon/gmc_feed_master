@@ -16,15 +16,24 @@ export function localeResponse(url: string): Response | undefined {
   });
 }
 
+export function requestBody(init?: RequestInit): string {
+  return typeof init?.body === 'string' ? init.body : '';
+}
+
+export function requestUrl(input: RequestInfo | URL): string {
+  return typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+}
+
 export function stubFetch(
   handler: (url: string, init?: RequestInit) => Response | Promise<Response>,
 ) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const locale = localeResponse(url);
-    if (locale) return locale;
-    return handler(url, init);
-  });
+  const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(
+    async (url, init) => {
+      const locale = localeResponse(url);
+      if (locale) return locale;
+      return handler(url, init);
+    },
+  );
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }

@@ -6,7 +6,7 @@ import { notifications, Notifications } from '@mantine/notifications';
 import { QueryClient } from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
-import { stubFetch } from '../../test/fetch';
+import { requestBody, stubFetch } from '../../test/fetch';
 import { MonitoringDryRunPage } from './MonitoringDryRunPage';
 import { queryClient } from '../../api/queryClient';
 
@@ -53,7 +53,7 @@ describe('MonitoringDryRunPage', () => {
     let captured: { url: string; body: unknown } | null = null;
     stubFetch((url, init) => {
       if (url === '/feed-sources/1/dry-run' && init?.method === 'POST') {
-        captured = { url, body: JSON.parse(String(init.body)) };
+        captured = { url, body: JSON.parse(requestBody(init)) };
         return jsonResponse({ processed: 50, dropped: 1, findings: [] });
       }
       return jsonResponse({});

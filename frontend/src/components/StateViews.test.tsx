@@ -16,7 +16,7 @@ describe('StateViews', () => {
   });
 
   it('renders an error with a retry callback', async () => {
-    const onRetry = vi.fn();
+    const onRetry = vi.fn<() => void>();
     const user = userEvent.setup();
     render(<ErrorState onRetry={onRetry} />);
     expect(screen.getByRole('alert')).toHaveTextContent('Something went wrong.');

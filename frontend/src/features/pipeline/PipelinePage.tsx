@@ -1,5 +1,5 @@
 import { Grid, Group, Button, Stack, Title } from '@mantine/core';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useBlocker, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -63,12 +63,10 @@ export function PipelinePage() {
   const [hydrated, setHydrated] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (pipeline.data && !hydrated) {
-      setLocal(toLocal(pipeline.data.instances));
-      setHydrated(true);
-    }
-  }, [pipeline.data, hydrated]);
+  if (pipeline.data && !hydrated) {
+    setLocal(toLocal(pipeline.data.instances));
+    setHydrated(true);
+  }
 
   const serverSnapshot: LocalInstance[] = useMemo(
     () => (pipeline.data ? toLocal(pipeline.data.instances) : []),
@@ -146,7 +144,7 @@ export function PipelinePage() {
           <Button variant="default" onClick={onReset} disabled={!dirty}>
             {tCommon('actions.cancel')}
           </Button>
-          <Button onClick={onSave} loading={savePipeline.isPending} disabled={!dirty}>
+          <Button onClick={() => void onSave()} loading={savePipeline.isPending} disabled={!dirty}>
             {tCommon('actions.save')}
           </Button>
         </Group>

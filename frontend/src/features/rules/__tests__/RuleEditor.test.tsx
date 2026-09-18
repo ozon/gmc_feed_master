@@ -24,13 +24,14 @@ function makeRule(then: RuleAction[]): Rule {
     isMasterRule: false,
     isActive: true,
     when: { op: 'all' },
+    // oxlint-disable-next-line unicorn/no-thenable -- rule AST field 'then' holds actions, not a Promise thenable
     then,
   };
 }
 
 it('selecting the AI op initializes a template action with defaults', async () => {
   const user = userEvent.setup();
-  const onPatchThen = vi.fn();
+  const onPatchThen = vi.fn<(then: RuleAction[]) => void>();
   render(
     <RuleEditor
       rule={makeRule([{ op: 'set', field: 'title', value: 'x' }])}

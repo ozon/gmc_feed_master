@@ -6,7 +6,7 @@ import { Notifications, notifications } from '@mantine/notifications';
 import { QueryClient } from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
-import { stubFetch } from '../../test/fetch';
+import { requestBody, stubFetch } from '../../test/fetch';
 import { PipelinePage } from './PipelinePage';
 import { queryClient } from '../../api/queryClient';
 
@@ -243,7 +243,7 @@ describe('PipelinePage', () => {
     stubFetch((url, init) => {
       if (url === '/plugins') return jsonResponse([plugin]);
       if (url === '/feed-sources/1/pipeline' && init?.method === 'PUT') {
-        putBody = JSON.parse(String(init.body));
+        putBody = JSON.parse(requestBody(init));
         return jsonResponse(twoInstanceDoc);
       }
       if (url === '/feed-sources/1/pipeline') return jsonResponse(twoInstanceDoc);
@@ -267,7 +267,7 @@ describe('PipelinePage', () => {
       x: rowBox.left,
       y: rowBox.top,
       toJSON: () => ({}),
-    } as DOMRect);
+    });
     vi.spyOn(handle, 'getBoundingClientRect').mockReturnValue({
       ...rowBox,
       right: rowBox.left + rowBox.width,
@@ -275,7 +275,7 @@ describe('PipelinePage', () => {
       x: rowBox.left,
       y: rowBox.top,
       toJSON: () => ({}),
-    } as DOMRect);
+    });
     vi.spyOn(secondRow, 'getBoundingClientRect').mockReturnValue({
       ...secondBox,
       right: secondBox.left + secondBox.width,
@@ -283,7 +283,7 @@ describe('PipelinePage', () => {
       x: secondBox.left,
       y: secondBox.top,
       toJSON: () => ({}),
-    } as DOMRect);
+    });
 
     // activationConstraint distance: 4 — move ≥4px to activate, then drop on row 2
     await user.pointer([

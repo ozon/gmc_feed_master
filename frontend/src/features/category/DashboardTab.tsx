@@ -85,7 +85,7 @@ export function DashboardTab({
                     {t(`dashboard.buckets.${bucket}`)}
                   </Text>
                   <Text fw={700} fz="lg">
-                    {stats.data!.buckets[bucket]}
+                    {stats.data.buckets[bucket]}
                   </Text>
                 </Stack>
               </Paper>

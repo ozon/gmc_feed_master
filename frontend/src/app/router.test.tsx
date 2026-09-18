@@ -96,7 +96,7 @@ describe('unauthorized handler', () => {
           key: 'default',
         },
       },
-      navigate: vi.fn(),
+      navigate: vi.fn<() => void>(),
     };
   }
 
@@ -317,9 +317,9 @@ describe('route error boundary', () => {
   }
 
   it('renders a friendly reload state when a lazy chunk fails to load', async () => {
-    const assign = vi.fn();
+    const assign = vi.fn<() => void>();
     Object.defineProperty(window, 'location', {
-      value: { ...originalLocation, assign: assign },
+      value: { href: originalLocation.href, assign: assign },
       writable: true,
       configurable: true,
     });
@@ -336,9 +336,9 @@ describe('route error boundary', () => {
   });
 
   it('renders the same friendly boundary with reload for a non-chunk render error', async () => {
-    const assign = vi.fn();
+    const assign = vi.fn<() => void>();
     Object.defineProperty(window, 'location', {
-      value: { ...originalLocation, assign: assign },
+      value: { href: originalLocation.href, assign: assign },
       writable: true,
       configurable: true,
     });

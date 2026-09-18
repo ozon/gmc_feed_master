@@ -53,14 +53,15 @@ export function ProductsPage() {
   const [visibleColumnIds, setVisibleColumnIds] = useState<ProductColumnId[]>(
     savedColumns ?? DEFAULT_COLUMNS,
   );
-
-  useEffect(() => {
+  const [prevFeedSourceId, setPrevFeedSourceId] = useState(feedSourceId);
+  if (prevFeedSourceId !== feedSourceId) {
+    setPrevFeedSourceId(feedSourceId);
     setSelectedProductId(null);
     setSearchInput('');
     if (feedSourceId) {
       setVisibleColumnIds(loadColumnConfig(feedSourceId) ?? DEFAULT_COLUMNS);
     }
-  }, [feedSourceId]);
+  }
 
   const query = useProductList(feedSourceId ?? '', {
     page: pageParam,

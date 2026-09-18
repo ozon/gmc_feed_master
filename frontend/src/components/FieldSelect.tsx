@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CloseButton, Combobox, InputBase, useCombobox } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import {
@@ -59,7 +59,11 @@ export function FieldSelect({
   });
   const [search, setSearch] = useState(value);
   const [showAll, setShowAll] = useState(true);
-  useEffect(() => setSearch(value), [value]);
+  const [prevValue, setPrevValue] = useState(value);
+  if (prevValue !== value) {
+    setPrevValue(value);
+    setSearch(value);
+  }
 
   const query = showAll ? '' : search.trim().toLowerCase();
   const isKnown = useMemo(
@@ -93,12 +97,10 @@ export function FieldSelect({
         combobox.closeDropdown();
       }}
     >
-      <Combobox.Target>
+      <Combobox.Target withExpandedAttribute>
         <InputBase
           data-testid={dataTestId}
           aria-label={ariaLabel}
-          role="combobox"
-          aria-haspopup="listbox"
           label={label}
           description={description}
           placeholder={placeholder}

@@ -36,6 +36,7 @@ function renderUI() {
             isMasterRule: true,
             isActive: true,
             when: { op: 'all' },
+            // oxlint-disable-next-line unicorn/no-thenable -- rule AST field 'then' holds actions, not a Promise thenable
             then: [{ op: 'set', field: 'condition', value: 'new' }],
           },
         ],

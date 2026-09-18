@@ -23,7 +23,7 @@ export function LoginPage() {
       await login(username, password);
       await queryClient.invalidateQueries({ queryKey: queryKeys.session });
       const from = (location.state as { from?: string } | null)?.from ?? '/';
-      navigate(from, { replace: true });
+      void navigate(from, { replace: true });
     } catch {
       setError(t('login.error'));
     } finally {
@@ -34,7 +34,7 @@ export function LoginPage() {
   return (
     <Center h="100vh">
       <Paper withBorder p="xl" radius="md" w={360}>
-        <Stack component="form" onSubmit={submit} gap="md">
+        <Stack component="form" onSubmit={(event) => void submit(event)} gap="md">
           <div>
             <Title order={3}>{t('login.title')}</Title>
             <Text c="dimmed" size="sm">
@@ -51,7 +51,6 @@ export function LoginPage() {
             value={username}
             onChange={(event) => setUsername(event.currentTarget.value)}
             autoComplete="username"
-            autoFocus
             required
           />
           <PasswordInput

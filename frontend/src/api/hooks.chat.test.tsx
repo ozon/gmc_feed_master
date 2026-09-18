@@ -4,7 +4,7 @@ import { renderHook } from '../test/render';
 import { QueryClient } from '@tanstack/react-query';
 import { useChat } from './hooks';
 import { queryClient as defaultClient } from './queryClient';
-import { stubFetch } from '../test/fetch';
+import { requestBody, stubFetch } from '../test/fetch';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -23,7 +23,7 @@ describe('useChat', () => {
     let captured: { url: string; body: unknown } | null = null;
     stubFetch((url, init) => {
       if (url === '/chat' && init?.method === 'POST') {
-        captured = { url, body: JSON.parse(String(init.body)) };
+        captured = { url, body: JSON.parse(requestBody(init)) };
         return jsonResponse({ content: 'hi' });
       }
       return jsonResponse({});

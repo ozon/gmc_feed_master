@@ -27,7 +27,7 @@ describe('JsonSchemaForm', () => {
   });
 
   it('emits changed values through onChange', async () => {
-    const onChange = vi.fn();
+    const onChange = vi.fn<(value: unknown) => void>();
     const user = userEvent.setup();
     function Harness() {
       const [value, setValue] = useState<Record<string, unknown>>({});
@@ -49,7 +49,7 @@ describe('JsonSchemaForm', () => {
   });
 
   it('adds and removes array items', async () => {
-    const onChange = vi.fn();
+    const onChange = vi.fn<(value: unknown) => void>();
     const user = userEvent.setup();
     render(<JsonSchemaForm schema={schema} value={{ tags: ['a'] }} onChange={onChange} />);
 

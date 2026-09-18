@@ -111,6 +111,7 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
         isMasterRule,
         isActive,
         when,
+        // oxlint-disable-next-line unicorn/no-thenable -- rule AST field 'then' holds actions, not a Promise thenable
         then,
       })),
     };
@@ -230,6 +231,7 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
               if (selected) patchRule(selected.id, { when });
             }}
             onPatchThen={(then) => {
+              // oxlint-disable-next-line unicorn/no-thenable -- rule AST field 'then' holds actions, not a Promise thenable
               if (selected) patchRule(selected.id, { then });
             }}
             onToggleMaster={() => {

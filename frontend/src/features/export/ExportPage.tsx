@@ -1,6 +1,6 @@
 import { Button, Stack, Title } from '@mantine/core';
 import { IconGitCompare } from '@tabler/icons-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
@@ -31,9 +31,14 @@ export function ExportPage() {
 
   const versions = useMemo(() => history.data ?? [], [history.data]);
 
-  useEffect(() => {
+  const [prevVersions, setPrevVersions] = useState<[number | undefined, number | undefined]>([
+    versionA,
+    versionB,
+  ]);
+  if (prevVersions[0] !== versionA || prevVersions[1] !== versionB) {
+    setPrevVersions([versionA, versionB]);
     setCompared(false);
-  }, [versionA, versionB]);
+  }
 
   const diff = useExportVersionDiff(
     id,
@@ -105,7 +110,7 @@ export function ExportPage() {
         opened={rollbackTarget !== null}
         version={rollbackTarget}
         onClose={() => setRollbackTarget(null)}
-        onConfirm={onConfirmRollback}
+        onConfirm={(version) => void onConfirmRollback(version)}
         pending={rollback.isPending}
       />
     </Stack>

@@ -20,9 +20,14 @@ vi.mock('../../api/hooks', async (importOriginal) => ({
     },
     isPending: false,
     isError: false,
-    refetch: vi.fn(),
+    refetch: vi.fn<() => void>(),
   }),
-  useSchedulerJobs: () => ({ data: [], isPending: false, isError: false, refetch: vi.fn() }),
+  useSchedulerJobs: () => ({
+    data: [],
+    isPending: false,
+    isError: false,
+    refetch: vi.fn<() => void>(),
+  }),
   usePlugins: () => ({
     data: [
       {
@@ -36,7 +41,7 @@ vi.mock('../../api/hooks', async (importOriginal) => ({
     ],
     isPending: false,
     isError: false,
-    refetch: vi.fn(),
+    refetch: vi.fn<() => void>(),
   }),
   useUpdatePluginEnabled: () => ({
     mutate: (_payload: unknown, opts?: { onError?: (error: unknown) => void }) => {
@@ -44,7 +49,7 @@ vi.mock('../../api/hooks', async (importOriginal) => ({
     },
     isPending: false,
   }),
-  useSaveAdminSettings: () => ({ mutate: vi.fn(), isPending: false }),
+  useSaveAdminSettings: () => ({ mutate: vi.fn<() => void>(), isPending: false }),
 }));
 
 beforeEach(async () => {

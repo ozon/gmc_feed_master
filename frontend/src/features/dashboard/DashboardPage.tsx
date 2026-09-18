@@ -57,7 +57,7 @@ function ClientSection({ client }: { client: ClientSummary }) {
           setAddFeedOpened(false);
           setFeedName('');
           setFeedSourceUrl('');
-          navigate(`/clients/${client.id}/feeds/${feed.id}/setup`);
+          void navigate(`/clients/${client.id}/feeds/${feed.id}/setup`);
         },
         onError: (error) => notifyMutationError(error, t('saveFailed')),
       },

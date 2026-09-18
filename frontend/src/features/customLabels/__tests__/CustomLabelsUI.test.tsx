@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
-import { stubFetch } from '../../../test/fetch';
+import { requestBody, stubFetch } from '../../../test/fetch';
 import CustomLabelsUI from '../../../../../plugins/core/custom_labels/frontend/component';
 
 function jsonResponse(body: unknown, status = 200) {
@@ -224,7 +224,7 @@ describe('CustomLabelsUI operational page', () => {
         <RouterProvider router={router} />
       </QueryClientProvider>,
     );
-    expect(await screen.findByText('Mid Funnel'));
+    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
     const configUrls = captured.filter((u) => u.includes('/config'));
     expect(configUrls).toEqual([
       '/plugins/custom_labels/config',
@@ -258,7 +258,7 @@ describe('CustomLabelsUI operational page', () => {
         <RouterProvider router={router} />
       </QueryClientProvider>,
     );
-    expect(await screen.findByText('Mid Funnel'));
+    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
     // No data request was sent at all.
     expect(captured.some((u) => u.includes('/data'))).toBe(false);
     // Exactly one config request: the global tier only.
@@ -291,7 +291,7 @@ describe('CustomLabelsUI operational page', () => {
         <RouterProvider router={router} />
       </QueryClientProvider>,
     );
-    expect(await screen.findByText('Mid Funnel'));
+    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
     const configUrls = captured.filter((u) => u.includes('/config'));
     expect(configUrls).toEqual([
       '/plugins/custom_labels/config',
@@ -326,7 +326,7 @@ describe('CustomLabelsUI operational page', () => {
         <RouterProvider router={router} />
       </QueryClientProvider>,
     );
-    expect(await screen.findByText('Mid Funnel'));
+    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
     // No data request was sent at all.
     expect(captured.some((u) => u.includes('/data'))).toBe(false);
     // Exactly one config request: the global tier only.
@@ -370,7 +370,7 @@ describe('CustomLabelsUI operational page', () => {
         <RouterProvider router={router} />
       </QueryClientProvider>,
     );
-    expect(await screen.findByText('Mid Funnel'));
+    expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
     // Read-only: no Add rule, no Save for rules; inputs disabled.
     expect(screen.queryByRole('button', { name: /add rule/i })).not.toBeInTheDocument();
@@ -406,7 +406,7 @@ describe('CustomLabelsUI operational page', () => {
     const puts: { url: string; body: unknown }[] = [];
     stubFetch((url, init) => {
       if (url.includes('/config?client_id=1') && init?.method === 'PUT') {
-        puts.push({ url, body: JSON.parse(String(init.body)) });
+        puts.push({ url, body: JSON.parse(requestBody(init)) });
         return jsonResponse(CLIENT_CONFIG);
       }
       return jsonResponseFor(url);
@@ -846,7 +846,7 @@ describe('CustomLabelsUI rule actions', () => {
     const puts: { body: unknown }[] = [];
     const putHandler = (url: string, init?: RequestInit) => {
       if (url.includes('/config?client_id=1') && init?.method === 'PUT') {
-        puts.push({ body: JSON.parse(String(init.body)) });
+        puts.push({ body: JSON.parse(requestBody(init)) });
         return jsonResponse(CLIENT_CONFIG);
       }
       return jsonResponseFor(url);
@@ -905,7 +905,7 @@ describe('CustomLabelsUI tier override', () => {
     const puts: { body: unknown }[] = [];
     const putHandler = (url: string, init?: RequestInit) => {
       if (url.includes('/config?client_id=1') && init?.method === 'PUT') {
-        puts.push({ body: JSON.parse(String(init.body)) });
+        puts.push({ body: JSON.parse(requestBody(init)) });
         return jsonResponse(CLIENT_CONFIG);
       }
       return jsonResponseFor(url);

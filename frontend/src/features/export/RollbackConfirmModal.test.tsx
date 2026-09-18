@@ -29,7 +29,7 @@ describe('RollbackConfirmModal', () => {
 
   it('requires typing the version number to enable confirm', async () => {
     const user = userEvent.setup();
-    const onConfirm = vi.fn();
+    const onConfirm = vi.fn<() => void>();
     render(
       <>
         <Notifications position="top-right" limit={1} />

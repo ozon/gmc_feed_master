@@ -6,7 +6,7 @@ import { Notifications, notifications } from '@mantine/notifications';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
-import { stubFetch } from '../../test/fetch';
+import { requestBody, stubFetch } from '../../test/fetch';
 import { queryClient } from '../../api/queryClient';
 import { MappingTab } from './MappingTab';
 import type { FieldMappingDoc, RegistryAttribute } from '../../api/types';
@@ -147,7 +147,7 @@ function putBody(url: string): Record<string, unknown> | undefined {
     ([input, init]) => String(input) === url && init?.method === 'PUT',
   );
   if (!call || !call[1]?.body) return undefined;
-  return JSON.parse(String(call[1].body)) as Record<string, unknown>;
+  return JSON.parse(requestBody(call[1])) as Record<string, unknown>;
 }
 
 function postCalls(url: string): number {
@@ -585,7 +585,7 @@ describe('MappingTab', () => {
           'ship.country': { target: 'installment.months' },
         }),
       );
-      expect((body?.mappings as Record<string, unknown>)['ship']).toBeUndefined();
+      expect((body?.mappings as Record<string, unknown> | undefined)?.['ship']).toBeUndefined();
     });
   });
 
@@ -643,7 +643,7 @@ describe('MappingTab', () => {
           'ship.country': { target: 'installment.months' },
         }),
       );
-      expect((body?.mappings as Record<string, unknown>)['ship']).toBeUndefined();
+      expect((body?.mappings as Record<string, unknown> | undefined)?.['ship']).toBeUndefined();
     });
   });
 
@@ -703,7 +703,9 @@ describe('MappingTab', () => {
           ship: { target: 'brand' },
         }),
       );
-      expect((body?.mappings as Record<string, unknown>)['ship.country']).toBeUndefined();
+      expect(
+        (body?.mappings as Record<string, unknown> | undefined)?.['ship.country'],
+      ).toBeUndefined();
     });
   });
 

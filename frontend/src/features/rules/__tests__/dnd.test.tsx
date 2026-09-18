@@ -4,8 +4,11 @@ import { applyDragEnd } from '../dndUtils';
 
 describe('applyDragEnd (rules)', () => {
   const rules: Rule[] = [
+    // oxlint-disable-next-line unicorn/no-thenable -- rule AST field 'then' holds actions, not a Promise thenable
     { id: 'm1', name: 'M1', isMasterRule: true, isActive: true, when: { op: 'all' }, then: [] },
+    // oxlint-disable-next-line unicorn/no-thenable -- rule AST field 'then' holds actions, not a Promise thenable
     { id: 'a', name: 'A', isMasterRule: false, isActive: true, when: { op: 'all' }, then: [] },
+    // oxlint-disable-next-line unicorn/no-thenable -- rule AST field 'then' holds actions, not a Promise thenable
     { id: 'b', name: 'B', isMasterRule: false, isActive: true, when: { op: 'all' }, then: [] },
   ];
 

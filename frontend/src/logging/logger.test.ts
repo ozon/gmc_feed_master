@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLogger, flushLogs, newRequestId, resetLogQueue } from './logger';
 
-const beaconMock = vi.fn(() => true);
-const fetchMock = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })));
+const beaconMock = vi.fn<() => boolean>(() => true);
+const fetchMock = vi.fn<() => Promise<Response>>(() =>
+  Promise.resolve(new Response(null, { status: 204 })),
+);
 
 beforeEach(() => {
   resetLogQueue();
-  vi.stubGlobal('navigator', { ...navigator, sendBeacon: beaconMock });
+  vi.stubGlobal('navigator', { sendBeacon: beaconMock });
   vi.stubGlobal('fetch', fetchMock);
   beaconMock.mockReset();
   fetchMock.mockReset();

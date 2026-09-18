@@ -1,4 +1,4 @@
-import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Component, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ActionIcon,
   Badge,
@@ -153,7 +153,7 @@ function SortableRuleRow({
             label={t('rules.operator')}
             data={OPERATORS.map((op) => ({ value: op, label: t(`rules.operators.${op}`) }))}
             value={rule.operator}
-            onChange={(next) => next && onUpdate({ operator: next as CategoryOperator })}
+            onChange={(next) => next && onUpdate({ operator: next })}
             disabled={!editable}
           />
         </Group>
@@ -226,11 +226,9 @@ export function RulesTab({
     [globalConfig.data, clientConfig.data, hasClient],
   );
 
-  useEffect(() => {
-    if (draft === null && !globalConfig.isLoading && !clientConfig.isLoading) {
-      setDraft(baseline);
-    }
-  }, [baseline, globalConfig.isLoading, clientConfig.isLoading, draft]);
+  if (draft === null && !globalConfig.isLoading && !clientConfig.isLoading) {
+    setDraft(baseline);
+  }
 
   const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(baseline);
   const blocker = useBlocker(dirty);

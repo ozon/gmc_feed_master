@@ -59,7 +59,7 @@ beforeEach(() => {
 
 describe('registry/fields hooks', () => {
   it('useRegistryAttributes passes feed_source_id and returns descriptors', async () => {
-    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+    fetchMock.mockImplementation(async (input) => {
       const url = String(input);
       if (url === '/registry/attributes?feed_source_id=5') return jsonResponse(registryFixture);
       return jsonResponse([]);
@@ -70,7 +70,7 @@ describe('registry/fields hooks', () => {
   });
 
   it('useRegistryAttributes without id keeps the bare URL', async () => {
-    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+    fetchMock.mockImplementation(async (input) => {
       expect(String(input)).toBe('/registry/attributes');
       return jsonResponse(registryFixture.map((a) => ({ ...a, max_repeats: 0 })));
     });
@@ -79,7 +79,7 @@ describe('registry/fields hooks', () => {
   });
 
   it('useFeedSourceFields returns descriptor array', async () => {
-    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+    fetchMock.mockImplementation(async (input) => {
       expect(String(input)).toBe('/feed-sources/7/fields');
       return jsonResponse(fieldsFixture);
     });
@@ -89,7 +89,7 @@ describe('registry/fields hooks', () => {
   });
 
   it('useTriggerRun invalidates the registry attributes prefix (directive 3)', async () => {
-    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+    fetchMock.mockImplementation(async (input) => {
       const url = String(input);
       if (url === '/registry/attributes?feed_source_id=5') return jsonResponse(registryFixture);
       if (url === '/feed-sources/5/run') return jsonResponse({ run_id: 1 });

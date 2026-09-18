@@ -52,7 +52,7 @@ export function PluginPage() {
 
   useEffect(() => {
     if (config.data && !hasSeededRef.current) {
-      setFormValue(config.data as Record<string, unknown>);
+      setFormValue(config.data);
       hasSeededRef.current = true;
     }
   }, [config.data]);

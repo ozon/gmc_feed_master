@@ -24,7 +24,7 @@ export function ClientModal({
   const updateClient = useUpdateClient();
 
   const form = useForm({
-    defaultValues: { name: '', status: 'active' } as ClientFormValues,
+    defaultValues: { name: '', status: 'active' },
     onSubmit: async ({ value }) => {
       try {
         if (client) {

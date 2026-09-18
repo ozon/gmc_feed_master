@@ -32,10 +32,12 @@ export function useSyncedScroll(
   textareaRef: RefObject<HTMLTextAreaElement | null>,
   previewRef: RefObject<HTMLDivElement | null>,
   onScrollTopChange: (top: number) => void,
-  rebindKey: unknown = undefined,
+  rebindKey?: unknown,
 ): void {
   const callbackRef = useRef(onScrollTopChange);
-  callbackRef.current = onScrollTopChange;
+  useEffect(() => {
+    callbackRef.current = onScrollTopChange;
+  });
   useEffect(() => {
     const textarea = textareaRef.current;
     const preview = previewRef.current;

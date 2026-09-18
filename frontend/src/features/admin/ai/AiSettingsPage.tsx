@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   Badge,
@@ -32,10 +32,11 @@ export function AiSettingsPage() {
   const updateSettings = useUpdateAiSettings();
   const clearCache = useClearAiCache();
   const [draft, setDraft] = useState<AiSettings | null>(null);
-
-  useEffect(() => {
-    if (settingsQuery.data) setDraft(settingsQuery.data);
-  }, [settingsQuery.data]);
+  const [prevSettingsData, setPrevSettingsData] = useState(settingsQuery.data);
+  if (settingsQuery.data && settingsQuery.data !== prevSettingsData) {
+    setPrevSettingsData(settingsQuery.data);
+    setDraft(settingsQuery.data);
+  }
 
   if (settingsQuery.isPending) return <LoadingState />;
   if (settingsQuery.isError) {
@@ -63,9 +64,7 @@ export function AiSettingsPage() {
             data-testid="ai-cache-backend-select"
             disabled={redisOverride}
             value={draft.ai_cache_type}
-            onChange={(value) =>
-              patch({ ai_cache_type: (value ?? 'local') as AiSettings['ai_cache_type'] })
-            }
+            onChange={(value) => patch({ ai_cache_type: value ?? 'local' })}
             data={[
               { value: 'local', label: t('ai.settings.cacheTypeOptions.local') },
               { value: 'disk', label: t('ai.settings.cacheTypeOptions.disk') },

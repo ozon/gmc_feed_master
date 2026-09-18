@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
-import { stubFetch } from '../../test/fetch';
+import { requestBody, stubFetch } from '../../test/fetch';
 import { ManualTab } from './ManualTab';
 
 function jsonResponse(body: unknown, status = 200) {
@@ -265,7 +265,7 @@ describe('ManualTab', () => {
           String(url).startsWith('/plugins/category/data?client_id=1') &&
           (init?.method ?? 'GET') === 'PUT',
       )
-      .map(([, init]) => JSON.parse(String(init?.body)) as { assignments: Record<string, string> });
+      .map(([, init]) => JSON.parse(requestBody(init)) as { assignments: Record<string, string> });
     expect(putBodies).toHaveLength(2);
     expect(putBodies[0].assignments).toEqual({ p1: '166' });
     expect(putBodies[1].assignments).toEqual({ other: 'editor', p1: '166' });

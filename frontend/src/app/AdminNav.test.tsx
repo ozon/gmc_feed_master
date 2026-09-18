@@ -8,7 +8,7 @@ import { queryKeys } from '../api/queryKeys';
 
 vi.mock('../api/client', async () => {
   const actual = await vi.importActual<typeof import('../api/client')>('../api/client');
-  return { ...actual, setUnauthorizedHandler: vi.fn() };
+  return { ...actual, setUnauthorizedHandler: vi.fn<() => void>() };
 });
 
 const summary = {

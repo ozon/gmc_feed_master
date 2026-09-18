@@ -16,6 +16,7 @@ describe('newRule', () => {
       isMasterRule: false,
       isActive: true,
       when: { op: 'all' },
+      // oxlint-disable-next-line unicorn/no-thenable -- rule AST field 'then' holds actions, not a Promise thenable
       then: [],
     });
   });
@@ -39,6 +40,7 @@ describe('normalizeConfig', () => {
       isMasterRule: true,
       isActive: false,
       when: { op: 'equals', field: 'title', arg: 'x' },
+      // oxlint-disable-next-line unicorn/no-thenable -- rule AST field 'then' holds actions, not a Promise thenable
       then: [{ op: 'set', field: 'condition', value: 'new' }],
     };
     const out = normalizeConfig({ rules: [valid, { id: 'bad' }, 'junk'] });
@@ -53,6 +55,7 @@ describe('normalizeConfig', () => {
           id: 'r1',
           name: 'n',
           when: { op: 'nope' },
+          // oxlint-disable-next-line unicorn/no-thenable -- rule AST field 'then' holds actions, not a Promise thenable
           then: [{ op: 'zap', field: 'f' }],
         },
       ],

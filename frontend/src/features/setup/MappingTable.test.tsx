@@ -8,6 +8,8 @@ import { queryClient } from '../../api/queryClient';
 import { MappingTable } from './MappingTable';
 import type { RegistryAttribute, SourceField } from '../../api/types';
 
+type TableProps = React.ComponentProps<typeof MappingTable>;
+
 const sourceFields: SourceField[] = [
   { name: 'title', kind: 'scalar', sub_fields: [], max_repeats: 0 },
   { name: 'description', kind: 'scalar', sub_fields: [], max_repeats: 0 },
@@ -89,11 +91,11 @@ function defaultProps(overrides?: Partial<React.ComponentProps<typeof MappingTab
     sourceFields,
     mappings,
     registryAttributes,
-    onChange: vi.fn(),
+    onChange: vi.fn<NonNullable<TableProps['onChange']>>(),
     errors: {},
     customFields: [],
-    onAddCustom: vi.fn(),
-    onRemoveCustom: vi.fn(),
+    onAddCustom: vi.fn<NonNullable<TableProps['onAddCustom']>>(),
+    onRemoveCustom: vi.fn<NonNullable<TableProps['onRemoveCustom']>>(),
     ...overrides,
   };
 }
@@ -140,7 +142,7 @@ describe('MappingTable', () => {
 
   it('calls onChange when a target is selected', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
+    const onChange = vi.fn<NonNullable<TableProps['onChange']>>();
     render(<MappingTable {...defaultProps({ onChange })} />);
 
     await waitFor(() => {
@@ -222,7 +224,7 @@ describe('MappingTable', () => {
 
   it('sub-row select calls onChange with dotted key', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
+    const onChange = vi.fn<NonNullable<TableProps['onChange']>>();
     render(<MappingTable {...defaultProps({ onChange })} />);
     await waitFor(() => {
       expect(screen.getByText('installment_data')).toBeInTheDocument();
@@ -275,7 +277,7 @@ describe('MappingTable', () => {
 
   it('clearing a sub-row select calls onChange with null', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
+    const onChange = vi.fn<NonNullable<TableProps['onChange']>>();
     render(
       <MappingTable
         {...defaultProps({
@@ -324,12 +326,12 @@ describe('MappingTable', () => {
   });
 
   it('renders custom field rows with remove controls', async () => {
-    const onRemoveCustom = vi.fn();
+    const onRemoveCustom = vi.fn<NonNullable<TableProps['onRemoveCustom']>>();
     render(
       <MappingTable
         {...defaultProps({
           customFields: ['my_custom_field'],
-          onAddCustom: vi.fn(),
+          onAddCustom: vi.fn<NonNullable<TableProps['onAddCustom']>>(),
           onRemoveCustom,
         })}
       />,
@@ -343,12 +345,12 @@ describe('MappingTable', () => {
 
   it('remove control calls onRemoveCustom with the name', async () => {
     const user = userEvent.setup();
-    const onRemoveCustom = vi.fn();
+    const onRemoveCustom = vi.fn<NonNullable<TableProps['onRemoveCustom']>>();
     render(
       <MappingTable
         {...defaultProps({
           customFields: ['my_custom_field'],
-          onAddCustom: vi.fn(),
+          onAddCustom: vi.fn<NonNullable<TableProps['onAddCustom']>>(),
           onRemoveCustom,
         })}
       />,
@@ -363,7 +365,11 @@ describe('MappingTable', () => {
   it('add row: Add disabled until valid name and target chosen', async () => {
     render(
       <MappingTable
-        {...defaultProps({ customFields: [], onAddCustom: vi.fn(), onRemoveCustom: vi.fn() })}
+        {...defaultProps({
+          customFields: [],
+          onAddCustom: vi.fn<NonNullable<TableProps['onAddCustom']>>(),
+          onRemoveCustom: vi.fn<NonNullable<TableProps['onRemoveCustom']>>(),
+        })}
       />,
     );
     const addBtn = await screen.findByRole('button', { name: /add custom field/i });
@@ -374,7 +380,11 @@ describe('MappingTable', () => {
     const user = userEvent.setup();
     render(
       <MappingTable
-        {...defaultProps({ customFields: [], onAddCustom: vi.fn(), onRemoveCustom: vi.fn() })}
+        {...defaultProps({
+          customFields: [],
+          onAddCustom: vi.fn<NonNullable<TableProps['onAddCustom']>>(),
+          onRemoveCustom: vi.fn<NonNullable<TableProps['onRemoveCustom']>>(),
+        })}
       />,
     );
     const nameInput = await screen.findByRole('textbox', { name: /field name/i });
@@ -385,10 +395,14 @@ describe('MappingTable', () => {
 
   it('add row: valid name + target enables Add and calls onAddCustom', async () => {
     const user = userEvent.setup();
-    const onAddCustom = vi.fn();
+    const onAddCustom = vi.fn<NonNullable<TableProps['onAddCustom']>>();
     render(
       <MappingTable
-        {...defaultProps({ customFields: [], onAddCustom, onRemoveCustom: vi.fn() })}
+        {...defaultProps({
+          customFields: [],
+          onAddCustom,
+          onRemoveCustom: vi.fn<NonNullable<TableProps['onRemoveCustom']>>(),
+        })}
       />,
     );
     const nameInput = await screen.findByRole('textbox', { name: /field name/i });
@@ -412,8 +426,8 @@ describe('MappingTable', () => {
       <MappingTable
         {...defaultProps({
           customFields: ['taken'],
-          onAddCustom: vi.fn(),
-          onRemoveCustom: vi.fn(),
+          onAddCustom: vi.fn<NonNullable<TableProps['onAddCustom']>>(),
+          onRemoveCustom: vi.fn<NonNullable<TableProps['onRemoveCustom']>>(),
         })}
       />,
     );
@@ -428,7 +442,7 @@ describe('MappingTable', () => {
 
   it('custom row target select calls onChange with the custom name', async () => {
     const user = userEvent.setup();
-    const onChange = vi.fn();
+    const onChange = vi.fn<NonNullable<TableProps['onChange']>>();
     render(
       <MappingTable
         {...defaultProps({
@@ -438,8 +452,8 @@ describe('MappingTable', () => {
             my_custom_field: { target: 'title', origin: 'manual' },
           },
           onChange,
-          onAddCustom: vi.fn(),
-          onRemoveCustom: vi.fn(),
+          onAddCustom: vi.fn<NonNullable<TableProps['onAddCustom']>>(),
+          onRemoveCustom: vi.fn<NonNullable<TableProps['onRemoveCustom']>>(),
         })}
       />,
     );
@@ -453,12 +467,12 @@ describe('MappingTable', () => {
 
   it('observed/custom shadow: exactly one row with indicator, remove still reachable', async () => {
     const user = userEvent.setup();
-    const onRemoveCustom = vi.fn();
+    const onRemoveCustom = vi.fn<NonNullable<TableProps['onRemoveCustom']>>();
     render(
       <MappingTable
         {...defaultProps({
           customFields: ['title'],
-          onAddCustom: vi.fn(),
+          onAddCustom: vi.fn<NonNullable<TableProps['onAddCustom']>>(),
           onRemoveCustom,
         })}
       />,
@@ -478,8 +492,8 @@ describe('MappingTable', () => {
         {...defaultProps({
           sourceFields: [],
           customFields: ['solo_custom'],
-          onAddCustom: vi.fn(),
-          onRemoveCustom: vi.fn(),
+          onAddCustom: vi.fn<NonNullable<TableProps['onAddCustom']>>(),
+          onRemoveCustom: vi.fn<NonNullable<TableProps['onRemoveCustom']>>(),
         })}
       />,
     );

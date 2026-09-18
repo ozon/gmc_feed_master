@@ -64,7 +64,7 @@ export function FeedSourceCard({
         notifySuccess(t('deleted'));
         setDeleteOpened(false);
         if (location.pathname.startsWith(`/clients/${clientId}/feeds/${feed.id}`)) {
-          navigate('/');
+          void navigate('/');
         }
       },
       onError: (error) => notifyMutationError(error, t('deleteFailed')),
@@ -77,17 +77,16 @@ export function FeedSourceCard({
       p="md"
       component="a"
       href={`/clients/${clientId}/feeds/${feed.id}`}
-      role="button"
       tabIndex={0}
       style={{ cursor: 'pointer', display: 'block' }}
       onClick={(event) => {
         event.preventDefault();
-        navigate(`/clients/${clientId}/feeds/${feed.id}`);
+        void navigate(`/clients/${clientId}/feeds/${feed.id}`);
       }}
       onKeyDown={(event) => {
         if ((event.key === 'Enter' || event.key === ' ') && event.target === event.currentTarget) {
           event.preventDefault();
-          navigate(`/clients/${clientId}/feeds/${feed.id}`);
+          void navigate(`/clients/${clientId}/feeds/${feed.id}`);
         }
       }}
     >
@@ -108,7 +107,7 @@ export function FeedSourceCard({
               aria-label={t('qualityBadge', { count: qualityBadge.count })}
               onClick={(event) => {
                 event.stopPropagation();
-                navigate(`/clients/${clientId}/feeds/${feed.id}/monitoring/findings`);
+                void navigate(`/clients/${clientId}/feeds/${feed.id}/monitoring/findings`);
               }}
             >
               {t('qualityBadge', { count: qualityBadge.count })}
@@ -119,7 +118,7 @@ export function FeedSourceCard({
             aria-label={t('openSettings')}
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/clients/${clientId}/feeds/${feed.id}/setup`);
+              void navigate(`/clients/${clientId}/feeds/${feed.id}/setup`);
             }}
           >
             <IconSettings size={16} />

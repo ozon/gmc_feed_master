@@ -64,7 +64,7 @@ export function useSaveAiRules(feedSourceId: number | undefined) {
         }));
       return apiPut<FeedSourceRow>(`/feed-sources/${feedSourceId}`, {
         configuration: {
-          ...((current?.configuration ?? {}) as Record<string, unknown>),
+          ...current?.configuration,
           ai_rules: aiRules,
         },
       });

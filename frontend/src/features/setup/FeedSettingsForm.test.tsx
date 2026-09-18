@@ -5,7 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Notifications, notifications } from '@mantine/notifications';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
-import { stubFetch } from '../../test/fetch';
+import { requestBody, stubFetch } from '../../test/fetch';
 import { FeedSettingsForm } from './FeedSettingsForm';
 import { queryClient } from '../../api/queryClient';
 import type { FeedSourceRow } from '../../api/types';
@@ -49,7 +49,7 @@ function putBody(url: string): Record<string, unknown> | undefined {
     ([input, init]) => String(input) === url && init?.method === 'PUT',
   );
   if (!call || !call[1]?.body) return undefined;
-  return JSON.parse(String(call[1].body)) as Record<string, unknown>;
+  return JSON.parse(requestBody(call[1])) as Record<string, unknown>;
 }
 
 beforeEach(async () => {

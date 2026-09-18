@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   Badge,
@@ -48,15 +48,16 @@ export function PluginConfigPanel({
   const { t: tCommon } = useTranslation('common');
   const [draft, setDraft] = useState<Record<string, unknown>>(instance?.configuration ?? {});
   const [selectedTier, setSelectedTier] = useState<ConfigTier>('feed_source');
-
-  useEffect(() => {
+  const [prevConfiguration, setPrevConfiguration] = useState(instance?.configuration);
+  if (prevConfiguration !== instance?.configuration) {
+    setPrevConfiguration(instance?.configuration);
     setDraft(instance?.configuration ?? {});
-  }, [instance?.configuration]);
-
-  // Reset the tier when switching instances — each plugin starts at Feed scope.
-  useEffect(() => {
+  }
+  const [prevInstanceId, setPrevInstanceId] = useState(instance?.clientId);
+  if (prevInstanceId !== instance?.clientId) {
+    setPrevInstanceId(instance?.clientId);
     setSelectedTier('feed_source');
-  }, [instance?.clientId]);
+  }
 
   if (!instance) {
     return (
@@ -115,7 +116,7 @@ export function PluginConfigPanel({
               size="xs"
               data={tiers.map((value) => ({ value, label: tCommon(`scope.${value}`) }))}
               value={tier}
-              onChange={(value) => setSelectedTier(value as ConfigTier)}
+              onChange={(value) => setSelectedTier(value)}
               data-testid="config-tier-switcher"
             />
           </Group>

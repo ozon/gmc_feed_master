@@ -5,6 +5,7 @@ export function LoadingState() {
   const { t } = useTranslation();
   return (
     <Center py="xl">
+      {/* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- Mantine Loader is a styled SVG spinner; native <progress> cannot render it, and role="progressbar" is the correct indeterminate ARIA */}
       <Loader role="progressbar" aria-label={t('state.loading')} />
     </Center>
   );

@@ -32,7 +32,7 @@ export function MonitoringRunsPage() {
       <Button
         leftSection={<IconPlayerPlay size={16} />}
         variant="light"
-        onClick={() => void handleTriggerRun()}
+        onClick={() => handleTriggerRun()}
         loading={triggerRun.isPending}
       >
         {t('runs.trigger')}

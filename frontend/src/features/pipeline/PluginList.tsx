@@ -107,6 +107,7 @@ function InstanceRow({
         >
           <IconGripVertical size={16} />
         </ActionIcon>
+        {/* oxlint-disable-next-line react/static-components -- getPluginIcon returns a stable component from a static map, not a per-render component */}
         <Icon size={16} />
         <Text size="sm" fw={selected ? 600 : 400} style={{ flex: 1 }}>
           {instance.name}

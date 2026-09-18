@@ -6,7 +6,7 @@ import { notifications, Notifications } from '@mantine/notifications';
 import { QueryClient } from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
-import { stubFetch } from '../../test/fetch';
+import { requestUrl, stubFetch } from '../../test/fetch';
 import { MonitoringRunsPage } from './MonitoringRunsPage';
 import { queryClient } from '../../api/queryClient';
 
@@ -41,8 +41,9 @@ beforeEach(() => {
 
 function postCalls(url: string): number {
   const fm = vi.mocked(globalThis.fetch);
-  return fm.mock.calls.filter(([input, init]) => String(input) === url && init?.method === 'POST')
-    .length;
+  return fm.mock.calls.filter(
+    ([input, init]) => requestUrl(input) === url && init?.method === 'POST',
+  ).length;
 }
 
 function renderAt() {
