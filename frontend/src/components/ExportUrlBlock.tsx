@@ -27,6 +27,11 @@ export function ExportUrlBlock({
   const setToken = useSetExportToken(feedSourceId);
   const currentToken = exportUrl.split('/export/')[1]?.replace(/\.xml$/, '') ?? '';
   const [tokenValue, setTokenValue] = useState(currentToken);
+  const [prevUrl, setPrevUrl] = useState(exportUrl);
+  if (prevUrl !== exportUrl) {
+    setPrevUrl(exportUrl);
+    setTokenValue(currentToken);
+  }
   const [rotateOpened, setRotateOpened] = useState(false);
   const [saveOpened, setSaveOpened] = useState(false);
 
@@ -68,7 +73,7 @@ export function ExportUrlBlock({
             onChange={(event) => setTokenValue(event.currentTarget.value)}
             data-testid="token-input"
           />
-          {isWeakToken(tokenValue) ? (
+          {tokenValue.length > 0 && isWeakToken(tokenValue) ? (
             <Text size="xs" c="dimmed">
               {t('weakHint')}
             </Text>

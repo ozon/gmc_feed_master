@@ -7,6 +7,7 @@ import i18n from '../i18n';
 import { render } from '../test/render';
 import { stubFetch } from '../test/fetch';
 import { ExportUrlBlock } from './ExportUrlBlock';
+import { ExportUrlCard } from '../features/setup/ExportUrlCard';
 import { queryClient } from '../api/queryClient';
 
 function jsonResponse(body: unknown, status = 200) {
@@ -47,9 +48,11 @@ describe('ExportUrlBlock', () => {
         return jsonResponse({ username: 'u', role: 'user', client_ids: null });
       return jsonResponse({});
     });
-    renderWithQuery(<ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/1/abc" />);
+    renderWithQuery(
+      <ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/abc.xml" />,
+    );
 
-    expect(screen.getByDisplayValue('http://localhost/export/1/abc')).toHaveAttribute('readonly');
+    expect(screen.getByDisplayValue('http://localhost/export/abc.xml')).toHaveAttribute('readonly');
     expect(screen.getByRole('button', { name: /rotate/i })).toBeInTheDocument();
   });
 
@@ -61,13 +64,15 @@ describe('ExportUrlBlock', () => {
       if (url === '/feed-sources/1/export-token/rotate') {
         return jsonResponse({
           export_token: 'new123',
-          export_url: 'http://localhost/export/1/new123',
+          export_url: 'http://localhost/export/new123.xml',
         });
       }
       return jsonResponse({});
     });
 
-    renderWithQuery(<ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/1/abc" />);
+    renderWithQuery(
+      <ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/abc.xml" />,
+    );
 
     await user.click(screen.getByRole('button', { name: /rotate/i }));
 
@@ -86,7 +91,9 @@ describe('ExportUrlBlock', () => {
       return jsonResponse({});
     });
 
-    renderWithQuery(<ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/1/abc" />);
+    renderWithQuery(
+      <ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/abc.xml" />,
+    );
 
     await user.click(screen.getByRole('button', { name: /rotate/i }));
     await screen.findByRole('button', { name: 'Confirm' });
@@ -106,7 +113,9 @@ describe('ExportUrlBlock', () => {
       return jsonResponse({});
     });
 
-    renderWithQuery(<ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/1/abc" />);
+    renderWithQuery(
+      <ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/abc.xml" />,
+    );
 
     await user.click(screen.getByRole('button', { name: /rotate/i }));
     const confirm = await screen.findByRole('button', { name: 'Confirm' });
@@ -121,9 +130,41 @@ describe('ExportUrlBlock', () => {
         return jsonResponse({ username: 'u', role: 'admin', client_ids: null });
       return jsonResponse({});
     });
-    renderWithQuery(<ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/1/abc" />);
-    expect(await screen.findByTestId('token-input')).toBeInTheDocument();
+    renderWithQuery(
+      <ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/abc.xml" />,
+    );
+    expect(await screen.findByTestId('token-input')).toHaveValue('abc');
     expect(screen.getByTestId('token-save')).toBeInTheDocument();
+  });
+
+  it('updates the token field after a rotate refreshes the parent feed source', async () => {
+    const user = userEvent.setup();
+    let detailFetches = 0;
+    fetchMock = stubFetch((url) => {
+      if (url === '/auth/me')
+        return jsonResponse({ username: 'u', role: 'admin', client_ids: null });
+      if (url === '/feed-sources/1') {
+        detailFetches += 1;
+        const token = detailFetches > 1 ? 'new123' : 'abc';
+        return jsonResponse({ export_url: `http://localhost/export/${token}.xml` });
+      }
+      if (url === '/feed-sources/1/export-token/rotate') {
+        return jsonResponse({
+          export_token: 'new123',
+          export_url: 'http://localhost/export/new123.xml',
+        });
+      }
+      return jsonResponse({});
+    });
+    renderWithQuery(<ExportUrlCard feedSourceId={1} />);
+
+    expect(await screen.findByTestId('token-input')).toHaveValue('abc');
+
+    await user.click(screen.getByRole('button', { name: /generate random/i }));
+    const confirm = await screen.findByRole('button', { name: 'Confirm' });
+    await user.click(confirm);
+
+    await waitFor(() => expect(screen.getByTestId('token-input')).toHaveValue('new123'));
   });
 
   it('hides the token editor for non-admins', async () => {
@@ -131,7 +172,9 @@ describe('ExportUrlBlock', () => {
       if (url === '/auth/me') return jsonResponse({ username: 'u', role: 'user', client_ids: [1] });
       return jsonResponse({});
     });
-    renderWithQuery(<ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/1/abc" />);
+    renderWithQuery(
+      <ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/abc.xml" />,
+    );
     expect(await screen.findByRole('button', { name: /rotate/i })).toBeInTheDocument();
     expect(screen.queryByTestId('token-input')).not.toBeInTheDocument();
   });
@@ -151,7 +194,9 @@ describe('ExportUrlBlock', () => {
       }
       return jsonResponse({});
     });
-    renderWithQuery(<ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/1/abc" />);
+    renderWithQuery(
+      <ExportUrlBlock feedSourceId={1} exportUrl="http://localhost/export/abc.xml" />,
+    );
 
     const input = await screen.findByTestId('token-input');
     await user.clear(input);
