@@ -39,9 +39,34 @@ class DiffProductOut(BaseModel):
     fields: list[DiffFieldOut]
 
 
+class FindingRuleDiffOut(BaseModel):
+    code: str
+    severity: str
+    added: int
+    fixed: int
+    persisted: int
+    sample_added: list[str]
+    sample_fixed: list[str]
+    sample_persisted: list[str]
+
+
+class FindingsDeltaTotals(BaseModel):
+    added: int
+    fixed: int
+    persisted: int
+
+
+class FindingsDiffOut(BaseModel):
+    a_qc: bool
+    b_qc: bool
+    totals: FindingsDeltaTotals
+    rules: list[FindingRuleDiffOut]
+
+
 class DiffOut(BaseModel):
     version: int
     against: int
     added: list[str]
     removed: list[str]
     changed: list[DiffProductOut]
+    findings: FindingsDiffOut

@@ -5,7 +5,7 @@ import logging
 import secrets
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +17,15 @@ from ..ingest.xml_reader import parse_xml
 from ..models.client import Client
 from ..models.export import ExportRun, ExportVersion
 from ..models.feed_source import FeedSource
-from ..schemas.export import ExportFindingCounts, ExportSource, ExportVersionOut
+from ..models.quality import QualityFinding
+from ..schemas.export import (
+    ExportFindingCounts,
+    ExportSource,
+    ExportVersionOut,
+    FindingRuleDiffOut,
+    FindingsDeltaTotals,
+    FindingsDiffOut,
+)
 from .renderer import ChannelMetadata, render_feed
 from .store import ExportFileStore
 
@@ -247,9 +255,43 @@ class ExportService:
             if against_version is None:
                 raise LookupError(f"version {against} not found")
 
+            run_ids: dict[int, int | None] = {
+                number: ingestion_run_id
+                for number, ingestion_run_id in (
+                    await session.execute(
+                        select(ExportVersion.version_number, ExportRun.ingestion_run_id)
+                        .join(ExportRun, ExportVersion.export_run_id == ExportRun.id)
+                        .where(
+                            ExportVersion.feed_source_id == feed_source_id,
+                            ExportVersion.version_number.in_([version_number, against]),
+                        )
+                    )
+                ).all()
+            }
+            run_a = run_ids.get(against)
+            run_b = run_ids.get(version_number)
+            findings_by_run: dict[int | None, list[QualityFinding]] = {}
+            present = [run_id for run_id in (run_a, run_b) if run_id is not None]
+            if present:
+                rows = (await session.execute(
+                    select(QualityFinding).where(
+                        QualityFinding.feed_source_id == feed_source_id,
+                        QualityFinding.ingestion_run_id.in_(present),
+                    )
+                )).scalars()
+                for row in rows:
+                    findings_by_run.setdefault(row.ingestion_run_id, []).append(row)
+
         new_products = self._load_version_products(feed_source_id, version_number, registry)
         old_products = self._load_version_products(feed_source_id, against, registry)
-        return _field_diff(old_products, new_products, version_number, against)
+        result = _field_diff(old_products, new_products, version_number, against)
+        result["findings"] = _findings_diff(
+            findings_by_run.get(run_a, []),
+            findings_by_run.get(run_b, []),
+            a_qc=run_a is not None,
+            b_qc=run_b is not None,
+        ).model_dump()
+        return result
 
     def _load_version_products(
         self, feed_source_id: int, version_number: int, registry: RegistryDocument
@@ -443,3 +485,67 @@ def _field_diff(
         "removed": removed,
         "changed": changed,
     }
+
+
+FINDING_SAMPLE_CAP = 20
+_SEVERITY_RANK = {"critical": 0, "warning": 1, "info": 2}
+
+
+class _FindingRow(Protocol):
+    code: str
+    severity: str
+    product_id: str
+    field: str | None
+
+
+def _findings_diff(
+    a: Sequence[_FindingRow],
+    b: Sequence[_FindingRow],
+    a_qc: bool,
+    b_qc: bool,
+) -> FindingsDiffOut:
+    if not (a_qc and b_qc):
+        return FindingsDiffOut(
+            a_qc=a_qc,
+            b_qc=b_qc,
+            totals=FindingsDeltaTotals(added=0, fixed=0, persisted=0),
+            rules=[],
+        )
+    a_map = {(row.code, row.product_id, row.field): row for row in a}
+    b_map = {(row.code, row.product_id, row.field): row for row in b}
+    added = set(b_map) - set(a_map)
+    fixed = set(a_map) - set(b_map)
+    persisted = set(a_map) & set(b_map)
+
+    severity_by_code: dict[str, str] = {}
+    for row in (*a, *b):
+        current = severity_by_code.get(row.code)
+        if current is None or _SEVERITY_RANK.get(row.severity, 3) < _SEVERITY_RANK.get(current, 3):
+            severity_by_code[row.code] = row.severity
+
+    def products(keys: set[tuple[str, str, str | None]], code: str) -> list[str]:
+        return sorted({key[1] for key in keys if key[0] == code})
+
+    rules = [
+        FindingRuleDiffOut(
+            code=code,
+            severity=severity_by_code.get(code, "info"),
+            added=sum(1 for key in added if key[0] == code),
+            fixed=sum(1 for key in fixed if key[0] == code),
+            persisted=sum(1 for key in persisted if key[0] == code),
+            sample_added=products(added, code)[:FINDING_SAMPLE_CAP],
+            sample_fixed=products(fixed, code)[:FINDING_SAMPLE_CAP],
+            sample_persisted=products(persisted, code)[:FINDING_SAMPLE_CAP],
+        )
+        for code in {key[0] for key in added | fixed | persisted}
+    ]
+    rules.sort(key=lambda rule: (_SEVERITY_RANK.get(rule.severity, 3), rule.code))
+
+    return FindingsDiffOut(
+        a_qc=a_qc,
+        b_qc=b_qc,
+        totals=FindingsDeltaTotals(
+            added=len(added), fixed=len(fixed), persisted=len(persisted)
+        ),
+        rules=rules,
+    )

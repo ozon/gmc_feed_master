@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.clock import TestClock
@@ -11,7 +11,14 @@ from app.config import Settings
 from app.export.service import ExportService
 from app.export.store import ExportFileStore
 from app.main import create_app
-from app.models import Client, ExportRun, ExportVersion, FeedSource, IngestionRun
+from app.models import (
+    Client,
+    ExportRun,
+    ExportVersion,
+    FeedSource,
+    IngestionRun,
+    QualityFinding,
+)
 from app.models.session import Session
 from app.models.user import User
 from app.persistence.users import create_user, seed_initial_user
@@ -319,3 +326,70 @@ async def test_set_export_token_rejects_invalid_values(app_factory, bad):
         f"/feed-sources/{feed_source_id}/export-token", json={"export_token": bad}
     )
     assert resp.status_code == 422
+
+
+async def _ingestion_run_for_version(factory, feed_source_id, version_number):
+    async with factory() as session:
+        return (await session.execute(
+            select(ExportRun.ingestion_run_id)
+            .join(ExportVersion, ExportVersion.export_run_id == ExportRun.id)
+            .where(
+                ExportVersion.feed_source_id == feed_source_id,
+                ExportVersion.version_number == version_number,
+            )
+        )).scalar_one()
+
+
+async def test_diff_reports_findings_added_fixed_persisted(app_factory):
+    feed_source_id = await _seed_versions(app_factory, [BASE, CHANGED])
+    _, factory, _ = app_factory
+    run_one = await _ingestion_run_for_version(factory, feed_source_id, 1)
+    run_two = await _ingestion_run_for_version(factory, feed_source_id, 2)
+
+    async with factory() as session, session.begin():
+        session.add(QualityFinding(
+            feed_source_id=feed_source_id, ingestion_run_id=run_one,
+            product_id="A", severity="critical", code="enum_values",
+            field="availability", message="m", details={},
+        ))
+        session.add(QualityFinding(
+            feed_source_id=feed_source_id, ingestion_run_id=run_one,
+            product_id="B", severity="warning", code="gtin_mpn",
+            field="gtin", message="m", details={},
+        ))
+        session.add(QualityFinding(
+            feed_source_id=feed_source_id, ingestion_run_id=run_two,
+            product_id="A", severity="critical", code="enum_values",
+            field="availability", message="m", details={},
+        ))
+        session.add(QualityFinding(
+            feed_source_id=feed_source_id, ingestion_run_id=run_two,
+            product_id="C", severity="info", code="image_requirements",
+            field="image_link", message="m", details={},
+        ))
+
+    client = await logged_in_client(app_factory)
+    resp = await client.get(f"/feed-sources/{feed_source_id}/export-history/2/diff?against=1")
+    assert resp.status_code == 200
+    findings = resp.json()["findings"]
+    assert findings["a_qc"] is True and findings["b_qc"] is True
+    assert findings["totals"] == {"added": 1, "fixed": 1, "persisted": 1}
+    by_code = {rule["code"]: rule for rule in findings["rules"]}
+    assert by_code["enum_values"]["persisted"] == 1
+    assert by_code["gtin_mpn"]["fixed"] == 1
+    assert by_code["image_requirements"]["added"] == 1
+    assert next(rule["code"] for rule in findings["rules"]) == "enum_values"  # critical first
+
+
+async def test_diff_marks_rollback_side_not_qc(app_factory):
+    feed_source_id = await _seed_versions(app_factory, [BASE, CHANGED])
+    client = await logged_in_client(app_factory)
+    rollback = await client.post(f"/feed-sources/{feed_source_id}/export-history/1/rollback")
+    assert rollback.status_code == 201
+
+    resp = await client.get(f"/feed-sources/{feed_source_id}/export-history/3/diff?against=2")
+    assert resp.status_code == 200
+    findings = resp.json()["findings"]
+    assert findings["b_qc"] is False
+    assert findings["totals"] == {"added": 0, "fixed": 0, "persisted": 0}
+    assert findings["rules"] == []
