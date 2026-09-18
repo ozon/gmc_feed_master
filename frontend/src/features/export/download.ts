@@ -12,5 +12,5 @@ export async function downloadVersionXml(
   anchor.href = url;
   anchor.download = `feed-${feedSourceId}-v${version}.xml`;
   anchor.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
