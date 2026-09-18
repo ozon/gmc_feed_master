@@ -52,7 +52,7 @@ async function parseError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, detail, errors, detailObject);
 }
 
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
+async function fetchWithContext(url: string, init?: RequestInit): Promise<Response> {
   const requestId = newRequestId();
   const headers = new Headers(init?.headers);
   headers.set('X-Request-ID', requestId);
@@ -79,6 +79,11 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     );
     throw error;
   }
+  return response;
+}
+
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetchWithContext(url, init);
   if (response.status === 204) return undefined as T;
   const contentType = response.headers.get('content-type');
   if (contentType && !contentType.includes('application/json')) {
@@ -137,6 +142,11 @@ export function apiGet<T>(url: string): Promise<T> {
 
 export function apiGetWithHeaders<T>(url: string): Promise<{ data: T; headers: Headers }> {
   return requestWithHeaders<T>(url);
+}
+
+export async function apiGetText(url: string): Promise<string> {
+  const response = await fetchWithContext(url);
+  return response.text();
 }
 
 export function apiPost<T>(url: string, body?: unknown): Promise<T> {

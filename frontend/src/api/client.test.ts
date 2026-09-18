@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiError,
   apiGet,
+  apiGetText,
   apiPut,
   changePassword,
   getCurrentUser,
@@ -112,5 +113,27 @@ describe('api client', () => {
     const spy = vi.spyOn(logger, 'createLogger');
     await apiGet('/dashboard/summary').catch(() => undefined);
     expect(spy).toHaveBeenCalledWith('api');
+  });
+});
+
+describe('apiGetText', () => {
+  it('returns the response body as text and sends X-Request-ID', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response('<g:id>A</g:id>', {
+        status: 200,
+        headers: { 'Content-Type': 'application/xml' },
+      }),
+    );
+    await expect(apiGetText('/feed-sources/1/export-history/1/content')).resolves.toBe(
+      '<g:id>A</g:id>',
+    );
+    const init = fetchMock.mock.calls[0][1];
+    const headers = new Headers(init?.headers);
+    expect(headers.get('X-Request-ID')).toBeTruthy();
+  });
+
+  it('throws ApiError on a non-OK response', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('nope', { status: 404 }));
+    await expect(apiGetText('/x')).rejects.toBeInstanceOf(ApiError);
   });
 });
