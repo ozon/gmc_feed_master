@@ -186,7 +186,7 @@ export function ExportVersionDiff({
   if (isPending) return <LoadingState />;
   if (isError) return <ErrorState onRetry={onRetry} />;
   if (!diff) return <EmptyState message={t('selectVersions')} />;
-  const findingsTotals = diff.findings.totals;
+  const findingsTotals = diff.findings?.totals ?? { added: 0, fixed: 0, persisted: 0 };
   const hasChanges =
     diff.added.length > 0 ||
     diff.removed.length > 0 ||
@@ -194,8 +194,7 @@ export function ExportVersionDiff({
     findingsTotals.added > 0 ||
     findingsTotals.fixed > 0 ||
     findingsTotals.persisted > 0 ||
-    !diff.findings.a_qc ||
-    !diff.findings.b_qc;
+    (diff.findings !== undefined && (!diff.findings.a_qc || !diff.findings.b_qc));
   if (!hasChanges) return <EmptyState message={t('noChanges')} />;
 
   const totalFields = diff.changed.reduce((sum, product) => sum + product.fields.length, 0);
@@ -253,7 +252,7 @@ export function ExportVersionDiff({
         <Text size="sm" fw={600} mb={4}>
           {t('findingsDiff.title')}
         </Text>
-        <FindingsDiffSection findings={diff.findings} />
+        {diff.findings ? <FindingsDiffSection findings={diff.findings} /> : null}
       </Card>
 
       {diff.added.length > 0 ? (

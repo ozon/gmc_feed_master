@@ -30,7 +30,19 @@ describe('useExportVersionDiff', () => {
     stubFetch((url) => {
       if (url.startsWith('/feed-sources/1/export-history/3/diff')) {
         captured = url;
-        return jsonResponse({ version: 3, against: 2, added: [], removed: [], changed: [] });
+        return jsonResponse({
+          version: 3,
+          against: 2,
+          added: [],
+          removed: [],
+          changed: [],
+          findings: {
+            a_qc: true,
+            b_qc: true,
+            totals: { added: 0, fixed: 0, persisted: 0 },
+            rules: [],
+          },
+        });
       }
       return jsonResponse({});
     });

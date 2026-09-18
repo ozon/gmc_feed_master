@@ -555,13 +555,15 @@ async def _ai_qc_context(
     from sqlalchemy import func
     from sqlalchemy import select as sa_select
 
+    from ..models.export import ExportRun
+    from ..models.ingestion import IngestionRun
     from ..models.quality import QualityFinding
 
     async with session_factory() as session:
         latest_run_id = (await session.execute(
-            sa_select(func.max(QualityFinding.ingestion_run_id)).where(
-                QualityFinding.feed_source_id == feed_source.id
-            )
+            sa_select(func.max(IngestionRun.id))
+            .join(ExportRun, ExportRun.ingestion_run_id == IngestionRun.id)
+            .where(IngestionRun.feed_source_id == feed_source.id)
         )).scalar_one_or_none()
         if latest_run_id is None:
             ids: frozenset[str] = frozenset()

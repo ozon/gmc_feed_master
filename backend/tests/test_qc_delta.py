@@ -146,6 +146,26 @@ async def test_persist_findings_delta_uses_previous_ingestion_run(session_factor
     assert (third.fixed_finding_count, third.new_finding_count, third.remaining_finding_count) == (0, 1, 0)
 
 
+async def test_persist_findings_skips_runs_without_export(session_factory, feed_source_id):
+    async with session_factory() as session, session.begin():
+        session.add(IngestionRun(id=102, feed_source_id=feed_source_id, status="failed"))
+
+    await persist_findings(
+        session_factory, feed_source_id, 100,
+        [Finding(rule_id="r", severity="critical", field="title", message="m", product_id="p1")], 1,
+    )
+    # run 101 exists but never reached QC (no ExportRun)
+    await persist_findings(
+        session_factory, feed_source_id, 102,
+        [Finding(rule_id="r", severity="critical", field="title", message="m", product_id="p1")], 1,
+    )
+
+    rows = await _export_rows(session_factory, feed_source_id)
+    assert len(rows) == 2
+    second = rows[1]
+    assert (second.fixed_finding_count, second.new_finding_count, second.remaining_finding_count) == (0, 0, 1)
+
+
 async def test_ai_qc_context_scopes_to_latest_run(session_factory, feed_source_id):
     from app.models.feed_source import FeedSource
     from app.pipeline.steps import _ai_qc_context
@@ -153,6 +173,11 @@ async def test_ai_qc_context_scopes_to_latest_run(session_factory, feed_source_i
     async with session_factory() as session, session.begin():
         feed = await session.get(FeedSource, feed_source_id)
         feed.configuration = {"ai_qc": {"enabled": True, "budget": 10}}
+        for run_id in (100, 101):
+            session.add(ExportRun(
+                feed_source_id=feed_source_id, ingestion_run_id=run_id,
+                status="completed", product_count=1,
+            ))
         session.add(QualityFinding(
             feed_source_id=feed_source_id, ingestion_run_id=100, product_id="old",
             severity="info", code="ai_policy_check", field=None, message="m", details={},

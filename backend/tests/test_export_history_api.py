@@ -390,6 +390,7 @@ async def test_diff_marks_rollback_side_not_qc(app_factory):
     resp = await client.get(f"/feed-sources/{feed_source_id}/export-history/3/diff?against=2")
     assert resp.status_code == 200
     findings = resp.json()["findings"]
+    assert findings["a_qc"] is True
     assert findings["b_qc"] is False
     assert findings["totals"] == {"added": 0, "fixed": 0, "persisted": 0}
     assert findings["rules"] == []

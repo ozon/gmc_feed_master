@@ -291,7 +291,7 @@ export type DiffOut = {
   added: string[];
   removed: string[];
   changed: DiffProductOut[];
-  findings: FindingsDiffOut;
+  findings?: FindingsDiffOut;
 };
 
 export type FeedSourceFieldsResponse = {

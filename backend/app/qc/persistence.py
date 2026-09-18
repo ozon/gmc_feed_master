@@ -21,7 +21,9 @@ async def persist_findings(
     async with session_factory() as session, session.begin():
         # Delta vs the previous run's persisted findings (key: rule/product/field).
         previous_run_id = (await session.execute(
-            select(func.max(IngestionRun.id)).where(
+            select(func.max(IngestionRun.id))
+            .join(ExportRun, ExportRun.ingestion_run_id == IngestionRun.id)
+            .where(
                 IngestionRun.feed_source_id == feed_source_id,
                 IngestionRun.id < ingestion_run_id,
             )

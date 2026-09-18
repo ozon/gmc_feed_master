@@ -34,6 +34,18 @@ def test_groups_by_rule_and_computes_buckets():
     assert rule_b.sample_added == ["p3"]
 
 
+def test_equal_severity_sorts_by_code():
+    a = []
+    b = [
+        _Row("rule_b", "info", "p1", None),
+        _Row("rule_a", "info", "p2", None),
+    ]
+
+    result = _findings_diff(a, b, a_qc=True, b_qc=True)
+
+    assert [r.code for r in result.rules] == ["rule_a", "rule_b"]
+
+
 def test_caps_samples_but_keeps_totals():
     a = []
     b = [_Row("rule_a", "info", f"p{i}", None) for i in range(25)]
