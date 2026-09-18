@@ -124,3 +124,23 @@ async def test_persist_findings_counts_fixed_new_remaining(session_factory, feed
     first, second = rows
     assert (first.fixed_finding_count, first.new_finding_count, first.remaining_finding_count) == (0, 2, 0)
     assert (second.fixed_finding_count, second.new_finding_count, second.remaining_finding_count) == (1, 1, 1)
+
+
+async def test_persist_findings_delta_uses_previous_ingestion_run(session_factory, feed_source_id):
+    async with session_factory() as session, session.begin():
+        session.add(IngestionRun(id=102, feed_source_id=feed_source_id, status="completed"))
+
+    await persist_findings(
+        session_factory, feed_source_id, 100,
+        [Finding(rule_id="r", severity="critical", field="title", message="m", product_id="p1")], 1,
+    )
+    await persist_findings(session_factory, feed_source_id, 101, [], 1)  # clean run
+    await persist_findings(
+        session_factory, feed_source_id, 102,
+        [Finding(rule_id="r", severity="critical", field="gtin", message="m", product_id="p2")], 1,
+    )
+
+    first, second, third = await _export_rows(session_factory, feed_source_id)
+    assert (first.fixed_finding_count, first.new_finding_count, first.remaining_finding_count) == (0, 1, 0)
+    assert (second.fixed_finding_count, second.new_finding_count, second.remaining_finding_count) == (1, 0, 0)
+    assert (third.fixed_finding_count, third.new_finding_count, third.remaining_finding_count) == (0, 1, 0)

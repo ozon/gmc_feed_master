@@ -6,6 +6,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.export import ExportRun
+from ..models.ingestion import IngestionRun
 from ..models.quality import QualityFinding
 from .engine import Finding
 
@@ -20,9 +21,9 @@ async def persist_findings(
     async with session_factory() as session, session.begin():
         # Delta vs the previous run's persisted findings (key: rule/product/field).
         previous_run_id = (await session.execute(
-            select(func.max(QualityFinding.ingestion_run_id)).where(
-                QualityFinding.feed_source_id == feed_source_id,
-                QualityFinding.ingestion_run_id < ingestion_run_id,
+            select(func.max(IngestionRun.id)).where(
+                IngestionRun.feed_source_id == feed_source_id,
+                IngestionRun.id < ingestion_run_id,
             )
         )).scalar_one_or_none()
 
