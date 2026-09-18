@@ -88,6 +88,8 @@ export function ExportPage() {
             onSelectA={setVersionA}
             onSelectB={setVersionB}
             onRollback={setRollbackTarget}
+            onPreview={() => undefined}
+            onDownload={() => undefined}
           />
           {versionA !== undefined && versionB !== undefined && !compared && (
             <Button

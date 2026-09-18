@@ -1,5 +1,5 @@
 import { ActionIcon, Badge, Group, Radio, Table, Text } from '@mantine/core';
-import { IconArrowBackUp } from '@tabler/icons-react';
+import { IconArrowBackUp, IconDownload, IconEye } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import type { ExportVersionOut } from '../../api/types';
@@ -11,6 +11,8 @@ type Props = {
   onSelectA: (v: number) => void;
   onSelectB: (v: number) => void;
   onRollback: (v: number) => void;
+  onPreview: (v: number) => void;
+  onDownload: (v: number) => void;
 };
 
 const SOURCE_COLOR: Record<string, string> = {
@@ -26,6 +28,8 @@ export function ExportVersionList({
   onSelectA,
   onSelectB,
   onRollback,
+  onPreview,
+  onDownload,
 }: Props) {
   const { t, i18n } = useTranslation('export');
   return (
@@ -40,10 +44,11 @@ export function ExportVersionList({
           <Table.Th>{t('columns.diffA')}</Table.Th>
           <Table.Th>{t('columns.diffB')}</Table.Th>
           <Table.Th>{t('columns.rollback')}</Table.Th>
+          <Table.Th>{t('columns.actions')}</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {versions.map((version) => (
+        {versions.map((version, index) => (
           <Table.Tr
             key={version.version_number}
             data-testid={`version-row-${version.version_number}`}
@@ -56,11 +61,19 @@ export function ExportVersionList({
                     {t('notQcd')}
                   </Badge>
                 ) : null}
+                {index === 0 ? (
+                  <Badge color="green" variant="light" size="xs" data-testid="live-badge">
+                    {t('liveBadge')}
+                  </Badge>
+                ) : null}
               </Group>
             </Table.Td>
             <Table.Td>
               <Text size="sm">
                 {dayjs(version.created_at).locale(i18n.language).format('L LTS')}
+                <Text component="span" c="dimmed" size="xs" ml={6}>
+                  {dayjs(version.created_at).locale(i18n.language).fromNow()}
+                </Text>
               </Text>
             </Table.Td>
             <Table.Td>
@@ -135,6 +148,26 @@ export function ExportVersionList({
               >
                 <IconArrowBackUp size={16} />
               </ActionIcon>
+            </Table.Td>
+            <Table.Td>
+              <Group gap={4} wrap="nowrap">
+                <ActionIcon
+                  variant="subtle"
+                  onClick={() => onPreview(version.version_number)}
+                  aria-label={`${t('preview.openFor')} ${version.version_number}`}
+                  data-testid={`preview-${version.version_number}`}
+                >
+                  <IconEye size={16} />
+                </ActionIcon>
+                <ActionIcon
+                  variant="subtle"
+                  onClick={() => onDownload(version.version_number)}
+                  aria-label={`${t('download.version')} ${version.version_number}`}
+                  data-testid={`download-${version.version_number}`}
+                >
+                  <IconDownload size={16} />
+                </ActionIcon>
+              </Group>
             </Table.Td>
           </Table.Tr>
         ))}

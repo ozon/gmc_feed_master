@@ -2,6 +2,9 @@ import '@testing-library/jest-dom/vitest';
 import { beforeAll, vi } from 'vitest';
 import { configure } from '@testing-library/react';
 import { localeResponse } from './fetch';
+import { registerRelativeTime } from '../i18n/relativeTime';
+
+registerRelativeTime();
 
 configure({ asyncUtilTimeout: 5000 });
 
