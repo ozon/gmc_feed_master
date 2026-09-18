@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from registry.loader import load_registry
@@ -49,6 +49,27 @@ async def export_history(
     async with session.begin():
         await require_feed_source(session, feed_source_id)
     return await _service(request, settings).list_versions(feed_source_id)
+
+
+@router.get("/feed-sources/{feed_source_id}/export-history/{version_number}/content")
+async def export_version_content(
+    feed_source_id: int,
+    version_number: int,
+    request: Request,
+    _user: str = Depends(require_user),
+    db_session: AsyncSession | None = Depends(get_db_session),
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    session = _require_db(db_session)
+    async with session.begin():
+        await require_feed_source(session, feed_source_id)
+    try:
+        content = await _service(request, settings).version_content(
+            feed_source_id, version_number
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return Response(content=content, media_type="application/xml")
 
 
 @router.get(

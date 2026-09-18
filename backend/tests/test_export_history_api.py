@@ -192,3 +192,44 @@ async def test_diff_404_cases(app_factory):
     assert (await client.get(f"/feed-sources/{feed_source_id}/export-history/9/diff")).status_code == 404
     assert (await client.get(f"/feed-sources/{feed_source_id}/export-history/1/diff")).status_code == 404
     assert (await client.get(f"/feed-sources/{feed_source_id}/export-history/1/diff?against=9")).status_code == 404
+
+
+async def test_version_content_returns_stored_xml(app_factory):
+    feed_source_id = await _seed_versions(app_factory, [BASE, CHANGED])
+    client = await logged_in_client(app_factory)
+
+    resp = await client.get(f"/feed-sources/{feed_source_id}/export-history/1/content")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("application/xml")
+    assert "<g:id>A</g:id>" in resp.text
+    assert "<g:id>B</g:id>" not in resp.text
+
+
+async def test_version_content_404_when_version_unknown(app_factory):
+    feed_source_id = await _seed_versions(app_factory, [BASE])
+    client = await logged_in_client(app_factory)
+
+    resp = await client.get(f"/feed-sources/{feed_source_id}/export-history/9/content")
+    assert resp.status_code == 404
+
+
+async def test_version_content_404_when_file_pruned(app_factory):
+    feed_source_id = await _seed_versions(app_factory, [BASE])
+    _, _, settings = app_factory
+    ExportFileStore(settings.export_dir).delete_version_file(feed_source_id, 1)
+    client = await logged_in_client(app_factory)
+
+    resp = await client.get(f"/feed-sources/{feed_source_id}/export-history/1/content")
+    assert resp.status_code == 404
+
+
+async def test_version_content_requires_auth_and_known_feed_source(app_factory):
+    feed_source_id = await _seed_versions(app_factory, [BASE])
+    app, _, _ = app_factory
+    anonymous = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    assert (
+        await anonymous.get(f"/feed-sources/{feed_source_id}/export-history/1/content")
+    ).status_code == 401
+
+    client = await logged_in_client(app_factory)
+    assert (await client.get("/feed-sources/999999/export-history/1/content")).status_code == 404

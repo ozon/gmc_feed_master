@@ -169,6 +169,7 @@ flowchart TD
 - Every export creates `ExportVersion` (retained last N, default 30)
 - **Atomic publish**: write to temp file → `os.replace()` — Google never sees partial file
 - **Rollback**: `POST /feed-sources/{id}/export-history/{v}/rollback` — append-only, creates new version from old state
+- **Version content**: `GET /feed-sources/{id}/export-history/{v}/content` — authenticated raw XML of a single version (preview/download)
 - **Public endpoint**: `GET /export/{token}.xml` — unauthenticated, non-guessable token, rotated via `POST /feed-sources/{id}/export-token/rotate`
 
 ## Retention Rules

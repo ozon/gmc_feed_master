@@ -264,6 +264,23 @@ class ExportService:
             if product.get("id")
         }
 
+    async def version_content(self, feed_source_id: int, version_number: int) -> bytes:
+        async with self._session_factory() as session:
+            version = (
+                await session.execute(
+                    select(ExportVersion).where(
+                        ExportVersion.feed_source_id == feed_source_id,
+                        ExportVersion.version_number == version_number,
+                    )
+                )
+            ).scalar_one_or_none()
+        if version is None:
+            raise LookupError(f"version {version_number} not found")
+        data = self._store.read_version(feed_source_id, version_number)
+        if data is None:
+            raise LookupError(f"version file {version_number} missing")
+        return data
+
     async def rollback(
         self, feed_source_id: int, version_number: int, registry: RegistryDocument
     ) -> ExportVersionOut:

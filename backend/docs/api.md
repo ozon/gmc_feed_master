@@ -137,6 +137,7 @@ Versioned, immutable prompt templates per task type. Editing = creating a new ve
 ### Export History
 - `GET /feed-sources/{id}/export-history` — list versions (`source` ∈ `scheduled` | `manual` | `rollback`)
 - `GET /feed-sources/{id}/export-history/{v}/diff?against={v2}` — field-based diff (per product + attribute, old vs new)
+- `GET /feed-sources/{id}/export-history/{v}/content` — raw stored XML for a version, `application/xml`. 404 when the version row or its stored file is gone (retention-pruned). Auth + scope required.
 - `POST /feed-sources/{id}/export-history/{v}/rollback` — append-only rollback, creates new version
 
 ### Export Token
