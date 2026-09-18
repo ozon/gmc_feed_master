@@ -201,6 +201,7 @@ async def test_ai_qc_context_enabled_loads_budget_and_previous_ids(isolated_data
     from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
     from app.models.client import Client
+    from app.models.export import ExportRun
     from app.models.feed_source import FeedSource
     from app.models.ingestion import IngestionRun
     from app.models.quality import QualityFinding
@@ -220,6 +221,11 @@ async def test_ai_qc_context_enabled_loads_budget_and_previous_ids(isolated_data
         session.add(feed_source)
         await session.flush()
         session.add(IngestionRun(id=1, feed_source_id=feed_source.id, status="completed"))
+        await session.flush()
+        session.add(ExportRun(
+            feed_source_id=feed_source.id, ingestion_run_id=1,
+            status="completed", product_count=1,
+        ))
         session.add_all([
             QualityFinding(
                 feed_source_id=feed_source.id, ingestion_run_id=1,
