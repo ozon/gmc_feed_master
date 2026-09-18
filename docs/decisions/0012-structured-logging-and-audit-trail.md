@@ -68,4 +68,6 @@ fixed window (60 requests / 60 s per user), which assumes the single-worker depl
 `Caddyfile` and `Caddyfile.dev`, and from the Vite dev proxy, so the chat widget could not
 reach the backend through either proxy. A `handle /chat` block was added to both Caddyfiles
 and `/chat` to the Vite proxy (same-day follow-up); `/chat` is now reachable in dev and
-production.
+production. A hardening follow-up also escaped LIKE wildcards in the viewer search, evicts
+stale rate-limit windows, and caps the shipped `message` at the API's 2000-char limit while
+truncating context values at 2048.
