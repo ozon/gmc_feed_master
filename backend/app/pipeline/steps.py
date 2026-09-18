@@ -552,17 +552,27 @@ async def _ai_qc_context(
     cfg = (feed_source.configuration or {}).get("ai_qc") or {}
     if not cfg.get("enabled") or ai_service is None:
         return None, feed_source.client_id, 0, frozenset()
+    from sqlalchemy import func
     from sqlalchemy import select as sa_select
 
     from ..models.quality import QualityFinding
 
     async with session_factory() as session:
-        ids = frozenset((await session.execute(
-            sa_select(QualityFinding.product_id).where(
-                QualityFinding.feed_source_id == feed_source.id,
-                QualityFinding.code == "ai_policy_check",
+        latest_run_id = (await session.execute(
+            sa_select(func.max(QualityFinding.ingestion_run_id)).where(
+                QualityFinding.feed_source_id == feed_source.id
             )
-        )).scalars())
+        )).scalar_one_or_none()
+        if latest_run_id is None:
+            ids: frozenset[str] = frozenset()
+        else:
+            ids = frozenset((await session.execute(
+                sa_select(QualityFinding.product_id).where(
+                    QualityFinding.feed_source_id == feed_source.id,
+                    QualityFinding.code == "ai_policy_check",
+                    QualityFinding.ingestion_run_id == latest_run_id,
+                )
+            )).scalars())
     budget = max(1, int(cfg.get("budget", 50)))
     return ai_service, feed_source.client_id, budget, ids
 

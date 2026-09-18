@@ -144,3 +144,26 @@ async def test_persist_findings_delta_uses_previous_ingestion_run(session_factor
     assert (first.fixed_finding_count, first.new_finding_count, first.remaining_finding_count) == (0, 1, 0)
     assert (second.fixed_finding_count, second.new_finding_count, second.remaining_finding_count) == (1, 0, 0)
     assert (third.fixed_finding_count, third.new_finding_count, third.remaining_finding_count) == (0, 1, 0)
+
+
+async def test_ai_qc_context_scopes_to_latest_run(session_factory, feed_source_id):
+    from app.models.feed_source import FeedSource
+    from app.pipeline.steps import _ai_qc_context
+
+    async with session_factory() as session, session.begin():
+        feed = await session.get(FeedSource, feed_source_id)
+        feed.configuration = {"ai_qc": {"enabled": True, "budget": 10}}
+        session.add(QualityFinding(
+            feed_source_id=feed_source_id, ingestion_run_id=100, product_id="old",
+            severity="info", code="ai_policy_check", field=None, message="m", details={},
+        ))
+        session.add(QualityFinding(
+            feed_source_id=feed_source_id, ingestion_run_id=101, product_id="new",
+            severity="info", code="ai_policy_check", field=None, message="m", details={},
+        ))
+
+    async with session_factory() as session:
+        feed = await session.get(FeedSource, feed_source_id)
+        _, _, _, previous_ids = await _ai_qc_context(session_factory, feed, object())
+
+    assert previous_ids == frozenset({"new"})

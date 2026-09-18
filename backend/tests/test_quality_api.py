@@ -214,3 +214,36 @@ async def test_quality_findings_no_run_zero_delta(app_factory):
     assert data["prev_counts"] is None
     assert data["delta"] == {"fixed": 0, "new": 0, "remaining": 0}
     assert data["product_count"] == 0
+
+
+async def test_quality_findings_excludes_older_runs(app_factory):
+    _, factory = app_factory
+    _, feed_source_id = await _seed_feed_source(app_factory)
+
+    async with factory() as session, session.begin():
+        old_run = IngestionRun(feed_source_id=feed_source_id, status="completed")
+        new_run = IngestionRun(feed_source_id=feed_source_id, status="completed")
+        session.add_all([old_run, new_run])
+        await session.flush()
+
+        session.add(ExportRun(
+            feed_source_id=feed_source_id, ingestion_run_id=new_run.id,
+            status="completed", product_count=1,
+            critical_finding_count=1, warning_finding_count=0, info_finding_count=0,
+        ))
+        session.add(QualityFinding(
+            feed_source_id=feed_source_id, ingestion_run_id=old_run.id,
+            product_id="OLD", severity="critical", code="old_rule",
+            field="title", message="old", details={},
+        ))
+        session.add(QualityFinding(
+            feed_source_id=feed_source_id, ingestion_run_id=new_run.id,
+            product_id="NEW", severity="critical", code="new_rule",
+            field="title", message="new", details={},
+        ))
+
+    client = await logged_in_client(app_factory)
+    resp = await client.get(f"/feed-sources/{feed_source_id}/quality-findings")
+    assert resp.status_code == 200
+    findings = resp.json()["findings"]
+    assert [f["code"] for f in findings] == ["new_rule"]

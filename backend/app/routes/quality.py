@@ -53,7 +53,10 @@ async def get_quality_findings(
 
     findings_result = await session.execute(
         select(QualityFinding)
-        .where(QualityFinding.feed_source_id == feed_source_id)
+        .where(
+            QualityFinding.feed_source_id == feed_source_id,
+            QualityFinding.ingestion_run_id == export_run.ingestion_run_id,
+        )
         .order_by(QualityFinding.id)
     )
     rows = list(findings_result.scalars().all())
