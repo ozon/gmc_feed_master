@@ -1464,3 +1464,37 @@ Inline code review of the cycle found one critical and one important issue; both
 - **Follow-up (resolved):** the pre-existing `POST /chat` backend route was absent from both `Caddyfile` and `Caddyfile.dev` (and the Vite proxy), so the chat widget could not reach the backend through either proxy. A `handle /chat` block was added to both Caddyfiles and `/chat` to the Vite proxy in the same-day follow-up, along with three deferred minors: the export-publish audit is now best-effort (a failed audit no longer marks an already-published run failed), the admin log-viewer text filters are debounced, and frontend string truncation is aligned to the backend's 2048 chars for context values (the shipped `message` stays capped at the API's 2000 chars). A second hardening pass escaped LIKE wildcards in the `q` search filter and evicts stale per-user rate-limit windows.
 
 **Rationale:** A full call-site rewrite was the alternative and was rejected. Bridging structlog through stdlib gets structured JSON and correlation without touching hundreds of loggers, and the contextvar layer means `run_id`/`request_id`/`actor` appear on the existing lines for free. One table with a `category` column keeps audit and error queries in one indexed store while the `/logs/*` prefix avoids the SPA route collision.
+
+## 2026-09-18
+
+### Frontend Oxc lint/format toolchain (supersedes the 2026-09-09 "eslint adoption" entry)
+
+**Topic:** Frontend lint and format tooling under the TypeScript 7 pin.
+
+**Decision:** Adopt the Oxc toolchain, pinned to exact resolved versions (no
+`^` ranges): `oxlint@1.83.0`, `oxfmt@0.68.0`, `oxlint-tsgolint@7.0.2002`.
+Lint is `oxlint --type-aware src` (type-aware via the transitive
+`oxlint-tsgolint`); format is `oxfmt` scoped to `frontend/src`, with
+`format:check` gating CI. Config lives in `frontend/.oxlintrc.json`
+(type-aware, `style: off`) and `frontend/.oxfmtrc.json`
+(`printWidth: 100`, `singleQuote: true`). The warning baseline is **338**
+(measured; set as `options.maxWarnings`) with **0 errors**; warnings must never
+grow, and lowering the baseline is a deliberate edit that needs a note here.
+ESLint is never adopted.
+
+**Rationale:** The 2026-09-09 eslint adoption was blocked because
+`typescript-eslint` hard-fails on the repo's `typescript 7.0.2` pin (TS 7's
+native package ships no JS AST API; tracking issue
+`typescript-eslint/typescript-eslint#10940`), and the operator keeps TS 7.0.2.
+Oxc's self-contained parsers need no TS compiler API, so the blocker
+disappears; `oxlint-tsgolint` **requires TS ≥ 7.0** (which the repo has) and
+recovers the type-aware `typescript-eslint` rule classes, while oxlint natively
+ports `react-hooks/rules-of-hooks`, `react-hooks/exhaustive-deps`, and the
+react-refresh `react/only-export-components` rule — the same rule classes
+review-remediation Task 14 wanted. This entry **supersedes** the 2026-09-09
+"eslint adoption" entry; that approach is not returning.
+
+**`oxfmt` caveat:** `oxfmt` is beta. It is pinned exact and checked with
+`--check` in CI, so a version bump is a deliberate, reviewed commit rather than
+an automatic upgrade; beta formatter output can change between releases, so an
+open range is unsafe.

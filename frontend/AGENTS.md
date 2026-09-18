@@ -11,6 +11,8 @@ npm run dev              # Vite dev server (copy .env.example to .env.local; cer
 npm run build            # typecheck + production build
 npm run test             # vitest
 npm run typecheck        # tsc -b
+npm run lint             # oxlint (type-aware); errors fail, warnings capped
+npm run format:check     # oxfmt check; npm run format to write
 ```
 
 ## Key conventions
@@ -23,6 +25,7 @@ npm run typecheck        # tsc -b
 - **Logging** — `src/logging/logger.ts`. Use `createLogger(scope)`; `debug`/`info` stay in the console, `warn`/`error` are also batched and shipped to `POST /logs/client` (redacted client-side). Report unexpected throws with `captureException(error, { scope, ...context })`. Never use bare `console.error` for shipped errors, and never log secrets/PII (the denylist is a backstop, not a licence).
 - **Error boundaries** — `AppErrorBoundary` (`src/app/AppErrorBoundary.tsx`) wraps the app and reports render errors; `PluginErrorBoundary` keeps per-plugin isolation (ADR-0004) and also reports. Add a boundary around any new independent surface rather than letting a throw unmount the app.
 - **Correlation** — `src/api/client.ts` attaches an `X-Request-ID` per request and logs failed calls with it; don't create raw `fetch` calls that bypass `client.ts` (they lose correlation and auth handling).
+- **Lint & format** — formatting is owned by `oxfmt` (`src` only) and lint by `oxlint` (type-aware via `oxlint-tsgolint`); do not add ESLint or Prettier. Use a narrow `// oxlint-disable-next-line <rule> -- <reason>` only when a rule is genuinely wrong for a line; new warnings are not allowed (the baseline is pinned in `.oxlintrc.json`).
 
 ## Testing
 - Unit: `src/**/*.test.tsx` with vitest + React Testing Library
