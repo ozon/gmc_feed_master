@@ -1498,3 +1498,21 @@ review-remediation Task 14 wanted. This entry **supersedes** the 2026-09-09
 `--check` in CI, so a version bump is a deliberate, reviewed commit rather than
 an automatic upgrade; beta formatter output can change between releases, so an
 open range is unsafe.
+
+### Production container deployment
+
+**Topic:** Packaging and releasing the production stack.
+
+**Decision:** Production runs `docker-compose.prod.yml` (postgres, redis,
+backend, frontend, caddy, backup) from private multi-arch GHCR images
+(`ghcr.io/ozon/gmc-feed-backend`, `ghcr.io/ozon/gmc-feed-frontend`) built by a
+tag-only (`v*`) GitHub Actions workflow. Deploy/rollback are manual via
+`IMAGE_TAG` in `.deploy.env`; secrets stay in `.env`. Migrations run on backend
+startup. Redis is an always-on AI cache. Postgres backups run daily with 7-day
+retention. `alembic` is now a main dependency.
+
+**Rationale:** Immutable images plus a tag-triggered build give reproducible
+releases without an auto-deploy path the operator did not want. A single Compose
+file keeps the no-Caddy mode to one `--scale caddy=0` flag. See
+`docs/decisions/0013-production-deployment.md` and
+`docs/superpowers/specs/2026-09-18-production-container-deployment-design.md`.

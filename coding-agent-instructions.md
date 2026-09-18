@@ -73,6 +73,19 @@ Sequence is deliberate — each milestone is verifiable on its own and unblocks 
 | M9 | Scheduling & run orchestration | §2 | APScheduler (UTC), per-feed-source lock, manual `POST /run` |
 | M10 | Frontend areas | §9 | All ten areas usable; plugin menu items render dynamically |
 
+## 6a. Production deployment workflow (added 2026-09-18)
+
+- Releases are cut by pushing a `v*` Git tag. `.github/workflows/release.yml`
+  builds the backend and frontend images and pushes both to GHCR (tag +
+  `latest`). It never deploys.
+- Deploy and rollback are manual on the VPS and must not be automated:
+  `IMAGE_TAG` in `.deploy.env` selects the image tag; secrets live only in
+  `.env` and are never changed by a deploy or rollback.
+- Production backend runs exactly one uvicorn worker and one replica. Never
+  introduce a design that requires horizontal scaling of the backend.
+- See `docs/prod_deployment.md` (reference) and `docs/release_process.md`
+  (runbook).
+
 ## 7. Non-negotiables (will be verified)
 
 - No core code changes to add a plugin — ever (spec §5). If you feel the need, the contract has a gap: report it, don't patch around it.

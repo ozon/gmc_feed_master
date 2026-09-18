@@ -37,6 +37,16 @@ npm run typecheck                             # tsc -b
 # Contract test: uv run pytest backend/tests/test_plugin_contract.py
 ```
 
+## Production deployment
+
+Images are built from Git tags by `.github/workflows/release.yml` (tag `v*` only)
+and pushed to GHCR as `ghcr.io/ozon/gmc-feed-backend` and
+`ghcr.io/ozon/gmc-feed-frontend` (both `:<tag>` and `:latest`). There is no
+auto-deploy: on the VPS, `IMAGE_TAG` in `.deploy.env` is set and the stack is
+updated with `docker compose -f docker-compose.prod.yml pull && up -d` (secrets
+in `.env` stay untouched). Backend runs exactly one worker/replica. Full guide:
+`docs/prod_deployment.md`; runbook: `docs/release_process.md`.
+
 ## Boundaries
 **Always:**
 - Run contract tests (`test_plugin_contract.py`) when adding/changing plugins
@@ -76,6 +86,8 @@ npm run typecheck                             # tsc -b
 - `frontend/docs/plugin-uis.md` — Build-time discovery, custom JsonSchemaForm schema rendering, error boundaries
 - `backend/AGENTS.md` — Backend-specific commands and conventions
 - `frontend/AGENTS.md` — Frontend-specific commands and conventions
+- `docs/prod_deployment.md` — VPS provisioning, domain/TLS, deploy, rollback, backups
+- `docs/release_process.md` — short release/deploy runbook (tag → GHCR → pull/up)
 
 ## Documentation
 Any change to behavior, API surface, data model, or commands MUST update the affected docs and ADRs in the same commit. Documentation that contradicts `gmc-feed-engine-spec.md` is a bug: fix the doc, never the spec, and flag the conflict to the operator.
