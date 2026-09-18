@@ -11,6 +11,7 @@ import {
   ApiError,
   apiDelete,
   apiGet,
+  apiGetText,
   apiGetWithHeaders,
   apiPatch,
   apiPost,
@@ -650,6 +651,34 @@ export function useRollbackToVersion(feedSourceId: number | string) {
       });
       void queryClient.invalidateQueries({
         queryKey: ['feed-source', feedSourceId, 'export-diff'],
+      });
+    },
+  });
+}
+
+export function useExportVersionContent(
+  feedSourceId: number | string,
+  version: number | undefined,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: queryKeys.feedSource(feedSourceId).exportVersionContent(version ?? 0),
+    queryFn: () => apiGetText(`/feed-sources/${feedSourceId}/export-history/${version}/content`),
+    enabled: enabled && version !== undefined,
+  });
+}
+
+export function useSetExportToken(feedSourceId: number | string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (exportToken: string) =>
+      apiPut<{ export_token: string; export_url: string }>(
+        `/feed-sources/${feedSourceId}/export-token`,
+        { export_token: exportToken },
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.feedSource(feedSourceId).detail,
       });
     },
   });

@@ -20,6 +20,8 @@ export const queryKeys = {
     feedDashboard: ['feed-source', id, 'feed-dashboard'] as const,
     exportDiff: (params: { version: number; against: number } | undefined) =>
       ['feed-source', id, 'export-diff', params ?? { disabled: true }] as const,
+    exportVersionContent: (version: number) =>
+      ['feed-source', id, 'export-version-content', version] as const,
     fieldMapping: ['feed-source', id, 'field-mapping'] as const,
     mapping: ['feed-source', id, 'field-mapping'] as const,
     fields: ['feed-source', id, 'fields'] as const,

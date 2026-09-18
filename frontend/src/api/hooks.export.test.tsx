@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { renderHook } from '../test/render';
 import { QueryClient } from '@tanstack/react-query';
-import { useExportVersionDiff, useRollbackToVersion } from './hooks';
+import {
+  useExportVersionContent,
+  useExportVersionDiff,
+  useRollbackToVersion,
+  useSetExportToken,
+} from './hooks';
 import { queryClient as defaultClient } from './queryClient';
 import { queryKeys } from './queryKeys';
 import { stubFetch } from '../test/fetch';
@@ -85,5 +90,60 @@ describe('useRollbackToVersion', () => {
     );
     expect(hasHistory).toBe(true);
     expect(hasDiff).toBe(true);
+  });
+});
+
+describe('useExportVersionContent', () => {
+  it('fetches raw XML text for a version', async () => {
+    stubFetch((url) =>
+      url === '/feed-sources/1/export-history/2/content'
+        ? new Response('<g:id>A</g:id>', {
+            status: 200,
+            headers: { 'Content-Type': 'application/xml' },
+          })
+        : new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
+    const { result } = renderHook(() => useExportVersionContent(1, 2, true));
+    await waitFor(() => expect(result.current.data).toBe('<g:id>A</g:id>'));
+  });
+
+  it('does not fetch when disabled', () => {
+    const fetchMock = stubFetch(() => new Response('', { status: 200 }));
+    renderHook(() => useExportVersionContent(1, undefined, false));
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('useSetExportToken', () => {
+  it('PUTs the token and invalidates the feed source detail query', async () => {
+    let capturedUrl: string | null = null;
+    let capturedMethod: string | undefined;
+    let capturedBody: string | null = null;
+    stubFetch((url, init) => {
+      if (url === '/feed-sources/1/export-token') {
+        capturedUrl = url;
+        capturedMethod = init?.method;
+        capturedBody = typeof init?.body === 'string' ? init.body : null;
+        return jsonResponse({ export_token: 'tok-1', export_url: 'https://example.test/feed.xml' });
+      }
+      return jsonResponse({});
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
+    const { result } = renderHook(() => useSetExportToken(1), { queryClient: client });
+    result.current.mutate('tok-1');
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(capturedUrl).toBe('/feed-sources/1/export-token');
+    expect(capturedMethod).toBe('PUT');
+    expect(capturedBody).toBe(JSON.stringify({ export_token: 'tok-1' }));
+    const invalidated = invalidateSpy.mock.calls.map((c) => c[0]);
+    expect(
+      invalidated.some(
+        (q) => JSON.stringify(q?.queryKey) === JSON.stringify(queryKeys.feedSource(1).detail),
+      ),
+    ).toBe(true);
   });
 });
