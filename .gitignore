@@ -74,3 +74,8 @@ frontend_new/.vite/
 exports/
 backend/.report.json*
 .openchamber/*
+
+# Production runtime data / deploy tag
+data/
+backups/
+.deploy.env
