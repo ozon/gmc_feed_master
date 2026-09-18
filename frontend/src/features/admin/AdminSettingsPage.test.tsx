@@ -11,10 +11,10 @@ import { ApiError } from '../../api/client';
 
 vi.mock('../../api/hooks', async (importOriginal) => {
   const adminSettings = {
-    staging_removal_retention_days: 90,
-    staging_history_retention_days: 90,
-    ingestion_run_retention_days: 90,
-    event_log_retention_days: 90,
+    staging_removal_retention_days: 91,
+    staging_history_retention_days: 92,
+    ingestion_run_retention_days: 93,
+    event_log_retention_days: 94,
   };
   return {
     ...(await importOriginal<object>()),
@@ -72,6 +72,14 @@ function renderPage() {
 }
 
 describe('AdminSettingsPage', () => {
+  it('initializes retention inputs from cached server settings on first render', () => {
+    renderPage();
+    expect(screen.getByLabelText('Removed-product retention (days)')).toHaveValue('91');
+    expect(screen.getByLabelText('Staging history retention (days)')).toHaveValue('92');
+    expect(screen.getByLabelText('Ingestion run retention (days)')).toHaveValue('93');
+    expect(screen.getByLabelText('Event log retention (days)')).toHaveValue('94');
+  });
+
   it('toasts disableBlocked with the cached count when toggling an in-use plugin fails with 409', async () => {
     const user = userEvent.setup();
     renderPage();
