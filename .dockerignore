@@ -1,0 +1,43 @@
+# Git / CI
+.git
+.github
+
+# Secrets and local env (never ship)
+.env
+**/.env
+.env.*
+**/.env.*
+.deploy.env
+*.local
+
+# Python
+**/.venv
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info
+**/.mypy_cache
+**/.ruff_cache
+**/.pytest_cache
+**/.testmondata*
+
+# Node / frontend build output
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+
+# Runtime data / artifacts
+exports
+backups
+data
+**/.report.json*
+
+# Docs and tests (not needed in images)
+docs
+backend/tests
+frontend/test-results
+frontend/playwright-report
+
+# Misc
+.worktrees
+.codegraph
+.openchamber

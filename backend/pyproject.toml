@@ -18,11 +18,11 @@ dependencies = [
   "instructor==1.17.0",
   "redis==8.1.0",
   "diskcache==5.6.3",
+  "alembic==1.16.4",
 ]
 
 [dependency-groups]
 dev = [
-  "alembic==1.16.4",
   "mypy>=2.3.1",
   "pytest==8.4.2",
   "pytest-asyncio==1.1.0",
