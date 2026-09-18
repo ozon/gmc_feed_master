@@ -1,7 +1,7 @@
 import { Button, Stack, Title } from '@mantine/core';
 import { IconGitCompare } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router';
+import { useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
   useExportHistory,
@@ -16,6 +16,8 @@ import { ApiError } from '../../api/client';
 import { ExportVersionList } from './ExportVersionList';
 import { ExportVersionDiff } from './ExportVersionDiff';
 import { RollbackConfirmModal } from './RollbackConfirmModal';
+import { FeedVersionPreviewModal } from './FeedVersionPreviewModal';
+import { downloadVersionXml } from './download';
 
 export function ExportPage() {
   const { t } = useTranslation('export');
@@ -24,10 +26,32 @@ export function ExportPage() {
   const feed = useFeedSource(id);
   const history = useExportHistory(id);
   const rollback = useRollbackToVersion(id);
-  const [versionA, setVersionA] = useState<number | undefined>();
-  const [versionB, setVersionB] = useState<number | undefined>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [versionA, setVersionAState] = useState<number | undefined>(() => {
+    const raw = searchParams.get('a');
+    return raw === null ? undefined : Number(raw);
+  });
+  const [versionB, setVersionBState] = useState<number | undefined>(() => {
+    const raw = searchParams.get('b');
+    return raw === null ? undefined : Number(raw);
+  });
   const [compared, setCompared] = useState(false);
   const [rollbackTarget, setRollbackTarget] = useState<number | null>(null);
+  const [previewVersion, setPreviewVersion] = useState<number | null>(null);
+
+  function setVersionA(value: number) {
+    setVersionAState(value);
+    const next = new URLSearchParams(searchParams);
+    next.set('a', String(value));
+    setSearchParams(next, { replace: true });
+  }
+
+  function setVersionB(value: number) {
+    setVersionBState(value);
+    const next = new URLSearchParams(searchParams);
+    next.set('b', String(value));
+    setSearchParams(next, { replace: true });
+  }
 
   const versions = useMemo(() => history.data ?? [], [history.data]);
 
@@ -67,6 +91,14 @@ export function ExportPage() {
     }
   }
 
+  async function onDownload(version: number) {
+    try {
+      await downloadVersionXml(id, version);
+    } catch (error) {
+      notifyApiError(error, t('download.failed'));
+    }
+  }
+
   return (
     <Stack gap="md">
       <Title order={3}>{t('title')}</Title>
@@ -88,8 +120,8 @@ export function ExportPage() {
             onSelectA={setVersionA}
             onSelectB={setVersionB}
             onRollback={setRollbackTarget}
-            onPreview={() => undefined}
-            onDownload={() => undefined}
+            onPreview={setPreviewVersion}
+            onDownload={(version) => void onDownload(version)}
           />
           {versionA !== undefined && versionB !== undefined && !compared && (
             <Button
@@ -110,6 +142,12 @@ export function ExportPage() {
           />
         </>
       )}
+      <FeedVersionPreviewModal
+        feedSourceId={id}
+        version={previewVersion}
+        opened={previewVersion !== null}
+        onClose={() => setPreviewVersion(null)}
+      />
       <RollbackConfirmModal
         opened={rollbackTarget !== null}
         version={rollbackTarget}

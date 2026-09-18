@@ -200,4 +200,46 @@ describe('ExportPage', () => {
     expect(screen.getByText(/select two versions above/i)).toBeInTheDocument();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
+
+  it('opens the preview modal from the row eye', async () => {
+    const user = userEvent.setup();
+    stubFetch((url) => {
+      if (url === '/feed-sources/1') return jsonResponse(feed);
+      if (url === '/feed-sources/1/export-history') return jsonResponse(versions);
+      if (url === '/feed-sources/1/export-history/3/content')
+        return new Response('<g:id>A</g:id>', {
+          status: 200,
+          headers: { 'Content-Type': 'application/xml' },
+        });
+      if (url.startsWith('/feed-sources/1/export-history/'))
+        return jsonResponse({ version: 3, against: 2, added: [], removed: [], changed: [] });
+      return jsonResponse({});
+    });
+    renderAt();
+    await screen.findByTestId('version-row-3');
+    await user.click(screen.getByTestId('preview-3'));
+    expect(await screen.findByTestId('xml-preview')).toHaveTextContent('<g:id>A</g:id>');
+  });
+
+  it('reads the compared versions from the URL query', async () => {
+    stubFetch((url) => {
+      if (url === '/feed-sources/1') return jsonResponse(feed);
+      if (url === '/feed-sources/1/export-history') return jsonResponse(versions);
+      if (url.startsWith('/feed-sources/1/export-history/'))
+        return jsonResponse({ version: 3, against: 2, added: [], removed: [], changed: [] });
+      return jsonResponse({});
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/clients/1/feeds/1/export?a=3&b=2']}>
+          <Routes>
+            <Route path="/clients/:clientId/feeds/:feedSourceId/export" element={<ExportPage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await waitFor(() => expect(screen.getByTestId('version-row-3')).toBeInTheDocument());
+    expect(screen.getByTestId('compare-versions-button')).toBeInTheDocument();
+  });
 });
