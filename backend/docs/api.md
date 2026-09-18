@@ -141,8 +141,8 @@ Versioned, immutable prompt templates per task type. Editing = creating a new ve
 - `POST /feed-sources/{id}/export-history/{v}/rollback` — append-only rollback, creates new version
 
 ### Export Token
-- `POST /feed-sources/{id}/export-token/rotate` — rotates token, old URL invalid immediately
-  Returns `{export_token, export_url}`
+- `POST /feed-sources/{id}/export-token/rotate` — rotates to a new random token, old URL invalid immediately. Returns `{export_token, export_url}`
+- `PUT /feed-sources/{id}/export-token` — **admin only**. Sets a custom token. Body `{export_token}`; charset `[A-Za-z0-9_~-]`, length 1–64. 403 non-admin, 404 unknown feed source, 409 token already in use, 422 invalid value. Returns `{export_token, export_url}`
 
 ### Dashboard Summary
 - `GET /dashboard/summary` — aggregated view for dashboard (clients, feed sources, last run status, `runs_by_day`: 14-day `{date, success, error}` counts, ascending). Each `clients[].feed_sources[]` entry carries `quality: {critical, warning, info}` read from that feed source's latest export run (zeros when it has none; the counts drive the feed-card badge).

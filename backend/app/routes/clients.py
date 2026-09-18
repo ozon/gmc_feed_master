@@ -25,6 +25,8 @@ from ..schemas.clients import (
     ClientCreate,
     ClientOut,
     ClientUpdate,
+    ExportTokenOut,
+    ExportTokenUpdate,
     FeedSourceCreate,
     FeedSourceOut,
     FeedSourceUpdate,
@@ -314,7 +316,10 @@ async def delete_client(
             shutil.rmtree(versions_dir, ignore_errors=True)
 
 
-@router.post("/feed-sources/{feed_source_id}/export-token/rotate")
+@router.post(
+    "/feed-sources/{feed_source_id}/export-token/rotate",
+    response_model=ExportTokenOut,
+)
 async def rotate_export_token(
     feed_source_id: int,
     request: Request,
@@ -337,6 +342,49 @@ async def rotate_export_token(
         )
     settings = _resolve_settings(request)
     return {"export_token": token, "export_url": _export_url(settings, token)}
+
+
+@router.put("/feed-sources/{feed_source_id}/export-token", response_model=ExportTokenOut)
+async def set_export_token(
+    feed_source_id: int,
+    payload: ExportTokenUpdate,
+    request: Request,
+    _admin: CurrentUser = Depends(require_admin),
+    db_session: AsyncSession | None = Depends(get_db_session),
+) -> dict[str, str]:
+    session = _require_db(db_session)
+    async with session.begin():
+        feed_source = await session.get(FeedSource, feed_source_id)
+        if feed_source is None:
+            raise HTTPException(status_code=404, detail="feed source not found")
+        clash = (
+            await session.execute(
+                select(FeedSource.id).where(
+                    FeedSource.export_token == payload.export_token,
+                    FeedSource.id != feed_source_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if clash is not None:
+            raise HTTPException(status_code=409, detail="export token already in use")
+        feed_source.export_token = payload.export_token
+        try:
+            await session.flush()
+        except IntegrityError as exc:
+            raise HTTPException(
+                status_code=409, detail="export token already in use"
+            ) from exc
+        await audit(
+            session,
+            "feed_source.export_token.set",
+            target_type="feed_source",
+            target_id=feed_source_id,
+        )
+    settings = _resolve_settings(request)
+    return {
+        "export_token": payload.export_token,
+        "export_url": _export_url(settings, payload.export_token),
+    }
 
 
 @router.post("/feed-sources/{feed_source_id}/run", status_code=202)

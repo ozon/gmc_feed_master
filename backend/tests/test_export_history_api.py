@@ -14,7 +14,7 @@ from app.main import create_app
 from app.models import Client, ExportRun, ExportVersion, FeedSource, IngestionRun
 from app.models.session import Session
 from app.models.user import User
-from app.persistence.users import seed_initial_user
+from app.persistence.users import create_user, seed_initial_user
 from registry.loader import load_registry
 
 pytestmark = pytest.mark.asyncio
@@ -233,3 +233,69 @@ async def test_version_content_requires_auth_and_known_feed_source(app_factory):
 
     client = await logged_in_client(app_factory)
     assert (await client.get("/feed-sources/999999/export-history/1/content")).status_code == 404
+
+
+async def _second_feed_source_token(app_factory, token: str) -> int:
+    _, factory, _ = app_factory
+    async with factory() as session, session.begin():
+        client = Client(name="Other")
+        session.add(client)
+        await session.flush()
+        feed = FeedSource(
+            client_id=client.id, name="Other Feed", source_format="tsv", export_token=token
+        )
+        session.add(feed)
+        await session.flush()
+        return feed.id
+
+
+async def test_set_export_token_as_admin(app_factory):
+    feed_source_id = await _seed_versions(app_factory, [BASE])
+    client = await logged_in_client(app_factory)
+
+    resp = await client.put(
+        f"/feed-sources/{feed_source_id}/export-token", json={"export_token": "my-shop"}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["export_token"] == "my-shop"
+    assert resp.json()["export_url"] == "http://test.public/export/my-shop.xml"
+
+
+async def test_set_export_token_rejects_non_admin(app_factory):
+    feed_source_id = await _seed_versions(app_factory, [BASE])
+    _, factory, _ = app_factory
+    async with factory() as session, session.begin():
+        feed = await session.get(FeedSource, feed_source_id)
+        await create_user(session, "plain", "user-pass", "user", [feed.client_id])
+
+    plain = AsyncClient(
+        transport=ASGITransport(app=app_factory[0]), base_url="https://testserver"
+    )
+    login = await plain.post("/auth/login", json={"username": "plain", "password": "user-pass"})
+    assert login.status_code == 200
+    resp = await plain.put(
+        f"/feed-sources/{feed_source_id}/export-token", json={"export_token": "mine"}
+    )
+    assert resp.status_code == 403
+
+
+async def test_set_export_token_conflicts(app_factory):
+    feed_source_id = await _seed_versions(app_factory, [BASE])
+    await _second_feed_source_token(app_factory, "taken")
+    client = await logged_in_client(app_factory)
+
+    resp = await client.put(
+        f"/feed-sources/{feed_source_id}/export-token", json={"export_token": "taken"}
+    )
+    assert resp.status_code == 409
+
+
+@pytest.mark.parametrize("bad", ["", "bad/token", "bad token", "bad.token", "a" * 65])
+async def test_set_export_token_rejects_invalid_values(app_factory, bad):
+    feed_source_id = await _seed_versions(app_factory, [BASE])
+    client = await logged_in_client(app_factory)
+
+    resp = await client.put(
+        f"/feed-sources/{feed_source_id}/export-token", json={"export_token": bad}
+    )
+    assert resp.status_code == 422

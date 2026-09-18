@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+_EXPORT_TOKEN_RE = re.compile(r"^[A-Za-z0-9_~-]+$")
 
 
 class ClientCreate(BaseModel):
@@ -83,3 +86,21 @@ class IngestionRunOut(BaseModel):
     failed_count: int
     error_message: str | None
     statistics: dict[str, Any]
+
+
+class ExportTokenUpdate(BaseModel):
+    export_token: str = Field(min_length=1, max_length=64)
+
+    @field_validator("export_token")
+    @classmethod
+    def _path_safe(cls, value: str) -> str:
+        if not _EXPORT_TOKEN_RE.fullmatch(value):
+            raise ValueError(
+                "export token may only contain letters, digits, '_', '~' and '-'"
+            )
+        return value
+
+
+class ExportTokenOut(BaseModel):
+    export_token: str
+    export_url: str
