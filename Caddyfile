@@ -43,8 +43,6 @@
 	}
 
 	handle {
-		root * {$FRONTEND_DIST:/srv/gmc/frontend/dist}
-		try_files {path} /index.html
-		file_server
+		reverse_proxy {$FRONTEND_URL:http://127.0.0.1:5173}
 	}
 }

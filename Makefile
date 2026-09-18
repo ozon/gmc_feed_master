@@ -139,7 +139,7 @@ dev-stop: ## Stop backend and frontend dev servers
 	@pkill -f "vite" 2>/dev/null && echo "Frontend stopped" || echo "Frontend not running"
 
 .PHONY: prod
-prod: ## Start Caddy production server (requires DOMAIN and BACKEND_URL env vars)
+prod: ## Run Caddy on the host (local only; production uses prod-up)
 	caddy run --config Caddyfile --adapter caddyfile
 
 .PHONY: dev-caddy
@@ -154,6 +154,32 @@ lint: backend-lint backend-typecheck frontend-typecheck ## Run all linters and t
 
 .PHONY: check
 check: lint test ## Run full CI check (lint + typecheck + all tests)
+
+# ==============================================================================
+#  Production compose (VPS)
+# ==============================================================================
+
+PROD_COMPOSE := docker compose -f docker-compose.prod.yml
+
+.PHONY: prod-pull
+prod-pull: ## Pull production images (IMAGE_TAG from .deploy.env)
+	set -a && . ./.deploy.env && set +a && $(PROD_COMPOSE) pull
+
+.PHONY: prod-up
+prod-up: ## Start the production stack
+	set -a && . ./.deploy.env && set +a && $(PROD_COMPOSE) up -d
+
+.PHONY: prod-down
+prod-down: ## Stop the production stack
+	$(PROD_COMPOSE) down
+
+.PHONY: prod-ps
+prod-ps: ## Show production service status
+	$(PROD_COMPOSE) ps
+
+.PHONY: prod-logs
+prod-logs: ## Tail production logs
+	$(PROD_COMPOSE) logs -f --tail=100
 
 # ==============================================================================
 #  Help
