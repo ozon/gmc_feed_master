@@ -68,6 +68,14 @@
     "live": "Live-Feed herunterladen",
     "failed": "Feed-Version konnte nicht heruntergeladen werden."
   },
+  "findingsDiff": {
+    "title": "QC-Befunde",
+    "added": "neu",
+    "fixed": "behoben",
+    "persisted": "weiterhin",
+    "notQcd": "QC-Befunde nicht verfügbar – eine verglichene Version wurde nicht geprüft.",
+    "noChanges": "Keine Änderungen bei den QC-Befunden."
+  },
   "liveBadge": "Live",
   "generateRandom": "Zufällig erzeugen",
   "customToken": "Eigener Export-URL-Wert",

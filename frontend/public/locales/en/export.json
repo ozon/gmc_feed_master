@@ -68,6 +68,14 @@
     "live": "Download live feed",
     "failed": "Could not download the feed version."
   },
+  "findingsDiff": {
+    "title": "QC findings",
+    "added": "added",
+    "fixed": "fixed",
+    "persisted": "persisted",
+    "notQcd": "QC findings unavailable — a compared version was not quality-checked.",
+    "noChanges": "No QC finding changes."
+  },
   "liveBadge": "Live",
   "generateRandom": "Generate random",
   "customToken": "Custom export URL value",

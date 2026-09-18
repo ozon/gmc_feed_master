@@ -69,6 +69,13 @@ const versions = [
   },
 ];
 
+const emptyFindings = {
+  a_qc: true,
+  b_qc: true,
+  totals: { added: 0, fixed: 0, persisted: 0 },
+  rules: [],
+};
+
 beforeAll(async () => {
   await i18n.loadNamespaces('export');
 });
@@ -111,7 +118,14 @@ describe('ExportPage', () => {
       if (url === '/feed-sources/1') return jsonResponse(feed);
       if (url === '/feed-sources/1/export-history') return jsonResponse(versions);
       if (url.startsWith('/feed-sources/1/export-history/'))
-        return jsonResponse({ version: 3, against: 2, added: [], removed: [], changed: [] });
+        return jsonResponse({
+          version: 3,
+          against: 2,
+          added: [],
+          removed: [],
+          changed: [],
+          findings: emptyFindings,
+        });
       return jsonResponse({});
     });
     renderAt();
@@ -130,7 +144,14 @@ describe('ExportPage', () => {
         return new Response(null, { status: 204 });
       }
       if (url.startsWith('/feed-sources/1/export-history/'))
-        return jsonResponse({ version: 3, against: 2, added: [], removed: [], changed: [] });
+        return jsonResponse({
+          version: 3,
+          against: 2,
+          added: [],
+          removed: [],
+          changed: [],
+          findings: emptyFindings,
+        });
       return jsonResponse({});
     });
     renderAt();
@@ -148,7 +169,14 @@ describe('ExportPage', () => {
       if (url === '/feed-sources/1') return jsonResponse(feed);
       if (url === '/feed-sources/1/export-history') return jsonResponse(versions);
       if (url.startsWith('/feed-sources/1/export-history/'))
-        return jsonResponse({ version: 3, against: 2, added: [], removed: [], changed: [] });
+        return jsonResponse({
+          version: 3,
+          against: 2,
+          added: [],
+          removed: [],
+          changed: [],
+          findings: emptyFindings,
+        });
       return jsonResponse({});
     });
     renderAt();
@@ -163,7 +191,14 @@ describe('ExportPage', () => {
       if (url === '/feed-sources/1') return jsonResponse(feed);
       if (url === '/feed-sources/1/export-history') return jsonResponse(versions);
       if (url.startsWith('/feed-sources/1/export-history/'))
-        return jsonResponse({ version: 3, against: 2, added: [], removed: [], changed: [] });
+        return jsonResponse({
+          version: 3,
+          against: 2,
+          added: [],
+          removed: [],
+          changed: [],
+          findings: emptyFindings,
+        });
       return jsonResponse({});
     });
     renderAt();
@@ -178,7 +213,14 @@ describe('ExportPage', () => {
       if (url === '/feed-sources/1') return jsonResponse(feed);
       if (url === '/feed-sources/1/export-history') return jsonResponse(versions);
       if (url.startsWith('/feed-sources/1/export-history/'))
-        return jsonResponse({ version: 3, against: 2, added: [], removed: [], changed: [] });
+        return jsonResponse({
+          version: 3,
+          against: 2,
+          added: [],
+          removed: [],
+          changed: [],
+          findings: emptyFindings,
+        });
       return jsonResponse({});
     });
     renderAt();
@@ -192,7 +234,14 @@ describe('ExportPage', () => {
       if (url === '/feed-sources/1') return jsonResponse(feed);
       if (url === '/feed-sources/1/export-history') return jsonResponse(versions);
       if (url.startsWith('/feed-sources/1/export-history/'))
-        return jsonResponse({ version: 3, against: 2, added: [], removed: [], changed: [] });
+        return jsonResponse({
+          version: 3,
+          against: 2,
+          added: [],
+          removed: [],
+          changed: [],
+          findings: emptyFindings,
+        });
       return jsonResponse({});
     });
     renderAt();
@@ -225,7 +274,14 @@ describe('ExportPage', () => {
           headers: { 'Content-Type': 'application/xml' },
         });
       if (url.startsWith('/feed-sources/1/export-history/'))
-        return jsonResponse({ version: 3, against: 2, added: [], removed: [], changed: [] });
+        return jsonResponse({
+          version: 3,
+          against: 2,
+          added: [],
+          removed: [],
+          changed: [],
+          findings: emptyFindings,
+        });
       return jsonResponse({});
     });
     renderAt();
@@ -239,7 +295,14 @@ describe('ExportPage', () => {
       if (url === '/feed-sources/1') return jsonResponse(feed);
       if (url === '/feed-sources/1/export-history') return jsonResponse(versions);
       if (url.startsWith('/feed-sources/1/export-history/'))
-        return jsonResponse({ version: 3, against: 2, added: [], removed: [], changed: [] });
+        return jsonResponse({
+          version: 3,
+          against: 2,
+          added: [],
+          removed: [],
+          changed: [],
+          findings: emptyFindings,
+        });
       return jsonResponse({});
     });
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -261,7 +324,14 @@ describe('ExportPage', () => {
       if (url === '/feed-sources/1') return jsonResponse(feed);
       if (url === '/feed-sources/1/export-history') return jsonResponse(versions);
       if (url.startsWith('/feed-sources/1/export-history/'))
-        return jsonResponse({ version: 3, against: 2, added: [], removed: [], changed: [] });
+        return jsonResponse({
+          version: 3,
+          against: 2,
+          added: [],
+          removed: [],
+          changed: [],
+          findings: emptyFindings,
+        });
       return jsonResponse({});
     });
     renderAt('/clients/1/feeds/1/export?a=foo&b=2');

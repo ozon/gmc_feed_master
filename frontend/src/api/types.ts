@@ -261,12 +261,37 @@ export type DiffProductOut = {
   fields: DiffFieldOut[];
 };
 
+export type FindingRuleDiffOut = {
+  code: string;
+  severity: string;
+  added: number;
+  fixed: number;
+  persisted: number;
+  sample_added: string[];
+  sample_fixed: string[];
+  sample_persisted: string[];
+};
+
+export type FindingsDeltaTotals = {
+  added: number;
+  fixed: number;
+  persisted: number;
+};
+
+export type FindingsDiffOut = {
+  a_qc: boolean;
+  b_qc: boolean;
+  totals: FindingsDeltaTotals;
+  rules: FindingRuleDiffOut[];
+};
+
 export type DiffOut = {
   version: number;
   against: number;
   added: string[];
   removed: string[];
   changed: DiffProductOut[];
+  findings: FindingsDiffOut;
 };
 
 export type FeedSourceFieldsResponse = {

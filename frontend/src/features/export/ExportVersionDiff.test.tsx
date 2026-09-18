@@ -7,7 +7,15 @@ import { ExportVersionDiff } from './ExportVersionDiff';
 
 beforeAll(async () => {
   await i18n.loadNamespaces('export');
+  await i18n.loadNamespaces('monitoring');
 });
+
+const emptyFindings = {
+  a_qc: true,
+  b_qc: true,
+  totals: { added: 0, fixed: 0, persisted: 0 },
+  rules: [],
+};
 
 const diff = {
   version: 3,
@@ -24,6 +32,7 @@ const diff = {
       ],
     },
   ],
+  findings: emptyFindings,
 };
 
 describe('ExportVersionDiff', () => {
@@ -79,7 +88,14 @@ describe('ExportVersionDiff', () => {
   it('renders the empty state when no changes', () => {
     render(
       <ExportVersionDiff
-        diff={{ version: 2, against: 1, added: [], removed: [], changed: [] }}
+        diff={{
+          version: 2,
+          against: 1,
+          added: [],
+          removed: [],
+          changed: [],
+          findings: emptyFindings,
+        }}
         isPending={false}
         isError={false}
         onRetry={() => {}}
@@ -138,5 +154,70 @@ describe('ExportVersionDiff', () => {
     );
     expect(screen.getByText('p1')).toBeInTheDocument();
     expect(screen.getByText('p2')).toBeInTheDocument();
+  });
+
+  it('renders the QC findings delta grouped by rule', () => {
+    render(
+      <ExportVersionDiff
+        diff={{
+          version: 3,
+          against: 2,
+          added: [],
+          removed: [],
+          changed: [],
+          findings: {
+            a_qc: true,
+            b_qc: true,
+            totals: { added: 1, fixed: 0, persisted: 1 },
+            rules: [
+              {
+                code: 'enum_values',
+                severity: 'critical',
+                added: 1,
+                fixed: 0,
+                persisted: 1,
+                sample_added: ['p9'],
+                sample_fixed: [],
+                sample_persisted: ['p1'],
+              },
+            ],
+          },
+        }}
+        isPending={false}
+        isError={false}
+        onRetry={() => {}}
+        findingsA={{ critical: 0, warning: 0, info: 0 }}
+        findingsB={{ critical: 0, warning: 0, info: 0 }}
+      />,
+    );
+    const section = screen.getByTestId('findings-diff');
+    expect(screen.getByTestId('rule-label-enum_values')).toBeInTheDocument();
+    expect(section.textContent).toContain('p9');
+  });
+
+  it('shows the not-QC notice when a compared version was not quality-checked', () => {
+    render(
+      <ExportVersionDiff
+        diff={{
+          version: 3,
+          against: 2,
+          added: [],
+          removed: [],
+          changed: [],
+          findings: {
+            a_qc: true,
+            b_qc: false,
+            totals: { added: 0, fixed: 0, persisted: 0 },
+            rules: [],
+          },
+        }}
+        isPending={false}
+        isError={false}
+        onRetry={() => {}}
+        findingsA={{ critical: 0, warning: 0, info: 0 }}
+        findingsB={{ critical: 0, warning: 0, info: 0 }}
+      />,
+    );
+    expect(screen.getByTestId('findings-diff').textContent).toMatch(/not quality-checked/i);
   });
 });

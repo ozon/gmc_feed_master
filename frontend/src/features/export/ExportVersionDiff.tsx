@@ -2,7 +2,9 @@ import { Accordion, Badge, Card, Code, Group, SimpleGrid, Stack, Table, Text } f
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
-import type { DiffOut, ExportVersionOut } from '../../api/types';
+import type { DiffOut, ExportVersionOut, FindingsDiffOut } from '../../api/types';
+import { RuleLabel } from '../monitoring/findings/RuleLabel';
+import { SeverityBadge } from '../monitoring/findings/SeverityBadge';
 
 type Props = {
   diff: DiffOut | undefined;
@@ -62,6 +64,98 @@ function FindingsDelta({
   );
 }
 
+function FindingsDiffSection({ findings }: { findings: FindingsDiffOut }) {
+  const { t } = useTranslation('export');
+  if (!findings.a_qc || !findings.b_qc) {
+    return (
+      <Text c="dimmed" size="sm" data-testid="findings-diff">
+        {t('findingsDiff.notQcd')}
+      </Text>
+    );
+  }
+  const hasChanges =
+    findings.totals.added > 0 || findings.totals.fixed > 0 || findings.totals.persisted > 0;
+  if (!hasChanges) {
+    return (
+      <Text c="dimmed" size="sm" data-testid="findings-diff">
+        {t('findingsDiff.noChanges')}
+      </Text>
+    );
+  }
+  const buckets = ['added', 'fixed', 'persisted'] as const;
+  return (
+    <Stack gap="xs" data-testid="findings-diff">
+      <Group gap="sm">
+        <Badge color="red" variant="light">
+          +{findings.totals.added} {t('findingsDiff.added')}
+        </Badge>
+        <Badge color="green" variant="light">
+          -{findings.totals.fixed} {t('findingsDiff.fixed')}
+        </Badge>
+        <Badge color="gray" variant="light">
+          ={findings.totals.persisted} {t('findingsDiff.persisted')}
+        </Badge>
+      </Group>
+      <Accordion variant="contained">
+        {findings.rules.map((rule) => (
+          <Accordion.Item key={rule.code} value={rule.code}>
+            <Accordion.Control>
+              <Group justify="space-between">
+                <Group gap="xs">
+                  <RuleLabel code={rule.code} />
+                  <SeverityBadge severity={rule.severity} />
+                </Group>
+                <Group gap="xs">
+                  {rule.added > 0 ? (
+                    <Text size="xs" c="red">
+                      +{rule.added}
+                    </Text>
+                  ) : null}
+                  {rule.fixed > 0 ? (
+                    <Text size="xs" c="green">
+                      -{rule.fixed}
+                    </Text>
+                  ) : null}
+                  {rule.persisted > 0 ? (
+                    <Text size="xs" c="dimmed">
+                      ={rule.persisted}
+                    </Text>
+                  ) : null}
+                </Group>
+              </Group>
+            </Accordion.Control>
+            <Accordion.Panel>
+              <Stack gap={4}>
+                {buckets.map((bucket) => {
+                  const samples: Record<(typeof buckets)[number], string[]> = {
+                    added: rule.sample_added,
+                    fixed: rule.sample_fixed,
+                    persisted: rule.sample_persisted,
+                  };
+                  const ids = samples[bucket];
+                  if (ids.length === 0) return null;
+                  return (
+                    <Group key={bucket} gap={4}>
+                      <Text size="xs" c="dimmed">
+                        {t(`findingsDiff.${bucket}`)}:
+                      </Text>
+                      {ids.map((id) => (
+                        <Badge key={id} size="xs" variant="light">
+                          {id}
+                        </Badge>
+                      ))}
+                    </Group>
+                  );
+                })}
+              </Stack>
+            </Accordion.Panel>
+          </Accordion.Item>
+        ))}
+      </Accordion>
+    </Stack>
+  );
+}
+
 export function ExportVersionDiff({
   diff,
   isPending,
@@ -92,7 +186,16 @@ export function ExportVersionDiff({
   if (isPending) return <LoadingState />;
   if (isError) return <ErrorState onRetry={onRetry} />;
   if (!diff) return <EmptyState message={t('selectVersions')} />;
-  const hasChanges = diff.added.length > 0 || diff.removed.length > 0 || diff.changed.length > 0;
+  const findingsTotals = diff.findings.totals;
+  const hasChanges =
+    diff.added.length > 0 ||
+    diff.removed.length > 0 ||
+    diff.changed.length > 0 ||
+    findingsTotals.added > 0 ||
+    findingsTotals.fixed > 0 ||
+    findingsTotals.persisted > 0 ||
+    !diff.findings.a_qc ||
+    !diff.findings.b_qc;
   if (!hasChanges) return <EmptyState message={t('noChanges')} />;
 
   const totalFields = diff.changed.reduce((sum, product) => sum + product.fields.length, 0);
@@ -144,6 +247,13 @@ export function ExportVersionDiff({
           {t('diff.findingsDelta')}
         </Text>
         <FindingsDelta a={findingsA} b={findingsB} />
+      </Card>
+
+      <Card withBorder padding="sm">
+        <Text size="sm" fw={600} mb={4}>
+          {t('findingsDiff.title')}
+        </Text>
+        <FindingsDiffSection findings={diff.findings} />
       </Card>
 
       {diff.added.length > 0 ? (
