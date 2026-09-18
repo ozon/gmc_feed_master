@@ -80,6 +80,7 @@ export function ExportVersionDiff({
         counts.set(field.field, (counts.get(field.field) ?? 0) + 1);
       }
     }
+    // oxlint-disable-next-line unicorn/no-array-sort -- ES2022 target; toSorted() requires ES2023
     return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [diff?.changed]);
 

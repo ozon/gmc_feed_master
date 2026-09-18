@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { ExportVersionDiff } from './ExportVersionDiff';
@@ -56,7 +57,9 @@ describe('ExportVersionDiff', () => {
         findingsB={{ critical: 3, warning: 2, info: 0 }}
       />,
     );
-    expect(screen.getByTestId('findings-delta').textContent).toContain('3');
+    const text = screen.getByTestId('findings-delta').textContent ?? '';
+    expect(text).toContain('1 → 3');
+    expect(text).toContain('0 → 2');
   });
 
   it('shows not-QCd when a compared side has no findings', () => {
@@ -85,5 +88,26 @@ describe('ExportVersionDiff', () => {
       />,
     );
     expect(screen.getByText(/no changes/i)).toBeInTheDocument();
+  });
+
+  it('filters the changed-product list when a field badge is clicked', async () => {
+    const user = userEvent.setup();
+    render(
+      <ExportVersionDiff
+        diff={diff}
+        isPending={false}
+        isError={false}
+        onRetry={() => {}}
+        findingsA={null}
+        findingsB={null}
+      />,
+    );
+    expect(screen.getByText('p1')).toBeInTheDocument();
+    expect(screen.getByText('p2')).toBeInTheDocument();
+
+    await user.click(screen.getByText('price · 1'));
+
+    expect(screen.queryByText('p1')).not.toBeInTheDocument();
+    expect(screen.getByText('p2')).toBeInTheDocument();
   });
 });
