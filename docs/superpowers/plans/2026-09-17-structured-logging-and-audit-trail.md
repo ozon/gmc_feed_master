@@ -2887,7 +2887,7 @@ git commit -m "docs: structured logging and audit trail"
 
 ## Self-Review
 
-**Spec coverage:** structlog core (Tasks 1–2); redaction (Task 2); request/actor/pipeline contextvars (Tasks 3–4); `event_log` model + retention setting (Tasks 5–6); purge job (Task 7); logs API + Caddy routing (Task 8); audit call sites (Task 9); admin viewer + gating + i18n + retention UI field (Task 10); frontend logger + global handlers (Task 11); correlation + failed-call logging + `AppErrorBoundary` (Task 12); docs/ADR (Task 13). Server-error persistence is implemented in the middleware (Task 3). The spec's "denylist keys + size caps" and "in-memory token bucket" are in Tasks 2 and 8.
+**Spec coverage:** structlog core (Tasks 1–2); redaction (Task 2); request/actor/pipeline contextvars (Tasks 3–4); `event_log` model + retention setting (Tasks 5–6); purge job (Task 7); logs API + Caddy routing (Task 8); audit call sites (Task 9); admin viewer + gating + i18n + retention UI field (Task 10); frontend logger + global handlers (Task 11); correlation + failed-call logging + `AppErrorBoundary` (Task 12); docs/ADR (Task 13). Server-error persistence is implemented in the middleware (Task 3). The spec's "denylist keys + size caps" and "in-memory fixed window" are in Tasks 2 and 8.
 
 **Known deviations from the spec, applied intentionally:**
 - `event_log.client_id`/`feed_source_id` are plain nullable integers, not FKs (matches `ai_usage_logs`). The spec file is updated to match.

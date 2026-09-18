@@ -134,12 +134,12 @@ Reads and per-row pipeline churn are intentionally excluded.
 
 New router `backend/app/routes/logs.py` (no path prefix, matching the repo convention of full paths in decorators). Paths sit under `/logs/*`, **not** `/logs`, because the SPA owns the bare `/logs` route (see Routing below):
 
-- `GET /logs/entries` — **admin-only** via `require_admin` (`backend/app/access.py:76`). Query params: `category`, `level`, `source`, `logger`, `actor`, `client_id`, `feed_source_id`, `request_id`, `run_id`, `from`, `to`, `q` (message substring), `limit` (default 100, max 500), `cursor` (id). Returns `{items, next_cursor}`, ordered by `id desc`.
-- `POST /logs/client` — **any authenticated user** via `require_user`. Accepts a batch of frontend error entries, validates, truncates, and redacts, writes `category=client_error`. Returns 204. Protected by an in-memory per-user token bucket plus a request-body size cap. `# ponytail: in-memory token bucket, single worker — move to Redis if workers scale`.
+- `GET /logs/entries` — **admin-only** via `require_admin` (`backend/app/access.py:76`). Query params: `category`, `level`, `source`, `logger`, `actor`, `client_id`, `feed_source_id`, `request_id`, `run_id`, `from`, `to`, `q` (literal message substring — LIKE wildcards escaped), `limit` (default 100, max 500), `cursor` (id). Returns `{items, next_cursor}`, ordered by `id desc`.
+- `POST /logs/client` — **any authenticated user** via `require_user`. Accepts a batch of frontend error entries, validates, truncates, and redacts, writes `category=client_error`. Returns 204. Protected by an in-memory per-user fixed window (60 requests / 60 s) plus a request-body size cap. `# ponytail: in-memory fixed window, single worker — move to Redis if workers scale`.
 
 The router is registered in `create_app` **without** `enforce_scope_access` (like `admin_router`); authorization is enforced per endpoint.
 
-**Routing.** The deployment proxies only an allowlist of prefixes to the backend (`Caddyfile`, `Caddyfile.dev`); anything else is served the SPA. Bare `/logs` is the SPA route, so backend paths must be under a subpath. A `handle /logs/*` block is added to both Caddyfiles — Caddy's `handle /logs/*` matches `/logs/...` but not the bare `/logs`, so the SPA page still loads while the API is proxied. (Note: `POST /chat` is an existing backend route absent from both Caddyfiles; it is out of scope here but should be flagged to the operator.)
+**Routing.** The deployment proxies only an allowlist of prefixes to the backend (`Caddyfile`, `Caddyfile.dev`); anything else is served the SPA. Bare `/logs` is the SPA route, so backend paths must be under a subpath. A `handle /logs/*` block is added to both Caddyfiles — Caddy's `handle /logs/*` matches `/logs/...` but not the bare `/logs`, so the SPA page still loads while the API is proxied. (Note: `POST /chat` was an existing backend route absent from both Caddyfiles; it was resolved in a same-day follow-up by adding `handle /chat` to both Caddyfiles and the Vite proxy.)
 
 ### Admin UI
 
@@ -181,12 +181,12 @@ Each phase ends with the full gate set. Backend: `uv run ruff check . ../plugins
 
 - **Core**: redaction processor (each key class, nesting, truncation); contextvar merge into foreign stdlib records; request-id middleware generate vs. accept vs. reject-invalid, header echo; JSON vs. console rendering.
 - **Store**: model/migration present; `record_event` insert; `purge_expired_events` cutoff behavior; retention default resolution (GlobalSetting over settings fallback).
-- **API + viewer**: `GET /logs/entries` returns 403 for non-admin; filters and cursor pagination; `POST /logs/client` validation, redaction, body cap, and token-bucket limit; an audit row is emitted for each in-scope mutation; frontend page render/filter test and hook test.
+- **API + viewer**: `GET /logs/entries` returns 403 for non-admin; filters and cursor pagination; `POST /logs/client` validation, redaction, body cap, and fixed-window limit; an audit row is emitted for each in-scope mutation; frontend page render/filter test and hook test.
 - **Frontend shipping**: logger redaction and shipping path; api client attaches `X-Request-ID` and logs failed calls; error boundary reports.
 
 ## Risks and non-goals
 
-- **Log flooding** via `POST /logs/client` is the main new abuse surface — mitigated by the token bucket, body cap, and per-entry truncation.
+- **Log flooding** via `POST /logs/client` is the main new abuse surface — mitigated by the fixed-window rate limit, body cap, and per-entry truncation.
 - **Redaction is a backstop, not a guarantee** — developers must still avoid logging secrets; the denylist catches the common cases.
 - **Non-goals**: external log aggregation (no OTel/Loki collector), read/access audit events, per-scope retention, and log-based alerting. These can be layered on later without changing the call-site surface.
 
