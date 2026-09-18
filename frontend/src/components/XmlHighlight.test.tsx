@@ -9,29 +9,35 @@ beforeAll(async () => {
 });
 
 describe('tokenizeXml', () => {
-  it('splits tags, attributes, values and text', () => {
-    const kinds = tokenizeXml('<g:id lang="de">A</g:id>');
-    expect(kinds.some((t) => t.kind === 'tag' && t.text.includes('g:id'))).toBe(true);
-    expect(kinds.some((t) => t.kind === 'attr' && t.text === 'lang')).toBe(true);
-    expect(kinds.some((t) => t.kind === 'string' && t.text === '"de"')).toBe(true);
-    expect(kinds.some((t) => t.kind === 'text' && t.text === 'A')).toBe(true);
+  it('splits tags, attributes, values and text via speed-highlight', () => {
+    const tokens = tokenizeXml('<g:id lang="de">A</g:id>');
+    expect(tokens.map((t) => t.text).join('')).toBe('<g:id lang="de">A</g:id>');
+    expect(tokens.some((t) => t.type === 'var' && t.text === 'g:id')).toBe(true);
+    expect(tokens.some((t) => t.type === 'class' && t.text === 'lang')).toBe(true);
+    expect(tokens.some((t) => t.type === 'str' && t.text === '"de"')).toBe(true);
+    expect(tokens.some((t) => t.type === undefined && t.text === 'A')).toBe(true);
   });
 
   it('classifies comments, CDATA, declarations and entities', () => {
-    const kinds = tokenizeXml('<!--c--><![CDATA[x]]><?xml?>&amp;');
-    expect(kinds.map((t) => t.kind)).toEqual(['comment', 'cdata', 'decl', 'entity']);
+    const tokens = tokenizeXml('<!--c--><![CDATA[x]]><?xml?>&amp;');
+    expect(tokens).toContainEqual({ text: '<!--c-->', type: 'cmnt' });
+    expect(tokens).toContainEqual({ text: '<![CDATA[x]]>', type: 'class' });
+    expect(tokens).toContainEqual({ text: '<?', type: 'oper' });
+    expect(tokens).toContainEqual({ text: 'xml', type: 'var' });
+    expect(tokens).toContainEqual({ text: '&amp;', type: 'var' });
   });
 
   it('does not throw on an unmatched <', () => {
     expect(() => tokenizeXml('a < b')).not.toThrow();
-    expect(tokenizeXml('a < b').some((t) => t.kind === 'text')).toBe(true);
+    expect(tokenizeXml('a < b').some((t) => t.type === undefined)).toBe(true);
   });
 
   it('keeps quoted ">" inside a tag', () => {
-    const tokens = tokenizeXml('<g:id content="a > b">x</g:id>');
-    expect(tokens.map((t) => t.text).join('')).toBe('<g:id content="a > b">x</g:id>');
-    expect(tokens.some((t) => t.kind === 'string' && t.text === '"a > b"')).toBe(true);
-    expect(tokens.some((t) => t.kind === 'text' && t.text === 'x')).toBe(true);
+    const xml = '<g:id content="a > b">x</g:id>';
+    const tokens = tokenizeXml(xml);
+    expect(tokens.map((t) => t.text).join('')).toBe(xml);
+    expect(tokens.some((t) => t.type === 'str' && t.text === '"a > b"')).toBe(true);
+    expect(tokens.some((t) => t.type === undefined && t.text === 'x')).toBe(true);
   });
 });
 
