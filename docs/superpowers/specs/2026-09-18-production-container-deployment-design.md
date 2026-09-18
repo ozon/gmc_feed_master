@@ -332,6 +332,7 @@ replicate the API routing table from the Caddyfile; the guide documents it.
 - `.deploy.env.example`
 - `.github/workflows/release.yml`
 - `docs/prod_deployment.md`
+- `docs/release_process.md`
 
 **Changed**
 
@@ -365,6 +366,28 @@ replicate the API routing table from the Caddyfile; the guide documents it.
    live.
 9. Operations: logs, single-worker constraint ("never scale the backend"),
    Redis role and `maxmemory`, restarting individual services.
+
+### 11.1 `docs/release_process.md` (short operational runbook)
+
+A concise, copy-paste runbook separate from the exhaustive reference, so a
+release can be cut without reading the whole provisioning guide. Contents:
+
+1. **Cut a release**: ensure `main` is green; create and push a `v*` tag
+   (`git tag v1.2.0 && git push origin v1.2.0`), or use the GitHub "Create a
+   release" UI with a `v*` tag. Note that only `v*` tags trigger
+   `.github/workflows/release.yml`, which builds and pushes both images to GHCR
+   (`v1.2.0` + `latest`) and does not deploy.
+2. **Deploy on the VPS**: the exact command block (`git pull`; source
+   `.deploy.env`; `docker compose -f docker-compose.prod.yml pull && up -d`),
+   with the `IMAGE_TAG` in `.deploy.env` set to the released tag.
+3. **Verify**: `docker compose … ps`, `logs -f backend caddy`, `curl /health`.
+4. **Rollback**: change `IMAGE_TAG` to the previous tag, re-run pull/up; `.env`
+   untouched.
+5. **Troubleshooting quick hits**: images won't pull (GHCR PAT/`docker login`),
+   backend unhealthy (check migration logs, Postgres health), TLS not
+   provisioning (DNS/firewall 80/443).
+6. Pointer to `docs/prod_deployment.md` for first-time setup, backups, and
+   no-Caddy mode.
 
 ## 12. Out of scope
 
