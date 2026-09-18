@@ -31,7 +31,7 @@ export function MatchesModal({
     setItems([]);
     setTotal(null);
   }
-  const [prevQueryData, setPrevQueryData] = useState(query.data);
+  const [prevQueryData, setPrevQueryData] = useState<typeof query.data>(undefined);
   if (query.data && query.data !== prevQueryData) {
     setPrevQueryData(query.data);
     setTotal(query.data.total);

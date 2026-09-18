@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { notifications, Notifications } from '@mantine/notifications';
 import { QueryClient } from '@tanstack/react-query';
@@ -150,6 +150,19 @@ describe('FilterUI', () => {
     });
     expect(await screen.findByText(/137 of 308/)).toBeInTheDocument();
     await waitFor(() => expect(previewCalls).toBe(1));
+  });
+
+  it('does not show a stale preview while a completed condition awaits its new result', async () => {
+    renderUI();
+    expect(await screen.findByText(/137 of 308/)).toBeInTheDocument();
+
+    const valueInput = screen.getByLabelText(/value/i);
+    fireEvent.change(valueInput, { target: { value: '' } });
+    expect(screen.getByText(/complete all rows/i)).toBeInTheDocument();
+
+    fireEvent.change(valueInput, { target: { value: 'Beta' } });
+    expect(screen.queryByText(/137 of 308/)).not.toBeInTheDocument();
+    expect(screen.getByText('…')).toBeInTheDocument();
   });
 
   it('save button posts the config and re-syncs to a clean state', async () => {

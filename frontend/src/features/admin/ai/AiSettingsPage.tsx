@@ -32,7 +32,7 @@ export function AiSettingsPage() {
   const updateSettings = useUpdateAiSettings();
   const clearCache = useClearAiCache();
   const [draft, setDraft] = useState<AiSettings | null>(null);
-  const [prevSettingsData, setPrevSettingsData] = useState(settingsQuery.data);
+  const [prevSettingsData, setPrevSettingsData] = useState<typeof settingsQuery.data>(undefined);
   if (settingsQuery.data && settingsQuery.data !== prevSettingsData) {
     setPrevSettingsData(settingsQuery.data);
     setDraft(settingsQuery.data);

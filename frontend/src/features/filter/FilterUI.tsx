@@ -106,13 +106,15 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
     (c) => !c.field || (TEXT_OPS.has(c.op) && (c.arg === undefined || c.arg === '')),
   );
 
-  async function refreshPreview(): Promise<PreviewResult | null> {
+  async function refreshPreview(): Promise<{ key: string; result: PreviewResult } | null> {
     if (hasIncomplete) return null;
+    const key = JSON.stringify(draft.conditions);
     try {
-      return await apiPost<PreviewResult>('/plugins/filter/preview', {
+      const result = await apiPost<PreviewResult>('/plugins/filter/preview', {
         feed_source_id: scope.feedSourceId,
         conditions: draft.conditions,
       });
+      return { key, result };
     } catch {
       return null;
     }
@@ -120,9 +122,10 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
 
   const draftKey = JSON.stringify(draft.conditions);
   const configLoaded = config.data !== undefined;
-  const [preview, setPreview] = useState<PreviewResult | null>(null);
+  const [preview, setPreview] = useState<{ key: string; result: PreviewResult } | null>(null);
   const [previewTick, setPreviewTick] = useState(0);
-  const activePreview = configLoaded && !hasIncomplete ? preview : null;
+  const activePreview =
+    configLoaded && !hasIncomplete && preview?.key === draftKey ? preview.result : null;
 
   // Live preview: one debounced (400ms) refetch after the config loads or the draft settles.
   useEffect(() => {

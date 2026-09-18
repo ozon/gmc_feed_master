@@ -9,48 +9,51 @@ import { render } from '../../test/render';
 import { AdminSettingsPage } from './AdminSettingsPage';
 import { ApiError } from '../../api/client';
 
-vi.mock('../../api/hooks', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  useAdminSettings: () => ({
-    data: {
-      staging_removal_retention_days: 90,
-      staging_history_retention_days: 90,
-      ingestion_run_retention_days: 90,
-      event_log_retention_days: 90,
-    },
-    isPending: false,
-    isError: false,
-    refetch: vi.fn<() => void>(),
-  }),
-  useSchedulerJobs: () => ({
-    data: [],
-    isPending: false,
-    isError: false,
-    refetch: vi.fn<() => void>(),
-  }),
-  usePlugins: () => ({
-    data: [
-      {
-        id: 'filter',
-        name: 'Filter',
-        version: '1.0.0',
-        enabled: true,
-        manifest: {},
-        used_by_feed_sources: 2,
+vi.mock('../../api/hooks', async (importOriginal) => {
+  const adminSettings = {
+    staging_removal_retention_days: 90,
+    staging_history_retention_days: 90,
+    ingestion_run_retention_days: 90,
+    event_log_retention_days: 90,
+  };
+  return {
+    ...(await importOriginal<object>()),
+    useAdminSettings: () => ({
+      data: adminSettings,
+      isPending: false,
+      isError: false,
+      refetch: vi.fn<() => void>(),
+    }),
+    useSchedulerJobs: () => ({
+      data: [],
+      isPending: false,
+      isError: false,
+      refetch: vi.fn<() => void>(),
+    }),
+    usePlugins: () => ({
+      data: [
+        {
+          id: 'filter',
+          name: 'Filter',
+          version: '1.0.0',
+          enabled: true,
+          manifest: {},
+          used_by_feed_sources: 2,
+        },
+      ],
+      isPending: false,
+      isError: false,
+      refetch: vi.fn<() => void>(),
+    }),
+    useUpdatePluginEnabled: () => ({
+      mutate: (_payload: unknown, opts?: { onError?: (error: unknown) => void }) => {
+        opts?.onError?.(new ApiError(409, 'plugin in use by 2 feed sources'));
       },
-    ],
-    isPending: false,
-    isError: false,
-    refetch: vi.fn<() => void>(),
-  }),
-  useUpdatePluginEnabled: () => ({
-    mutate: (_payload: unknown, opts?: { onError?: (error: unknown) => void }) => {
-      opts?.onError?.(new ApiError(409, 'plugin in use by 2 feed sources'));
-    },
-    isPending: false,
-  }),
-  useSaveAdminSettings: () => ({ mutate: vi.fn<() => void>(), isPending: false }),
-}));
+      isPending: false,
+    }),
+    useSaveAdminSettings: () => ({ mutate: vi.fn<() => void>(), isPending: false }),
+  };
+});
 
 beforeEach(async () => {
   queryClient.clear();

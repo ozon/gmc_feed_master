@@ -35,7 +35,7 @@ export function AdminSettingsPage() {
   const [history, setHistory] = useState(90);
   const [ingestion, setIngestion] = useState(90);
   const [eventLogs, setEventLogs] = useState(90);
-  const [prevSettingsData, setPrevSettingsData] = useState(settingsQuery.data);
+  const [prevSettingsData, setPrevSettingsData] = useState<typeof settingsQuery.data>(undefined);
   if (settingsQuery.data && settingsQuery.data !== prevSettingsData) {
     setPrevSettingsData(settingsQuery.data);
     setRemoval(settingsQuery.data.staging_removal_retention_days);

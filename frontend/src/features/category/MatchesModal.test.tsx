@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '../../i18n';
+import { queryKeys } from '../../api/queryKeys';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
 import { MatchesModal } from './MatchesModal';
@@ -68,6 +69,22 @@ describe('MatchesModal', () => {
     expect(
       fetchMock.mock.calls.filter(([url]) => String(url).includes('/plugins/category/matches')),
     ).toHaveLength(2);
+  });
+
+  it('initializes items and total from a warm cache on first render', () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+    client.setQueryData(queryKeys.category.matches(7, 'g1', 50, 0), {
+      total: 8,
+      items: pageItems('p1', 5),
+    });
+    stubFetch(() => jsonResponse({ total: 0, items: [] }));
+    render(<MatchesModal feedSourceId={7} ruleId="g1" opened onClose={() => {}} />, {
+      queryClient: client,
+    });
+    expect(screen.getByText('p1 product 0')).toBeInTheDocument();
+    expect(screen.getByText('p1-4')).toBeInTheDocument();
   });
 
   it('shows the empty state when a rule matches nothing', async () => {

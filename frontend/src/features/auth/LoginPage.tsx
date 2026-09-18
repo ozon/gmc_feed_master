@@ -51,6 +51,8 @@ export function LoginPage() {
             value={username}
             onChange={(event) => setUsername(event.currentTarget.value)}
             autoComplete="username"
+            // oxlint-disable-next-line jsx-a11y/no-autofocus -- deliberate autofocus of the sole credential field on the login form
+            autoFocus
             required
           />
           <PasswordInput

@@ -12,7 +12,7 @@ export function RuleAiBudget({ feedSourceId }: { feedSourceId?: number }) {
   const feed = useFeedSource(feedSourceId);
   const save = useSaveAiRules(feedSourceId);
   const [value, setValue] = useState<AiRulesConfig>(DEFAULTS);
-  const [prevFeedData, setPrevFeedData] = useState(feed.data);
+  const [prevFeedData, setPrevFeedData] = useState<typeof feed.data>(undefined);
   if (prevFeedData !== feed.data) {
     setPrevFeedData(feed.data);
     const stored = feed.data?.configuration?.ai_rules;

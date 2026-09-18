@@ -1,9 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { QueryClient } from '@tanstack/react-query';
 import i18n from '../../../i18n';
+import { queryKeys } from '../../../api/queryKeys';
 import { render } from '../../../test/render';
 import { requestBody, stubFetch } from '../../../test/fetch';
 import { AiSettingsPage } from './AiSettingsPage';
+import type { AiSettings } from '../../../api/types';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -12,7 +15,7 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-const settings = {
+const settings: AiSettings = {
   ai_cache_type: 'local',
   ai_cache_namespace: 'gmc-ai',
   ai_cache_ttl_taxonomy_s: 2592000,
@@ -62,6 +65,23 @@ describe('AiSettingsPage', () => {
     expect(screen.getByTestId('ai-cache-backend')).toHaveTextContent('local');
     expect(screen.getByTestId('ai-cache-entries')).toHaveTextContent('3');
     expect(screen.getByTestId('ai-cache-hit-ratio')).toHaveTextContent('40');
+  });
+
+  it('initializes the draft from a warm cache on first render', () => {
+    stubFetch((url) => {
+      if (url === '/admin/ai/cache') return jsonResponse(status);
+      if (url === '/admin/ai/cache/stats') return jsonResponse(stats);
+      return jsonResponse({});
+    });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+    client.setQueryData(queryKeys.ai.settings, settings);
+    client.setQueryData(queryKeys.ai.cache, status);
+    client.setQueryData(queryKeys.ai.cacheStats, stats);
+    render(<AiSettingsPage />, { queryClient: client });
+    expect(screen.getByTestId('ai-settings-form')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('gmc-ai')).toBeInTheDocument();
   });
 
   it('saves settings via PUT', async () => {

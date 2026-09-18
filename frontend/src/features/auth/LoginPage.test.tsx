@@ -24,6 +24,7 @@ describe('LoginPage', () => {
     expect(allInputs.length).toBeGreaterThanOrEqual(2);
     const username = allInputs[0];
     expect(username).toHaveAttribute('autocomplete', 'username');
+    expect(username).toHaveFocus();
   });
 
   it('renders all form fields', () => {
