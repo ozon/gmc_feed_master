@@ -1,0 +1,32 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "options": {
+    "typeAware": true,
+    "maxWarnings": 0
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn",
+    "style": "off"
+  },
+  "plugins": ["unicorn", "oxc", "typescript", "react", "import", "jsx-a11y", "vitest"],
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "react/hooks": "off",
+    "react/exhaustive-effect-dependencies": "off",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "typescript/no-unused-vars": "warn",
+    "eslint/no-unused-vars": "off",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/no-unsafe-assignment": "warn",
+    "typescript/no-unsafe-member-access": "warn",
+    "typescript/no-unsafe-argument": "warn",
+    "typescript/no-unsafe-call": "warn",
+    "typescript/no-unsafe-return": "warn"
+  },
+  "ignorePatterns": ["dist", "coverage"]
+}
