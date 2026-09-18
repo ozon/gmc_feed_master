@@ -1,7 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router';
 import { Notifications, notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '../../i18n';
@@ -78,14 +78,27 @@ beforeEach(() => {
   notifications.clean();
 });
 
-function renderAt() {
+function SearchProbe() {
+  const [searchParams] = useSearchParams();
+  return <div data-testid="search-probe">{searchParams.toString()}</div>;
+}
+
+function renderAt(initialEntry = '/clients/1/feeds/1/export') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/clients/1/feeds/1/export']}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <Notifications position="top-right" limit={1} />
         <Routes>
-          <Route path="/clients/:clientId/feeds/:feedSourceId/export" element={<ExportPage />} />
+          <Route
+            path="/clients/:clientId/feeds/:feedSourceId/export"
+            element={
+              <>
+                <ExportPage />
+                <SearchProbe />
+              </>
+            }
+          />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -241,5 +254,31 @@ describe('ExportPage', () => {
     );
     await waitFor(() => expect(screen.getByTestId('version-row-3')).toBeInTheDocument());
     expect(screen.getByTestId('compare-versions-button')).toBeInTheDocument();
+  });
+
+  it('ignores a non-numeric version in the URL query', async () => {
+    stubFetch((url) => {
+      if (url === '/feed-sources/1') return jsonResponse(feed);
+      if (url === '/feed-sources/1/export-history') return jsonResponse(versions);
+      if (url.startsWith('/feed-sources/1/export-history/'))
+        return jsonResponse({ version: 3, against: 2, added: [], removed: [], changed: [] });
+      return jsonResponse({});
+    });
+    renderAt('/clients/1/feeds/1/export?a=foo&b=2');
+    await waitFor(() => expect(screen.getByTestId('version-row-3')).toBeInTheDocument());
+    expect(screen.queryByTestId('compare-versions-button')).not.toBeInTheDocument();
+  });
+
+  it('writes the selected A version to the URL query', async () => {
+    const user = userEvent.setup();
+    stubFetch((url) => {
+      if (url === '/feed-sources/1') return jsonResponse(feed);
+      if (url === '/feed-sources/1/export-history') return jsonResponse(versions);
+      return jsonResponse({});
+    });
+    renderAt();
+    await screen.findByTestId('version-row-3');
+    await user.click(screen.getByLabelText('A 3'));
+    await waitFor(() => expect(screen.getByTestId('search-probe')).toHaveTextContent('a=3'));
   });
 });

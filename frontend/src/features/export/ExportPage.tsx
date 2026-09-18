@@ -19,6 +19,12 @@ import { RollbackConfirmModal } from './RollbackConfirmModal';
 import { FeedVersionPreviewModal } from './FeedVersionPreviewModal';
 import { downloadVersionXml } from './download';
 
+function parseVersionParam(raw: string | null): number | undefined {
+  if (raw === null || raw === '') return undefined;
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
 export function ExportPage() {
   const { t } = useTranslation('export');
   const { feedSourceId } = useParams();
@@ -27,14 +33,12 @@ export function ExportPage() {
   const history = useExportHistory(id);
   const rollback = useRollbackToVersion(id);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [versionA, setVersionAState] = useState<number | undefined>(() => {
-    const raw = searchParams.get('a');
-    return raw === null ? undefined : Number(raw);
-  });
-  const [versionB, setVersionBState] = useState<number | undefined>(() => {
-    const raw = searchParams.get('b');
-    return raw === null ? undefined : Number(raw);
-  });
+  const [versionA, setVersionAState] = useState<number | undefined>(() =>
+    parseVersionParam(searchParams.get('a')),
+  );
+  const [versionB, setVersionBState] = useState<number | undefined>(() =>
+    parseVersionParam(searchParams.get('b')),
+  );
   const [compared, setCompared] = useState(false);
   const [rollbackTarget, setRollbackTarget] = useState<number | null>(null);
   const [previewVersion, setPreviewVersion] = useState<number | null>(null);
