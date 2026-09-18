@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import i18n from '../i18n';
 import { render } from '../test/render';
-import { XmlHighlight, sliceXmlLines, tokenizeXml } from './XmlHighlight';
+import { XmlHighlight, prettifyXml, sliceXmlLines, tokenizeXml } from './XmlHighlight';
 
 beforeAll(async () => {
   await i18n.loadNamespaces('export');
@@ -48,6 +48,35 @@ describe('sliceXmlLines', () => {
       totalLines: 3,
       truncated: false,
     });
+  });
+});
+
+describe('prettifyXml', () => {
+  it('indents nested elements, one per line, with text on its own line', () => {
+    expect(prettifyXml('<a><b>x</b></a>')).toBe('<a>\n  <b>\n    x\n  </b>\n</a>');
+  });
+
+  it('keeps self-closing tags on one line', () => {
+    expect(prettifyXml('<a><b/></a>')).toBe('<a>\n  <b/>\n</a>');
+  });
+
+  it('indents comments, declarations and CDATA', () => {
+    expect(prettifyXml('<?xml version="1.0"?><r><!--c--><![CDATA[d]]></r>')).toBe(
+      '<?xml version="1.0"?>\n<r>\n  <!--c-->\n  <![CDATA[d]]>\n</r>',
+    );
+  });
+
+  it('drops whitespace-only text nodes', () => {
+    expect(prettifyXml('<a>\n  <b/>\n</a>')).toBe('<a>\n  <b/>\n</a>');
+  });
+
+  it('does not split on a quoted ">"', () => {
+    expect(prettifyXml('<a x="1 > 2"><b/></a>')).toBe('<a x="1 > 2">\n  <b/>\n</a>');
+  });
+
+  it('never throws on malformed input', () => {
+    expect(() => prettifyXml('a < b')).not.toThrow();
+    expect(prettifyXml('')).toBe('');
   });
 });
 

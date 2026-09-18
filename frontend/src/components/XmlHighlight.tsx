@@ -147,6 +147,66 @@ export function sliceXmlLines(
   };
 }
 
+// oxlint-disable-next-line react/only-export-components -- pure formatter is part of the XmlHighlight public interface; Fast Refresh does not apply to this utility module
+export function prettifyXml(xml: string, indent = '  '): string {
+  const lines: string[] = [];
+  let depth = 0;
+  let i = 0;
+  const pad = () => indent.repeat(Math.max(depth, 0));
+  const pushTextLine = (text: string) => {
+    const trimmed = text.trim();
+    if (trimmed) lines.push(pad() + trimmed);
+  };
+
+  while (i < xml.length) {
+    const lt = xml.indexOf('<', i);
+    if (lt === -1) {
+      pushTextLine(xml.slice(i));
+      break;
+    }
+    if (lt > i) pushTextLine(xml.slice(i, lt));
+
+    if (xml.startsWith('<!--', lt)) {
+      const end = xml.indexOf('-->', lt + 4);
+      const stop = end === -1 ? xml.length : end + 3;
+      lines.push(pad() + xml.slice(lt, stop));
+      i = stop;
+      continue;
+    }
+    if (xml.startsWith('<![CDATA[', lt)) {
+      const end = xml.indexOf(']]>', lt + 9);
+      const stop = end === -1 ? xml.length : end + 3;
+      lines.push(pad() + xml.slice(lt, stop));
+      i = stop;
+      continue;
+    }
+    if (xml.startsWith('<?', lt) || xml.startsWith('<!', lt)) {
+      const end = xml.indexOf('>', lt);
+      const stop = end === -1 ? xml.length : end + 1;
+      lines.push(pad() + xml.slice(lt, stop));
+      i = stop;
+      continue;
+    }
+
+    const gt = findTagEnd(xml, lt);
+    if (gt === -1) {
+      pushTextLine(xml.slice(lt));
+      break;
+    }
+    const segment = xml.slice(lt, gt + 1);
+    if (segment.startsWith('</')) {
+      depth -= 1;
+      lines.push(pad() + segment);
+    } else {
+      lines.push(pad() + segment);
+      if (!segment.trimEnd().endsWith('/>')) depth += 1;
+    }
+    i = gt + 1;
+  }
+
+  return lines.join('\n');
+}
+
 export function XmlHighlight({ xml, maxLines }: { xml: string; maxLines?: number }) {
   const scheme = useComputedColorScheme('light');
   const colors = TOKEN_COLOR[scheme];

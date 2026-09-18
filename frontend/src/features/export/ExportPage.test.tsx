@@ -231,7 +231,7 @@ describe('ExportPage', () => {
     renderAt();
     await screen.findByTestId('version-row-3');
     await user.click(screen.getByTestId('preview-3'));
-    expect(await screen.findByTestId('xml-preview')).toHaveTextContent('<g:id>A</g:id>');
+    expect(await screen.findByTestId('xml-preview')).toHaveTextContent(/<g:id>\s*A\s*<\/g:id>/);
   });
 
   it('reads the compared versions from the URL query', async () => {

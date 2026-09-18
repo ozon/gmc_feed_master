@@ -21,14 +21,16 @@ function xmlResponse(body: string) {
 }
 
 describe('FeedVersionPreviewModal', () => {
-  it('renders the fetched XML', async () => {
+  it('renders the fetched XML indented', async () => {
     stubFetch((url) =>
       url === '/feed-sources/1/export-history/2/content'
         ? xmlResponse('<g:id>A</g:id>')
         : new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } }),
     );
     render(<FeedVersionPreviewModal feedSourceId={1} version={2} opened onClose={() => {}} />);
-    expect(await screen.findByTestId('xml-preview')).toHaveTextContent('<g:id>A</g:id>');
+    const preview = await screen.findByTestId('xml-preview');
+    expect(preview).toHaveTextContent(/<g:id>\s*A\s*<\/g:id>/);
+    expect(preview).not.toHaveTextContent('<g:id>A</g:id>');
   });
 
   it('shows the not-retained state on 404', async () => {

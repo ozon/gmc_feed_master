@@ -6,7 +6,7 @@ import { useExportVersionContent } from '../../api/hooks';
 import { ApiError } from '../../api/client';
 import { notifyApiError, notifySuccess } from '../../app/notifications';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
-import { XmlHighlight, sliceXmlLines } from '../../components/XmlHighlight';
+import { XmlHighlight, prettifyXml, sliceXmlLines } from '../../components/XmlHighlight';
 import { downloadVersionXml } from './download';
 
 const MAX_PREVIEW_LINES = 5000;
@@ -22,10 +22,8 @@ export function FeedVersionPreviewModal({ feedSourceId, version, opened, onClose
   const { t } = useTranslation('export');
   const content = useExportVersionContent(feedSourceId, version ?? undefined, opened);
 
-  const sliced = useMemo(
-    () => sliceXmlLines(content.data ?? '', MAX_PREVIEW_LINES),
-    [content.data],
-  );
+  const formatted = useMemo(() => prettifyXml(content.data ?? ''), [content.data]);
+  const sliced = useMemo(() => sliceXmlLines(formatted, MAX_PREVIEW_LINES), [formatted]);
 
   async function handleDownload() {
     if (version === null) return;
@@ -60,7 +58,7 @@ export function FeedVersionPreviewModal({ feedSourceId, version, opened, onClose
             </Alert>
           ) : null}
           <ScrollArea.Autosize mah="70vh">
-            <XmlHighlight xml={content.data} maxLines={MAX_PREVIEW_LINES} />
+            <XmlHighlight xml={sliced.text} />
           </ScrollArea.Autosize>
           <Group justify="flex-end" mt="md">
             <Button leftSection={<IconDownload size={16} />} onClick={() => void handleDownload()}>
