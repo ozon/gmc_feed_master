@@ -1135,9 +1135,9 @@ Expected: `CADDY_MODE_OK` and the six services `backend`, `backup`, `caddy`, `fr
 Run:
 ```bash
 docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest .github/workflows/release.yml && echo WORKFLOW_OK
-grep -c "tags:" .github/workflows/release.yml
+grep -A3 '^on:' .github/workflows/release.yml
 ```
-Expected: `WORKFLOW_OK`, and `tags:` appears exactly once.
+Expected: `WORKFLOW_OK`; the trigger renders only `on:` → `push:` → `tags:` → `- 'v*'` with no `branches` and no `pull_request`. (Note: `tags:` also appears as the `build-push-action` input, so do not count its occurrences.)
 
 - [ ] **Step 4: Run the existing backend gates for regressions from the dependency move**
 
