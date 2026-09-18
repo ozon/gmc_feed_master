@@ -110,4 +110,33 @@ describe('ExportVersionDiff', () => {
     expect(screen.queryByText('p1')).not.toBeInTheDocument();
     expect(screen.getByText('p2')).toBeInTheDocument();
   });
+
+  it('clears the field filter when the compared versions change', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <ExportVersionDiff
+        diff={diff}
+        isPending={false}
+        isError={false}
+        onRetry={() => {}}
+        findingsA={null}
+        findingsB={null}
+      />,
+    );
+    await user.click(screen.getByText('price · 1'));
+    expect(screen.queryByText('p1')).not.toBeInTheDocument();
+
+    rerender(
+      <ExportVersionDiff
+        diff={{ ...diff, version: 4, against: 3 }}
+        isPending={false}
+        isError={false}
+        onRetry={() => {}}
+        findingsA={null}
+        findingsB={null}
+      />,
+    );
+    expect(screen.getByText('p1')).toBeInTheDocument();
+    expect(screen.getByText('p2')).toBeInTheDocument();
+  });
 });

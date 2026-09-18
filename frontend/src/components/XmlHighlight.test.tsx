@@ -56,4 +56,11 @@ describe('XmlHighlight', () => {
     render(<XmlHighlight xml={'<g:id>A</g:id>'} />);
     expect(screen.getByTestId('xml-preview').textContent).toContain('<g:id>A</g:id>');
   });
+
+  it('renders one line-number per line in a dimmed gutter', () => {
+    render(<XmlHighlight xml={'<g:id>A</g:id>\n<g:id>B</g:id>\n<g:id>C</g:id>'} />);
+    const gutter = screen.getByTestId('xml-line-numbers');
+    expect(gutter).toHaveAttribute('aria-hidden', 'true');
+    expect(gutter.textContent?.split('\n')).toEqual(['1', '2', '3']);
+  });
 });

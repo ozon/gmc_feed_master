@@ -72,6 +72,11 @@ export function ExportVersionDiff({
 }: Props) {
   const { t } = useTranslation('export');
   const [selectedField, setSelectedField] = useState<string | null>(null);
+  const [prevDiff, setPrevDiff] = useState(diff);
+  if (prevDiff !== diff) {
+    setPrevDiff(diff);
+    setSelectedField(null);
+  }
 
   const fieldCounts = useMemo(() => {
     const counts = new Map<string, number>();

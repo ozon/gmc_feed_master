@@ -235,6 +235,26 @@ async def test_version_content_requires_auth_and_known_feed_source(app_factory):
     assert (await client.get("/feed-sources/999999/export-history/1/content")).status_code == 404
 
 
+async def test_version_content_404_for_feed_source_outside_client_scope(app_factory):
+    first_feed_id = await _seed_versions(app_factory, [BASE])
+    _, factory, _ = app_factory
+    async with factory() as session, session.begin():
+        other_client = Client(name="Other")
+        session.add(other_client)
+        await session.flush()
+        await create_user(session, "scoped", "scoped-pw", "user", [other_client.id])
+
+    scoped = AsyncClient(
+        transport=ASGITransport(app=app_factory[0]), base_url="https://testserver"
+    )
+    login = await scoped.post(
+        "/auth/login", json={"username": "scoped", "password": "scoped-pw"}
+    )
+    assert login.status_code == 200
+    resp = await scoped.get(f"/feed-sources/{first_feed_id}/export-history/1/content")
+    assert resp.status_code == 404
+
+
 async def _second_feed_source_token(app_factory, token: str) -> int:
     _, factory, _ = app_factory
     async with factory() as session, session.begin():

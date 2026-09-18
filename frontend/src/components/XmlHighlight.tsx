@@ -151,6 +151,7 @@ export function XmlHighlight({ xml, maxLines }: { xml: string; maxLines?: number
   const scheme = useComputedColorScheme('light');
   const colors = TOKEN_COLOR[scheme];
   const { text } = maxLines === undefined ? { text: xml } : sliceXmlLines(xml, maxLines);
+  const lineCount = text.split('\n').length;
   return (
     <pre
       data-testid="xml-preview"
@@ -162,12 +163,30 @@ export function XmlHighlight({ xml, maxLines }: { xml: string; maxLines?: number
         lineHeight: 1.5,
       }}
     >
-      {tokenizeXml(text).map((token, index) => (
-        // oxlint-disable-next-line react/no-array-index-key -- tokens are a deterministic, append-only list rendered once; positional keys are stable
-        <span key={index} style={{ color: colors[token.kind] }}>
-          {token.text}
-        </span>
-      ))}
+      <span
+        data-testid="xml-line-numbers"
+        aria-hidden
+        style={{
+          display: 'inline-block',
+          verticalAlign: 'top',
+          whiteSpace: 'pre',
+          textAlign: 'right',
+          userSelect: 'none',
+          minWidth: `${String(lineCount).length}ch`,
+          marginRight: '1ch',
+          color: 'var(--mantine-color-dimmed)',
+        }}
+      >
+        {Array.from({ length: lineCount }, (_, index) => index + 1).join('\n')}
+      </span>
+      <span style={{ display: 'inline-block', verticalAlign: 'top', whiteSpace: 'pre' }}>
+        {tokenizeXml(text).map((token, index) => (
+          // oxlint-disable-next-line react/no-array-index-key -- tokens are a deterministic, append-only list rendered once; positional keys are stable
+          <span key={index} style={{ color: colors[token.kind] }}>
+            {token.text}
+          </span>
+        ))}
+      </span>
     </pre>
   );
 }
