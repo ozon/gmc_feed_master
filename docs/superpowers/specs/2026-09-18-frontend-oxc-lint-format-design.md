@@ -41,7 +41,7 @@ Rationale: Oxc's parsers are self-contained, so the TS 7 blocker disappears enti
 
 ### Dependencies
 
-Add to `frontend/devDependencies`, pinned to exact versions (repo convention — no `^` ranges): `oxlint`, `oxfmt`, `oxlint-tsgolint`. Exact versions are whatever is current when the task starts; they are recorded in `docs/decisions.md` and in the commit.
+Add to `frontend/devDependencies`, pinned to exact versions (repo convention — no `^` ranges): `oxlint`, `oxfmt`, `oxlint-tsgolint`. These are the only three top-level pins: `oxlint-tsgolint`'s `@oxlint-tsgolint/<platform>` binaries are transitive `optionalDependencies`, and `typescript-go` is embedded in those binaries (it is not a separate package to pin). Versions current at design time were `oxlint@1.83.0`, `oxfmt@0.68.0`, `oxlint-tsgolint@7.0.2002`; the implementing task pins whatever is current then and records the exact three versions in `docs/decisions.md`.
 
 ### `frontend/.oxlintrc.json`
 
@@ -58,8 +58,11 @@ Add to `frontend/devDependencies`, pinned to exact versions (repo convention —
     "perf": "warn",
     "style": "off"
   },
-  "plugins": ["react", "react-hooks", "typescript", "import", "jsx-a11y", "oxc"],
+  "plugins": ["unicorn", "oxc", "typescript", "react", "import", "jsx-a11y", "vitest"],
   "rules": {
+    "react/react-in-jsx-scope": "off",
+    "react/hooks": "off",
+    "react/exhaustive-effect-dependencies": "off",
     "react/only-export-components": ["warn", { "allowConstantExport": true }],
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
@@ -77,10 +80,11 @@ Add to `frontend/devDependencies`, pinned to exact versions (repo convention —
 }
 ```
 
-Notes:
-- Setting `plugins` **replaces** oxlint's default plugin set, so the array must list everything wanted. The exact plugin identifiers for the native React hooks rules are validated against `oxlint --rules` in the first implementation task; if an identifier differs, the validated name is used and this spec's list updated in that commit.
+Notes (identifiers verified empirically against `oxlint@1.83.0`, see "Rule-name drift" in Risks):
+- Setting `plugins` **replaces** oxlint's default plugin set (`unicorn`, `oxc`, `typescript` are on by default; `react` is off), so the array lists every plugin wanted. `react-hooks` is a rule **namespace**, not a plugin identifier — the `react-hooks/*` rules ship with the `react` plugin (there is no `react-hooks` plugin).
+- `react/react-in-jsx-scope` is turned off because the app uses React 19's automatic JSX runtime (`"jsx": "react-jsx"`), where the rule is a false positive. `react/hooks` and `react/exhaustive-effect-dependencies` are turned off because they duplicate `react-hooks/rules-of-hooks` and `react-hooks/exhaustive-deps` (the canonical, ESLint-named rules we gate on).
 - `"style": "off"` because the formatter owns style; `correctness`/`suspicious`/`perf` are the "broad rules" the operator asked for.
-- `maxWarnings` starts at `0` and is set to the captured baseline once measured (see Enforcement). If the captured baseline is 0, no change is needed.
+- `maxWarnings` starts at `0` and is overwritten with the captured baseline in the lint-baseline task (see Enforcement). Until then `npm run lint` fails if any warnings exist — that is expected, not a regression.
 - `typeCheck` is intentionally **not** enabled: `tsc -b` remains the typecheck gate (`npm run typecheck`), so oxlint stays fast and single-purpose.
 
 ### `frontend/.oxfmtrc.json`
@@ -127,15 +131,15 @@ The frontend job adds one step after install, before the existing test/typecheck
 
 ## Rollout (task outline; the implementation plan expands this)
 
-1. **Deps, configs, scripts** — add the three pinned devDependencies, `frontend/.oxlintrc.json`, `frontend/.oxfmtrc.json`, and the four npm scripts. No source changes.
-2. **One-time format commit** — `npm run format` over `src`, committed alone; add a `.git-blame-ignore-revs` entry naming that commit's SHA. No logic changes.
+1. **Deps, configs, scripts** — add the three pinned devDependencies, `frontend/.oxlintrc.json`, `frontend/.oxfmtrc.json`, and the four npm scripts. No source changes. `npm run lint` will likely fail at this point (any warning over the placeholder `maxWarnings: 0`, plus unfixed errors); that is expected and is resolved in step 3, not by forcing every warning out here.
+2. **One-time format commit** — `npm run format` over `src`, committed alone; add a `.git-blame-ignore-revs` entry naming that commit's SHA (the file does not exist today — create it). No logic changes.
 3. **Lint baseline** — run `npm run lint`, fix `error` findings, capture the warning count, set `maxWarnings`, remove stale disable directives. Commit findings fixes separately from the baseline number where practical.
 4. **CI gate** — add the lint+format step to the frontend job.
 5. **Docs and tracker** — update `frontend/AGENTS.md` (HOW commands + lint/format conventions), `docs/decisions.md` (tooling decision, versions, warning baseline, oxfmt-beta note), close TODO 9A.14, and mark review-remediation plan Task 14 as superseded by this design. Add the `TODO.md` cycle-log entry.
 
 ## Verification
 
-- After step 2 (reformat): `npm run test` (598 passing), `npm run typecheck`, and `npm run build` are all green — formatting is semantics-preserving, so any failure is a formatter bug to investigate, not to accept.
+- After step 2 (reformat): record the current `npm run test` pass count **before** formatting, then assert the identical count after. Do not hardcode a figure — the reformat is semantics-preserving, so any change in count (up or down) is a formatter bug to investigate, not to accept. `npm run typecheck` and `npm run build` must likewise be green before and after.
 - `npm run lint` exits 0 (zero errors, warnings ≤ baseline); `npm run format:check` exits 0.
 - `oxlint` reports at least one `react-hooks/rules-of-hooks` diagnostic when a deliberate temporary conditional-hook is introduced, and `react/only-export-components` fires on a mixed component/non-component module — proving the gate actually covers the Task-4 class (smoke check, then reverted).
 - CI frontend job is green on the branch.
@@ -145,7 +149,7 @@ The frontend job adds one step after install, before the existing test/typecheck
 - **`oxfmt` is beta (0.54.x).** Mitigated by exact pinning, `--check` in CI, and documenting the beta status; upgrades are deliberate, reviewed commits, not automatic.
 - **One large formatting diff.** Mitigated by an isolated commit and `.git-blame-ignore-revs` (GitHub and `git blame --ignore-revs-file` then skip it).
 - **Type-aware lint cost.** `tsgolint` builds TS programs and can use significant memory on large trees; it runs only in `lint`, not `lint:fix`. The tsconfigs have no `baseUrl`/`paths`, so no TS7-incompatible legacy options exist.
-- **Rule-name drift.** Oxc iterates quickly; plugin/rule identifiers are validated from `oxlint --rules` at implementation time rather than trusted from this document.
+- **Rule-name drift.** Oxc iterates quickly. The identifiers in this spec were verified empirically against `oxlint@1.83.0` (its `--rules` listing prints nothing in that version, so a small probe file with a conditional hook and a mixed component/non-component export was linted to read the real namespaces). Re-validate the same way after any oxlint bump rather than trusting this document.
 - **Non-goals:** replacing `tsc -b` (kept as the typecheck gate), `--type-check`, formatting anything outside `src` (configs/JSON/Markdown), editor/LSP setup, JS plugins (alpha), and changing TypeScript's version.
 
 ## References
