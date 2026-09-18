@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { stubFetch } from '../../test/fetch';
-import { downloadVersionXml } from './download';
+import { downloadLiveXml, downloadVersionXml } from './download';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -78,6 +78,28 @@ describe('downloadVersionXml', () => {
     expect(await urlApi.blobs[0].text()).toBe('<g:id>B</g:id>');
     expect(urlApi.getClicked()?.download).toBe('feed-1-v2.xml');
     expect(urlApi.revokeObjectURL).not.toHaveBeenCalled();
+    vi.runAllTimers();
+    expect(urlApi.revokeObjectURL).toHaveBeenCalledOnce();
+  });
+});
+
+describe('downloadLiveXml', () => {
+  it('fetches the public export URL and downloads it as feed-{id}.xml', async () => {
+    vi.useFakeTimers();
+    const fetchMock = stubFetch(
+      () =>
+        new Response('<g:id>Live</g:id>', {
+          status: 200,
+          headers: { 'Content-Type': 'application/xml' },
+        }),
+    );
+    const urlApi = stubUrlApi();
+
+    await downloadLiveXml(1, 'http://localhost/export/abc.xml');
+
+    expect(fetchMock).toHaveBeenCalledWith('http://localhost/export/abc.xml', expect.anything());
+    expect(await urlApi.blobs[0].text()).toBe('<g:id>Live</g:id>');
+    expect(urlApi.getClicked()?.download).toBe('feed-1.xml');
     vi.runAllTimers();
     expect(urlApi.revokeObjectURL).toHaveBeenCalledOnce();
   });

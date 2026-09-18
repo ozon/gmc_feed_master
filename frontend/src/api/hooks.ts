@@ -668,6 +668,14 @@ export function useExportVersionContent(
   });
 }
 
+export function usePublishedExportContent(exportUrl: string, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.exportContent(exportUrl),
+    queryFn: () => apiGetText(exportUrl),
+    enabled: enabled && Boolean(exportUrl),
+  });
+}
+
 export function useSetExportToken(feedSourceId: number | string) {
   const queryClient = useQueryClient();
   return useMutation({

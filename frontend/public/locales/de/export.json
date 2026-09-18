@@ -58,10 +58,14 @@
     "title": "Vorschau Version {{version}}",
     "openFor": "Version in der Vorschau öffnen",
     "notRetained": "Diese Version wird nicht mehr aufbewahrt.",
+    "liveTitle": "Vorschau des Live-Feeds",
+    "notPublished": "Noch kein veröffentlichter Feed.",
+    "openLive": "Live-Feed in der Vorschau öffnen",
     "truncated": "Zeige die ersten {{shown}} von {{total}} Zeilen."
   },
   "download": {
     "version": "Version herunterladen",
+    "live": "Live-Feed herunterladen",
     "failed": "Feed-Version konnte nicht heruntergeladen werden."
   },
   "liveBadge": "Live",

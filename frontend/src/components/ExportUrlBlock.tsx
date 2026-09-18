@@ -1,11 +1,19 @@
 import { useState } from 'react';
 import { Button, Group, Stack, Text, TextInput, Title } from '@mantine/core';
-import { IconCheck, IconRotate } from '@tabler/icons-react';
+import { IconCheck, IconDownload, IconEye, IconRotate } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { useRotateExportToken, useSession, useSetExportToken } from '../api/hooks';
-import { notifyMutationError, notifySuccess } from '../app/notifications';
+import {
+  usePublishedExportContent,
+  useRotateExportToken,
+  useSession,
+  useSetExportToken,
+} from '../api/hooks';
+import { ApiError } from '../api/client';
+import { notifyApiError, notifyMutationError, notifySuccess } from '../app/notifications';
 import { ConfirmModal } from './ConfirmModal';
 import { CopyField } from './CopyField';
+import { FeedPreviewModal } from './FeedPreviewModal';
+import { downloadLiveXml } from '../features/export/download';
 
 function isWeakToken(value: string): boolean {
   return value.length < 8 || /^\d+$/.test(value);
@@ -34,6 +42,21 @@ export function ExportUrlBlock({
   }
   const [rotateOpened, setRotateOpened] = useState(false);
   const [saveOpened, setSaveOpened] = useState(false);
+  const [previewOpened, setPreviewOpened] = useState(false);
+  const [liveDownloading, setLiveDownloading] = useState(false);
+  const liveContent = usePublishedExportContent(exportUrl, previewOpened);
+
+  async function handleDownloadLive() {
+    setLiveDownloading(true);
+    try {
+      await downloadLiveXml(feedSourceId, exportUrl);
+      notifySuccess(t('download.live'));
+    } catch (error) {
+      notifyApiError(error, t('download.failed'));
+    } finally {
+      setLiveDownloading(false);
+    }
+  }
 
   function handleRotate() {
     rotateToken.mutate(feedSourceId, {
@@ -65,6 +88,25 @@ export function ExportUrlBlock({
     <Stack gap="md">
       <Title order={4}>{t('urlTitle')}</Title>
       <CopyField label={t('publicUrl')} value={exportUrl} />
+      <Group>
+        <Button
+          variant="light"
+          leftSection={<IconEye size={16} />}
+          onClick={() => setPreviewOpened(true)}
+          data-testid="live-preview"
+        >
+          {t('preview.openLive')}
+        </Button>
+        <Button
+          variant="light"
+          leftSection={<IconDownload size={16} />}
+          onClick={() => void handleDownloadLive()}
+          loading={liveDownloading}
+          data-testid="live-download"
+        >
+          {t('download.live')}
+        </Button>
+      </Group>
       {isAdmin ? (
         <>
           <TextInput
@@ -125,6 +167,19 @@ export function ExportUrlBlock({
         loading={setToken.isPending}
         onConfirm={handleSave}
         onClose={() => setSaveOpened(false)}
+      />
+      <FeedPreviewModal
+        opened={previewOpened}
+        onClose={() => setPreviewOpened(false)}
+        title={t('preview.liveTitle')}
+        isPending={liveContent.isPending}
+        isError={liveContent.isError}
+        notAvailable={liveContent.error instanceof ApiError && liveContent.error.status === 404}
+        notAvailableMessage={t('preview.notPublished')}
+        content={liveContent.data}
+        downloadLabel={t('download.live')}
+        onRetry={() => void liveContent.refetch()}
+        onDownload={() => void handleDownloadLive()}
       />
     </Stack>
   );
