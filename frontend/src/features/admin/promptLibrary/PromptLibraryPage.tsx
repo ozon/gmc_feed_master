@@ -1,11 +1,22 @@
 import { useState } from 'react';
 import {
-  ActionIcon, Badge, Button, Group, Modal, Select, Stack, Table, Text, Title,
+  ActionIcon,
+  Badge,
+  Button,
+  Group,
+  Modal,
+  Select,
+  Stack,
+  Table,
+  Text,
+  Title,
 } from '@mantine/core';
 import { IconEye, IconGitBranch, IconPencil, IconPlus } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import {
-  useActivatePromptTemplate, useDashboardSummary, usePromptTemplates,
+  useActivatePromptTemplate,
+  useDashboardSummary,
+  usePromptTemplates,
 } from '../../../api/hooks';
 import { notifyMutationError, notifySuccess } from '../../../app/notifications';
 import { EmptyState, ErrorState, LoadingState } from '../../../components/StateViews';
@@ -30,9 +41,10 @@ export function PromptLibraryPage() {
 
   const clients = clientsQuery.data?.clients ?? [];
   const all = templatesQuery.data ?? [];
-  const scoped = scope === 'global'
-    ? all.filter((t) => t.client_id === null)
-    : all.filter((t) => t.client_id === Number(scope));
+  const scoped =
+    scope === 'global'
+      ? all.filter((t) => t.client_id === null)
+      : all.filter((t) => t.client_id === Number(scope));
   const groups = new Map<string, PromptTemplate[]>();
   for (const template of scoped) {
     const rows = groups.get(template.task_type) ?? [];
@@ -94,7 +106,9 @@ export function PromptLibraryPage() {
                     <Table.Td>{row.name}</Table.Td>
                     <Table.Td>
                       {row.is_active ? (
-                        <Badge variant="light" color="green">{t('promptLibrary.active')}</Badge>
+                        <Badge variant="light" color="green">
+                          {t('promptLibrary.active')}
+                        </Badge>
                       ) : null}
                     </Table.Td>
                     <Table.Td>{row.created_by ?? '—'}</Table.Td>
@@ -106,7 +120,8 @@ export function PromptLibraryPage() {
                             onClick={() =>
                               activate.mutate(row.id, {
                                 onSuccess: () => notifySuccess(t('promptLibrary.activated')),
-                                onError: (error) => notifyMutationError(error, t('promptLibrary.activateFailed')),
+                                onError: (error) =>
+                                  notifyMutationError(error, t('promptLibrary.activateFailed')),
                               })
                             }
                           >
@@ -156,13 +171,19 @@ export function PromptLibraryPage() {
           />
         ) : null}
       </Modal>
-      <DiffModal templates={diffGroup ?? []} opened={diffGroup !== null} onClose={() => setDiffGroup(null)} />
+      <DiffModal
+        templates={diffGroup ?? []}
+        opened={diffGroup !== null}
+        onClose={() => setDiffGroup(null)}
+      />
     </Stack>
   );
 }
 
 function DiffModal({
-  templates, opened, onClose,
+  templates,
+  opened,
+  onClose,
 }: {
   templates: PromptTemplate[];
   opened: boolean;
@@ -203,17 +224,29 @@ function DiffModal({
           // ponytail: raw side-by-side, no diff algorithm — eyeball it; add a line-diff when prompts grow past a screen
           <Group grow align="start" wrap="nowrap">
             <Stack gap="xs">
-              <Text fw={500}>v{a.version} — {a.name}</Text>
-              <Text size="sm" fw={500}>System</Text>
+              <Text fw={500}>
+                v{a.version} — {a.name}
+              </Text>
+              <Text size="sm" fw={500}>
+                System
+              </Text>
               <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{a.system_prompt}</pre>
-              <Text size="sm" fw={500}>User</Text>
+              <Text size="sm" fw={500}>
+                User
+              </Text>
               <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{a.user_prompt}</pre>
             </Stack>
             <Stack gap="xs">
-              <Text fw={500}>v{b.version} — {b.name}</Text>
-              <Text size="sm" fw={500}>System</Text>
+              <Text fw={500}>
+                v{b.version} — {b.name}
+              </Text>
+              <Text size="sm" fw={500}>
+                System
+              </Text>
               <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{b.system_prompt}</pre>
-              <Text size="sm" fw={500}>User</Text>
+              <Text size="sm" fw={500}>
+                User
+              </Text>
               <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{b.user_prompt}</pre>
             </Stack>
           </Group>

@@ -19,18 +19,24 @@ const rules: PluginInfo['manifest'] = {
 
 describe('tierOptions', () => {
   it('derives most-specific-first tiers from manifest scopes and route availability', () => {
-    expect(tierOptions(labelizer, { hasFeedSource: true, hasClient: true }))
-      .toEqual(['feed_source', 'client', 'global']);
+    expect(tierOptions(labelizer, { hasFeedSource: true, hasClient: true })).toEqual([
+      'feed_source',
+      'client',
+      'global',
+    ]);
   });
 
   it('omits feed_source when no feed source is in context', () => {
-    expect(tierOptions(labelizer, { hasFeedSource: false, hasClient: true }))
-      .toEqual(['client', 'global']);
+    expect(tierOptions(labelizer, { hasFeedSource: false, hasClient: true })).toEqual([
+      'client',
+      'global',
+    ]);
   });
 
   it('accepts a string scope value', () => {
-    expect(tierOptions({ data_scope: 'client' }, { hasFeedSource: true, hasClient: true }))
-      .toEqual(['client']);
+    expect(tierOptions({ data_scope: 'client' }, { hasFeedSource: true, hasClient: true })).toEqual(
+      ['client'],
+    );
   });
 });
 

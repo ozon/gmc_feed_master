@@ -11,7 +11,11 @@ import {
 } from '../../api/hooks';
 import { ApiError } from '../../api/client';
 import { ErrorState, LoadingState } from '../../components/StateViews';
-import { withLoadingNotification, notifyMutationError, notifySuccess } from '../../app/notifications';
+import {
+  withLoadingNotification,
+  notifyMutationError,
+  notifySuccess,
+} from '../../app/notifications';
 import { MappingTable } from './MappingTable';
 
 function parseRowErrors(errors: string[]): Record<string, string> {
@@ -112,23 +116,20 @@ export function MappingTab() {
     return uncovered;
   }, [registryQuery.data, coveredTargets]);
 
-  const handleTargetChange = useCallback(
-    (source: string, target: string | null) => {
-      setLocalEdits((prev) => {
-        const next = { ...prev, [source]: target };
-        const dotIndex = source.indexOf('.');
-        if (dotIndex > 0) {
-          next[source.slice(0, dotIndex)] = null;
-        } else {
-          for (const key of Object.keys(next)) {
-            if (key.startsWith(`${source}.`)) next[key] = null;
-          }
+  const handleTargetChange = useCallback((source: string, target: string | null) => {
+    setLocalEdits((prev) => {
+      const next = { ...prev, [source]: target };
+      const dotIndex = source.indexOf('.');
+      if (dotIndex > 0) {
+        next[source.slice(0, dotIndex)] = null;
+      } else {
+        for (const key of Object.keys(next)) {
+          if (key.startsWith(`${source}.`)) next[key] = null;
         }
-        return next;
-      });
-    },
-    [],
-  );
+      }
+      return next;
+    });
+  }, []);
 
   const handleAddCustom = useCallback(
     (name: string, target: string) => {
@@ -200,10 +201,20 @@ export function MappingTab() {
 
   if (mappingQuery.isPending || registryQuery.isPending) return <LoadingState />;
   if (mappingQuery.isError) {
-    return <ErrorState message={mappingQuery.error?.message} onRetry={() => void mappingQuery.refetch()} />;
+    return (
+      <ErrorState
+        message={mappingQuery.error?.message}
+        onRetry={() => void mappingQuery.refetch()}
+      />
+    );
   }
   if (registryQuery.isError) {
-    return <ErrorState message={registryQuery.error?.message} onRetry={() => void registryQuery.refetch()} />;
+    return (
+      <ErrorState
+        message={registryQuery.error?.message}
+        onRetry={() => void registryQuery.refetch()}
+      />
+    );
   }
 
   const sourceFields = mappingQuery.data.source_fields ?? [];
@@ -241,7 +252,9 @@ export function MappingTab() {
       {requiredUncovered.length > 0 && (
         <Alert color="orange" title={tSetup('mapping.requiredUncovered')}>
           {tSetup('mapping.requiredUncoveredList', {
-            names: new Intl.ListFormat(undefined, { style: 'long', type: 'conjunction' }).format(requiredUncovered),
+            names: new Intl.ListFormat(undefined, { style: 'long', type: 'conjunction' }).format(
+              requiredUncovered,
+            ),
           })}
         </Alert>
       )}

@@ -24,11 +24,19 @@ beforeAll(async () => {
 });
 
 const instance: LocalInstance = {
-  id: 1, position: 0, plugin_id: 'upper', name: 'Upper',
-  configuration: { suffix: '!' }, enabled: true, clientId: 'upper-0',
+  id: 1,
+  position: 0,
+  plugin_id: 'upper',
+  name: 'Upper',
+  configuration: { suffix: '!' },
+  enabled: true,
+  clientId: 'upper-0',
 };
 const plugin: PluginInfo = {
-  id: 'upper', name: 'Upper', version: '2.1.0', enabled: true,
+  id: 'upper',
+  name: 'Upper',
+  version: '2.1.0',
+  enabled: true,
   manifest: {
     extension_point: 'pipeline_module',
     config_schema: {
@@ -40,11 +48,19 @@ const plugin: PluginInfo = {
 };
 
 const labelizerInstance: LocalInstance = {
-  id: 2, position: 0, plugin_id: 'probe', name: 'Probe',
-  configuration: {}, enabled: true, clientId: 'probe-0',
+  id: 2,
+  position: 0,
+  plugin_id: 'probe',
+  name: 'Probe',
+  configuration: {},
+  enabled: true,
+  clientId: 'probe-0',
 };
 const labelizerPlugin: PluginInfo = {
-  id: 'probe', name: 'Probe', version: '1.0.0', enabled: true,
+  id: 'probe',
+  name: 'Probe',
+  version: '1.0.0',
+  enabled: true,
   manifest: {
     extension_point: 'pipeline_module',
     frontend: { component: 'component.tsx' },
@@ -54,11 +70,19 @@ const labelizerPlugin: PluginInfo = {
   used_by_feed_sources: 0,
 };
 const setupInstance: LocalInstance = {
-  id: 3, position: 0, plugin_id: 'setup', name: 'Setup Probe',
-  configuration: {}, enabled: true, clientId: 'setup-0',
+  id: 3,
+  position: 0,
+  plugin_id: 'setup',
+  name: 'Setup Probe',
+  configuration: {},
+  enabled: true,
+  clientId: 'setup-0',
 };
 const setupPlugin: PluginInfo = {
-  id: 'setup', name: 'Setup Probe', version: '1.0.0', enabled: true,
+  id: 'setup',
+  name: 'Setup Probe',
+  version: '1.0.0',
+  enabled: true,
   manifest: {
     extension_point: 'pipeline_module',
     frontend: { component: 'component.tsx' },
@@ -75,11 +99,19 @@ const feedEditablePlugin: PluginInfo = {
   },
 };
 const bothInstance: LocalInstance = {
-  id: 4, position: 0, plugin_id: 'both', name: 'Both Probe',
-  configuration: { suffix: '!' }, enabled: true, clientId: 'both-0',
+  id: 4,
+  position: 0,
+  plugin_id: 'both',
+  name: 'Both Probe',
+  configuration: { suffix: '!' },
+  enabled: true,
+  clientId: 'both-0',
 };
 const bothPlugin: PluginInfo = {
-  id: 'both', name: 'Both Probe', version: '1.0.0', enabled: true,
+  id: 'both',
+  name: 'Both Probe',
+  version: '1.0.0',
+  enabled: true,
   manifest: {
     extension_point: 'pipeline_module',
     frontend: { component: 'component.tsx' },
@@ -94,14 +126,28 @@ describe('PluginConfigPanel', () => {
   beforeEach(() => resetProbe());
 
   it('renders header with instance name, version and remove button', () => {
-    render(<PluginConfigPanel instance={instance} plugin={plugin} onChange={vi.fn()} onRemove={vi.fn()} />);
+    render(
+      <PluginConfigPanel
+        instance={instance}
+        plugin={plugin}
+        onChange={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
     expect(screen.getByText('Upper')).toBeInTheDocument();
     expect(screen.getByText(/v2\.1\.0/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /remove/i })).toBeInTheDocument();
   });
 
   it('shows a disabled banner when the instance is disabled', () => {
-    render(<PluginConfigPanel instance={{ ...instance, enabled: false }} plugin={plugin} onChange={vi.fn()} onRemove={vi.fn()} />);
+    render(
+      <PluginConfigPanel
+        instance={{ ...instance, enabled: false }}
+        plugin={plugin}
+        onChange={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
     expect(screen.getByTestId('config-panel')).toBeInTheDocument();
     expect(screen.getByText(/does not run/i)).toBeInTheDocument();
   });
@@ -109,7 +155,14 @@ describe('PluginConfigPanel', () => {
   it('edits configuration through the form', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
-    render(<PluginConfigPanel instance={instance} plugin={plugin} onChange={onChange} onRemove={vi.fn()} />);
+    render(
+      <PluginConfigPanel
+        instance={instance}
+        plugin={plugin}
+        onChange={onChange}
+        onRemove={vi.fn()}
+      />,
+    );
     const input = await screen.findByLabelText(/suffix/i);
     await user.clear(input);
     await user.type(input, '?');
@@ -117,16 +170,21 @@ describe('PluginConfigPanel', () => {
   });
 
   it('renders an empty state when no instance is selected', () => {
-    render(<PluginConfigPanel instance={null} plugin={plugin} onChange={vi.fn()} onRemove={vi.fn()} />);
+    render(
+      <PluginConfigPanel instance={null} plugin={plugin} onChange={vi.fn()} onRemove={vi.fn()} />,
+    );
     expect(screen.getByText(/select a plugin/i)).toBeInTheDocument();
   });
 
   it('renders the plugin-config section with a tier switcher defaulting to Feed scope', () => {
     render(
       <PluginConfigPanel
-        instance={setupInstance} plugin={setupPlugin}
-        clientId="3" feedSourceId="9"
-        onChange={vi.fn()} onRemove={vi.fn()}
+        instance={setupInstance}
+        plugin={setupPlugin}
+        clientId="3"
+        feedSourceId="9"
+        onChange={vi.fn()}
+        onRemove={vi.fn()}
       />,
     );
     const probe = screen.getByTestId('probe-component');
@@ -138,9 +196,12 @@ describe('PluginConfigPanel', () => {
     const user = userEvent.setup();
     render(
       <PluginConfigPanel
-        instance={setupInstance} plugin={setupPlugin}
-        clientId="3" feedSourceId="9"
-        onChange={vi.fn()} onRemove={vi.fn()}
+        instance={setupInstance}
+        plugin={setupPlugin}
+        clientId="3"
+        feedSourceId="9"
+        onChange={vi.fn()}
+        onRemove={vi.fn()}
       />,
     );
     await user.click(screen.getByRole('radio', { name: /client/i }));
@@ -152,31 +213,46 @@ describe('PluginConfigPanel', () => {
     const user = userEvent.setup();
     render(
       <PluginConfigPanel
-        instance={setupInstance} plugin={setupPlugin}
-        clientId="3" feedSourceId="9"
-        onChange={vi.fn()} onRemove={vi.fn()}
+        instance={setupInstance}
+        plugin={setupPlugin}
+        clientId="3"
+        feedSourceId="9"
+        onChange={vi.fn()}
+        onRemove={vi.fn()}
       />,
     );
     const alert = screen.getByTestId('config-readonly-alert');
     expect(alert).toHaveTextContent(/managed at Client level/i);
     await user.click(screen.getByRole('button', { name: /switch to client tier/i }));
-    expect(screen.getByTestId('probe-component'))
-      .toHaveAttribute('data-scope', JSON.stringify({ clientId: 3 }));
+    expect(screen.getByTestId('probe-component')).toHaveAttribute(
+      'data-scope',
+      JSON.stringify({ clientId: 3 }),
+    );
   });
 
   it('shows no read-only alert for a plugin editable at feed tier', () => {
     render(
       <PluginConfigPanel
-        instance={setupInstance} plugin={feedEditablePlugin}
-        clientId="3" feedSourceId="9"
-        onChange={vi.fn()} onRemove={vi.fn()}
+        instance={setupInstance}
+        plugin={feedEditablePlugin}
+        clientId="3"
+        feedSourceId="9"
+        onChange={vi.fn()}
+        onRemove={vi.fn()}
       />,
     );
     expect(screen.queryByTestId('config-readonly-alert')).not.toBeInTheDocument();
   });
 
   it('shows no plugin-config section or switcher when the plugin has no custom component', () => {
-    render(<PluginConfigPanel instance={instance} plugin={plugin} onChange={vi.fn()} onRemove={vi.fn()} />);
+    render(
+      <PluginConfigPanel
+        instance={instance}
+        plugin={plugin}
+        onChange={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
     expect(screen.queryByTestId('config-tier-switcher')).not.toBeInTheDocument();
     expect(screen.queryByTestId('probe-component')).not.toBeInTheDocument();
   });
@@ -185,9 +261,12 @@ describe('PluginConfigPanel', () => {
     render(
       <MemoryRouter>
         <PluginConfigPanel
-          instance={labelizerInstance} plugin={labelizerPlugin}
-          clientId="3" feedSourceId="9"
-          onChange={vi.fn()} onRemove={vi.fn()}
+          instance={labelizerInstance}
+          plugin={labelizerPlugin}
+          clientId="3"
+          feedSourceId="9"
+          onChange={vi.fn()}
+          onRemove={vi.fn()}
         />
       </MemoryRouter>,
     );
@@ -202,9 +281,12 @@ describe('PluginConfigPanel', () => {
     render(
       <MemoryRouter>
         <PluginConfigPanel
-          instance={bothInstance} plugin={bothPlugin}
-          clientId="3" feedSourceId="9"
-          onChange={vi.fn()} onRemove={vi.fn()}
+          instance={bothInstance}
+          plugin={bothPlugin}
+          clientId="3"
+          feedSourceId="9"
+          onChange={vi.fn()}
+          onRemove={vi.fn()}
         />
       </MemoryRouter>,
     );
@@ -215,7 +297,14 @@ describe('PluginConfigPanel', () => {
   });
 
   it('schema-only plugin still renders the instance settings form', () => {
-    render(<PluginConfigPanel instance={instance} plugin={plugin} onChange={vi.fn()} onRemove={vi.fn()} />);
+    render(
+      <PluginConfigPanel
+        instance={instance}
+        plugin={plugin}
+        onChange={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
     expect(screen.getByLabelText(/suffix/i)).toBeInTheDocument();
     expect(screen.queryByText(/configured on its plugin page/i)).not.toBeInTheDocument();
   });
@@ -225,9 +314,12 @@ describe('PluginConfigPanel', () => {
     setCrashOnRender(true);
     render(
       <PluginConfigPanel
-        instance={setupInstance} plugin={setupPlugin}
-        clientId="3" feedSourceId="9"
-        onChange={vi.fn()} onRemove={vi.fn()}
+        instance={setupInstance}
+        plugin={setupPlugin}
+        clientId="3"
+        feedSourceId="9"
+        onChange={vi.fn()}
+        onRemove={vi.fn()}
       />,
     );
     expect(screen.getByTestId('plugin-error-boundary')).toBeInTheDocument();

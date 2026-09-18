@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert, Badge, Button, Divider, Group, SegmentedControl, Stack, Text, Title,
+  Alert,
+  Badge,
+  Button,
+  Divider,
+  Group,
+  SegmentedControl,
+  Stack,
+  Text,
+  Title,
 } from '@mantine/core';
 import { IconTrash } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +19,10 @@ import { CUSTOM_COMPONENTS } from '../plugin/customComponents';
 import { CONFIG_COMPONENTS } from '../plugin/configComponents';
 import { PluginErrorBoundary } from '../plugin/PluginErrorBoundary';
 import {
-  configEditableAtFeed, highestEditableConfigTier, scopeForTier, tierOptions,
+  configEditableAtFeed,
+  highestEditableConfigTier,
+  scopeForTier,
+  tierOptions,
   type ConfigTier,
 } from './tierUtils';
 import type { LocalInstance } from './dndUtils';
@@ -26,7 +37,12 @@ type Props = {
 };
 
 export function PluginConfigPanel({
-  instance, plugin, clientId, feedSourceId, onChange, onRemove,
+  instance,
+  plugin,
+  clientId,
+  feedSourceId,
+  onChange,
+  onRemove,
 }: Props) {
   const { t } = useTranslation('pipeline');
   const { t: tCommon } = useTranslation('common');
@@ -51,32 +67,35 @@ export function PluginConfigPanel({
   }
 
   const schema = (plugin?.manifest?.config_schema as JsonSchema | undefined) ?? null;
-  const SetupComponent = plugin
-    ? CONFIG_COMPONENTS[plugin.id] ?? null
-    : null;
+  const SetupComponent = plugin ? (CONFIG_COMPONENTS[plugin.id] ?? null) : null;
   const PageComponent = plugin?.manifest?.frontend?.component
-    ? CUSTOM_COMPONENTS[plugin.id] ?? null
+    ? (CUSTOM_COMPONENTS[plugin.id] ?? null)
     : null;
   const pageOnly = PageComponent !== null && SetupComponent === null;
-  const declaredTiers = SetupComponent && plugin
-    ? tierOptions(plugin.manifest, {
-        hasFeedSource: Boolean(feedSourceId),
-        hasClient: Boolean(clientId),
-      })
-    : [];
+  const declaredTiers =
+    SetupComponent && plugin
+      ? tierOptions(plugin.manifest, {
+          hasFeedSource: Boolean(feedSourceId),
+          hasClient: Boolean(clientId),
+        })
+      : [];
   const tiers: ConfigTier[] = declaredTiers.length > 0 ? declaredTiers : ['global'];
   const tier = tiers.includes(selectedTier) ? selectedTier : tiers[0];
-  const readOnlyTarget = SetupComponent && plugin && tier === 'feed_source'
-    && !configEditableAtFeed(plugin.manifest)
-    ? highestEditableConfigTier(plugin.manifest)
-    : null;
+  const readOnlyTarget =
+    SetupComponent && plugin && tier === 'feed_source' && !configEditableAtFeed(plugin.manifest)
+      ? highestEditableConfigTier(plugin.manifest)
+      : null;
 
   return (
     <Stack gap="md" data-testid="config-panel">
       <Group justify="space-between">
         <Group gap="xs">
           <Title order={4}>{instance.name}</Title>
-          {plugin ? <Badge size="sm" variant="light">v{plugin.version}</Badge> : null}
+          {plugin ? (
+            <Badge size="sm" variant="light">
+              v{plugin.version}
+            </Badge>
+          ) : null}
         </Group>
         <Button
           variant="light"
@@ -87,9 +106,7 @@ export function PluginConfigPanel({
           {t('configRemove')}
         </Button>
       </Group>
-      {!instance.enabled ? (
-        <Alert color="yellow">{t('configDisabledInfo')}</Alert>
-      ) : null}
+      {!instance.enabled ? <Alert color="yellow">{t('configDisabledInfo')}</Alert> : null}
       {SetupComponent && plugin ? (
         <>
           <Group justify="space-between" wrap="nowrap">
@@ -108,11 +125,7 @@ export function PluginConfigPanel({
                 <Text size="sm">
                   {t('configReadOnlyBody', { tier: tCommon(`scope.${readOnlyTarget}`) })}
                 </Text>
-                <Button
-                  size="xs"
-                  variant="light"
-                  onClick={() => setSelectedTier(readOnlyTarget)}
-                >
+                <Button size="xs" variant="light" onClick={() => setSelectedTier(readOnlyTarget)}>
                   {t('configSwitchTier', { tier: tCommon(`scope.${readOnlyTarget}`) })}
                 </Button>
               </Group>
@@ -130,7 +143,9 @@ export function PluginConfigPanel({
       ) : null}
       {pageOnly && plugin && clientId && feedSourceId ? (
         <Group justify="space-between" wrap="nowrap" data-testid="config-plugin-page-hint">
-          <Text size="sm" c="dimmed">{t('configOnPluginPage')}</Text>
+          <Text size="sm" c="dimmed">
+            {t('configOnPluginPage')}
+          </Text>
           <Button
             size="xs"
             variant="light"
@@ -155,7 +170,9 @@ export function PluginConfigPanel({
               }}
             />
           ) : (
-            <Text c="dimmed" size="sm">{t('configNoSchema')}</Text>
+            <Text c="dimmed" size="sm">
+              {t('configNoSchema')}
+            </Text>
           )}
         </>
       ) : null}

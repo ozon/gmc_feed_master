@@ -48,9 +48,14 @@ describe('normalizeConfig', () => {
 
   it('coerces unknown op codes to safe defaults', () => {
     const out = normalizeConfig({
-      rules: [{
-        id: 'r1', name: 'n', when: { op: 'nope' }, then: [{ op: 'zap', field: 'f' }],
-      }],
+      rules: [
+        {
+          id: 'r1',
+          name: 'n',
+          when: { op: 'nope' },
+          then: [{ op: 'zap', field: 'f' }],
+        },
+      ],
     });
     expect(out.rules[0].when.op).toBe('all');
     expect(out.rules[0].then).toEqual([]);
@@ -100,22 +105,38 @@ import { normalizeAction } from '../../../../../plugins/core/rules/frontend/ast'
 describe('normalizeAction ai', () => {
   it('keeps ai template fields and allows a missing field', () => {
     const action = normalizeAction({
-      op: 'ai', promptSource: 'template', taskType: 'title_optimization', templateId: 5,
+      op: 'ai',
+      promptSource: 'template',
+      taskType: 'title_optimization',
+      templateId: 5,
     });
     expect(action).toEqual({
-      op: 'ai', promptSource: 'template', taskType: 'title_optimization', templateId: 5,
+      op: 'ai',
+      promptSource: 'template',
+      taskType: 'title_optimization',
+      templateId: 5,
       field: '',
     });
   });
 
   it('keeps ai custom fields', () => {
     const action = normalizeAction({
-      op: 'ai', promptSource: 'custom', taskType: 'rule_value', field: 'title',
-      system: 's', user: 'u {{title}}', variables: ['title'],
+      op: 'ai',
+      promptSource: 'custom',
+      taskType: 'rule_value',
+      field: 'title',
+      system: 's',
+      user: 'u {{title}}',
+      variables: ['title'],
     });
     expect(action).toEqual({
-      op: 'ai', promptSource: 'custom', taskType: 'rule_value', field: 'title',
-      system: 's', user: 'u {{title}}', variables: ['title'],
+      op: 'ai',
+      promptSource: 'custom',
+      taskType: 'rule_value',
+      field: 'title',
+      system: 's',
+      user: 'u {{title}}',
+      variables: ['title'],
     });
   });
 });

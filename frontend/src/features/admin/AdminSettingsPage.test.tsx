@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Notifications, notifications } from '@mantine/notifications';
-import {QueryClient} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { queryClient } from '../../api/queryClient';
 import { render } from '../../test/render';

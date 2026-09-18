@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import {
-  ActionIcon, Alert, Badge, Button, Drawer, Group, ScrollArea, Stack, Text, Textarea, Title,
+  ActionIcon,
+  Alert,
+  Badge,
+  Button,
+  Drawer,
+  Group,
+  ScrollArea,
+  Stack,
+  Text,
+  Textarea,
+  Title,
 } from '@mantine/core';
 import { IconMessage } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
@@ -34,7 +44,13 @@ export function ChatWidget() {
       <ActionIcon variant="subtle" aria-label={t('open')} onClick={open}>
         <IconMessage size={18} />
       </ActionIcon>
-      <Drawer opened={opened} onClose={close} title={<Title order={5}>{t('title')}</Title>} position="right" size="md">
+      <Drawer
+        opened={opened}
+        onClose={close}
+        title={<Title order={5}>{t('title')}</Title>}
+        position="right"
+        size="md"
+      >
         <Stack gap="sm" h="100%">
           <Group gap="xs">
             <Badge variant="light" color={session?.role === 'admin' ? 'grape' : 'blue'}>
@@ -48,7 +64,11 @@ export function ChatWidget() {
           </Group>
           <ScrollArea.Autosize mah="60vh">
             <Stack gap="sm">
-              {messages.length === 0 && <Text size="sm" c="dimmed">{t('empty')}</Text>}
+              {messages.length === 0 && (
+                <Text size="sm" c="dimmed">
+                  {t('empty')}
+                </Text>
+              )}
               {messages.map((m, i) => (
                 <Text
                   key={i}
@@ -60,9 +80,15 @@ export function ChatWidget() {
                   {m.content}
                 </Text>
               ))}
-              {chat.isPending && <Text size="sm" c="dimmed">{t('thinking')}</Text>}
+              {chat.isPending && (
+                <Text size="sm" c="dimmed">
+                  {t('thinking')}
+                </Text>
+              )}
               {chat.isError && (
-                <Alert color="red" role="alert">{t('failed')}</Alert>
+                <Alert color="red" role="alert">
+                  {t('failed')}
+                </Alert>
               )}
             </Stack>
           </ScrollArea.Autosize>
@@ -79,7 +105,9 @@ export function ChatWidget() {
             autosize
             minRows={2}
           />
-          <Button onClick={send} loading={chat.isPending}>{t('send')}</Button>
+          <Button onClick={send} loading={chat.isPending}>
+            {t('send')}
+          </Button>
         </Stack>
       </Drawer>
     </>

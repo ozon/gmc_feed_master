@@ -70,12 +70,22 @@ describe('SetupPage', () => {
     const spy = stubFetch((url) => {
       if (url === '/feed-sources/1') {
         return jsonResponse({
-          id: 1, client_id: 1, name: 'Feed', source_format: 'xml',
-          cron_expression: '0 * * * *', target_country: 'DE', target_language: 'de',
-          currency: 'EUR', source_url: null, feed_type: 'full',
-          history_retention_count: 30, volume_drop_threshold_pct: 20,
-          configuration: {}, export_url: null,
-          created_at: '2026-01-01T00:00:00', updated_at: '2026-01-01T00:00:00',
+          id: 1,
+          client_id: 1,
+          name: 'Feed',
+          source_format: 'xml',
+          cron_expression: '0 * * * *',
+          target_country: 'DE',
+          target_language: 'de',
+          currency: 'EUR',
+          source_url: null,
+          feed_type: 'full',
+          history_retention_count: 30,
+          volume_drop_threshold_pct: 20,
+          configuration: {},
+          export_url: null,
+          created_at: '2026-01-01T00:00:00',
+          updated_at: '2026-01-01T00:00:00',
         });
       }
       return jsonResponse({});
@@ -92,7 +102,9 @@ describe('SetupPage', () => {
 
     renderAt('/clients/1/feeds/1/setup');
 
-    expect(await screen.findByRole('tab', { name: /settings/i }, { timeout: 5000 })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('tab', { name: /settings/i }, { timeout: 5000 }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /mapping/i })).toBeInTheDocument();
     expect(screen.getByDisplayValue('Acme Feed')).toBeInTheDocument();
   });
@@ -101,7 +113,8 @@ describe('SetupPage', () => {
     const user = userEvent.setup();
     stubFetch((url) => {
       if (url === '/feed-sources/1') return jsonResponse(feed);
-      if (url === '/feed-sources/1/field-mapping') return jsonResponse({ version: 1, auto_mapped: false, source_fields: [], mappings: {} });
+      if (url === '/feed-sources/1/field-mapping')
+        return jsonResponse({ version: 1, auto_mapped: false, source_fields: [], mappings: {} });
       if (url === '/registry/attributes') return jsonResponse([]);
       return jsonResponse({});
     });
@@ -114,12 +127,16 @@ describe('SetupPage', () => {
           <Routes>
             <Route
               path="/clients/:clientId/feeds/:feedSourceId?/setup"
-              element={(
+              element={
                 <>
                   <SetupPage />
-                  <SearchProbe onSearch={(s) => { currentSearch = s; }} />
+                  <SearchProbe
+                    onSearch={(s) => {
+                      currentSearch = s;
+                    }}
+                  />
                 </>
-              )}
+              }
             />
           </Routes>
         </MemoryRouter>

@@ -99,11 +99,21 @@ export function RuleList(props: RuleListProps) {
               }
             />
           ) : (
-            <ActionIcon variant="default" size="sm" aria-label={t('search')} onClick={onToggleSearch}>
+            <ActionIcon
+              variant="default"
+              size="sm"
+              aria-label={t('search')}
+              onClick={onToggleSearch}
+            >
               <IconSearch size={14} />
             </ActionIcon>
           )}
-          <Button size="xs" variant="default" leftSection={<IconPlus size={14} />} onClick={onCreate}>
+          <Button
+            size="xs"
+            variant="default"
+            leftSection={<IconPlus size={14} />}
+            onClick={onCreate}
+          >
             {t('createRule')}
           </Button>
         </Group>
@@ -118,7 +128,9 @@ export function RuleList(props: RuleListProps) {
         />
         {selectedIds.size > 0 ? (
           <Group gap={4}>
-            <BulkButton onClick={() => onBulkActivate(true)}>{t('actions.activateSelected')}</BulkButton>
+            <BulkButton onClick={() => onBulkActivate(true)}>
+              {t('actions.activateSelected')}
+            </BulkButton>
             <BulkButton onClick={() => onBulkActivate(false)}>
               {t('actions.deactivateSelected')}
             </BulkButton>
@@ -214,7 +226,12 @@ function RuleRow({
     >
       <IconGripVertical
         size={16}
-        style={{ color: 'var(--mantine-color-dimmed-text)', flexShrink: 0, cursor: 'grab', touchAction: 'none' }}
+        style={{
+          color: 'var(--mantine-color-dimmed-text)',
+          flexShrink: 0,
+          cursor: 'grab',
+          touchAction: 'none',
+        }}
         {...attributes}
         {...listeners}
       />

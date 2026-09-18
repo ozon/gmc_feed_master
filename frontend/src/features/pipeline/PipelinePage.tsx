@@ -4,7 +4,12 @@ import { useBlocker, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../api/queryKeys';
-import { useFeedSourcePipeline, usePatchPipelineInstance, usePlugins, useSavePipeline } from '../../api/hooks';
+import {
+  useFeedSourcePipeline,
+  usePatchPipelineInstance,
+  usePlugins,
+  useSavePipeline,
+} from '../../api/hooks';
 import { ApiError } from '../../api/client';
 import type { PipelineDoc, PipelineInstance } from '../../api/types';
 import { ErrorState, LoadingState } from '../../components/StateViews';
@@ -13,7 +18,13 @@ import { notifyApiError, notifySuccess } from '../../app/notifications';
 import { PluginConfigPanel } from './PluginConfigPanel';
 import { PluginList } from './PluginList';
 import { PipelineOverviewStrip } from './PipelineOverviewStrip';
-import { addInstance, applyDragEnd, isInstancesEqual, removeInstance, type LocalInstance } from './dndUtils';
+import {
+  addInstance,
+  applyDragEnd,
+  isInstancesEqual,
+  removeInstance,
+  type LocalInstance,
+} from './dndUtils';
 
 function toLocal(instances: PipelineInstance[]): LocalInstance[] {
   // clientId is position-based (matches addInstance's minted ids and keeps
@@ -67,8 +78,9 @@ export function PipelinePage() {
   const dirty = !isInstancesEqual(local, serverSnapshot);
   const selected = local.find((i) => i.clientId === selectedClientId) ?? local[0] ?? null;
 
-  const blocker = useBlocker(({ currentLocation, nextLocation }) =>
-    dirty && currentLocation.pathname !== nextLocation.pathname,
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      dirty && currentLocation.pathname !== nextLocation.pathname,
   );
 
   async function onSave() {
@@ -163,12 +175,14 @@ export function PipelinePage() {
             feedSourceId={feedSourceId}
             plugin={plugins?.find((p) => p.id === selected?.plugin_id)}
             onChange={(next) =>
-              selected && setLocal((prev) => prev.map((i) =>
-                i.clientId === selected.clientId ? { ...i, configuration: next } : i))
+              selected &&
+              setLocal((prev) =>
+                prev.map((i) =>
+                  i.clientId === selected.clientId ? { ...i, configuration: next } : i,
+                ),
+              )
             }
-            onRemove={() =>
-              selected && setLocal((prev) => removeInstance(prev, selected.clientId))
-            }
+            onRemove={() => selected && setLocal((prev) => removeInstance(prev, selected.clientId))}
           />
         </Grid.Col>
       </Grid>

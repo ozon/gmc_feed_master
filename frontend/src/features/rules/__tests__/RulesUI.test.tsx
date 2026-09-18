@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import {QueryClient} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
 import { stubFetch } from '../../../test/fetch';
@@ -42,12 +42,29 @@ function renderUI() {
       });
     }
     if (url.startsWith('/feed-sources/1')) {
-      return jsonResponse({ id: 1, configuration: { ai_rules: { enabled: true, limit: 50, budget: 50 } } });
+      return jsonResponse({
+        id: 1,
+        configuration: { ai_rules: { enabled: true, limit: 50, budget: 50 } },
+      });
     }
     if (url.startsWith('/registry/attributes')) {
       return jsonResponse([
-        { name: 'title', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
-        { name: 'condition', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
+        {
+          name: 'title',
+          kind: 'scalar',
+          required: 'required',
+          sub_fields: [],
+          enum_values: [],
+          max_repeats: 1,
+        },
+        {
+          name: 'condition',
+          kind: 'scalar',
+          required: 'required',
+          sub_fields: [],
+          enum_values: [],
+          max_repeats: 1,
+        },
       ]);
     }
     return jsonResponse({});
@@ -61,9 +78,7 @@ function renderUI() {
     ],
     { initialEntries: ['/clients/1/feeds/1/plugins/rules'] },
   );
-  return render(
-    <RouterProvider router={router} />,
-  );
+  return render(<RouterProvider router={router} />);
 }
 
 describe('RulesUI', () => {

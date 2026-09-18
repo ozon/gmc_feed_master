@@ -16,8 +16,15 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 const RULES: SlotRule[] = [
-  { id: 'r1', name: 'R1', isActive: true, targetSlot: 'custom_label_0',
-    matchField: 'id', valueTemplate: 'x', fallbackTemplate: '' },
+  {
+    id: 'r1',
+    name: 'R1',
+    isActive: true,
+    targetSlot: 'custom_label_0',
+    matchField: 'id',
+    valueTemplate: 'x',
+    fallbackTemplate: '',
+  },
 ];
 const RESULT: PreviewResult = {
   total: 10,
@@ -56,9 +63,7 @@ function DraftProbe() {
   });
   return (
     <div>
-      <button onClick={() => setDraft([{ ...RULES[0], valueTemplate: 'y' }])}>
-        change draft
-      </button>
+      <button onClick={() => setDraft([{ ...RULES[0], valueTemplate: 'y' }])}>change draft</button>
       <span data-testid="errors">{state.errors?.join('|') ?? ''}</span>
       <span data-testid="total">{state.result?.total ?? ''}</span>
     </div>
@@ -102,14 +107,14 @@ describe('useLabelizerPreview', () => {
       return jsonResponse({});
     });
     render(<Probe rules={RULES} slotIds={{ r1: 'a,b' }} />);
-    expect(await waitFor(
-      () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('10'),
-      { timeout: 5000 },
-    )).toBeTruthy();
-    expect(calls).toBe(1);
     expect(
-      document.querySelector('[data-testid="labeledany"]')?.textContent,
-    ).toBe('7');
+      await waitFor(
+        () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('10'),
+        { timeout: 5000 },
+      ),
+    ).toBeTruthy();
+    expect(calls).toBe(1);
+    expect(document.querySelector('[data-testid="labeledany"]')?.textContent).toBe('7');
   });
 
   it('sends no request when disabled', async () => {
@@ -119,7 +124,9 @@ describe('useLabelizerPreview', () => {
       return jsonResponse({});
     });
     render(<Probe rules={RULES} enabled={false} />);
-    await act(async () => { vi.advanceTimersByTime(600); });
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+    });
     expect(calls.some((u) => u.includes('/preview'))).toBe(false);
     expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('');
   });
@@ -132,11 +139,15 @@ describe('useLabelizerPreview', () => {
       return jsonResponse({});
     });
     render(<Probe rules={RULES} />);
-    expect(await waitFor(
-      () => expect(document.querySelector('[data-testid="errors"]')?.textContent)
-        .toContain('targetSlot'),
-      { timeout: 5000 },
-    )).toBeTruthy();
+    expect(
+      await waitFor(
+        () =>
+          expect(document.querySelector('[data-testid="errors"]')?.textContent).toContain(
+            'targetSlot',
+          ),
+        { timeout: 5000 },
+      ),
+    ).toBeTruthy();
   });
 
   it('discards stale responses (newest draft wins)', async () => {
@@ -157,17 +168,24 @@ describe('useLabelizerPreview', () => {
     });
     render(<DraftProbe />);
     // advance past debounce → first fetch fires
-    await act(async () => { vi.advanceTimersByTime(600); });
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+    });
     expect(calls).toBe(1);
     await userEvent.click(screen.getByRole('button', { name: /change draft/i }));
     // advance past debounce → second fetch fires (resolves immediately)
-    await act(async () => { vi.advanceTimersByTime(600) });
-    expect(await waitFor(
-      () => expect(screen.getByTestId('total').textContent).toBe('2'),
-      { timeout: 5000 },
-    )).toBeTruthy();
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(
+      await waitFor(() => expect(screen.getByTestId('total').textContent).toBe('2'), {
+        timeout: 5000,
+      }),
+    ).toBeTruthy();
     // advance past the slow first response → guard discards it
-    await act(async () => { vi.advanceTimersByTime(1500) });
+    await act(async () => {
+      vi.advanceTimersByTime(1500);
+    });
     expect(screen.getByTestId('total').textContent).toBe('2');
     expect(calls).toBe(2);
   }, 10000);
@@ -185,23 +203,29 @@ describe('useLabelizerPreview', () => {
       return jsonResponse({});
     });
     render(<DraftProbe />);
-    expect(await waitFor(
-      () => expect(document.querySelector('[data-testid="errors"]')?.textContent)
-        .toBe('bad rule'),
-      { timeout: 5000 },
-    )).toBeTruthy();
+    expect(
+      await waitFor(
+        () =>
+          expect(document.querySelector('[data-testid="errors"]')?.textContent).toBe('bad rule'),
+        { timeout: 5000 },
+      ),
+    ).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: /change draft/i }));
     // the second request has started and is still in flight — the stale
     // 422 must already be cleared at request start
     expect(await waitFor(() => expect(calls).toBe(2), { timeout: 5000 })).toBeTruthy();
-    expect(await waitFor(
-      () => expect(document.querySelector('[data-testid="errors"]')?.textContent).toBe(''),
-      { timeout: 5000 },
-    )).toBeTruthy();
-    expect(await waitFor(
-      () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('10'),
-      { timeout: 5000 },
-    )).toBeTruthy();
+    expect(
+      await waitFor(
+        () => expect(document.querySelector('[data-testid="errors"]')?.textContent).toBe(''),
+        { timeout: 5000 },
+      ),
+    ).toBeTruthy();
+    expect(
+      await waitFor(
+        () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('10'),
+        { timeout: 5000 },
+      ),
+    ).toBeTruthy();
   }, 10000);
 
   it('clears the previous result when the request is rejected with 422', async () => {
@@ -214,15 +238,19 @@ describe('useLabelizerPreview', () => {
       return jsonResponse({});
     });
     render(<DraftProbe />);
-    expect(await waitFor(
-      () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('10'),
-      { timeout: 5000 },
-    )).toBeTruthy();
+    expect(
+      await waitFor(
+        () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe('10'),
+        { timeout: 5000 },
+      ),
+    ).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: /change draft/i }));
-    expect(await waitFor(
-      () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe(''),
-      { timeout: 5000 },
-    )).toBeTruthy();
+    expect(
+      await waitFor(
+        () => expect(document.querySelector('[data-testid="total"]')?.textContent).toBe(''),
+        { timeout: 5000 },
+      ),
+    ).toBeTruthy();
     expect(document.querySelector('[data-testid="errors"]')?.textContent).toBe('nope');
   }, 10000);
 
@@ -257,11 +285,15 @@ describe('useLabelizerPreview', () => {
     await i18n.changeLanguage('de');
     try {
       render(<Probe rules={RULES} />);
-      expect(await waitFor(
-        () => expect(document.querySelector('[data-testid="errors"]')?.textContent)
-          .toBe('Die Regeln sind ungültig.'),
-        { timeout: 5000 },
-      )).toBeTruthy();
+      expect(
+        await waitFor(
+          () =>
+            expect(document.querySelector('[data-testid="errors"]')?.textContent).toBe(
+              'Die Regeln sind ungültig.',
+            ),
+          { timeout: 5000 },
+        ),
+      ).toBeTruthy();
     } finally {
       await i18n.changeLanguage('en');
     }

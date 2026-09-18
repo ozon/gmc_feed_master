@@ -41,7 +41,8 @@ describe('auth route guard', () => {
 
   it('renders the dashboard for an authenticated user', async () => {
     stubFetch((url) => {
-      if (url === '/auth/me') return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
+      if (url === '/auth/me')
+        return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
       if (url === '/dashboard/summary') return jsonResponse(emptySummary);
       if (url === '/plugins') return jsonResponse([]);
       return jsonResponse({});
@@ -99,14 +100,18 @@ describe('unauthorized handler', () => {
     };
   }
 
-beforeEach(() => {
-  queryClient.clear();
-  notifications.clean();
-  window.history.replaceState({}, '', '/');
-});
+  beforeEach(() => {
+    queryClient.clear();
+    notifications.clean();
+    window.history.replaceState({}, '', '/');
+  });
 
   it('removes the session query before navigating to /login', () => {
-    queryClient.setQueryData(queryKeys.session, { username: 'operator', role: 'admin', client_ids: null });
+    queryClient.setQueryData(queryKeys.session, {
+      username: 'operator',
+      role: 'admin',
+      client_ids: null,
+    });
     const removeSpy = vi.spyOn(queryClient, 'removeQueries');
     const router = stubRouter('/clients/1/feeds/2/products');
 
@@ -122,7 +127,11 @@ beforeEach(() => {
   });
 
   it('resets the session query even when already on /login', () => {
-    queryClient.setQueryData(queryKeys.session, { username: 'operator', role: 'admin', client_ids: null });
+    queryClient.setQueryData(queryKeys.session, {
+      username: 'operator',
+      role: 'admin',
+      client_ids: null,
+    });
     const removeSpy = vi.spyOn(queryClient, 'removeQueries');
     const router = stubRouter('/login');
 
@@ -138,7 +147,9 @@ beforeEach(() => {
     stubFetch((url) => {
       if (url === '/auth/me') {
         return jsonResponse(
-          authed ? { username: 'operator', role: 'admin', client_ids: null } : { detail: 'Not authenticated' },
+          authed
+            ? { username: 'operator', role: 'admin', client_ids: null }
+            : { detail: 'Not authenticated' },
           authed ? 200 : 401,
         );
       }
@@ -153,7 +164,11 @@ beforeEach(() => {
 
     render(<App />);
     expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
-    expect(queryClient.getQueryData(queryKeys.session)).toEqual({ username: 'operator', role: 'admin', client_ids: null });
+    expect(queryClient.getQueryData(queryKeys.session)).toEqual({
+      username: 'operator',
+      role: 'admin',
+      client_ids: null,
+    });
 
     authed = false;
     await queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary });
@@ -249,7 +264,8 @@ describe('feed-scoped plugin route', () => {
   it('renders PluginPage at /clients/:clientId/feeds/:feedSourceId/plugins/:pluginId', async () => {
     let captured: string | null = null;
     stubFetch((url) => {
-      if (url === '/auth/me') return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
+      if (url === '/auth/me')
+        return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
       if (url === '/dashboard/summary') return jsonResponse(emptySummary);
       if (url === '/plugins') return jsonResponse([schemaPlugin]);
       if (url.startsWith('/plugins/example_upper/config')) {
@@ -338,7 +354,8 @@ describe('route error boundary', () => {
 describe('feed index and placeholder routes', () => {
   function stubSession(handler: (url: string) => Response) {
     stubFetch((url) => {
-      if (url === '/auth/me') return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
+      if (url === '/auth/me')
+        return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
       if (url === '/dashboard/summary') return jsonResponse(emptySummary);
       if (url === '/plugins') return jsonResponse([]);
       if (url.startsWith('/logs/entries')) return jsonResponse({ items: [], next_cursor: null });
@@ -350,8 +367,15 @@ describe('feed index and placeholder routes', () => {
     stubSession((url) => {
       if (url === '/feed-sources/2/dashboard') {
         return jsonResponse({
-          kpi: { raw_items: 0, valid_items: 0, excluded_items: 0, last_duration_s: null, readiness_rate: 1 },
-          volume_trend: [], stage_funnel: [],
+          kpi: {
+            raw_items: 0,
+            valid_items: 0,
+            excluded_items: 0,
+            last_duration_s: null,
+            readiness_rate: 1,
+          },
+          volume_trend: [],
+          stage_funnel: [],
           quality: { critical: 0, warning: 0, info: 0, readiness_rate: 1 },
           recent_runs: [],
         });
@@ -381,7 +405,8 @@ describe('feed index and placeholder routes', () => {
 describe('unknown routes', () => {
   it('shows a not-found page with a link home instead of a silent redirect', async () => {
     stubFetch((url) => {
-      if (url === '/auth/me') return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
+      if (url === '/auth/me')
+        return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
       if (url === '/dashboard/summary') return jsonResponse(emptySummary);
       if (url === '/plugins') return jsonResponse([]);
       return jsonResponse({});

@@ -70,12 +70,18 @@ export function FeedDashboardPage() {
             <Anchor component={Link} to="/" size="sm" c="dimmed">
               {client?.name ?? t('breadcrumbClients')}
             </Anchor>
-            <Text size="sm" fw={500}>{feedName}</Text>
+            <Text size="sm" fw={500}>
+              {feedName}
+            </Text>
           </Breadcrumbs>
           <Group gap="xs">
             <Badge variant="light">{(feed?.source_format ?? '').toUpperCase()}</Badge>
-            <Badge variant="light" color="green">{t('badge.active')}</Badge>
-            <Badge variant="light" color="gray">{t('badge.target')}</Badge>
+            <Badge variant="light" color="green">
+              {t('badge.active')}
+            </Badge>
+            <Badge variant="light" color="gray">
+              {t('badge.target')}
+            </Badge>
           </Group>
         </Stack>
         <Group gap="xs" wrap="nowrap">
@@ -124,7 +130,11 @@ export function FeedDashboardPage() {
         />
       </SimpleGrid>
 
-      <ChartCard title={t('charts.volumeTitle')} isEmpty={data.volume_trend.length === 0} emptyMessage={t('charts.volumeEmpty')}>
+      <ChartCard
+        title={t('charts.volumeTitle')}
+        isEmpty={data.volume_trend.length === 0}
+        emptyMessage={t('charts.volumeEmpty')}
+      >
         <AreaChart
           h={240}
           data={fillDates(data.volume_trend, 30, (date) => ({ date, raw: 0, exportable: 0 }))}
@@ -138,7 +148,11 @@ export function FeedDashboardPage() {
         />
       </ChartCard>
 
-      <ChartCard title={t('charts.funnelTitle')} isEmpty={data.stage_funnel.length === 0} emptyMessage={t('charts.funnelEmpty')}>
+      <ChartCard
+        title={t('charts.funnelTitle')}
+        isEmpty={data.stage_funnel.length === 0}
+        emptyMessage={t('charts.funnelEmpty')}
+      >
         <BarChart
           h={200}
           orientation="horizontal"
@@ -152,20 +166,40 @@ export function FeedDashboardPage() {
         />
       </ChartCard>
 
-      <ChartCard title={t('charts.qualityTitle')} isEmpty={data.quality.critical + data.quality.warning + data.quality.info === 0} emptyMessage={t('charts.qualityEmpty')}>
+      <ChartCard
+        title={t('charts.qualityTitle')}
+        isEmpty={data.quality.critical + data.quality.warning + data.quality.info === 0}
+        emptyMessage={t('charts.qualityEmpty')}
+      >
         <DonutChart
           size={180}
           chartLabel={`${readinessPct}%`}
           data={[
-            { name: tMonitoring('severity.critical'), value: data.quality.critical, color: chartColors.error },
-            { name: tMonitoring('severity.warning'), value: data.quality.warning, color: chartColors.warning },
-            { name: tMonitoring('severity.info'), value: data.quality.info, color: chartColors.info },
+            {
+              name: tMonitoring('severity.critical'),
+              value: data.quality.critical,
+              color: chartColors.error,
+            },
+            {
+              name: tMonitoring('severity.warning'),
+              value: data.quality.warning,
+              color: chartColors.warning,
+            },
+            {
+              name: tMonitoring('severity.info'),
+              value: data.quality.info,
+              color: chartColors.info,
+            },
           ]}
           withTooltip
           mx="auto"
         />
         <Group justify="center" mt="sm">
-          <Anchor component={Link} to={`/clients/${clientId}/feeds/${id}/monitoring/findings`} size="sm">
+          <Anchor
+            component={Link}
+            to={`/clients/${clientId}/feeds/${id}/monitoring/findings`}
+            size="sm"
+          >
             {t('viewFindings')}
           </Anchor>
         </Group>

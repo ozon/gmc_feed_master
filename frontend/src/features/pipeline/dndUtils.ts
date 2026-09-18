@@ -63,6 +63,8 @@ export function isInstancesEqual(
   return JSON.stringify(stripClientIds(a)) === JSON.stringify(stripClientIds(b));
 }
 
-function stripClientIds(items: Array<PipelineInstance & { clientId?: string }>): PipelineInstance[] {
+function stripClientIds(
+  items: Array<PipelineInstance & { clientId?: string }>,
+): PipelineInstance[] {
   return items.map(({ clientId: _clientId, ...rest }) => rest);
 }

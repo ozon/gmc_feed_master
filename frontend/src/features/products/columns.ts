@@ -10,11 +10,7 @@ export type ProductColumn = {
   label: string;
 };
 
-export const SYSTEM_COLUMNS: ProductColumnId[] = [
-  'product_id',
-  'status',
-  'last_seen_at',
-];
+export const SYSTEM_COLUMNS: ProductColumnId[] = ['product_id', 'status', 'last_seen_at'];
 
 export const GMC_BASELINE_COLUMNS: ProductColumnId[] = [
   'id',
@@ -27,10 +23,7 @@ export const GMC_BASELINE_COLUMNS: ProductColumnId[] = [
   'condition',
 ];
 
-export const DEFAULT_COLUMNS: ProductColumnId[] = [
-  ...SYSTEM_COLUMNS,
-  ...GMC_BASELINE_COLUMNS,
-];
+export const DEFAULT_COLUMNS: ProductColumnId[] = [...SYSTEM_COLUMNS, ...GMC_BASELINE_COLUMNS];
 
 const BASELINE_LABEL_KEYS: Record<string, string> = {
   product_id: 'colProductId',
@@ -51,23 +44,18 @@ export function columnLabel(id: ProductColumnId, t: TFunction<'products'>): stri
   return key ? t(key as 'colId') : id;
 }
 
-export function useProductColumns(
-  t: TFunction<'products'>,
-  fields: string[],
-): ProductColumn[] {
-  return useMemo<ProductColumn[]>(
-    () => {
-      const known = new Set([...SYSTEM_COLUMNS, ...GMC_BASELINE_COLUMNS]);
-      const baselineCols = [...SYSTEM_COLUMNS, ...GMC_BASELINE_COLUMNS].map(
-        (id) => ({ id, label: columnLabel(id, t) }),
-      );
-      const extraCols = fields
-        .filter((id) => !known.has(id))
-        .map((id) => ({ id, label: columnLabel(id, t) }));
-      return [...baselineCols, ...extraCols];
-    },
-    [t, fields],
-  );
+export function useProductColumns(t: TFunction<'products'>, fields: string[]): ProductColumn[] {
+  return useMemo<ProductColumn[]>(() => {
+    const known = new Set([...SYSTEM_COLUMNS, ...GMC_BASELINE_COLUMNS]);
+    const baselineCols = [...SYSTEM_COLUMNS, ...GMC_BASELINE_COLUMNS].map((id) => ({
+      id,
+      label: columnLabel(id, t),
+    }));
+    const extraCols = fields
+      .filter((id) => !known.has(id))
+      .map((id) => ({ id, label: columnLabel(id, t) }));
+    return [...baselineCols, ...extraCols];
+  }, [t, fields]);
 }
 
 export function loadColumnConfig(feedSourceId: number | string): ProductColumnId[] | null {
@@ -80,10 +68,7 @@ export function loadColumnConfig(feedSourceId: number | string): ProductColumnId
   }
 }
 
-export function saveColumnConfig(
-  feedSourceId: number | string,
-  ids: ProductColumnId[],
-): void {
+export function saveColumnConfig(feedSourceId: number | string, ids: ProductColumnId[]): void {
   localStorage.setItem(`products.columns.${feedSourceId}`, JSON.stringify(ids));
 }
 
@@ -100,10 +85,7 @@ export function formatCellValue(
     if (value == null) return '';
     return String(value);
   }
-  const source =
-    stage === 'processed' && row.processed_data
-      ? row.processed_data
-      : row.raw_data;
+  const source = stage === 'processed' && row.processed_data ? row.processed_data : row.raw_data;
   const raw = source?.[id];
   if (raw == null) return '';
   if (typeof raw === 'string') return raw;

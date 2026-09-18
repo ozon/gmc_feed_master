@@ -14,23 +14,40 @@ export type CoverageDashboardProps = {
 };
 
 export function CoverageDashboard({
-  total, labeledAny, activeRules, pending, errors, unavailable, slotRules, ruleStats,
+  total,
+  labeledAny,
+  activeRules,
+  pending,
+  errors,
+  unavailable,
+  slotRules,
+  ruleStats,
 }: CoverageDashboardProps) {
   const { t } = useTranslation('customLabels');
   if (unavailable) {
-    return <Text size="xs" c="dimmed">{t('previewUnavailable')}</Text>;
+    return (
+      <Text size="xs" c="dimmed">
+        {t('previewUnavailable')}
+      </Text>
+    );
   }
   if (errors) {
     return (
       <Stack gap={2}>
         {errors.map((error) => (
-          <Text key={error} size="xs" c="dimmed">{error}</Text>
+          <Text key={error} size="xs" c="dimmed">
+            {error}
+          </Text>
         ))}
       </Stack>
     );
   }
   if (total === 0) {
-    return <Text size="xs" c="dimmed">{t('noStagedProducts')}</Text>;
+    return (
+      <Text size="xs" c="dimmed">
+        {t('noStagedProducts')}
+      </Text>
+    );
   }
   if (total === undefined || labeledAny === undefined) {
     return pending ? <Loader size="xs" /> : null;
@@ -67,15 +84,21 @@ export function CoverageDashboard({
           </Group>
         )}
         <Group gap="lg" wrap="wrap">
-          {([
-            ['totalProducts', total, 'coverage-stat-total'],
-            ['labeled', labeledAny, 'coverage-stat-labeled'],
-            ['unlabeled', total - labeledAny, 'coverage-stat-unlabeled'],
-            ['activeRules', activeRules, 'coverage-stat-active-rules'],
-          ] as const).map(([label, count, testId]) => (
+          {(
+            [
+              ['totalProducts', total, 'coverage-stat-total'],
+              ['labeled', labeledAny, 'coverage-stat-labeled'],
+              ['unlabeled', total - labeledAny, 'coverage-stat-unlabeled'],
+              ['activeRules', activeRules, 'coverage-stat-active-rules'],
+            ] as const
+          ).map(([label, count, testId]) => (
             <Stack key={testId} gap={0}>
-              <Text size="xs" c="dimmed">{t(`coverage.${label}`)}</Text>
-              <Text size="sm" fw={600} data-testid={testId}>{count}</Text>
+              <Text size="xs" c="dimmed">
+                {t(`coverage.${label}`)}
+              </Text>
+              <Text size="sm" fw={600} data-testid={testId}>
+                {count}
+              </Text>
             </Stack>
           ))}
         </Group>

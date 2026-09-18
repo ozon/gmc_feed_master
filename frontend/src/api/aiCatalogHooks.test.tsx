@@ -22,9 +22,14 @@ describe('AI catalog hooks', () => {
       if (url === '/admin/ai/provider-presets') {
         return jsonResponse([
           {
-            vendor_key: 'openai', label: 'OpenAI', model_prefix: 'openai',
-            default_base_url: '', requires_base_url: false,
-            api_key_env_hint: 'OPENAI_API_KEY', docs_url: 'https://x', supports_catalog: true,
+            vendor_key: 'openai',
+            label: 'OpenAI',
+            model_prefix: 'openai',
+            default_base_url: '',
+            requires_base_url: false,
+            api_key_env_hint: 'OPENAI_API_KEY',
+            docs_url: 'https://x',
+            supports_catalog: true,
           },
         ]);
       }
@@ -41,13 +46,24 @@ describe('AI catalog hooks', () => {
         return jsonResponse({
           entries: [
             {
-              model_id: 'openai/gpt-4o', vendor: 'openai', display_name: 'gpt-4o',
-              context_window: 128000, max_output_tokens: 16384,
-              input_price_per_mtok: '2.500000', output_price_per_mtok: '10.000000',
-              supports_vision: true, supports_function_calling: true, is_recommended: true,
+              model_id: 'openai/gpt-4o',
+              vendor: 'openai',
+              display_name: 'gpt-4o',
+              context_window: 128000,
+              max_output_tokens: 16384,
+              input_price_per_mtok: '2.500000',
+              output_price_per_mtok: '10.000000',
+              supports_vision: true,
+              supports_function_calling: true,
+              is_recommended: true,
             },
           ],
-          sync: { last_attempt_at: null, last_success_at: null, last_error: null, source: 'bundled' },
+          sync: {
+            last_attempt_at: null,
+            last_success_at: null,
+            last_error: null,
+            source: 'bundled',
+          },
         });
       }
       return jsonResponse({});

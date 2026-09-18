@@ -19,11 +19,7 @@ describe('queryKeys', () => {
       'products',
       { page: 1 },
     ]);
-    expect(queryKeys.feedSource(7).mapping).toEqual([
-      'feed-source',
-      7,
-      'field-mapping',
-    ]);
+    expect(queryKeys.feedSource(7).mapping).toEqual(['feed-source', 7, 'field-mapping']);
   });
 
   it('builds a product detail key by feed source and product', () => {

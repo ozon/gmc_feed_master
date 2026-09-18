@@ -12,10 +12,5 @@ export function ExportUrlCard({ feedSourceId }: { feedSourceId: number | string 
     return <ErrorState onRetry={() => void feedSource.refetch()} />;
   }
 
-  return (
-    <ExportUrlBlock
-      feedSourceId={feedSourceId}
-      exportUrl={feedSource.data.export_url}
-    />
-  );
+  return <ExportUrlBlock feedSourceId={feedSourceId} exportUrl={feedSource.data.export_url} />;
 }

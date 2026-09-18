@@ -40,10 +40,7 @@ function makeClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } });
 }
 
-function renderManualTab(
-  scope: { clientId?: number; feedSourceId?: number },
-  routes: Route[],
-) {
+function renderManualTab(scope: { clientId?: number; feedSourceId?: number }, routes: Route[]) {
   const fetchMock = stubFetch(routeHandler(routes));
   renderManualTabWithHandler(scope, fetchMock);
   return fetchMock;
@@ -140,7 +137,8 @@ describe('ManualTab', () => {
       DATA_OK,
       PRODUCT_OK,
       TAXONOMY_SEARCH,
-    ]);    await lookupP1();
+    ]);
+    await lookupP1();
     const combo = screen.getByRole('combobox');
     await userEvent.click(combo);
     await userEvent.type(combo, 'cloud');
@@ -221,8 +219,10 @@ describe('ManualTab', () => {
 
     let putCount = 0;
     const fetchMock = stubFetch((url: string, init?: RequestInit) => {
-      if (url.startsWith('/plugins/category/data?client_id=1')
-          && (init?.method ?? 'GET') === 'PUT') {
+      if (
+        url.startsWith('/plugins/category/data?client_id=1') &&
+        (init?.method ?? 'GET') === 'PUT'
+      ) {
         putCount += 1;
         if (putCount === 1) {
           return versionedJson(
@@ -260,9 +260,11 @@ describe('ManualTab', () => {
     );
 
     const putBodies = fetchMock.mock.calls
-      .filter(([url, init]) =>
-        String(url).startsWith('/plugins/category/data?client_id=1')
-        && (init?.method ?? 'GET') === 'PUT')
+      .filter(
+        ([url, init]) =>
+          String(url).startsWith('/plugins/category/data?client_id=1') &&
+          (init?.method ?? 'GET') === 'PUT',
+      )
       .map(([, init]) => JSON.parse(String(init?.body)) as { assignments: Record<string, string> });
     expect(putBodies).toHaveLength(2);
     expect(putBodies[0].assignments).toEqual({ p1: '166' });

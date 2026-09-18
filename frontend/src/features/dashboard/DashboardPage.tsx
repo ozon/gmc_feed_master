@@ -69,11 +69,7 @@ function ClientSection({ client }: { client: ClientSummary }) {
       <Accordion.Control>
         <Group gap="sm" wrap="nowrap">
           <Text fw={500}>{client.name}</Text>
-          <Badge
-            size="sm"
-            variant="light"
-            color={client.status === 'active' ? 'green' : 'gray'}
-          >
+          <Badge size="sm" variant="light" color={client.status === 'active' ? 'green' : 'gray'}>
             {t(clientStatusKey(client.status))}
           </Badge>
         </Group>
@@ -153,7 +149,9 @@ export function DashboardPage() {
       <Group justify="space-between">
         <Title order={3}>{t('title')}</Title>
         {session?.role === 'admin' ? (
-          <Button component={Link} to="/admin/clients">{t('manageClients')}</Button>
+          <Button component={Link} to="/admin/clients">
+            {t('manageClients')}
+          </Button>
         ) : null}
       </Group>
       <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }}>

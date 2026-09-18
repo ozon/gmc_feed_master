@@ -1,10 +1,24 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert, Badge, Button, Card, Group, NumberInput, Select, Stack, Text, TextInput, Title,
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Group,
+  NumberInput,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+  Title,
 } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import {
-  useAiCacheStats, useAiCacheStatus, useAiSettings, useClearAiCache, useUpdateAiSettings,
+  useAiCacheStats,
+  useAiCacheStatus,
+  useAiSettings,
+  useClearAiCache,
+  useUpdateAiSettings,
 } from '../../../api/hooks';
 import { notifyMutationError, notifySuccess } from '../../../app/notifications';
 import { ErrorState, LoadingState } from '../../../components/StateViews';
@@ -78,7 +92,8 @@ export function AiSettingsPage() {
           </Group>
           <Group>
             <Text data-testid="ai-cache-backend">
-              {t('ai.settings.backend')}: {status?.effective_backend ?? draft.effective_cache_backend}
+              {t('ai.settings.backend')}:{' '}
+              {status?.effective_backend ?? draft.effective_cache_backend}
             </Text>
             <Badge color={status?.healthy ? 'green' : 'red'}>
               {status?.healthy ? t('ai.settings.healthy') : t('ai.settings.unhealthy')}

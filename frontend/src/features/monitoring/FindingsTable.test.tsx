@@ -7,8 +7,22 @@ import { render } from '../../test/render';
 import { FindingsTable, type QualityFinding } from './FindingsTable';
 
 const findings: QualityFinding[] = [
-  { severity: 'critical', code: 'gtin_mpn', field: 'gtin', message: 'Bad GTIN', product_id: 'p1', details: {} },
-  { severity: 'warning', code: 'brand_required', field: 'brand', message: 'brand empty', product_id: 'p2', details: {} },
+  {
+    severity: 'critical',
+    code: 'gtin_mpn',
+    field: 'gtin',
+    message: 'Bad GTIN',
+    product_id: 'p1',
+    details: {},
+  },
+  {
+    severity: 'warning',
+    code: 'brand_required',
+    field: 'brand',
+    message: 'brand empty',
+    product_id: 'p2',
+    details: {},
+  },
 ];
 
 beforeAll(async () => {

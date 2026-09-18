@@ -15,25 +15,43 @@ const options = [{ group: 'Field', items: [{ value: 'title', label: 'title' }] }
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
-    status, headers: { 'Content-Type': 'application/json' },
+    status,
+    headers: { 'Content-Type': 'application/json' },
   });
 }
 
 it('lists templates in template mode', async () => {
   stubFetch((url) => {
     if (url.startsWith('/plugins/rules/ai/templates')) {
-      return jsonResponse({ items: [
-        { id: 5, name: 'T1', task_type: 'title_optimization', client_id: null, version: 1, is_active: true },
-      ] });
+      return jsonResponse({
+        items: [
+          {
+            id: 5,
+            name: 'T1',
+            task_type: 'title_optimization',
+            client_id: null,
+            version: 1,
+            is_active: true,
+          },
+        ],
+      });
     }
     return jsonResponse({});
   });
   const action: RuleAction = {
-    op: 'ai', field: '', promptSource: 'template',
-    taskType: 'title_optimization', templateId: 5,
+    op: 'ai',
+    field: '',
+    promptSource: 'template',
+    taskType: 'title_optimization',
+    templateId: 5,
   };
   render(
-    <RuleAiActionEditor action={action} fieldOptions={options} feedSourceId={1} onChange={vi.fn()} />,
+    <RuleAiActionEditor
+      action={action}
+      fieldOptions={options}
+      feedSourceId={1}
+      onChange={vi.fn()}
+    />,
   );
   expect(await screen.findByText('T1')).toBeInTheDocument();
 });
@@ -43,11 +61,19 @@ it('switching to custom emits a rule_value action', async () => {
   stubFetch(() => jsonResponse({}));
   const onChange = vi.fn();
   const action: RuleAction = {
-    op: 'ai', field: 'title', promptSource: 'template',
-    taskType: 'title_optimization', templateId: 5,
+    op: 'ai',
+    field: 'title',
+    promptSource: 'template',
+    taskType: 'title_optimization',
+    templateId: 5,
   };
   render(
-    <RuleAiActionEditor action={action} fieldOptions={options} feedSourceId={1} onChange={onChange} />,
+    <RuleAiActionEditor
+      action={action}
+      fieldOptions={options}
+      feedSourceId={1}
+      onChange={onChange}
+    />,
   );
   await user.click(screen.getByTestId('ai-source'));
   await user.click(await screen.findByText('Custom'));
@@ -71,7 +97,12 @@ it('defaults a template action without taskType and previews title_optimization'
   });
   const action: RuleAction = { op: 'ai', field: '', promptSource: 'template' };
   render(
-    <RuleAiActionEditor action={action} fieldOptions={options} feedSourceId={1} onChange={vi.fn()} />,
+    <RuleAiActionEditor
+      action={action}
+      fieldOptions={options}
+      feedSourceId={1}
+      onChange={vi.fn()}
+    />,
   );
 
   await user.click(screen.getByText('Preview'));

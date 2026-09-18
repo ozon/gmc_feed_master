@@ -4,9 +4,9 @@ export const queryKeys = {
   clients: ['clients'] as const,
   plugins: ['plugins'] as const,
   registryAttributes: (feedSourceId?: number | string) =>
-    (feedSourceId === undefined
-      ? ['registry', 'attributes'] as const
-      : ['registry', 'attributes', feedSourceId] as const),
+    feedSourceId === undefined
+      ? (['registry', 'attributes'] as const)
+      : (['registry', 'attributes', feedSourceId] as const),
   productDetail: (feedSourceId: number | string, productId: string) =>
     ['feed-source', feedSourceId, 'products', 'detail', productId] as const,
   feedSource: (id: number | string) => ({

@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Button, Group, NumberInput, PasswordInput, Select, Stack, Switch, TextInput } from '@mantine/core';
+import {
+  Button,
+  Group,
+  NumberInput,
+  PasswordInput,
+  Select,
+  Stack,
+  Switch,
+  TextInput,
+} from '@mantine/core';
 import { useForm } from '@tanstack/react-form';
 import { useTranslation } from 'react-i18next';
 import { useUpdateFeedSource } from '../../api/hooks';
@@ -39,8 +48,9 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
   });
   const [password, setPassword] = useState('');
   const [serverError, setServerError] = useState<string | null>(null);
-  const aiQcCfg =
-    (feed.configuration as Record<string, unknown> | undefined)?.ai_qc as Record<string, unknown> | undefined;
+  const aiQcCfg = (feed.configuration as Record<string, unknown> | undefined)?.ai_qc as
+    | Record<string, unknown>
+    | undefined;
   const [aiQcEnabled, setAiQcEnabled] = useState(Boolean(aiQcCfg?.enabled));
   const [aiQcBudget, setAiQcBudget] = useState<number>(Number(aiQcCfg?.budget ?? 50));
 
@@ -60,16 +70,26 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
       const payload: Record<string, unknown> = {};
       if (value.name !== feed.name) payload.name = value.name;
       if (value.source_format !== feed.source_format) payload.source_format = value.source_format;
-      if (value.source_url !== (feed.source_url ?? '')) payload.source_url = value.source_url || null;
-      if (value.cron_expression !== (feed.cron_expression ?? '')) payload.cron_expression = value.cron_expression || null;
-      if (value.target_country !== (feed.target_country ?? '')) payload.target_country = value.target_country || null;
-      if (value.target_language !== (feed.target_language ?? '')) payload.target_language = value.target_language || null;
+      if (value.source_url !== (feed.source_url ?? ''))
+        payload.source_url = value.source_url || null;
+      if (value.cron_expression !== (feed.cron_expression ?? ''))
+        payload.cron_expression = value.cron_expression || null;
+      if (value.target_country !== (feed.target_country ?? ''))
+        payload.target_country = value.target_country || null;
+      if (value.target_language !== (feed.target_language ?? ''))
+        payload.target_language = value.target_language || null;
       if (value.currency !== (feed.currency ?? '')) payload.currency = value.currency || null;
-      if (value.volume_drop_threshold_pct !== feed.volume_drop_threshold_pct) payload.volume_drop_threshold_pct = value.volume_drop_threshold_pct;
-      if (value.history_retention_count !== feed.history_retention_count) payload.history_retention_count = value.history_retention_count;
+      if (value.volume_drop_threshold_pct !== feed.volume_drop_threshold_pct)
+        payload.volume_drop_threshold_pct = value.volume_drop_threshold_pct;
+      if (value.history_retention_count !== feed.history_retention_count)
+        payload.history_retention_count = value.history_retention_count;
 
       const originalUsername =
-        ((feed.configuration as Record<string, unknown> | undefined)?.basic_auth as Record<string, unknown> | undefined)?.username as string | undefined ?? '';
+        ((
+          (feed.configuration as Record<string, unknown> | undefined)?.basic_auth as
+            | Record<string, unknown>
+            | undefined
+        )?.username as string | undefined) ?? '';
       const existingCfg = (feed.configuration ?? {}) as Record<string, unknown>;
       const cfgUpdate: Record<string, unknown> = {};
       if (username !== originalUsername || password) {
@@ -80,7 +100,10 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
           ...(password ? { password } : {}),
         };
       }
-      if (aiQcEnabled !== Boolean(aiQcCfg?.enabled) || aiQcBudget !== Number(aiQcCfg?.budget ?? 50)) {
+      if (
+        aiQcEnabled !== Boolean(aiQcCfg?.enabled) ||
+        aiQcBudget !== Number(aiQcCfg?.budget ?? 50)
+      ) {
         cfgUpdate.ai_qc = { enabled: aiQcEnabled, budget: aiQcBudget };
       }
       if (Object.keys(cfgUpdate).length > 0) {
@@ -258,9 +281,7 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
           value={password}
           onChange={(event) => setPassword(event.currentTarget.value)}
         />
-        <form.Subscribe
-          selector={(state) => ({ isDirty: state.isDirty })}
-        >
+        <form.Subscribe selector={(state) => ({ isDirty: state.isDirty })}>
           {({ isDirty }) => (
             <Group justify="flex-end" mt="sm">
               <Button variant="default" onClick={() => form.reset()} disabled={!isDirty}>

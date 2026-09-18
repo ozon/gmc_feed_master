@@ -45,19 +45,25 @@ export function ProductDrawer({ feedSourceId, productId, onClose }: ProductDrawe
               </Table.Tr>
               <Table.Tr>
                 <Table.Td fw={500}>{t('drawerLastSeenAt')}</Table.Td>
-                <Table.Td>{dayjs(detail.data.last_seen_at).locale(i18n.language).format('L LTS')}</Table.Td>
+                <Table.Td>
+                  {dayjs(detail.data.last_seen_at).locale(i18n.language).format('L LTS')}
+                </Table.Td>
               </Table.Tr>
               {detail.data.removed_at && (
                 <Table.Tr>
                   <Table.Td fw={500}>{t('drawerRemovedAt')}</Table.Td>
-                  <Table.Td>{dayjs(detail.data.removed_at).locale(i18n.language).format('L LTS')}</Table.Td>
+                  <Table.Td>
+                    {dayjs(detail.data.removed_at).locale(i18n.language).format('L LTS')}
+                  </Table.Td>
                 </Table.Tr>
               )}
               {detail.data.excluded && (
                 <Table.Tr>
                   <Table.Td fw={500}>{t('drawerExcluded')}</Table.Td>
                   <Table.Td>
-                    <Badge color="red" variant="light" size="sm">{t('stateExcluded')}</Badge>
+                    <Badge color="red" variant="light" size="sm">
+                      {t('stateExcluded')}
+                    </Badge>
                   </Table.Td>
                 </Table.Tr>
               )}

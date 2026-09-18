@@ -1,19 +1,32 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Accordion, ActionIcon, Button, Card, Drawer, Group,
-  SegmentedControl, Select, Stack, Switch, Tabs, Text, TextInput,
+  Accordion,
+  ActionIcon,
+  Button,
+  Card,
+  Drawer,
+  Group,
+  SegmentedControl,
+  Select,
+  Stack,
+  Switch,
+  Tabs,
+  Text,
+  TextInput,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { IconHelp } from '@tabler/icons-react';
-import {
-  DndContext, PointerSensor, closestCenter, useSensor, useSensors,
-} from '@dnd-kit/core';
+import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useBlocker, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
-  usePluginConfig, usePluginData, useRegistryAttributes, useSavePluginConfig,
-  useSavePluginData, type PluginScope,
+  usePluginConfig,
+  usePluginData,
+  useRegistryAttributes,
+  useSavePluginConfig,
+  useSavePluginData,
+  type PluginScope,
 } from '../../api/hooks';
 import { ErrorState, LoadingState } from '../../components/StateViews';
 import { ConfirmModal } from '../../components/ConfirmModal';
@@ -28,12 +41,23 @@ import { SortableRuleRow } from './SortableRuleRow';
 import { MatchFieldCombobox } from './MatchFieldCombobox';
 import { useLabelizerPreview } from './usePreview';
 import {
-  configTierChain, currentDataTier, dataTierChain, editableConfigTier,
-  mergeSlotIds, mergeSlotRules, type ScopedSlotRule, type SlotRule, type Tier,
+  configTierChain,
+  currentDataTier,
+  dataTierChain,
+  editableConfigTier,
+  mergeSlotIds,
+  mergeSlotRules,
+  type ScopedSlotRule,
+  type SlotRule,
+  type Tier,
 } from './scopeMerge';
 
 const TARGET_SLOTS = [
-  'custom_label_0', 'custom_label_1', 'custom_label_2', 'custom_label_3', 'custom_label_4',
+  'custom_label_0',
+  'custom_label_1',
+  'custom_label_2',
+  'custom_label_3',
+  'custom_label_4',
 ];
 
 function newRuleId(): string {
@@ -87,11 +111,12 @@ export function CustomLabelsUI({
     () => dataTierChain(scope, routeContext),
     [scope.clientId, scope.feedSourceId, routeContext.clientId, routeContext.feedSourceId],
   );
-  const viewingTier: Tier = scope.feedSourceId !== undefined
-    ? 'feed_source'
-    : scope.clientId !== undefined
-      ? 'client'
-      : 'global';
+  const viewingTier: Tier =
+    scope.feedSourceId !== undefined
+      ? 'feed_source'
+      : scope.clientId !== undefined
+        ? 'client'
+        : 'global';
   const tierHrefs: Partial<Record<Tier, string>> = {
     global: `/plugins/${pluginId}`,
     ...(routeContext.clientId
@@ -99,22 +124,24 @@ export function CustomLabelsUI({
       : {}),
     ...(routeContext.clientId && routeContext.feedSourceId
       ? {
-        feed_source:
-          `/clients/${routeContext.clientId}/feeds/${routeContext.feedSourceId}/plugins/${pluginId}`,
-      }
+          feed_source: `/clients/${routeContext.clientId}/feeds/${routeContext.feedSourceId}/plugins/${pluginId}`,
+        }
       : {}),
   };
 
   const clientConfigScope = configChain.find((c) => c.tier === 'client')?.scope;
   const clientDataScope = dataChain.find((c) => c.tier === 'client')?.scope;
   const feedDataScope = dataChain.find((c) => c.tier === 'feed_source')?.scope;
-  const saveConfigScope: PluginScope = editableTier === 'client'
-    ? { clientId: scope.clientId! }
-    : {};
+  const saveConfigScope: PluginScope =
+    editableTier === 'client' ? { clientId: scope.clientId! } : {};
   const saveDataScope = feedDataScope ?? clientDataScope;
 
   const globalConfig = usePluginConfig(pluginId, {});
-  const clientConfig = usePluginConfig(pluginId, clientConfigScope, clientConfigScope !== undefined);
+  const clientConfig = usePluginConfig(
+    pluginId,
+    clientConfigScope,
+    clientConfigScope !== undefined,
+  );
   const clientData = usePluginData(pluginId, clientDataScope, clientDataScope !== undefined);
   const feedData = usePluginData(pluginId, feedDataScope, feedDataScope !== undefined);
   const saveConfig = useSavePluginConfig(pluginId, saveConfigScope);
@@ -130,7 +157,8 @@ export function CustomLabelsUI({
       mergeSlotRules(
         configChain.map(({ tier }) => ({
           tier,
-          rules: tier === 'global' ? slotRulesOf(globalConfig.data) : slotRulesOf(clientConfig.data),
+          rules:
+            tier === 'global' ? slotRulesOf(globalConfig.data) : slotRulesOf(clientConfig.data),
         })),
       ),
     [configChain, globalConfig.data, clientConfig.data],
@@ -173,9 +201,10 @@ export function CustomLabelsUI({
   const [previewFields, setPreviewFields] = useState<Record<string, string[]>>({});
   const [previewOpen, { toggle: togglePreview }] = useDisclosure(false);
   const populatedSlots = useMemo(
-    () => TARGET_SLOTS.filter(
-      (slot) => effectiveRules.some((r) => r.isActive && r.targetSlot === slot),
-    ),
+    () =>
+      TARGET_SLOTS.filter((slot) =>
+        effectiveRules.some((r) => r.isActive && r.targetSlot === slot),
+      ),
     [effectiveRules],
   );
   useEffect(() => {
@@ -224,12 +253,12 @@ export function CustomLabelsUI({
 
   function overrideSelected() {
     if (!selected) return;
-    setRules(effectiveRules.map((r) =>
-      r.id === selected.id ? { ...r, origin: 'client' } : r));
+    setRules(effectiveRules.map((r) => (r.id === selected.id ? { ...r, origin: 'client' } : r)));
   }
 
-  const blocker = useBlocker(({ currentLocation, nextLocation }) =>
-    dirty && currentLocation.pathname !== nextLocation.pathname,
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      dirty && currentLocation.pathname !== nextLocation.pathname,
   );
 
   async function saveRules() {
@@ -259,16 +288,18 @@ export function CustomLabelsUI({
     notifySuccess(t('idsSaved'));
   }
 
-  const configPending = globalConfig.isPending
-    || (clientConfigScope !== undefined && clientConfig.isPending);
-  const dataPending = dataChain.length > 0
-    && ((clientDataScope !== undefined && clientData.isPending)
-      || (feedDataScope !== undefined && feedData.isPending));
+  const configPending =
+    globalConfig.isPending || (clientConfigScope !== undefined && clientConfig.isPending);
+  const dataPending =
+    dataChain.length > 0 &&
+    ((clientDataScope !== undefined && clientData.isPending) ||
+      (feedDataScope !== undefined && feedData.isPending));
   if (configPending || dataPending) return <LoadingState />;
-  const anyError = globalConfig.isError
-    || (clientConfigScope !== undefined && clientConfig.isError)
-    || (clientDataScope !== undefined && clientData.isError)
-    || (feedDataScope !== undefined && feedData.isError);
+  const anyError =
+    globalConfig.isError ||
+    (clientConfigScope !== undefined && clientConfig.isError) ||
+    (clientDataScope !== undefined && clientData.isError) ||
+    (feedDataScope !== undefined && feedData.isError);
   if (anyError) {
     return (
       <ErrorState
@@ -287,10 +318,9 @@ export function CustomLabelsUI({
   const ruleEditable = (rule: ScopedSlotRule) => !rulesReadOnly && rule.origin === editableTier;
 
   const slotRules = activeRules.filter((r) => r.targetSlot === selectedSlot);
-  const slotDirty = dirtyIds
-    && slotRules.some(
-      (r) => (effectiveIds[r.id] ?? '') !== (serverIds[r.id]?.value ?? ''),
-    );
+  const slotDirty =
+    dirtyIds &&
+    slotRules.some((r) => (effectiveIds[r.id] ?? '') !== (serverIds[r.id]?.value ?? ''));
 
   const idsPanel = idsUnavailable ? (
     <Text c="dimmed">{t('idsUnavailable')}</Text>
@@ -333,11 +363,10 @@ export function CustomLabelsUI({
             rule={rule}
             priority={index + 1}
             value={effectiveIds[rule.id] ?? ''}
-            dirty={dirtyIds
-              && (effectiveIds[rule.id] ?? '') !== (serverIds[rule.id]?.value ?? '')}
+            dirty={dirtyIds && (effectiveIds[rule.id] ?? '') !== (serverIds[rule.id]?.value ?? '')}
             inheritedFrom={
-              serverIds[rule.id]?.inherited === true
-                && (effectiveIds[rule.id] ?? '') === serverIds[rule.id].value
+              serverIds[rule.id]?.inherited === true &&
+              (effectiveIds[rule.id] ?? '') === serverIds[rule.id].value
                 ? serverIds[rule.id].sourceTier
                 : null
             }
@@ -422,16 +451,15 @@ export function CustomLabelsUI({
                     rule={rule}
                     selected={rule.id === selectedId}
                     disabled={!ruleEditable(rule)}
-                    badge={rule.origin !== editableTier
-                      ? <ScopeBadge tier={rule.origin} />
-                      : undefined}
+                    badge={
+                      rule.origin !== editableTier ? <ScopeBadge tier={rule.origin} /> : undefined
+                    }
                     onSelect={() => setSelectedId(rule.id)}
                     onToggleActive={(isActive) =>
                       setRules(
-                        effectiveRules.map((r) =>
-                          r.id === rule.id ? { ...r, isActive } : r,
-                        ),
-                      )}
+                        effectiveRules.map((r) => (r.id === rule.id ? { ...r, isActive } : r)),
+                      )
+                    }
                   />
                 ))}
               </Stack>
@@ -549,13 +577,21 @@ export function CustomLabelsUI({
         <Stack gap="sm">
           {(['concepts', 'matchModes', 'templates', 'scopes'] as const).map((key) => (
             <Stack key={key} gap={4}>
-              <Text fw={600} size="sm">{t(`howItWorks.${key}.question`)}</Text>
-              <Text size="sm" c="dimmed">{t(`howItWorks.${key}.answer`)}</Text>
+              <Text fw={600} size="sm">
+                {t(`howItWorks.${key}.question`)}
+              </Text>
+              <Text size="sm" c="dimmed">
+                {t(`howItWorks.${key}.answer`)}
+              </Text>
             </Stack>
           ))}
           <Stack gap={4}>
-            <Text fw={600} size="sm">{t('help.gettingStarted')}</Text>
-            <Text size="sm" c="dimmed">{t('help.gettingStartedBody')}</Text>
+            <Text fw={600} size="sm">
+              {t('help.gettingStarted')}
+            </Text>
+            <Text size="sm" c="dimmed">
+              {t('help.gettingStartedBody')}
+            </Text>
           </Stack>
         </Stack>
       </Drawer>
@@ -566,11 +602,17 @@ export function CustomLabelsUI({
       ) : (
         <Tabs defaultValue={initialTab} keepMounted={false}>
           <Tabs.List>
-            <Tabs.Tab value="ids" disabled={idsUnavailable}>{t('tabs.bulkIds')}</Tabs.Tab>
+            <Tabs.Tab value="ids" disabled={idsUnavailable}>
+              {t('tabs.bulkIds')}
+            </Tabs.Tab>
             <Tabs.Tab value="rules">{t('tabs.slotRules')}</Tabs.Tab>
           </Tabs.List>
-          <Tabs.Panel value="ids" pt="sm">{idsPanel}</Tabs.Panel>
-          <Tabs.Panel value="rules" pt="sm">{rulesPanel}</Tabs.Panel>
+          <Tabs.Panel value="ids" pt="sm">
+            {idsPanel}
+          </Tabs.Panel>
+          <Tabs.Panel value="rules" pt="sm">
+            {rulesPanel}
+          </Tabs.Panel>
         </Tabs>
       )}
       <ConfirmModal
@@ -579,9 +621,11 @@ export function CustomLabelsUI({
         onConfirm={deleteSelected}
         danger
         title={t('deleteConfirmTitle')}
-        message={selected?.origin === 'global'
-          ? t('deleteGlobalWarning', { name: selected.name })
-          : t('deleteConfirmBody', { name: selected?.name ?? '' })}
+        message={
+          selected?.origin === 'global'
+            ? t('deleteGlobalWarning', { name: selected.name })
+            : t('deleteConfirmBody', { name: selected?.name ?? '' })
+        }
         confirmLabel={t('deleteRule')}
       />
       <ConfirmModal

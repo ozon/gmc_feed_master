@@ -53,12 +53,7 @@ export function ClientModal({
   const mutationPending = client ? updateClient.isPending : createClient.isPending;
 
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={client ? t('edit') : t('addClient')}
-      centered
-    >
+    <Modal opened={opened} onClose={onClose} title={client ? t('edit') : t('addClient')} centered>
       <form
         onSubmit={(event) => {
           event.preventDefault();

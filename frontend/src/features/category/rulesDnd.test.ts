@@ -3,8 +3,12 @@ import { applyRulesDragEnd } from './rulesDnd';
 import type { ScopedCategoryRule } from './types';
 
 const rule = (id: string): ScopedCategoryRule => ({
-  id, source_field: 'product_type', operator: 'eq', source_value: 'x',
-  taxonomy_id: '1', origin: 'client',
+  id,
+  source_field: 'product_type',
+  operator: 'eq',
+  source_value: 'x',
+  taxonomy_id: '1',
+  origin: 'client',
 });
 
 describe('applyRulesDragEnd', () => {

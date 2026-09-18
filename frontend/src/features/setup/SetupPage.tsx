@@ -30,11 +30,14 @@ export function SetupPage() {
         value={tab}
         onChange={(v) => {
           if (v) {
-            setSearchParams((prev) => {
-              const next = new URLSearchParams(prev);
-              next.set('tab', v);
-              return next;
-            }, { replace: true });
+            setSearchParams(
+              (prev) => {
+                const next = new URLSearchParams(prev);
+                next.set('tab', v);
+                return next;
+              },
+              { replace: true },
+            );
           }
         }}
         keepMounted={false}

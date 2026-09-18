@@ -85,9 +85,7 @@ export function configTierChain(
   scope: PluginScope,
   routeContext: { clientId?: string },
 ): Array<{ tier: Tier; scope: PluginScope }> {
-  const chain: Array<{ tier: Tier; scope: PluginScope }> = [
-    { tier: 'global', scope: {} },
-  ];
+  const chain: Array<{ tier: Tier; scope: PluginScope }> = [{ tier: 'global', scope: {} }];
   const editable = editableConfigTier(scope);
   if (editable === 'client') {
     chain.push({ tier: 'client', scope: { clientId: scope.clientId! } });

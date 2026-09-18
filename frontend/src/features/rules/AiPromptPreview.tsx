@@ -28,7 +28,9 @@ export function AiPromptPreview({ opened, onClose, payload }: AiPromptPreviewPro
           </Text>
         ))}
         {(preview.data?.warnings ?? []).map((warning, index) => (
-          <Alert key={`w-${index}`} color="orange" py={4}>{warning}</Alert>
+          <Alert key={`w-${index}`} color="orange" py={4}>
+            {warning}
+          </Alert>
         ))}
         {preview.isError ? <Alert color="red">{String(preview.error)}</Alert> : null}
       </Stack>

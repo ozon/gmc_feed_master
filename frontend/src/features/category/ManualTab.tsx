@@ -71,18 +71,24 @@ export function ManualTab({
           {t('manual.lookup')}
         </Button>
         {feedSourceId === undefined && (
-          <Text size="xs" c="dimmed">{t('manual.selectFeedSource')}</Text>
+          <Text size="xs" c="dimmed">
+            {t('manual.selectFeedSource')}
+          </Text>
         )}
       </Group>
       {productId && product.isError && (
-        <Text c="red" size="sm">{t('manual.notFound')}</Text>
+        <Text c="red" size="sm">
+          {t('manual.notFound')}
+        </Text>
       )}
       {productId && product.data && (
         <Paper withBorder p="md">
           <Stack gap="xs">
             <Text fw={600}>{product.data.title ?? product.data.product_id}</Text>
             <Group gap="xs">
-              <Text size="sm" c="dimmed">{t('manual.provenanceLabel')}</Text>
+              <Text size="sm" c="dimmed">
+                {t('manual.provenanceLabel')}
+              </Text>
               <Badge variant="light">
                 {product.data.provenance
                   ? t(`manual.provenance.${product.data.provenance}`, {
@@ -92,25 +98,31 @@ export function ManualTab({
               </Badge>
             </Group>
             <Group gap="xs">
-              <Text size="sm" c="dimmed">{t('manual.categoryLabel')}</Text>
-              <Text size="sm">
-                {product.data.google_product_category || t('manual.none')}
+              <Text size="sm" c="dimmed">
+                {t('manual.categoryLabel')}
               </Text>
+              <Text size="sm">{product.data.google_product_category || t('manual.none')}</Text>
             </Group>
             {currentAssignment !== undefined && (
               <Group gap="xs">
-                <Text size="sm" c="dimmed">{t('manual.assignmentLabel')}</Text>
-                <Badge color="green" variant="light">{currentAssignment}</Badge>
+                <Text size="sm" c="dimmed">
+                  {t('manual.assignmentLabel')}
+                </Text>
+                <Badge color="green" variant="light">
+                  {currentAssignment}
+                </Badge>
                 <Button
                   size="xs"
                   color="red"
                   variant="light"
                   loading={save.isPending}
-                  onClick={() => persist((current) => {
-                    const next = { ...current };
-                    delete next[productId];
-                    return next;
-                  })}
+                  onClick={() =>
+                    persist((current) => {
+                      const next = { ...current };
+                      delete next[productId];
+                      return next;
+                    })
+                  }
                 >
                   {t('manual.unassign')}
                 </Button>

@@ -21,9 +21,27 @@ function finding(overrides: Partial<QualityFinding>): QualityFinding {
 }
 
 const findings: QualityFinding[] = [
-  finding({ severity: 'critical', code: 'gtin_mpn', field: 'gtin', product_id: 'p1', message: 'bad gtin' }),
-  finding({ severity: 'warning', code: 'gtin_mpn', field: 'gtin', product_id: 'p2', message: 'no gtin' }),
-  finding({ severity: 'info', code: 'image_requirements', field: null, product_id: '', message: 'image small' }),
+  finding({
+    severity: 'critical',
+    code: 'gtin_mpn',
+    field: 'gtin',
+    product_id: 'p1',
+    message: 'bad gtin',
+  }),
+  finding({
+    severity: 'warning',
+    code: 'gtin_mpn',
+    field: 'gtin',
+    product_id: 'p2',
+    message: 'no gtin',
+  }),
+  finding({
+    severity: 'info',
+    code: 'image_requirements',
+    field: null,
+    product_id: '',
+    message: 'image small',
+  }),
 ];
 
 describe('countBySeverity', () => {

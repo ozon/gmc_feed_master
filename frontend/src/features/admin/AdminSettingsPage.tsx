@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Badge, Button, Group, NumberInput, Stack, Switch, Table, Text, Title } from '@mantine/core';
+import {
+  Badge,
+  Button,
+  Group,
+  NumberInput,
+  Stack,
+  Switch,
+  Table,
+  Text,
+  Title,
+} from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import {
   useAdminSettings,
@@ -90,9 +100,13 @@ export function AdminSettingsPage() {
 
       <Title order={4}>{t('settings.scheduler')}</Title>
       {schedulerQuery.isPending ? (
-        <Text size="sm" c="dimmed">…</Text>
+        <Text size="sm" c="dimmed">
+          …
+        </Text>
       ) : schedulerQuery.isError ? (
-        <Text size="sm" c="dimmed">{t('settings.schedulerUnavailable')}</Text>
+        <Text size="sm" c="dimmed">
+          {t('settings.schedulerUnavailable')}
+        </Text>
       ) : (
         <Table striped data-testid="admin-scheduler-table" maw={600}>
           <Table.Thead>
@@ -104,7 +118,9 @@ export function AdminSettingsPage() {
           <Table.Tbody>
             {schedulerQuery.data.map((job) => (
               <Table.Tr key={job.id}>
-                <Table.Td><Badge variant="light">{job.id}</Badge></Table.Td>
+                <Table.Td>
+                  <Badge variant="light">{job.id}</Badge>
+                </Table.Td>
                 <Table.Td>{job.trigger}</Table.Td>
               </Table.Tr>
             ))}
@@ -123,7 +139,9 @@ export function AdminSettingsPage() {
         <Table.Tbody>
           {(pluginsQuery.data ?? []).map((plugin) => (
             <Table.Tr key={plugin.id}>
-              <Table.Td>{tPlugins(`pluginNames.${plugin.id}`, { defaultValue: plugin.name })}</Table.Td>
+              <Table.Td>
+                {tPlugins(`pluginNames.${plugin.id}`, { defaultValue: plugin.name })}
+              </Table.Td>
               <Table.Td>
                 <Switch
                   aria-label={t('settings.pluginEnabled')}

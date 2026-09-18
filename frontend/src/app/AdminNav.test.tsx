@@ -19,9 +19,7 @@ const summary = {
 
 function handler(url: string): Response {
   const body =
-    url === '/plugins' ? [] :
-    url === '/dashboard/summary' ? summary :
-    { detail: 'not found' };
+    url === '/plugins' ? [] : url === '/dashboard/summary' ? summary : { detail: 'not found' };
   return new Response(JSON.stringify(body), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },

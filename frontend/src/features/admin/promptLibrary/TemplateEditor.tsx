@@ -57,9 +57,12 @@ export function TemplateEditor({ opened, template, clientId, feedOptions, onClos
   const [user, setUser] = useState(template?.user_prompt ?? '');
   const [variables, setVariables] = useState(template?.variables.join(', ') ?? '');
 
-  const declared = variables.split(',').map((v) => v.trim()).filter(Boolean);
+  const declared = variables
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
   const used = new Set([...placeholders(system), ...placeholders(user)]);
-  const canonical = taskType ? CANONICAL_VARIABLES[taskType] ?? [] : [];
+  const canonical = taskType ? (CANONICAL_VARIABLES[taskType] ?? []) : [];
   const unknown = [...used].filter((v) => !canonical.includes(v));
   const unusedDeclared = declared.filter((v) => !used.has(v));
   const malformed = [...new Set([...malformedBraces(system), ...malformedBraces(user)])];
@@ -119,11 +122,13 @@ export function TemplateEditor({ opened, template, clientId, feedOptions, onClos
             {t('promptLibrary.editor.malformedBrace', { brace: b })}
           </Text>
         ))}
-        {create.error ? (
-          previewDetailErrors(create.error).map((e) => (
-            <Text key={e} c="red" size="sm">{e}</Text>
-          ))
-        ) : null}
+        {create.error
+          ? previewDetailErrors(create.error).map((e) => (
+              <Text key={e} c="red" size="sm">
+                {e}
+              </Text>
+            ))
+          : null}
         <Button
           disabled={!canSave || create.isPending}
           onClick={() =>
@@ -141,7 +146,8 @@ export function TemplateEditor({ opened, template, clientId, feedOptions, onClos
                   notifySuccess(t('promptLibrary.editor.saved'));
                   onClose();
                 },
-                onError: (error) => notifyMutationError(error, t('promptLibrary.editor.saveFailed')),
+                onError: (error) =>
+                  notifyMutationError(error, t('promptLibrary.editor.saveFailed')),
               },
             )
           }
@@ -152,10 +158,17 @@ export function TemplateEditor({ opened, template, clientId, feedOptions, onClos
         {taskType ? (
           <PreviewPanel
             feedOptions={feedOptions}
-            base={{ task_type: taskType, system_prompt: system, user_prompt: user, variables: declared }}
+            base={{
+              task_type: taskType,
+              system_prompt: system,
+              user_prompt: user,
+              variables: declared,
+            }}
           />
         ) : (
-          <Text size="sm" c="dimmed">{t('promptLibrary.editor.pickTaskType')}</Text>
+          <Text size="sm" c="dimmed">
+            {t('promptLibrary.editor.pickTaskType')}
+          </Text>
         )}
       </Stack>
     </Modal>

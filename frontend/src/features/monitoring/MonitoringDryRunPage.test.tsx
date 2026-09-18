@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { notifications, Notifications } from '@mantine/notifications';
-import {QueryClient} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
@@ -26,13 +26,15 @@ beforeEach(() => {
   notifications.clean();
 });
 
-
 function renderAt() {
   return render(
     <MemoryRouter initialEntries={['/clients/1/feeds/1/monitoring/dry-run']}>
       <Notifications position="top-right" limit={1} />
       <Routes>
-        <Route path="/clients/:clientId/feeds/:feedSourceId/monitoring/dry-run" element={<MonitoringDryRunPage />} />
+        <Route
+          path="/clients/:clientId/feeds/:feedSourceId/monitoring/dry-run"
+          element={<MonitoringDryRunPage />}
+        />
       </Routes>
     </MemoryRouter>,
   );

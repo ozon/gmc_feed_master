@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { renderHook } from '../test/render';
-import {QueryClient} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import { useExportVersionDiff, useRollbackToVersion } from './hooks';
 import { queryClient as defaultClient } from './queryClient';
 import { queryKeys } from './queryKeys';
@@ -13,7 +13,6 @@ function jsonResponse(body: unknown, status = 200) {
     headers: { 'Content-Type': 'application/json' },
   });
 }
-
 
 beforeEach(() => {
   defaultClient.clear();
@@ -53,7 +52,10 @@ describe('useExportVersionDiff', () => {
     first.unmount();
     renderHook(() => useExportVersionDiff(1, 3, undefined), { queryClient: client });
 
-    const keys = client.getQueryCache().getAll().map((q) => q.queryKey);
+    const keys = client
+      .getQueryCache()
+      .getAll()
+      .map((q) => q.queryKey);
     expect(keys).toEqual([['feed-source', 1, 'export-diff', { disabled: true }]]);
   });
 });

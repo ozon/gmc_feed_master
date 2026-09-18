@@ -65,13 +65,17 @@ describe('MatchesModal', () => {
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: 'Load more' })).not.toBeInTheDocument(),
     );
-    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/plugins/category/matches'))).toHaveLength(2);
+    expect(
+      fetchMock.mock.calls.filter(([url]) => String(url).includes('/plugins/category/matches')),
+    ).toHaveLength(2);
   });
 
   it('shows the empty state when a rule matches nothing', async () => {
     stubFetch(() => jsonResponse({ total: 0, items: [] }));
     renderModal();
-    expect(await screen.findByText('No staged products matched this rule yet.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('No staged products matched this rule yet.'),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Load more' })).not.toBeInTheDocument();
   });
 });

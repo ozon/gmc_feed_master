@@ -35,7 +35,11 @@ export function ExportPage() {
     setCompared(false);
   }, [versionA, versionB]);
 
-  const diff = useExportVersionDiff(id, compared ? versionA : undefined, compared ? versionB : undefined);
+  const diff = useExportVersionDiff(
+    id,
+    compared ? versionA : undefined,
+    compared ? versionB : undefined,
+  );
 
   if (feed.isPending || history.isPending) return <LoadingState />;
   if (feed.isError) return <ErrorState onRetry={() => void feed.refetch()} />;

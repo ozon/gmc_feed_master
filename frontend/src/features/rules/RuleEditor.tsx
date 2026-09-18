@@ -30,7 +30,15 @@ const NUMERIC_OPS: readonly string[] = CONDITION_NUMERIC_OPS;
 const LEAF_OPS: readonly string[] = [...TEXT_OPS, ...NUMERIC_OPS];
 const GROUP_OPS: readonly string[] = ['and', 'or'];
 const ALL_CONDITION_OPS: readonly string[] = [...GROUP_OPS, ...LEAF_OPS];
-const ACTION_OPS: readonly string[] = ['set', 'replace', 'append', 'prepend', 'remove', 'clear', 'ai'];
+const ACTION_OPS: readonly string[] = [
+  'set',
+  'replace',
+  'append',
+  'prepend',
+  'remove',
+  'clear',
+  'ai',
+];
 
 export type RuleEditorProps = {
   rule: Rule | null;
@@ -159,13 +167,23 @@ export function RuleEditor({
             value={when.op === 'all' ? 'all' : 'where'}
             onChange={(v) => {
               if (v === 'all') onPatchWhen({ op: 'all' });
-              else onPatchWhen({ op: 'equals', field: fieldOptions[0]?.items[0]?.value ?? '', arg: '' });
+              else
+                onPatchWhen({
+                  op: 'equals',
+                  field: fieldOptions[0]?.items[0]?.value ?? '',
+                  arg: '',
+                });
             }}
             data-testid="condition-type"
             w={180}
           />
           {when.op !== 'all' ? (
-            <ConditionNodeEditor node={when} fieldOptions={fieldOptions} onChange={onPatchWhen} t={t} />
+            <ConditionNodeEditor
+              node={when}
+              fieldOptions={fieldOptions}
+              onChange={onPatchWhen}
+              t={t}
+            />
           ) : null}
         </Group>
       </Stack>
@@ -176,7 +194,13 @@ export function RuleEditor({
           {t('editor.then')}
         </Text>
         {rule.then.map((action, index) => (
-          <Group key={index} gap="xs" wrap="nowrap" align="flex-start" data-testid={`then-row-${index}`}>
+          <Group
+            key={index}
+            gap="xs"
+            wrap="nowrap"
+            align="flex-start"
+            data-testid={`then-row-${index}`}
+          >
             <Text size="sm" c="dimmed">
               {t('editor.take')}
             </Text>
@@ -403,7 +427,11 @@ function ConditionNodeEditor({
                 aria-label={t('actions.addSection')}
                 onClick={() => {
                   const next = [...children];
-                  next.splice(index + 1, 0, { op: 'equals', field: fieldOptions[0]?.items[0]?.value ?? '', arg: '' });
+                  next.splice(index + 1, 0, {
+                    op: 'equals',
+                    field: fieldOptions[0]?.items[0]?.value ?? '',
+                    arg: '',
+                  });
                   onChange({ ...node, children: next });
                 }}
               >
@@ -446,7 +474,8 @@ function ConditionNodeEditor({
         value={TEXT_OPS.includes(node.op) || NUMERIC_OPS.includes(node.op) ? node.op : null}
         onChange={(v) => {
           if (!v) return;
-          if ((NUMERIC_OPS as readonly string[]).includes(v)) patch({ op: v as RuleCondition['op'], arg: 0 });
+          if ((NUMERIC_OPS as readonly string[]).includes(v))
+            patch({ op: v as RuleCondition['op'], arg: 0 });
           else patch({ op: v as RuleCondition['op'], arg: '' });
         }}
         w={160}

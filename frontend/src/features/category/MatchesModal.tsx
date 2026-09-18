@@ -48,7 +48,9 @@ export function MatchesModal({
       size="lg"
     >
       <Stack gap="sm">
-        <Text size="xs" c="dimmed">{t('matches.stale')}</Text>
+        <Text size="xs" c="dimmed">
+          {t('matches.stale')}
+        </Text>
         {query.isLoading && <LoadingState />}
         {query.isError && <ErrorState onRetry={() => void query.refetch()} />}
         {total === 0 && !query.isLoading && <Text c="dimmed">{t('matches.empty')}</Text>}

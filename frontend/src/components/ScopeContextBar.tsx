@@ -13,24 +13,22 @@ type Props = {
   hrefs?: Partial<Record<Tier, string>>;
 };
 
-function TierBadge({
-  tier, filled, href,
-}: { tier: Tier; filled: boolean; href?: string }) {
+function TierBadge({ tier, filled, href }: { tier: Tier; filled: boolean; href?: string }) {
   if (!href) return <ScopeBadge tier={tier} filled={filled} />;
   return (
-    <Anchor
-      component={Link}
-      to={href}
-      underline="never"
-      data-testid={`scope-link-${tier}`}
-    >
+    <Anchor component={Link} to={href} underline="never" data-testid={`scope-link-${tier}`}>
       <ScopeBadge tier={tier} filled={filled} />
     </Anchor>
   );
 }
 
 export function ScopeContextBar({
-  current, configTiers, dataTiers, configLabel, dataLabel, hrefs,
+  current,
+  configTiers,
+  dataTiers,
+  configLabel,
+  dataLabel,
+  hrefs,
 }: Props) {
   const { t } = useTranslation();
   const badgeFor = (tier: Tier, filled: boolean) => (
@@ -46,19 +44,27 @@ export function ScopeContextBar({
     >
       <Group gap="lg" wrap="nowrap">
         <Group gap="xs" wrap="nowrap">
-          <Text size="sm" c="dimmed">{t('scope.viewing')}</Text>
+          <Text size="sm" c="dimmed">
+            {t('scope.viewing')}
+          </Text>
           <ScopeBadge tier={current} filled />
         </Group>
         <Group gap="xs" wrap="nowrap">
-          <Text size="sm" c="dimmed">{configLabel}</Text>
+          <Text size="sm" c="dimmed">
+            {configLabel}
+          </Text>
           {configTiers.map((tier) => (
             <span key={`config-${tier}`}>{badgeFor(tier, tier === current)}</span>
           ))}
         </Group>
         <Group gap="xs" wrap="nowrap">
-          <Text size="sm" c="dimmed">{dataLabel}</Text>
+          <Text size="sm" c="dimmed">
+            {dataLabel}
+          </Text>
           {dataTiers.length === 0 ? (
-            <Text size="sm" c="dimmed">—</Text>
+            <Text size="sm" c="dimmed">
+              —
+            </Text>
           ) : (
             dataTiers.map((tier) => (
               <span key={`data-${tier}`}>{badgeFor(tier, tier === current)}</span>

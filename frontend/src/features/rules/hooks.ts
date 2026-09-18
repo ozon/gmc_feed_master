@@ -32,10 +32,7 @@ export type RuleAiPreviewRequest = {
 
 export type AiRulesConfig = { enabled: boolean; limit: number; budget: number };
 
-export function useRuleAiTemplates(
-  feedSourceId: number | undefined,
-  taskType: string | undefined,
-) {
+export function useRuleAiTemplates(feedSourceId: number | undefined, taskType: string | undefined) {
   return useQuery({
     queryKey: ['rules', 'ai-templates', feedSourceId ?? 0, taskType ?? ''],
     enabled: Boolean(feedSourceId) && Boolean(taskType) && taskType !== 'rule_value',

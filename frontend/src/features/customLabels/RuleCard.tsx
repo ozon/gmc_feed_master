@@ -1,5 +1,13 @@
 import {
-  Accordion, Badge, Button, Group, Indicator, Paper, Stack, Text, Tooltip,
+  Accordion,
+  Badge,
+  Button,
+  Group,
+  Indicator,
+  Paper,
+  Stack,
+  Text,
+  Tooltip,
 } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { renderPreview } from './ids';
@@ -29,17 +37,31 @@ export type RuleCardProps = {
 };
 
 export function RuleCard({
-  rule, priority, value, dirty, inheritedFrom, editable, matchedStats,
-  showLive, shadowedBy, feedSourceId, extraFields, onExtraFieldsChange,
-  onSetIds, onPatchRule, previewOpen, onTogglePreview,
+  rule,
+  priority,
+  value,
+  dirty,
+  inheritedFrom,
+  editable,
+  matchedStats,
+  showLive,
+  shadowedBy,
+  feedSourceId,
+  extraFields,
+  onExtraFieldsChange,
+  onSetIds,
+  onPatchRule,
+  previewOpen,
+  onTogglePreview,
 }: RuleCardProps) {
   const { t } = useTranslation('customLabels');
   const { t: tCommon } = useTranslation('common');
   const allMode = rule.matchMode === 'all';
-  const neverApplied = showLive
-    && matchedStats !== undefined
-    && matchedStats.matched > 0
-    && matchedStats.labeled === 0;
+  const neverApplied =
+    showLive &&
+    matchedStats !== undefined &&
+    matchedStats.matched > 0 &&
+    matchedStats.labeled === 0;
 
   return (
     <Accordion.Item value={rule.id} data-testid={`rule-card-${rule.id}`}>
@@ -49,7 +71,9 @@ export function RuleCard({
             {`#${priority}`}
           </Text>
           <Indicator color="orange" size={8} offset={-4} position="top-end" disabled={!dirty}>
-            <Text size="sm" fw={600} component="span">{rule.name}</Text>
+            <Text size="sm" fw={600} component="span">
+              {rule.name}
+            </Text>
           </Indicator>
           {inheritedFrom !== null && (
             <Badge size="xs" variant="light" color="teal">
@@ -82,11 +106,15 @@ export function RuleCard({
       </Accordion.Control>
       <Accordion.Panel>
         <Stack gap="xs">
-          <Text size="xs" c="dimmed">{renderPreview(rule.valueTemplate)}</Text>
+          <Text size="xs" c="dimmed">
+            {renderPreview(rule.valueTemplate)}
+          </Text>
           {allMode ? (
             <Paper withBorder p="xs" data-testid={`all-mode-${rule.id}`}>
               <Stack gap={4}>
-                <Text size="sm" c="dimmed">{t('bulk.controlledByRule')}</Text>
+                <Text size="sm" c="dimmed">
+                  {t('bulk.controlledByRule')}
+                </Text>
                 <Text size="sm" fw={600}>
                   {t('bulk.allProductsGet', { preview: renderPreview(rule.valueTemplate) })}
                 </Text>

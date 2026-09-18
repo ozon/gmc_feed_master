@@ -1,7 +1,5 @@
 import { Fragment, useMemo, useState } from 'react';
-import {
-  Badge, Box, Button, Stack, Table, Text, TextInput, UnstyledButton,
-} from '@mantine/core';
+import { Badge, Box, Button, Stack, Table, Text, TextInput, UnstyledButton } from '@mantine/core';
 import { IconChevronDown, IconChevronRight, IconTrash } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { FieldSelect } from '../../components/FieldSelect';
@@ -70,13 +68,14 @@ function AddCustomRow({
   const grammarOk = CUSTOM_FIELD_NAME_REGEX.test(name);
   const tooLong = name.length > CUSTOM_FIELD_NAME_MAX_LEN;
   const duplicate = existingNames.has(name);
-  const nameError = name === ''
-    ? null
-    : tooLong || !grammarOk
-      ? t('mapping.custom.invalidName')
-      : duplicate
-        ? t('mapping.custom.duplicateName')
-        : null;
+  const nameError =
+    name === ''
+      ? null
+      : tooLong || !grammarOk
+        ? t('mapping.custom.invalidName')
+        : duplicate
+          ? t('mapping.custom.duplicateName')
+          : null;
   const canAdd = name !== '' && target !== '' && nameError === null;
 
   return (
@@ -93,7 +92,9 @@ function AddCustomRow({
             w={220}
             data-testid="custom-name-input"
           />
-          <Text size="xs" c="dimmed">{t('mapping.custom.addTargetHint')}</Text>
+          <Text size="xs" c="dimmed">
+            {t('mapping.custom.addTargetHint')}
+          </Text>
         </Stack>
       </Table.Td>
       <Table.Td>
@@ -141,10 +142,7 @@ export function MappingTable({
     () => buildFieldOptions(fromRegistryAttributes(registryAttributes)),
     [registryAttributes],
   );
-  const observedNames = useMemo(
-    () => new Set(sourceFields.map((sf) => sf.name)),
-    [sourceFields],
-  );
+  const observedNames = useMemo(() => new Set(sourceFields.map((sf) => sf.name)), [sourceFields]);
   const existingNames = useMemo(
     () => new Set([...observedNames, ...customFields]),
     [observedNames, customFields],
@@ -181,7 +179,9 @@ export function MappingTable({
                           data-sub-toggle={sf.name}
                           aria-expanded={isOpen}
                           aria-label={t(
-                            isOpen ? 'mapping.table.collapseSubFields' : 'mapping.table.expandSubFields',
+                            isOpen
+                              ? 'mapping.table.collapseSubFields'
+                              : 'mapping.table.expandSubFields',
                             { field: sf.name },
                           )}
                           onClick={() =>
@@ -199,12 +199,21 @@ export function MappingTable({
                       </Badge>
                       <OriginBadge origin={origin} />
                       {shadowedCustom && (
-                        <Badge size="xs" variant="outline" color="violet" data-testid="shadow-indicator">
+                        <Badge
+                          size="xs"
+                          variant="outline"
+                          color="violet"
+                          data-testid="shadow-indicator"
+                        >
                           {t('mapping.custom.alsoCustom')}
                         </Badge>
                       )}
                     </Box>
-                    {error && <Text size="xs" c="red">{error}</Text>}
+                    {error && (
+                      <Text size="xs" c="red">
+                        {error}
+                      </Text>
+                    )}
                   </Stack>
                 </Table.Td>
                 <Table.Td>
@@ -231,9 +240,9 @@ export function MappingTable({
                   )}
                 </Table.Td>
               </Table.Tr>
-              {expandable
-                && isOpen
-                && sf.sub_fields.map((sub) => {
+              {expandable &&
+                isOpen &&
+                sf.sub_fields.map((sub) => {
                   const subKey = `${sf.name}.${sub}`;
                   const subMapping = mappings[subKey];
                   const subError = errors[subKey] ?? null;
@@ -241,7 +250,14 @@ export function MappingTable({
                     <Table.Tr key={subKey}>
                       <Table.Td>
                         <Stack gap={4}>
-                          <Box style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 32 }}>
+                          <Box
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              paddingLeft: 32,
+                            }}
+                          >
                             <Text size="sm" fw={500}>
                               {sub}
                             </Text>
@@ -250,7 +266,11 @@ export function MappingTable({
                             </Badge>
                             <OriginBadge origin={subMapping?.origin ?? null} />
                           </Box>
-                          {subError && <Text size="xs" c="red">{subError}</Text>}
+                          {subError && (
+                            <Text size="xs" c="red">
+                              {subError}
+                            </Text>
+                          )}
                         </Stack>
                       </Table.Td>
                       <Table.Td>
@@ -279,11 +299,19 @@ export function MappingTable({
               <Table.Td>
                 <Stack gap={4}>
                   <Box style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Text size="sm" fw={500}>{name}</Text>
-                    <Badge size="xs" variant="light">custom</Badge>
+                    <Text size="sm" fw={500}>
+                      {name}
+                    </Text>
+                    <Badge size="xs" variant="light">
+                      custom
+                    </Badge>
                     <OriginBadge origin={mapping?.origin ?? 'manual'} />
                   </Box>
-                  {error && <Text size="xs" c="red">{error}</Text>}
+                  {error && (
+                    <Text size="xs" c="red">
+                      {error}
+                    </Text>
+                  )}
                 </Stack>
               </Table.Td>
               <Table.Td>

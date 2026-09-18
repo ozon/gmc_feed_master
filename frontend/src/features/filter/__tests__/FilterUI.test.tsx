@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { notifications, Notifications } from '@mantine/notifications';
-import {QueryClient} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
@@ -26,15 +26,12 @@ beforeEach(() => {
   notifications.clean();
 });
 
-
 const savedConfig = {
   isActive: true,
   conditions: [{ field: 'brand', op: 'equals', arg: 'Acme', caseSensitive: true }],
 };
 
-const route = (
-  <FilterUI pluginId="filter" scope={{ feedSourceId: 1 }} />
-);
+const route = <FilterUI pluginId="filter" scope={{ feedSourceId: 1 }} />;
 
 function renderWithStub(stub: (url: string, init?: RequestInit) => Response) {
   stubFetch(stub);
@@ -61,12 +58,35 @@ function renderUI() {
       if (init?.method === 'PUT') return jsonResponse({ isActive: true, conditions: [] });
       return jsonResponse(savedConfig);
     }
-    if (url.startsWith('/registry/attributes')) return jsonResponse([
-      { name: 'brand', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
-      { name: 'title', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
-      { name: 'price', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
-    ]);
-    if (url.startsWith('/plugins/filter/preview')) return jsonResponse({ total: 308, pass: 137, fail: 171 });
+    if (url.startsWith('/registry/attributes'))
+      return jsonResponse([
+        {
+          name: 'brand',
+          kind: 'scalar',
+          required: 'optional',
+          sub_fields: [],
+          enum_values: [],
+          max_repeats: 1,
+        },
+        {
+          name: 'title',
+          kind: 'scalar',
+          required: 'optional',
+          sub_fields: [],
+          enum_values: [],
+          max_repeats: 1,
+        },
+        {
+          name: 'price',
+          kind: 'scalar',
+          required: 'optional',
+          sub_fields: [],
+          enum_values: [],
+          max_repeats: 1,
+        },
+      ]);
+    if (url.startsWith('/plugins/filter/preview'))
+      return jsonResponse({ total: 308, pass: 137, fail: 171 });
     return jsonResponse({});
   });
 }
@@ -95,11 +115,33 @@ describe('FilterUI', () => {
         if (init?.method === 'PUT') return jsonResponse({ isActive: true, conditions: [] });
         return jsonResponse(savedConfig);
       }
-      if (url.startsWith('/registry/attributes')) return jsonResponse([
-      { name: 'brand', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
-      { name: 'title', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
-      { name: 'price', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
-    ]);
+      if (url.startsWith('/registry/attributes'))
+        return jsonResponse([
+          {
+            name: 'brand',
+            kind: 'scalar',
+            required: 'optional',
+            sub_fields: [],
+            enum_values: [],
+            max_repeats: 1,
+          },
+          {
+            name: 'title',
+            kind: 'scalar',
+            required: 'optional',
+            sub_fields: [],
+            enum_values: [],
+            max_repeats: 1,
+          },
+          {
+            name: 'price',
+            kind: 'scalar',
+            required: 'optional',
+            sub_fields: [],
+            enum_values: [],
+            max_repeats: 1,
+          },
+        ]);
       if (url.startsWith('/plugins/filter/preview')) {
         previewCalls += 1;
         return jsonResponse({ total: 308, pass: 137, fail: 171 });
@@ -125,10 +167,19 @@ describe('FilterUI', () => {
         }
         return jsonResponse(serverConfig);
       }
-      if (url.startsWith('/registry/attributes')) return jsonResponse([
-      { name: 'brand', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
-    ]);
-      if (url.startsWith('/plugins/filter/preview')) return jsonResponse({ total: 1, pass: 1, fail: 0 });
+      if (url.startsWith('/registry/attributes'))
+        return jsonResponse([
+          {
+            name: 'brand',
+            kind: 'scalar',
+            required: 'optional',
+            sub_fields: [],
+            enum_values: [],
+            max_repeats: 1,
+          },
+        ]);
+      if (url.startsWith('/plugins/filter/preview'))
+        return jsonResponse({ total: 1, pass: 1, fail: 0 });
       return jsonResponse({});
     });
     await screen.findByTestId('condition-row-0');

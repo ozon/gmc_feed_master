@@ -31,13 +31,21 @@ function routeHandler(routes: Route[]) {
 }
 
 const GLOBAL_RULE = {
-  id: 'g1', source_field: 'product_type', operator: 'eq',
-  source_value: 'new', taxonomy_id: '531', is_excluded: false,
+  id: 'g1',
+  source_field: 'product_type',
+  operator: 'eq',
+  source_value: 'new',
+  taxonomy_id: '531',
+  is_excluded: false,
 };
 
 const CLIENT_RULE = {
-  id: 'c1', source_field: 'color', operator: 'contains',
-  source_value: 'zwart', taxonomy_id: '114', is_excluded: false,
+  id: 'c1',
+  source_field: 'color',
+  operator: 'contains',
+  source_value: 'zwart',
+  taxonomy_id: '114',
+  is_excluded: false,
 };
 
 const REGISTRY = [
@@ -49,10 +57,7 @@ function makeClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } });
 }
 
-function renderRulesTab(
-  scope: { clientId?: number; feedSourceId?: number },
-  routes: Route[],
-) {
+function renderRulesTab(scope: { clientId?: number; feedSourceId?: number }, routes: Route[]) {
   const fetchMock = stubFetch(routeHandler(routes));
   renderRulesTabWithHandler(scope, fetchMock);
   return fetchMock;
@@ -68,7 +73,12 @@ function renderRulesTabWithHandler(
       {
         path: '/',
         element: (
-          <RulesTab pluginId="category" scope={scope} language="en-US" feedSourceId={scope.feedSourceId} />
+          <RulesTab
+            pluginId="category"
+            scope={scope}
+            language="en-US"
+            feedSourceId={scope.feedSourceId}
+          />
         ),
       },
       { path: '/other', element: <div>Left page</div> },
@@ -134,7 +144,7 @@ describe('RulesTab', () => {
     );
     const calls = fetchMock.mock.calls.map((call) => ({
       url: String(call[0]),
-      method: (call[1]?.method) ?? 'GET',
+      method: call[1]?.method ?? 'GET',
       body: call[1]?.body,
     }));
     const validateIdx = calls.findIndex((c) => c.url.includes('/plugins/category/validate'));
@@ -169,11 +179,13 @@ describe('RulesTab', () => {
     );
     const calls = fetchMock.mock.calls.map((call) => ({
       url: String(call[0]),
-      method: (call[1]?.method) ?? 'GET',
+      method: call[1]?.method ?? 'GET',
     }));
     expect(calls.some((c) => c.url.includes('/plugins/category/validate'))).toBe(true);
     expect(
-      calls.some((c) => c.method === 'PUT' && c.url.includes('/plugins/category/config?client_id=1')),
+      calls.some(
+        (c) => c.method === 'PUT' && c.url.includes('/plugins/category/config?client_id=1'),
+      ),
     ).toBe(false);
   });
 
@@ -185,7 +197,12 @@ describe('RulesTab', () => {
           element: (
             <div>
               <Link to="/other">Leave</Link>
-              <RulesTab pluginId="category" scope={{ clientId: 1 }} language="en-US" feedSourceId={undefined} />
+              <RulesTab
+                pluginId="category"
+                scope={{ clientId: 1 }}
+                language="en-US"
+                feedSourceId={undefined}
+              />
             </div>
           ),
         },
@@ -216,7 +233,12 @@ describe('RulesTab', () => {
           element: (
             <div>
               <Link to="/other">Leave</Link>
-              <RulesTab pluginId="category" scope={{ clientId: 1 }} language="en-US" feedSourceId={undefined} />
+              <RulesTab
+                pluginId="category"
+                scope={{ clientId: 1 }}
+                language="en-US"
+                feedSourceId={undefined}
+              />
             </div>
           ),
         },
@@ -236,9 +258,7 @@ describe('RulesTab', () => {
     await userEvent.click(screen.getByText('Leave'));
     expect(await screen.findByText('Unsaved changes')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    await waitFor(() =>
-      expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument());
     expect(screen.getByText('c1')).toBeInTheDocument();
     expect(screen.queryByText('Left page')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
@@ -275,7 +295,9 @@ describe('RulesTab', () => {
           (init?.method ?? 'GET') === 'PUT',
       );
     await waitFor(() => expect(puts()).toHaveLength(1));
-    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/plugins/category/validate'))).toHaveLength(1);
+    expect(
+      fetchMock.mock.calls.filter(([url]) => String(url).includes('/plugins/category/validate')),
+    ).toHaveLength(1);
   });
 
   it('Per-rule match badge from stats and matches modal with product list', async () => {

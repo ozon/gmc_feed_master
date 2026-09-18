@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Checkbox, Group, Popover, SegmentedControl, Select, Stack, TextInput } from '@mantine/core';
+import {
+  Button,
+  Checkbox,
+  Group,
+  Popover,
+  SegmentedControl,
+  Select,
+  Stack,
+  TextInput,
+} from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconColumns3, IconSearch } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
@@ -83,17 +92,20 @@ export function ProductsPage() {
   }, [sortParam]);
 
   const updateParams = (updates: Record<string, string | null>) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      for (const [key, value] of Object.entries(updates)) {
-        if (value === null) {
-          next.delete(key);
-        } else {
-          next.set(key, value);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        for (const [key, value] of Object.entries(updates)) {
+          if (value === null) {
+            next.delete(key);
+          } else {
+            next.set(key, value);
+          }
         }
-      }
-      return next;
-    }, { replace: true });
+        return next;
+      },
+      { replace: true },
+    );
   };
 
   const handleSearchChange = (value: string) => {
@@ -145,9 +157,7 @@ export function ProductsPage() {
 
   // Saved column ids absent from the current data stay persisted (so they
   // return when data has them again) but are not rendered as columns.
-  const renderableColumnIds = visibleColumnIds.filter((id) =>
-    availableColumnIds.has(id),
-  );
+  const renderableColumnIds = visibleColumnIds.filter((id) => availableColumnIds.has(id));
 
   return (
     <Stack gap="md">
@@ -173,7 +183,9 @@ export function ProductsPage() {
           />
           <SegmentedControl
             value={stageParam}
-            onChange={(value) => updateParams({ stage: value === 'raw' ? null : value, page: null })}
+            onChange={(value) =>
+              updateParams({ stage: value === 'raw' ? null : value, page: null })
+            }
             data={[
               { value: 'raw', label: t('stageRaw') },
               { value: 'processed', label: t('stageProcessed') },

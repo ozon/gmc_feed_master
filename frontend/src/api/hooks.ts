@@ -1,11 +1,23 @@
 import { useMemo } from 'react';
 import {
-  keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient,
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
   type QueryClient,
 } from '@tanstack/react-query';
 import {
-  ApiError, apiDelete, apiGet, apiGetWithHeaders, apiPatch, apiPost, apiPut,
-  changePassword, getCurrentUser, logout,
+  ApiError,
+  apiDelete,
+  apiGet,
+  apiGetWithHeaders,
+  apiPatch,
+  apiPost,
+  apiPut,
+  changePassword,
+  getCurrentUser,
+  logout,
 } from './client';
 import { queryKeys } from './queryKeys';
 import type {
@@ -145,8 +157,7 @@ export function useFeedSource(id: number | string | undefined) {
 export function useFeedSourceFields(feedSourceId: number | string) {
   return useQuery({
     queryKey: queryKeys.feedSource(feedSourceId).fields,
-    queryFn: () =>
-      apiGet<FeedSourceFieldsResponse>(`/feed-sources/${feedSourceId}/fields`),
+    queryFn: () => apiGet<FeedSourceFieldsResponse>(`/feed-sources/${feedSourceId}/fields`),
     enabled: Boolean(feedSourceId),
   });
 }
@@ -161,11 +172,12 @@ export function useFieldMapping(feedSourceId: number | string) {
 export function useRegistryAttributes(feedSourceId?: number | string) {
   return useQuery({
     queryKey: queryKeys.registryAttributes(feedSourceId),
-    queryFn: () => apiGet<RegistryAttribute[]>(
-      feedSourceId === undefined
-        ? '/registry/attributes'
-        : `/registry/attributes?feed_source_id=${feedSourceId}`,
-    ),
+    queryFn: () =>
+      apiGet<RegistryAttribute[]>(
+        feedSourceId === undefined
+          ? '/registry/attributes'
+          : `/registry/attributes?feed_source_id=${feedSourceId}`,
+      ),
     staleTime: Infinity,
   });
 }
@@ -195,7 +207,8 @@ export function useProductDetail(feedSourceId: number | string, productId: strin
 export function useIngestionRuns(feedSourceId: number | string, active: boolean) {
   return useQuery({
     queryKey: queryKeys.feedSource(feedSourceId).runs,
-    queryFn: () => apiGet<IngestionRunRow[]>(`/feed-sources/${feedSourceId}/ingestion-runs?limit=50`),
+    queryFn: () =>
+      apiGet<IngestionRunRow[]>(`/feed-sources/${feedSourceId}/ingestion-runs?limit=50`),
     refetchInterval: active ? 5000 : false,
   });
 }
@@ -226,10 +239,7 @@ export function fillDates<T extends { date: string }>(
   return out;
 }
 
-export function fillChartDates(
-  rows: RunsByDayRow[],
-  days: number,
-): RunsByDayRow[] {
+export function fillChartDates(rows: RunsByDayRow[], days: number): RunsByDayRow[] {
   return fillDates(rows, days, (date) => ({ date, success: 0, error: 0 }));
 }
 
@@ -268,11 +278,12 @@ export function useRunDryRun(feedSourceId: number | string) {
 export function useTriggerRun(feedSourceId: number | string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () =>
-      apiPost<{ run_id: number }>(`/feed-sources/${feedSourceId}/run`),
+    mutationFn: () => apiPost<{ run_id: number }>(`/feed-sources/${feedSourceId}/run`),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).runs });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).feedDashboard });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.feedSource(feedSourceId).feedDashboard,
+      });
       void queryClient.invalidateQueries({ queryKey: queryKeys.dashboardSummary });
       void queryClient.invalidateQueries({ queryKey: ['registry', 'attributes'] });
     },
@@ -292,8 +303,13 @@ export function useLogout() {
 export function useChangePassword() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) =>
-      changePassword(currentPassword, newPassword),
+    mutationFn: ({
+      currentPassword,
+      newPassword,
+    }: {
+      currentPassword: string;
+      newPassword: string;
+    }) => changePassword(currentPassword, newPassword),
     onSuccess: () => {
       void queryClient.resetQueries({ queryKey: queryKeys.session });
     },
@@ -337,7 +353,10 @@ export function useDeleteClient() {
 export function useCreateFeedSource() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ clientId, ...body }: {
+    mutationFn: ({
+      clientId,
+      ...body
+    }: {
       clientId: number | string;
       name: string;
       source_format: string;
@@ -360,7 +379,10 @@ export function useCreateFeedSource() {
 export function useUpdateFeedSource() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...body }: {
+    mutationFn: ({
+      id,
+      ...body
+    }: {
       id: number | string;
       name?: string;
       source_format?: string;
@@ -420,10 +442,10 @@ export function useSaveFieldMapping() {
       mappings: Record<string, { target: string }>;
       customFields?: string[];
     }) =>
-      apiPut<FieldMappingDoc>(
-        `/feed-sources/${id}/field-mapping`,
-        { mappings, custom_fields: customFields ?? [] },
-      ),
+      apiPut<FieldMappingDoc>(`/feed-sources/${id}/field-mapping`, {
+        mappings,
+        custom_fields: customFields ?? [],
+      }),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.feedSource(variables.id).mapping,
@@ -605,9 +627,11 @@ export function useExportVersionDiff(
   against: number | undefined,
 ) {
   return useQuery({
-    queryKey: queryKeys.feedSource(feedSourceId).exportDiff(
-      version !== undefined && against !== undefined ? { version, against } : undefined,
-    ),
+    queryKey: queryKeys
+      .feedSource(feedSourceId)
+      .exportDiff(
+        version !== undefined && against !== undefined ? { version, against } : undefined,
+      ),
     queryFn: () => {
       const qs = against !== undefined ? `?against=${against}` : '';
       return apiGet<DiffOut>(`/feed-sources/${feedSourceId}/export-history/${version}/diff${qs}`);
@@ -622,8 +646,12 @@ export function useRollbackToVersion(feedSourceId: number | string) {
     mutationFn: (version: number) =>
       apiPost<unknown>(`/feed-sources/${feedSourceId}/export-history/${version}/rollback`, {}),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.feedSource(feedSourceId).exportHistory });
-      void queryClient.invalidateQueries({ queryKey: ['feed-source', feedSourceId, 'export-diff'] });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.feedSource(feedSourceId).exportHistory,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['feed-source', feedSourceId, 'export-diff'],
+      });
     },
   });
 }
@@ -666,13 +694,15 @@ export function useProductLookup(
   const sortedValues = useMemo(() => [...values].sort(), [values]);
   const sortedExtraFields = useMemo(() => [...extraFields].sort(), [extraFields]);
   return useQuery({
-    queryKey: queryKeys.feedSource(feedSourceId ?? 0)
+    queryKey: queryKeys
+      .feedSource(feedSourceId ?? 0)
       .productLookup({ field, values: sortedValues, extraFields: sortedExtraFields }),
     queryFn: () =>
-      apiPost<ProductLookupResponse>(
-        `/feed-sources/${feedSourceId}/products/lookup`,
-        { field, values: sortedValues, extraFields: sortedExtraFields },
-      ),
+      apiPost<ProductLookupResponse>(`/feed-sources/${feedSourceId}/products/lookup`, {
+        field,
+        values: sortedValues,
+        extraFields: sortedExtraFields,
+      }),
     enabled: feedSourceId !== undefined && values.length > 0,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
@@ -704,7 +734,10 @@ export function useCreateAdminUser() {
 export function useUpdateAdminUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...payload }: {
+    mutationFn: ({
+      id,
+      ...payload
+    }: {
       id: number;
       role?: 'admin' | 'user';
       is_active?: boolean;
@@ -786,7 +819,10 @@ export function useCreateAiProvider() {
 export function useUpdateAiProvider() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...payload }: {
+    mutationFn: ({
+      id,
+      ...payload
+    }: {
       id: number;
       provider_type?: 'litellm' | 'openai_compatible';
       api_key?: string;
@@ -818,8 +854,7 @@ export function useDeleteAiProvider() {
 
 export function useTestAiProvider() {
   return useMutation({
-    mutationFn: (id: number) =>
-      apiPost<AiTestResult>(`/admin/ai/providers/${id}/test`),
+    mutationFn: (id: number) => apiPost<AiTestResult>(`/admin/ai/providers/${id}/test`),
   });
 }
 
@@ -833,8 +868,7 @@ export function useProviderPresets() {
 export function useModelCatalog(vendor: string | null, mode: 'chat' | 'completion' = 'chat') {
   return useQuery({
     queryKey: queryKeys.ai.modelCatalog(vendor, mode),
-    queryFn: () =>
-      apiGet<ModelCatalog>(`/admin/ai/model-catalog?vendor=${vendor}&mode=${mode}`),
+    queryFn: () => apiGet<ModelCatalog>(`/admin/ai/model-catalog?vendor=${vendor}&mode=${mode}`),
     enabled: vendor !== null,
   });
 }
@@ -859,8 +893,7 @@ export function useAiSettings() {
 export function useUpdateAiSettings() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: AiSettings) =>
-      apiPut<AiSettings>('/admin/ai/settings', payload),
+    mutationFn: (payload: AiSettings) => apiPut<AiSettings>('/admin/ai/settings', payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.ai.settings });
       void queryClient.invalidateQueries({ queryKey: queryKeys.ai.cache });
@@ -927,8 +960,7 @@ export function useAiUsageTimeseries(params: AiUsageFilterParams) {
   ).toString();
   return useQuery({
     queryKey: queryKeys.ai.usageTimeseries(params),
-    queryFn: () =>
-      apiGet<{ rows: AiUsageTimeseriesRow[] }>(`/admin/ai/usage/timeseries?${search}`),
+    queryFn: () => apiGet<{ rows: AiUsageTimeseriesRow[] }>(`/admin/ai/usage/timeseries?${search}`),
   });
 }
 
@@ -977,7 +1009,6 @@ export function usePreviewPromptTemplate() {
 
 export function useChat() {
   return useMutation({
-    mutationFn: (messages: ChatMessage[]) =>
-      apiPost<{ content: string }>('/chat', { messages }),
+    mutationFn: (messages: ChatMessage[]) => apiPost<{ content: string }>('/chat', { messages }),
   });
 }

@@ -34,7 +34,13 @@ function joinPath(path: string | undefined, key: string): string {
   return path ? `${path}.${key}` : key;
 }
 
-export function JsonSchemaForm({ schema, value, onChange, errors = {}, path }: JsonSchemaFormProps) {
+export function JsonSchemaForm({
+  schema,
+  value,
+  onChange,
+  errors = {},
+  path,
+}: JsonSchemaFormProps) {
   const { t } = useTranslation();
   const error = path ? errors[path] : undefined;
   const label = schema.title ?? path?.split('.').pop();

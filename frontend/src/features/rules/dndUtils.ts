@@ -8,7 +8,10 @@ function normalizeId(value: DragId | null | undefined): string | null {
   return String(value);
 }
 
-export function applyDragEnd(rules: Rule[], event: { active: DragId; over: DragId | null }): Rule[] | null {
+export function applyDragEnd(
+  rules: Rule[],
+  event: { active: DragId; over: DragId | null },
+): Rule[] | null {
   const activeId = normalizeId(event.active);
   const overId = normalizeId(event.over);
   if (!activeId || !overId || activeId === overId) return null;

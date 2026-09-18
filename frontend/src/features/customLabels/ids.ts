@@ -14,7 +14,10 @@ export function parseIdList(raw: string | undefined | null): Set<string> {
 export function parsePreviewLines(raw: string | undefined | null): string[][] {
   if (!raw) return [];
   return raw.split('\n').map((line) =>
-    line.split(',').map((part) => part.trim()).filter((part) => part !== ''),
+    line
+      .split(',')
+      .map((part) => part.trim())
+      .filter((part) => part !== ''),
   );
 }
 

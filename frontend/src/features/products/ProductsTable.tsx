@@ -11,7 +11,11 @@ import {
 } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { useTable } from '@tanstack/react-table';
-import { rowPaginationFeature, rowSortingFeature, columnVisibilityFeature } from '@tanstack/table-core';
+import {
+  rowPaginationFeature,
+  rowSortingFeature,
+  columnVisibilityFeature,
+} from '@tanstack/table-core';
 import type { ProductListItem, ProductsPageResponse } from '../../api/types';
 import type { ProductColumnId } from './columns';
 import { columnLabel, formatCellValue } from './columns';
@@ -85,9 +89,7 @@ export function ProductsTable({
         sorting: sort ? [{ id: sort.id, desc: sort.desc }] : [],
       },
       onPaginationChange: (updater) => {
-        const next = typeof updater === 'function'
-          ? updater({ pageIndex, pageSize })
-          : updater;
+        const next = typeof updater === 'function' ? updater({ pageIndex, pageSize }) : updater;
         onPaginationChange(next.pageIndex, next.pageSize);
       },
       enableSorting: true,
@@ -173,7 +175,11 @@ export function ProductsTable({
                     }
                     return (
                       <MantineTable.Td key={cell.id}>
-                        <Badge color={value === 'excluded' ? 'red' : 'gray'} variant="light" size="sm">
+                        <Badge
+                          color={value === 'excluded' ? 'red' : 'gray'}
+                          variant="light"
+                          size="sm"
+                        >
                           {value === 'excluded' ? t('stateExcluded') : t('stateNotProcessed')}
                         </Badge>
                       </MantineTable.Td>

@@ -1,7 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {QueryClient} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import { notifications, Notifications } from '@mantine/notifications';
 import type { ComponentProps } from 'react';
 import i18n from '../../i18n';
@@ -12,17 +12,51 @@ import type { LocalInstance } from './dndUtils';
 import type { PluginInfo } from '../../api/types';
 
 const instances: LocalInstance[] = [
-  { id: 1, position: 0, plugin_id: 'upper', name: 'Upper', configuration: {}, enabled: true, clientId: 'upper-0' },
-  { id: 2, position: 1, plugin_id: 'lower', name: 'Lower', configuration: {}, enabled: false, clientId: 'lower-1' },
+  {
+    id: 1,
+    position: 0,
+    plugin_id: 'upper',
+    name: 'Upper',
+    configuration: {},
+    enabled: true,
+    clientId: 'upper-0',
+  },
+  {
+    id: 2,
+    position: 1,
+    plugin_id: 'lower',
+    name: 'Lower',
+    configuration: {},
+    enabled: false,
+    clientId: 'lower-1',
+  },
 ];
 
 const plugins: PluginInfo[] = [
-  { id: 'upper', name: 'Upper', version: '1.0.0', enabled: true,
-    manifest: { extension_point: 'pipeline_module' }, used_by_feed_sources: 0 },
-  { id: 'lower', name: 'Lower', version: '1.0.0', enabled: true,
-    manifest: { extension_point: 'pipeline_module' }, used_by_feed_sources: 3 },
-  { id: 'fresh', name: 'Fresh', version: '1.0.0', enabled: true,
-    manifest: { extension_point: 'pipeline_module' }, used_by_feed_sources: 0 },
+  {
+    id: 'upper',
+    name: 'Upper',
+    version: '1.0.0',
+    enabled: true,
+    manifest: { extension_point: 'pipeline_module' },
+    used_by_feed_sources: 0,
+  },
+  {
+    id: 'lower',
+    name: 'Lower',
+    version: '1.0.0',
+    enabled: true,
+    manifest: { extension_point: 'pipeline_module' },
+    used_by_feed_sources: 3,
+  },
+  {
+    id: 'fresh',
+    name: 'Fresh',
+    version: '1.0.0',
+    enabled: true,
+    manifest: { extension_point: 'pipeline_module' },
+    used_by_feed_sources: 0,
+  },
 ];
 
 beforeAll(async () => {
@@ -36,7 +70,8 @@ beforeEach(() => {
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
-    status, headers: { 'Content-Type': 'application/json' },
+    status,
+    headers: { 'Content-Type': 'application/json' },
   });
 }
 

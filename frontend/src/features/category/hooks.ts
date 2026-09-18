@@ -1,15 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost } from '../../api/client';
 import { queryKeys } from '../../api/queryKeys';
-import type {
-  CategoryMatch, CategoryProductState, CategoryRule, CategoryStats,
-} from './types';
+import type { CategoryMatch, CategoryProductState, CategoryRule, CategoryStats } from './types';
 
 export function useCategoryStats(feedSourceId: number | string | undefined) {
   return useQuery({
     queryKey: queryKeys.category.stats(feedSourceId ?? 0),
-    queryFn: () =>
-      apiGet<CategoryStats>(`/plugins/category/stats?feed_source_id=${feedSourceId}`),
+    queryFn: () => apiGet<CategoryStats>(`/plugins/category/stats?feed_source_id=${feedSourceId}`),
     enabled: Boolean(feedSourceId),
   });
 }

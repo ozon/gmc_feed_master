@@ -1,18 +1,29 @@
 import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  ActionIcon, Badge, Button, Card, Group, Select, Stack, Switch, Text,
-  Textarea, TextInput, Title,
+  ActionIcon,
+  Badge,
+  Button,
+  Card,
+  Group,
+  Select,
+  Stack,
+  Switch,
+  Text,
+  Textarea,
+  TextInput,
+  Title,
 } from '@mantine/core';
 import { IconGripVertical, IconTrash, IconEye } from '@tabler/icons-react';
 import { CSS } from '@dnd-kit/utilities';
-import {
-  DndContext, PointerSensor, closestCenter, useSensor, useSensors,
-} from '@dnd-kit/core';
+import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { useBlocker } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import {
-  usePluginConfig, useRegistryAttributes, useSavePluginConfig, type PluginScope,
+  usePluginConfig,
+  useRegistryAttributes,
+  useSavePluginConfig,
+  type PluginScope,
 } from '../../api/hooks';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { ScopeBadge } from '../../components/ScopeBadge';
@@ -89,7 +100,9 @@ function SortableRuleRow({
           >
             <IconGripVertical size={16} />
           </ActionIcon>
-          <Text size="sm" fw={600}>{rule.id}</Text>
+          <Text size="sm" fw={600}>
+            {rule.id}
+          </Text>
           {!editable && (
             <>
               <ScopeBadge tier={rule.origin} />
@@ -149,9 +162,7 @@ function SortableRuleRow({
             label={t('rules.sourceValueIn')}
             minRows={3}
             value={rawValue}
-            onChange={(event) =>
-              onUpdate({ source_value: event.currentTarget.value.split('\n') })
-            }
+            onChange={(event) => onUpdate({ source_value: event.currentTarget.value.split('\n') })}
             disabled={!editable}
           />
         ) : (
@@ -195,11 +206,11 @@ export function RulesTab({
   const hasClient = scope.clientId !== undefined;
   const globalConfig = usePluginConfig(pluginId);
   const clientConfig = usePluginConfig(
-    pluginId, hasClient ? { clientId: scope.clientId } : undefined, hasClient,
+    pluginId,
+    hasClient ? { clientId: scope.clientId } : undefined,
+    hasClient,
   );
-  const save = useSavePluginConfig(
-    pluginId, hasClient ? { clientId: scope.clientId } : undefined,
-  );
+  const save = useSavePluginConfig(pluginId, hasClient ? { clientId: scope.clientId } : undefined);
   const validate = useValidateCategoryRules();
   const stats = useCategoryStats(feedSourceId);
   const registry = useRegistryAttributes();
@@ -211,10 +222,7 @@ export function RulesTab({
   const sensors = useSensors(useSensor(PointerSensor));
 
   const baseline = useMemo(
-    () => mergeRules(
-      rulesOf(globalConfig.data),
-      hasClient ? rulesOf(clientConfig.data) : [],
-    ),
+    () => mergeRules(rulesOf(globalConfig.data), hasClient ? rulesOf(clientConfig.data) : []),
     [globalConfig.data, clientConfig.data, hasClient],
   );
 
@@ -253,8 +261,13 @@ export function RulesTab({
     setDraft((current) => [
       ...(current ?? []),
       {
-        id: newRuleId(), source_field: 'product_type', operator: 'eq',
-        source_value: '', taxonomy_id: '', is_excluded: false, origin: tier,
+        id: newRuleId(),
+        source_field: 'product_type',
+        operator: 'eq',
+        source_value: '',
+        taxonomy_id: '',
+        is_excluded: false,
+        origin: tier,
       },
     ]);
   }
@@ -265,19 +278,16 @@ export function RulesTab({
     const payload: CategoryRule[] = editableRules.map(({ origin: _origin, ...rule }) => rule);
     validate.mutate(payload, {
       onSuccess: () => {
-        save.mutate(
-          () => ({ rules: payload }),
-          {
-            onSuccess: () => {
-              savingRef.current = false;
-              notifySuccess(t('rules.saved'));
-            },
-            onError: (error) => {
-              savingRef.current = false;
-              notifyApiError(error, t('rules.saveFailed'));
-            },
+        save.mutate(() => ({ rules: payload }), {
+          onSuccess: () => {
+            savingRef.current = false;
+            notifySuccess(t('rules.saved'));
           },
-        );
+          onError: (error) => {
+            savingRef.current = false;
+            notifyApiError(error, t('rules.saveFailed'));
+          },
+        });
       },
       onError: (error) => {
         savingRef.current = false;
@@ -310,7 +320,9 @@ export function RulesTab({
           >
             {t('rules.save')}
           </Button>
-          <Button variant="light" onClick={addRule}>{t('rules.add')}</Button>
+          <Button variant="light" onClick={addRule}>
+            {t('rules.add')}
+          </Button>
         </Group>
       </Group>
       {(draft ?? []).length === 0 && <EmptyState message={t('rules.empty')} />}

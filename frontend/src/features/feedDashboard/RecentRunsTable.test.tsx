@@ -6,7 +6,13 @@ import { RecentRunsTable } from './RecentRunsTable';
 import type { FeedDashboardData } from '../../api/types';
 
 const runs: FeedDashboardData['recent_runs'] = [
-  { id: 2, status: 'success', started_at: '2026-09-12T10:00:00Z', duration_s: 42.5, failed_count: 0 },
+  {
+    id: 2,
+    status: 'success',
+    started_at: '2026-09-12T10:00:00Z',
+    duration_s: 42.5,
+    failed_count: 0,
+  },
   { id: 1, status: 'error', started_at: '2026-09-11T10:00:00Z', duration_s: 12, failed_count: 3 },
 ];
 

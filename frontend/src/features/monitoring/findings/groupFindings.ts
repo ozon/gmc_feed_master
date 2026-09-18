@@ -72,7 +72,8 @@ export function filterFindings(
     if (severities.length > 0 && !severities.includes(finding.severity)) return false;
     if (rules.length > 0 && !rules.includes(finding.code)) return false;
     if (needle) {
-      const haystack = `${finding.message} ${finding.product_id} ${finding.field ?? ''}`.toLowerCase();
+      const haystack =
+        `${finding.message} ${finding.product_id} ${finding.field ?? ''}`.toLowerCase();
       if (!haystack.includes(needle)) return false;
     }
     return true;

@@ -8,11 +8,15 @@ import { FieldSelect } from './FieldSelect';
 
 const fields: FieldDescriptor[] = [
   { name: 'title', kind: 'scalar', sub_fields: [], max_repeats: 1 },
-  { name: 'product_detail', kind: 'repeated_structured',
+  {
+    name: 'product_detail',
+    kind: 'repeated_structured',
     sub_fields: [
       { name: 'section_name', kind: 'repeated_scalar' },
       { name: 'attribute_value', kind: 'repeated_scalar' },
-    ], max_repeats: 2 },
+    ],
+    max_repeats: 2,
+  },
 ];
 
 const options = buildFieldOptions(fields);

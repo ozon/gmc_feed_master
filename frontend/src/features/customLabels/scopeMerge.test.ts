@@ -1,26 +1,67 @@
 import { describe, expect, it } from 'vitest';
 import type { PluginScope } from '../../api/hooks';
 import {
-  configTierChain, currentDataTier, dataTierChain, editableConfigTier,
-  groupBySlot, mergeSlotIds, mergeSlotRules, type SlotRule,
+  configTierChain,
+  currentDataTier,
+  dataTierChain,
+  editableConfigTier,
+  groupBySlot,
+  mergeSlotIds,
+  mergeSlotRules,
+  type SlotRule,
 } from './scopeMerge';
 
 // Shared equivalence fixture — keep in lockstep with
 // backend/tests/test_config_merge.py (TestUnionByKey) and
 // backend/tests/test_config_bundle.py (spec §1.2 gate).
 const GLOBAL_RULES: SlotRule[] = [
-  { id: 'g1', name: 'Global Mid', isActive: true, targetSlot: 'custom_label_1',
-    matchField: 'id', valueTemplate: '{brand} - Mid', fallbackTemplate: '' },
-  { id: 'g2', name: 'Global Top', isActive: true, targetSlot: 'custom_label_0',
-    matchField: 'id', valueTemplate: '{brand} - Top', fallbackTemplate: '' },
+  {
+    id: 'g1',
+    name: 'Global Mid',
+    isActive: true,
+    targetSlot: 'custom_label_1',
+    matchField: 'id',
+    valueTemplate: '{brand} - Mid',
+    fallbackTemplate: '',
+  },
+  {
+    id: 'g2',
+    name: 'Global Top',
+    isActive: true,
+    targetSlot: 'custom_label_0',
+    matchField: 'id',
+    valueTemplate: '{brand} - Top',
+    fallbackTemplate: '',
+  },
 ];
 const CLIENT_RULES: SlotRule[] = [
-  { id: 'g1', name: 'Client Mid', isActive: true, targetSlot: 'custom_label_1',
-    matchField: 'brand', valueTemplate: '{brand} - Client', fallbackTemplate: '' },
-  { id: 'c2', name: 'Client Only', isActive: true, targetSlot: 'custom_label_0',
-    matchField: 'id', valueTemplate: '{brand} - ClientOnly', fallbackTemplate: '' },
-  { id: 'c3', name: 'Same Slot As G1', isActive: true, targetSlot: 'custom_label_1',
-    matchField: 'id', valueTemplate: '{brand} - C3', fallbackTemplate: '' },
+  {
+    id: 'g1',
+    name: 'Client Mid',
+    isActive: true,
+    targetSlot: 'custom_label_1',
+    matchField: 'brand',
+    valueTemplate: '{brand} - Client',
+    fallbackTemplate: '',
+  },
+  {
+    id: 'c2',
+    name: 'Client Only',
+    isActive: true,
+    targetSlot: 'custom_label_0',
+    matchField: 'id',
+    valueTemplate: '{brand} - ClientOnly',
+    fallbackTemplate: '',
+  },
+  {
+    id: 'c3',
+    name: 'Same Slot As G1',
+    isActive: true,
+    targetSlot: 'custom_label_1',
+    matchField: 'id',
+    valueTemplate: '{brand} - C3',
+    fallbackTemplate: '',
+  },
 ];
 
 describe('mergeSlotRules (spec §1.2 gate)', () => {
@@ -31,11 +72,12 @@ describe('mergeSlotRules (spec §1.2 gate)', () => {
     ]);
     expect(merged.map((r) => r.id)).toEqual(['g1', 'g2', 'c2', 'c3']);
     expect(merged.map((r) => r.name)).toEqual([
-      'Client Mid', 'Global Top', 'Client Only', 'Same Slot As G1',
+      'Client Mid',
+      'Global Top',
+      'Client Only',
+      'Same Slot As G1',
     ]);
-    expect(merged.map((r) => r.origin)).toEqual([
-      'client', 'global', 'client', 'client',
-    ]);
+    expect(merged.map((r) => r.origin)).toEqual(['client', 'global', 'client', 'client']);
   });
 
   it('per-slot winning order matches the backend (first match wins)', () => {
@@ -81,9 +123,7 @@ describe('mergeSlotIds', () => {
 describe('tier chains', () => {
   it('config chain: global page -> global only', () => {
     const scope: PluginScope = {};
-    expect(configTierChain(scope, {})).toEqual([
-      { tier: 'global', scope: {} },
-    ]);
+    expect(configTierChain(scope, {})).toEqual([{ tier: 'global', scope: {} }]);
     expect(editableConfigTier(scope)).toBe('global');
   });
 

@@ -44,7 +44,10 @@ export function ExportVersionList({
       </Table.Thead>
       <Table.Tbody>
         {versions.map((version) => (
-          <Table.Tr key={version.version_number} data-testid={`version-row-${version.version_number}`}>
+          <Table.Tr
+            key={version.version_number}
+            data-testid={`version-row-${version.version_number}`}
+          >
             <Table.Td>
               <Group gap="xs">
                 <Text fw={500}>#{version.version_number}</Text>
@@ -62,12 +65,18 @@ export function ExportVersionList({
             </Table.Td>
             <Table.Td>
               <Badge color={SOURCE_COLOR[version.source] ?? 'gray'} variant="light">
-                {t(`source.${version.source}` as 'source.scheduled' | 'source.manual' | 'source.rollback')}
+                {t(
+                  `source.${version.source}` as
+                    | 'source.scheduled'
+                    | 'source.manual'
+                    | 'source.rollback',
+                )}
               </Badge>
             </Table.Td>
             <Table.Td>
               <Badge variant="light" color="gray">
-                {new Intl.NumberFormat(i18n.language).format(version.product_count)} {t('productsLabel')}
+                {new Intl.NumberFormat(i18n.language).format(version.product_count)}{' '}
+                {t('productsLabel')}
               </Badge>
             </Table.Td>
             <Table.Td>

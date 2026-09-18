@@ -1,12 +1,29 @@
 import { useMemo, useState } from 'react';
 import {
-  Accordion, Alert, Anchor, Badge, Button, Card, Group, Modal, NumberInput,
-  Radio, Select, Stack, Stepper, Switch, Text, TextInput,
+  Accordion,
+  Alert,
+  Anchor,
+  Badge,
+  Button,
+  Card,
+  Group,
+  Modal,
+  NumberInput,
+  Radio,
+  Select,
+  Stack,
+  Stepper,
+  Switch,
+  Text,
+  TextInput,
 } from '@mantine/core';
 import { IconExternalLink } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import {
-  useCreateAiProvider, useModelCatalog, useProviderPresets, useTestAiProvider,
+  useCreateAiProvider,
+  useModelCatalog,
+  useProviderPresets,
+  useTestAiProvider,
   useUpdateAiProvider,
 } from '../../../api/hooks';
 import { notifyMutationError, notifySuccess } from '../../../app/notifications';
@@ -29,7 +46,10 @@ type ProviderPayload = {
 const CUSTOM = 'custom';
 
 export function ProviderWizard({
-  opened, provider, presetKey, onClose,
+  opened,
+  provider,
+  presetKey,
+  onClose,
 }: {
   opened: boolean;
   provider: AiProvider | null;
@@ -52,8 +72,12 @@ export function ProviderWizard({
   const [tier, setTier] = useState<'bulk' | 'precision'>(provider?.tier ?? 'bulk');
   const [maxConcurrency, setMaxConcurrency] = useState(provider?.max_concurrency ?? 4);
   const [timeoutS, setTimeoutS] = useState(provider?.timeout_s ?? 30);
-  const [inputPrice, setInputPrice] = useState<string | null>(provider?.input_price_per_mtok ?? null);
-  const [outputPrice, setOutputPrice] = useState<string | null>(provider?.output_price_per_mtok ?? null);
+  const [inputPrice, setInputPrice] = useState<string | null>(
+    provider?.input_price_per_mtok ?? null,
+  );
+  const [outputPrice, setOutputPrice] = useState<string | null>(
+    provider?.output_price_per_mtok ?? null,
+  );
   const [enabled, setEnabled] = useState(provider?.enabled ?? true);
   const [sortBy, setSortBy] = useState<'price' | 'context'>('price');
   const [testResult, setTestResult] = useState<string | null>(null);
@@ -83,9 +107,7 @@ export function ProviderWizard({
   const effectiveModel = model || recommended?.model_id || '';
   const selectedEntry = entries.find((entry) => entry.model_id === effectiveModel) ?? null;
   const autoName =
-    preset && effectiveModel
-      ? `${preset.label} ${effectiveModel.split('/').pop()}`
-      : '';
+    preset && effectiveModel ? `${preset.label} ${effectiveModel.split('/').pop()}` : '';
   const displayName = name || autoName;
 
   const canAdvance =
@@ -162,7 +184,11 @@ export function ProviderWizard({
                   <Group justify="space-between">
                     <Radio value={item.vendor_key} label={item.label} />
                     {item.docs_url ? (
-                      <Anchor href={item.docs_url} target="_blank" onClick={(e) => e.stopPropagation()}>
+                      <Anchor
+                        href={item.docs_url}
+                        target="_blank"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {t('ai.wizard.docsHint')} <IconExternalLink size={14} />
                       </Anchor>
                     ) : null}
@@ -261,9 +287,7 @@ export function ProviderWizard({
               <Select
                 label={t('ai.columns.tier')}
                 value={tier}
-                onChange={(value) =>
-                  setTier(value === 'precision' ? 'precision' : 'bulk')
-                }
+                onChange={(value) => setTier(value === 'precision' ? 'precision' : 'bulk')}
                 data={[
                   { value: 'bulk', label: t('ai.tier.bulk') },
                   { value: 'precision', label: t('ai.tier.precision') },
@@ -288,14 +312,18 @@ export function ProviderWizard({
                 value={inputPrice ?? ''}
                 min={0}
                 decimalScale={6}
-                onChange={(value) => setInputPrice(value === '' || value === undefined ? null : String(value))}
+                onChange={(value) =>
+                  setInputPrice(value === '' || value === undefined ? null : String(value))
+                }
               />
               <NumberInput
                 label={t('ai.wizard.outputPrice')}
                 value={outputPrice ?? ''}
                 min={0}
                 decimalScale={6}
-                onChange={(value) => setOutputPrice(value === '' || value === undefined ? null : String(value))}
+                onChange={(value) =>
+                  setOutputPrice(value === '' || value === undefined ? null : String(value))
+                }
               />
               <Switch
                 label={t('ai.columns.enabled')}
@@ -308,11 +336,19 @@ export function ProviderWizard({
       </Accordion>
 
       <Group justify="space-between" mt="md">
-        <Button variant="default" disabled={active === 0} onClick={() => setActive((step) => step - 1)}>
+        <Button
+          variant="default"
+          disabled={active === 0}
+          onClick={() => setActive((step) => step - 1)}
+        >
           {t('ai.wizard.back')}
         </Button>
         {active < 2 ? (
-          <Button disabled={!canAdvance} onClick={() => setActive((step) => step + 1)} data-testid="ai-wizard-next">
+          <Button
+            disabled={!canAdvance}
+            onClick={() => setActive((step) => step + 1)}
+            data-testid="ai-wizard-next"
+          >
             {t('ai.wizard.next')}
           </Button>
         ) : (

@@ -10,16 +10,20 @@ beforeAll(async () => {
 });
 
 it('renders messages and warnings', async () => {
-  stubFetch(() =>
-    new Response(JSON.stringify({
-      messages: [
-        { role: 'system', content: 'sys' },
-        { role: 'user', content: 'Hello Red Socks' },
-      ],
-      used_variables: ['title'],
-      warnings: ["variable 'color' is missing in the sample product; rendered empty"],
-      errors: [],
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+  stubFetch(
+    () =>
+      new Response(
+        JSON.stringify({
+          messages: [
+            { role: 'system', content: 'sys' },
+            { role: 'user', content: 'Hello Red Socks' },
+          ],
+          used_variables: ['title'],
+          warnings: ["variable 'color' is missing in the sample product; rendered empty"],
+          errors: [],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
   );
   render(
     <AiPromptPreview

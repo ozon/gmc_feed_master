@@ -31,11 +31,23 @@ export function withLoadingNotification<T>(
   notifications.show({ id, loading: true, message: loadingMessage, autoClose: false });
   return action()
     .then((result) => {
-      notifications.update({ id, color: 'teal', message: successMessage, loading: false, autoClose: 4000 });
+      notifications.update({
+        id,
+        color: 'teal',
+        message: successMessage,
+        loading: false,
+        autoClose: 4000,
+      });
       return result;
     })
     .catch((error) => {
-      notifications.update({ id, color: 'red', message: failureMessage, loading: false, autoClose: false });
+      notifications.update({
+        id,
+        color: 'red',
+        message: failureMessage,
+        loading: false,
+        autoClose: false,
+      });
       throw error;
     });
 }

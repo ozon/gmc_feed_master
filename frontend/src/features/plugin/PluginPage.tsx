@@ -2,7 +2,12 @@ import { Button, Group, Stack, Title } from '@mantine/core';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { usePluginConfig, useSavePluginConfig, usePlugins, type PluginScope } from '../../api/hooks';
+import {
+  usePluginConfig,
+  useSavePluginConfig,
+  usePlugins,
+  type PluginScope,
+} from '../../api/hooks';
 import { JsonSchemaForm, type JsonSchema } from '../../components/JsonSchemaForm';
 import { EmptyState, ErrorState, LoadingState } from '../../components/StateViews';
 import { notifySuccess, mapFieldErrors, notifyApiError } from '../../app/notifications';
@@ -60,13 +65,17 @@ export function PluginPage() {
 
   const schema = plugin.manifest?.config_schema as JsonSchema | undefined;
   // ADR 0002: static registry map until full build-time discovery lands.
-  const CustomComponent = plugin.manifest?.frontend?.component ? CUSTOM_COMPONENTS[plugin.id] ?? null : null;
+  const CustomComponent = plugin.manifest?.frontend?.component
+    ? (CUSTOM_COMPONENTS[plugin.id] ?? null)
+    : null;
   if (!schema && !CustomComponent) return <EmptyState message={t('noSchema')} />;
 
   async function onSubmit(value: unknown) {
     if (!pluginId) return;
     try {
-      const saved = (await saveConfig.mutateAsync(() => (value ?? {}) as Record<string, unknown>)) as Record<string, unknown>;
+      const saved = (await saveConfig.mutateAsync(
+        () => (value ?? {}) as Record<string, unknown>,
+      )) as Record<string, unknown>;
       setFormValue(saved);
       hasSeededRef.current = true;
       notifySuccess(t('configSaved'));
@@ -97,7 +106,9 @@ export function PluginPage() {
           schema={schema!}
           value={formValue}
           onChange={(next) => setFormValue((next ?? {}) as Record<string, unknown>)}
-          errors={saveConfig.error instanceof ApiError ? mapFieldErrors(saveConfig.error.errors) : {}}
+          errors={
+            saveConfig.error instanceof ApiError ? mapFieldErrors(saveConfig.error.errors) : {}
+          }
         />
       )}
       {!CustomComponent && (

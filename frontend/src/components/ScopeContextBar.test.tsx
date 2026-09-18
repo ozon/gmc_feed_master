@@ -42,9 +42,7 @@ it('renders non-current tiers as links and the current tier as a static badge', 
       />
     </MemoryRouter>,
   );
-  expect(screen.getByTestId('scope-link-global')).toHaveAttribute(
-    'href', '/plugins/custom_labels',
-  );
+  expect(screen.getByTestId('scope-link-global')).toHaveAttribute('href', '/plugins/custom_labels');
   // client appears in both the config and data tier groups at the feed page
   const clientLinks = screen.getAllByTestId('scope-link-client');
   expect(clientLinks.length).toBe(2);

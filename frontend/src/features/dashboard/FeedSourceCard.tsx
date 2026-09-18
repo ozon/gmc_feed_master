@@ -1,13 +1,5 @@
 import { useState } from 'react';
-import {
-  ActionIcon,
-  Badge,
-  Button,
-  Group,
-  Paper,
-  Stack,
-  Text,
-} from '@mantine/core';
+import { ActionIcon, Badge, Button, Group, Paper, Stack, Text } from '@mantine/core';
 import { IconSettings, IconTrash } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';

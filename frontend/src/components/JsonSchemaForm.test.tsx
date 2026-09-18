@@ -18,9 +18,7 @@ const schema: JsonSchema = {
 
 describe('JsonSchemaForm', () => {
   it('renders one control per schema type', () => {
-    render(
-      <JsonSchemaForm schema={schema} value={{}} onChange={() => undefined} />,
-    );
+    render(<JsonSchemaForm schema={schema} value={{}} onChange={() => undefined} />);
     expect(screen.getByLabelText('Suffix')).toBeInTheDocument();
     expect(screen.getByLabelText('Retries')).toBeInTheDocument();
     expect(screen.getByLabelText('Enabled')).toBeInTheDocument();
@@ -53,9 +51,7 @@ describe('JsonSchemaForm', () => {
   it('adds and removes array items', async () => {
     const onChange = vi.fn();
     const user = userEvent.setup();
-    render(
-      <JsonSchemaForm schema={schema} value={{ tags: ['a'] }} onChange={onChange} />,
-    );
+    render(<JsonSchemaForm schema={schema} value={{ tags: ['a'] }} onChange={onChange} />);
 
     expect(screen.getByDisplayValue('a')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Add' }));

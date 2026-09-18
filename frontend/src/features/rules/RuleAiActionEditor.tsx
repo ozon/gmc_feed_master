@@ -19,8 +19,17 @@ const OUTPUT_FIELDS: Record<string, string[]> = {
   description_optimization: ['description'],
   category_classification: ['google_product_category'],
   attribute_enrichment: [
-    'color', 'size', 'material', 'gtin', 'gender', 'age_group',
-    'custom_label_0', 'custom_label_1', 'custom_label_2', 'custom_label_3', 'custom_label_4',
+    'color',
+    'size',
+    'material',
+    'gtin',
+    'gender',
+    'age_group',
+    'custom_label_0',
+    'custom_label_1',
+    'custom_label_2',
+    'custom_label_3',
+    'custom_label_4',
   ],
 };
 
@@ -32,7 +41,10 @@ export type RuleAiActionEditorProps = {
 };
 
 export function RuleAiActionEditor({
-  action, fieldOptions, feedSourceId, onChange,
+  action,
+  fieldOptions,
+  feedSourceId,
+  onChange,
 }: RuleAiActionEditorProps) {
   const { t } = useTranslation('rules');
   const source = action.promptSource ?? 'template';
@@ -40,7 +52,7 @@ export function RuleAiActionEditor({
 
   const templates = useRuleAiTemplates(
     feedSourceId,
-    source === 'template' ? action.taskType ?? STRUCTURED_TASKS[0] : undefined,
+    source === 'template' ? (action.taskType ?? STRUCTURED_TASKS[0]) : undefined,
   );
 
   const knownFields = useMemo(
@@ -48,20 +60,28 @@ export function RuleAiActionEditor({
     [fieldOptions],
   );
   const templateOptions = useMemo(
-    () => (templates.data?.items ?? []).map((item) => ({ value: String(item.id), label: item.name })),
+    () =>
+      (templates.data?.items ?? []).map((item) => ({ value: String(item.id), label: item.name })),
     [templates.data],
   );
 
   function switchSource(next: 'template' | 'custom') {
     if (next === 'custom') {
       onChange({
-        op: 'ai', promptSource: 'custom', taskType: 'rule_value',
-        field: action.field || '', system: '', user: '', variables: [],
+        op: 'ai',
+        promptSource: 'custom',
+        taskType: 'rule_value',
+        field: action.field || '',
+        system: '',
+        user: '',
+        variables: [],
       });
     } else {
       onChange({
-        op: 'ai', promptSource: 'template',
-        taskType: STRUCTURED_TASKS[0], field: action.field || '',
+        op: 'ai',
+        promptSource: 'template',
+        taskType: STRUCTURED_TASKS[0],
+        field: action.field || '',
       });
     }
   }
@@ -69,8 +89,10 @@ export function RuleAiActionEditor({
   function previewPayload() {
     if (source === 'custom') {
       return {
-        feed_source_id: feedSourceId ?? 0, taskType: 'rule_value',
-        system: action.system ?? '', user: action.user ?? '',
+        feed_source_id: feedSourceId ?? 0,
+        taskType: 'rule_value',
+        system: action.system ?? '',
+        user: action.user ?? '',
         variables: action.variables ?? [],
       };
     }
@@ -106,18 +128,25 @@ export function RuleAiActionEditor({
               aria-label={t('ai.task')}
               data={STRUCTURED_TASKS.map((task) => ({ value: task, label: t(`ai.tasks.${task}`) }))}
               value={action.taskType ?? STRUCTURED_TASKS[0]}
-              onChange={(v) => onChange({
-                ...action, taskType: v ?? STRUCTURED_TASKS[0], templateId: undefined,
-              })}
+              onChange={(v) =>
+                onChange({
+                  ...action,
+                  taskType: v ?? STRUCTURED_TASKS[0],
+                  templateId: undefined,
+                })
+              }
               w={200}
             />
             <Select
               aria-label={t('ai.templatePick')}
               data={templateOptions}
               value={action.templateId === undefined ? null : String(action.templateId)}
-              onChange={(v) => onChange({
-                ...action, templateId: v === null ? undefined : Number(v),
-              })}
+              onChange={(v) =>
+                onChange({
+                  ...action,
+                  templateId: v === null ? undefined : Number(v),
+                })
+              }
               w={200}
             />
           </>

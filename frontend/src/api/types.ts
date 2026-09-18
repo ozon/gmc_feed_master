@@ -482,4 +482,4 @@ export type PromptPreviewResult = {
   errors: string[];
 };
 
-export type ChatMessage = { role: "user" | "assistant"; content: string };
+export type ChatMessage = { role: 'user' | 'assistant'; content: string };

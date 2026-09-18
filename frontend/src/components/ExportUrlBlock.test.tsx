@@ -53,7 +53,10 @@ describe('ExportUrlBlock', () => {
     const user = userEvent.setup();
     fetchMock = stubFetch((url) => {
       if (url === '/feed-sources/1/export-token/rotate') {
-        return jsonResponse({ export_token: 'new123', export_url: 'http://localhost/export/1/new123' });
+        return jsonResponse({
+          export_token: 'new123',
+          export_url: 'http://localhost/export/1/new123',
+        });
       }
       return jsonResponse({});
     });

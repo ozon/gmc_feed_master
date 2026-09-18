@@ -46,9 +46,12 @@ export function useLabelizerPreview(input: {
   const payloadRef = useRef({ feedSourceId, rules, slotIds });
   payloadRef.current = { feedSourceId, rules, slotIds };
 
-  useEffect(() => () => {
-    seq.current++;
-  }, []);
+  useEffect(
+    () => () => {
+      seq.current++;
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!enabled) {

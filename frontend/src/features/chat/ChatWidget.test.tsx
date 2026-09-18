@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import {QueryClient} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
@@ -12,7 +12,6 @@ function jsonResponse(body: unknown, status = 200) {
     headers: { 'Content-Type': 'application/json' },
   });
 }
-
 
 beforeAll(async () => {
   await i18n.loadNamespaces('chat');
@@ -45,7 +44,9 @@ describe('ChatWidget', () => {
     fireEvent.change(input, { target: { value: 'what feed sources do I have?' } });
     fireEvent.keyDown(input, { key: 'Enter', shiftKey: false });
     await waitFor(() => {
-      expect(screen.getByTestId('chat-message-0')).toHaveTextContent('what feed sources do I have?');
+      expect(screen.getByTestId('chat-message-0')).toHaveTextContent(
+        'what feed sources do I have?',
+      );
     });
     expect(input).toHaveValue('');
     await waitFor(() => {

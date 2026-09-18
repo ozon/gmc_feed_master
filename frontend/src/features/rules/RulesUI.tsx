@@ -11,7 +11,12 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBlocker } from 'react-router';
-import { useRegistryAttributes, usePluginConfig, useSavePluginConfig, type PluginScope } from '../../api/hooks';
+import {
+  useRegistryAttributes,
+  usePluginConfig,
+  useSavePluginConfig,
+  type PluginScope,
+} from '../../api/hooks';
 import { buildFieldOptions, fromRegistryAttributes } from '../../api/fieldOptions';
 import { notifyApiError, notifySuccess } from '../../app/notifications';
 import {
@@ -145,63 +150,70 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
       <Grid>
         <Grid.Col span={5}>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-            <SortableContext items={localRules.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext
+              items={localRules.map((r) => r.id)}
+              strategy={verticalListSortingStrategy}
+            >
               <RuleList
-            rules={localRules}
-            selectedId={selectedId}
-            selectedIds={selectedIds}
-            searchOpen={searchOpen}
-            searchValue={searchValue}
-            onToggleSearch={() => {
-              setSearchOpen((v) => !v);
-              if (searchOpen) setSearchValue('');
-            }}
-            onSearchChange={setSearchValue}
-            onSelect={(id) => setSelectedId(id)}
-            onToggleSelected={(id, checked) =>
-              setSelectedIds((prev) => {
-                const next = new Set(prev);
-                if (checked) next.add(id);
-                else next.delete(id);
-                return next;
-              })
-            }
-            onToggleSelectAll={(checked) =>
-              setSelectedIds(checked ? new Set(localRules.map((r) => r.id)) : new Set())
-            }
-            onCreate={createRule}
-            onEdit={(id) => setSelectedId(id)}
-            onRename={(id) => setSelectedId(id)}
-            onDuplicate={(id) =>
-              setRules((prev) => {
-                const source = prev.find((r) => r.id === id);
-                if (!source) return prev;
-                const copy = { ...source, id: newRule('').id, name: `${source.name} ${t('duplicateSuffix')}` };
-                return enforcePinning([...prev, copy]);
-              })
-            }
-            onToggleActive={(id) =>
-              setRules((prev) =>
-                prev.map((r) => (r.id === id ? { ...r, isActive: !r.isActive } : r)),
-              )
-            }
-            onToggleMaster={(id) =>
-              setRules((prev) =>
-                enforcePinning(
-                  prev.map((r) => (r.id === id ? { ...r, isMasterRule: !r.isMasterRule } : r)),
-                ),
-              )
-            }
-            onDelete={(id) => {
-              const rule = rules.find((r) => r.id === id);
-              if (rule) confirmDeleteRule(rule);
-            }}
-            onBulkActivate={(active) =>
-              setRules((prev) =>
-                prev.map((r) => (selectedIds.has(r.id) ? { ...r, isActive: active } : r)),
-              )
-            }
-            onBulkDelete={confirmDeleteSelected}
+                rules={localRules}
+                selectedId={selectedId}
+                selectedIds={selectedIds}
+                searchOpen={searchOpen}
+                searchValue={searchValue}
+                onToggleSearch={() => {
+                  setSearchOpen((v) => !v);
+                  if (searchOpen) setSearchValue('');
+                }}
+                onSearchChange={setSearchValue}
+                onSelect={(id) => setSelectedId(id)}
+                onToggleSelected={(id, checked) =>
+                  setSelectedIds((prev) => {
+                    const next = new Set(prev);
+                    if (checked) next.add(id);
+                    else next.delete(id);
+                    return next;
+                  })
+                }
+                onToggleSelectAll={(checked) =>
+                  setSelectedIds(checked ? new Set(localRules.map((r) => r.id)) : new Set())
+                }
+                onCreate={createRule}
+                onEdit={(id) => setSelectedId(id)}
+                onRename={(id) => setSelectedId(id)}
+                onDuplicate={(id) =>
+                  setRules((prev) => {
+                    const source = prev.find((r) => r.id === id);
+                    if (!source) return prev;
+                    const copy = {
+                      ...source,
+                      id: newRule('').id,
+                      name: `${source.name} ${t('duplicateSuffix')}`,
+                    };
+                    return enforcePinning([...prev, copy]);
+                  })
+                }
+                onToggleActive={(id) =>
+                  setRules((prev) =>
+                    prev.map((r) => (r.id === id ? { ...r, isActive: !r.isActive } : r)),
+                  )
+                }
+                onToggleMaster={(id) =>
+                  setRules((prev) =>
+                    enforcePinning(
+                      prev.map((r) => (r.id === id ? { ...r, isMasterRule: !r.isMasterRule } : r)),
+                    ),
+                  )
+                }
+                onDelete={(id) => {
+                  const rule = rules.find((r) => r.id === id);
+                  if (rule) confirmDeleteRule(rule);
+                }}
+                onBulkActivate={(active) =>
+                  setRules((prev) =>
+                    prev.map((r) => (selectedIds.has(r.id) ? { ...r, isActive: active } : r)),
+                  )
+                }
+                onBulkDelete={confirmDeleteSelected}
               />
             </SortableContext>
           </DndContext>
@@ -224,7 +236,9 @@ export default function RulesUI({ pluginId, scope }: RulesUIProps) {
               if (!selected) return;
               setRules((prev) =>
                 enforcePinning(
-                  prev.map((r) => (r.id === selected.id ? { ...r, isMasterRule: !r.isMasterRule } : r)),
+                  prev.map((r) =>
+                    r.id === selected.id ? { ...r, isMasterRule: !r.isMasterRule } : r,
+                  ),
                 ),
               );
             }}

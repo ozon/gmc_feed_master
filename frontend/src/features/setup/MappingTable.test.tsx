@@ -13,19 +13,59 @@ const sourceFields: SourceField[] = [
   { name: 'description', kind: 'scalar', sub_fields: [], max_repeats: 0 },
   { name: 'product_id', kind: 'scalar', sub_fields: [], max_repeats: 0 },
   { name: 'price_raw', kind: 'scalar', sub_fields: [], max_repeats: 0 },
-  { name: 'installment_data', kind: 'structured', sub_fields: ['months', 'amount'], max_repeats: 0 },
+  {
+    name: 'installment_data',
+    kind: 'structured',
+    sub_fields: ['months', 'amount'],
+    max_repeats: 0,
+  },
   { name: 'synonym_field', kind: 'scalar', sub_fields: [], max_repeats: 0 },
 ];
 
 const registryAttributes: RegistryAttribute[] = [
-  { name: 'title', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
-  { name: 'description', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
-  { name: 'id', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
-  { name: 'installment', kind: 'structured', required: 'optional', sub_fields: [
-    { name: 'months', type: 'string', required: 'optional' },
-    { name: 'amount', type: 'string', required: 'optional' },
-  ], enum_values: [], max_repeats: 1 },
-  { name: 'brand', kind: 'scalar', required: 'optional', sub_fields: [], enum_values: [], max_repeats: 1 },
+  {
+    name: 'title',
+    kind: 'scalar',
+    required: 'required',
+    sub_fields: [],
+    enum_values: [],
+    max_repeats: 1,
+  },
+  {
+    name: 'description',
+    kind: 'scalar',
+    required: 'optional',
+    sub_fields: [],
+    enum_values: [],
+    max_repeats: 1,
+  },
+  {
+    name: 'id',
+    kind: 'scalar',
+    required: 'required',
+    sub_fields: [],
+    enum_values: [],
+    max_repeats: 1,
+  },
+  {
+    name: 'installment',
+    kind: 'structured',
+    required: 'optional',
+    sub_fields: [
+      { name: 'months', type: 'string', required: 'optional' },
+      { name: 'amount', type: 'string', required: 'optional' },
+    ],
+    enum_values: [],
+    max_repeats: 1,
+  },
+  {
+    name: 'brand',
+    kind: 'scalar',
+    required: 'optional',
+    sub_fields: [],
+    enum_values: [],
+    max_repeats: 1,
+  },
 ];
 
 function mappingsFixture() {
@@ -200,7 +240,9 @@ describe('MappingTable', () => {
   it('sub-row shows error text for its dotted key', async () => {
     const user = userEvent.setup();
     render(
-      <MappingTable {...defaultProps({ errors: { 'installment_data.months': 'unknown sub-field' } })} />,
+      <MappingTable
+        {...defaultProps({ errors: { 'installment_data.months': 'unknown sub-field' } })}
+      />,
     );
     await waitFor(() => {
       expect(screen.getByText('installment_data')).toBeInTheDocument();
@@ -260,11 +302,17 @@ describe('MappingTable', () => {
   it('offers indexed target options for repeated attributes', async () => {
     const repeated: RegistryAttribute[] = [
       ...registryAttributes,
-      { name: 'product_detail', kind: 'repeated_structured', required: 'optional',
+      {
+        name: 'product_detail',
+        kind: 'repeated_structured',
+        required: 'optional',
         sub_fields: [
           { name: 'section_name', type: 'string', required: 'optional' },
           { name: 'attribute_name', type: 'string', required: 'optional' },
-        ], enum_values: [], max_repeats: 2 },
+        ],
+        enum_values: [],
+        max_repeats: 2,
+      },
     ];
     render(<MappingTable {...defaultProps({ registryAttributes: repeated })} />);
     const user = userEvent.setup();
@@ -331,9 +379,7 @@ describe('MappingTable', () => {
     );
     const nameInput = await screen.findByRole('textbox', { name: /field name/i });
     await user.type(nameInput, 'Bad.Name');
-    expect(
-      await screen.findByText(/names must be lowercase/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/names must be lowercase/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add custom field/i })).toBeDisabled();
   });
 
@@ -364,7 +410,11 @@ describe('MappingTable', () => {
     const user = userEvent.setup();
     render(
       <MappingTable
-        {...defaultProps({ customFields: ['taken'], onAddCustom: vi.fn(), onRemoveCustom: vi.fn() })}
+        {...defaultProps({
+          customFields: ['taken'],
+          onAddCustom: vi.fn(),
+          onRemoveCustom: vi.fn(),
+        })}
       />,
     );
     const nameInput = await screen.findByRole('textbox', { name: /field name/i });
@@ -416,9 +466,7 @@ describe('MappingTable', () => {
     await waitFor(() => {
       expect(screen.getAllByText('title')).toHaveLength(1);
     });
-    expect(
-      screen.getByText(/also declared as custom field/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/also declared as custom field/i)).toBeInTheDocument();
     const removeBtn = screen.getByRole('button', { name: /remove custom field/i });
     await user.click(removeBtn);
     expect(onRemoveCustom).toHaveBeenCalledWith('title');

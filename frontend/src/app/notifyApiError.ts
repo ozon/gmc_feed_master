@@ -22,10 +22,7 @@ export function notifyApiError(
   errorsSummary?: string,
 ): Record<string, string> {
   if (error instanceof ApiError && error.errors && error.errors.length > 0) {
-    notifyError(
-      errorsSummary
-        ?? i18n.t('serverDetailLeadIn', { detail: error.errors.join('; ') }),
-    );
+    notifyError(errorsSummary ?? i18n.t('serverDetailLeadIn', { detail: error.errors.join('; ') }));
     return mapFieldErrors(error.errors);
   }
   if (error instanceof ApiError && error.detail) {

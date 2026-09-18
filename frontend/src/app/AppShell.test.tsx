@@ -58,7 +58,9 @@ const plugins = [
     name: 'Example Upper',
     version: '1.0.0',
     enabled: true,
-    manifest: { frontend: { menu_item: 'Example Upper', icon: 'letter-e', component: 'component.tsx' } },
+    manifest: {
+      frontend: { menu_item: 'Example Upper', icon: 'letter-e', component: 'component.tsx' },
+    },
     used_by_feed_sources: 0,
   },
   {
@@ -118,7 +120,8 @@ const plugins = [
 ];
 
 function authenticatedHandler(url: string) {
-  if (url === '/auth/me') return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
+  if (url === '/auth/me')
+    return jsonResponse({ username: 'operator', role: 'admin', client_ids: null });
   if (url === '/dashboard/summary') return jsonResponse(summary);
   if (url === '/plugins') return jsonResponse(plugins);
   if (url.startsWith('/feed-sources/') && url.includes('/products')) {
@@ -137,8 +140,10 @@ describe('AppShell', () => {
   it('renders navigation with plugin entries after Setup in feed context', async () => {
     window.history.replaceState({}, '', '/clients/1/feeds/2/products');
     render(<App />);
-    expect(await screen.findByRole('link', { name: /example upper/i }))
-      .toHaveAttribute('href', '/clients/1/feeds/2/plugins/example_upper');
+    expect(await screen.findByRole('link', { name: /example upper/i })).toHaveAttribute(
+      'href',
+      '/clients/1/feeds/2/plugins/example_upper',
+    );
     const labels = screen.getAllByRole('link').map((a) => a.textContent ?? '');
     const setupIdx = labels.findIndex((l) => l === 'Setup');
     const pluginIdx = labels.findIndex((l) => l.includes('Example Upper'));
@@ -280,5 +285,4 @@ describe('AppShell', () => {
     expect(await screen.findByText(/failed on the server/i)).toBeInTheDocument();
     expect(queryClient.getQueryData(queryKeys.session)).toBeUndefined();
   });
-
 });

@@ -7,9 +7,30 @@ import type { QualityFinding } from '../../../api/types';
 import { FindingsExplorer } from './FindingsExplorer';
 
 const findings: QualityFinding[] = [
-  { severity: 'critical', code: 'gtin_mpn', field: 'gtin', message: 'Bad GTIN', product_id: 'p1', details: {} },
-  { severity: 'warning', code: 'gtin_mpn', field: 'gtin', message: 'No GTIN', product_id: 'p2', details: {} },
-  { severity: 'warning', code: 'volume_drop', field: null, message: 'Catalog dropped', product_id: '', details: {} },
+  {
+    severity: 'critical',
+    code: 'gtin_mpn',
+    field: 'gtin',
+    message: 'Bad GTIN',
+    product_id: 'p1',
+    details: {},
+  },
+  {
+    severity: 'warning',
+    code: 'gtin_mpn',
+    field: 'gtin',
+    message: 'No GTIN',
+    product_id: 'p2',
+    details: {},
+  },
+  {
+    severity: 'warning',
+    code: 'volume_drop',
+    field: null,
+    message: 'Catalog dropped',
+    product_id: '',
+    details: {},
+  },
 ];
 
 beforeAll(async () => {

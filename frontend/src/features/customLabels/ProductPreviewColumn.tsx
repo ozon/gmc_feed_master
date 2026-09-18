@@ -20,7 +20,15 @@ export type ProductPreviewColumnProps = {
 };
 
 export function ProductPreviewColumn({
-  field, lines, matches, isFetching, isError, extraFields, shadowedBy, scrollTop, viewportRef,
+  field,
+  lines,
+  matches,
+  isFetching,
+  isError,
+  extraFields,
+  shadowedBy,
+  scrollTop,
+  viewportRef,
 }: ProductPreviewColumnProps) {
   const { t } = useTranslation('customLabels');
   const total = lines.length;
@@ -34,19 +42,24 @@ export function ProductPreviewColumn({
         style={{
           height: VIEWPORT_ROWS * ROW_HEIGHT,
           overflowY: 'auto',
-          border: 'calc(0.0625rem * var(--mantine-scale)) solid var(--mantine-color-default-border)',
+          border:
+            'calc(0.0625rem * var(--mantine-scale)) solid var(--mantine-color-default-border)',
           borderRadius: 'var(--mantine-radius-sm)',
         }}
       >
         {isError ? (
-          <Text size="xs" c="red" px="xs" data-testid="preview-error">{t('previewError')}</Text>
+          <Text size="xs" c="red" px="xs" data-testid="preview-error">
+            {t('previewError')}
+          </Text>
         ) : total === 0 ? (
-          <Text size="xs" c="dimmed" px="xs" data-testid="preview-empty">{t('previewEmpty')}</Text>
+          <Text size="xs" c="dimmed" px="xs" data-testid="preview-empty">
+            {t('previewEmpty')}
+          </Text>
         ) : (
           <div style={{ height: total * ROW_HEIGHT, position: 'relative' }}>
             {lines.slice(start, end).map((ids, offset) => {
               const index = start + offset;
-              const match = ids.length > 0 ? matches?.get(ids[0]) ?? null : null;
+              const match = ids.length > 0 ? (matches?.get(ids[0]) ?? null) : null;
               return (
                 <Group
                   key={`${index}-${ids.join(',')}`}
@@ -82,7 +95,12 @@ export function ProductPreviewColumn({
 }
 
 function PreviewRow({
-  field, ids, match, isFetching, extraFields, shadowedBy,
+  field,
+  ids,
+  match,
+  isFetching,
+  extraFields,
+  shadowedBy,
 }: {
   field: string;
   ids: string[];
@@ -93,7 +111,11 @@ function PreviewRow({
 }) {
   const { t } = useTranslation('customLabels');
   if (ids.length === 0) {
-    return <Text size="xs" c="dimmed">—</Text>;
+    return (
+      <Text size="xs" c="dimmed">
+        —
+      </Text>
+    );
   }
   const owner = shadowedBy?.get(ids[0]) ?? null;
   return (
@@ -110,13 +132,23 @@ function PreviewRow({
           {t('nMoreIds', { more: ids.length - 1 })}
         </Badge>
       )}
-      <MatchBody field={field} value={ids[0]} match={match} isFetching={isFetching} extraFields={extraFields} />
+      <MatchBody
+        field={field}
+        value={ids[0]}
+        match={match}
+        isFetching={isFetching}
+        extraFields={extraFields}
+      />
     </Group>
   );
 }
 
 function MatchBody({
-  field, value, match, isFetching, extraFields,
+  field,
+  value,
+  match,
+  isFetching,
+  extraFields,
 }: {
   field: string;
   value: string;
@@ -151,7 +183,9 @@ function MatchBody({
         </Badge>
       )}
       <Tooltip label={title} withArrow position="top" openDelay={300}>
-        <Text size="xs" truncate style={{ flex: 1, minWidth: 0 }}>{title}</Text>
+        <Text size="xs" truncate style={{ flex: 1, minWidth: 0 }}>
+          {title}
+        </Text>
       </Tooltip>
       <Text size="xs" c="dimmed" truncate maw={120}>
         {sample.brand ?? '—'}
@@ -165,10 +199,14 @@ function MatchBody({
         </Text>
       ))}
       {sample.status === 'removed' && (
-        <Badge size="xs" variant="light" color="gray">{t('stateRemoved')}</Badge>
+        <Badge size="xs" variant="light" color="gray">
+          {t('stateRemoved')}
+        </Badge>
       )}
       {sample.excluded && (
-        <Badge size="xs" variant="light" color="gray">{t('stateExcluded')}</Badge>
+        <Badge size="xs" variant="light" color="gray">
+          {t('stateExcluded')}
+        </Badge>
       )}
     </>
   );

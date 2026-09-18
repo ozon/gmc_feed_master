@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { notifications, Notifications } from '@mantine/notifications';
 import { createMemoryRouter, MemoryRouter, Route, Routes, RouterProvider } from 'react-router';
-import {QueryClient} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
@@ -40,7 +40,6 @@ beforeEach(() => {
   queryClient.clear();
   notifications.clean();
 });
-
 
 function renderAt(path: string) {
   return render(
@@ -174,10 +173,25 @@ describe('PluginPage', () => {
           ],
         });
       }
-      if (url.startsWith('/registry/attributes')) return jsonResponse([
-        { name: 'title', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
-        { name: 'condition', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
-      ]);
+      if (url.startsWith('/registry/attributes'))
+        return jsonResponse([
+          {
+            name: 'title',
+            kind: 'scalar',
+            required: 'required',
+            sub_fields: [],
+            enum_values: [],
+            max_repeats: 1,
+          },
+          {
+            name: 'condition',
+            kind: 'scalar',
+            required: 'required',
+            sub_fields: [],
+            enum_values: [],
+            max_repeats: 1,
+          },
+        ]);
       return jsonResponse({});
     });
     renderWithDataRouter('/clients/1/feeds/1/plugins/rules');
@@ -207,10 +221,19 @@ describe('PluginPage', () => {
         if (init?.method === 'PUT') return jsonResponse({ isActive: true, conditions: [] });
         return jsonResponse({ isActive: true, conditions: [] });
       }
-      if (url.startsWith('/registry/attributes')) return jsonResponse([
-        { name: 'brand', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
-      ]);
-      if (url.startsWith('/plugins/filter/preview')) return jsonResponse({ total: 2, pass: 1, fail: 1 });
+      if (url.startsWith('/registry/attributes'))
+        return jsonResponse([
+          {
+            name: 'brand',
+            kind: 'scalar',
+            required: 'required',
+            sub_fields: [],
+            enum_values: [],
+            max_repeats: 1,
+          },
+        ]);
+      if (url.startsWith('/plugins/filter/preview'))
+        return jsonResponse({ total: 2, pass: 1, fail: 1 });
       return jsonResponse({});
     });
     renderWithDataRouter('/clients/1/feeds/1/plugins/filter');
@@ -233,9 +256,17 @@ describe('PluginPage', () => {
         if (init?.method === 'PUT') return jsonResponse({ rules: [] });
         return jsonResponse({ rules: [] });
       }
-      if (url.startsWith('/registry/attributes')) return jsonResponse([
-        { name: 'title', kind: 'scalar', required: 'required', sub_fields: [], enum_values: [], max_repeats: 1 },
-      ]);
+      if (url.startsWith('/registry/attributes'))
+        return jsonResponse([
+          {
+            name: 'title',
+            kind: 'scalar',
+            required: 'required',
+            sub_fields: [],
+            enum_values: [],
+            max_repeats: 1,
+          },
+        ]);
       return jsonResponse({});
     });
     renderWithDataRouter('/clients/1/feeds/1/plugins/rules');

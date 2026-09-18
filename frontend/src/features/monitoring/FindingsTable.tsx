@@ -35,11 +35,27 @@ export function FindingsTable({ findings, onOpenProduct }: Props) {
   const table = useTable({
     features,
     columns: [
-      { id: 'severity', header: t('columns.severity'), accessorFn: (row: QualityFinding) => row.severity },
+      {
+        id: 'severity',
+        header: t('columns.severity'),
+        accessorFn: (row: QualityFinding) => row.severity,
+      },
       { id: 'code', header: t('columns.code'), accessorFn: (row: QualityFinding) => row.code },
-      { id: 'field', header: t('columns.field'), accessorFn: (row: QualityFinding) => row.field ?? '' },
-      { id: 'message', header: t('columns.message'), accessorFn: (row: QualityFinding) => row.message },
-      { id: 'product_id', header: t('columns.productId'), accessorFn: (row: QualityFinding) => row.product_id },
+      {
+        id: 'field',
+        header: t('columns.field'),
+        accessorFn: (row: QualityFinding) => row.field ?? '',
+      },
+      {
+        id: 'message',
+        header: t('columns.message'),
+        accessorFn: (row: QualityFinding) => row.message,
+      },
+      {
+        id: 'product_id',
+        header: t('columns.productId'),
+        accessorFn: (row: QualityFinding) => row.product_id,
+      },
     ],
     data: findings,
     getRowId: (row: QualityFinding, index: number) =>

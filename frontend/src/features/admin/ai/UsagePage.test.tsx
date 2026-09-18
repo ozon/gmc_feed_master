@@ -34,8 +34,22 @@ const USAGE_ROW = {
 };
 
 const TREND_ROWS = [
-  { group_key: '2026-09-15', calls: 20, cache_hits: 10, prompt_tokens: 50, completion_tokens: 10, cost_usd: '0.75' },
-  { group_key: '2026-09-16', calls: 22, cache_hits: 11, prompt_tokens: 50, completion_tokens: 10, cost_usd: '0.75' },
+  {
+    group_key: '2026-09-15',
+    calls: 20,
+    cache_hits: 10,
+    prompt_tokens: 50,
+    completion_tokens: 10,
+    cost_usd: '0.75',
+  },
+  {
+    group_key: '2026-09-16',
+    calls: 22,
+    cache_hits: 11,
+    prompt_tokens: 50,
+    completion_tokens: 10,
+    cost_usd: '0.75',
+  },
 ];
 
 function stubUsage({ rows = [USAGE_ROW], trend = TREND_ROWS } = {}) {

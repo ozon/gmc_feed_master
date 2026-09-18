@@ -1,7 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import {
-  ActionIcon, Box, Group, MultiSelect, Stack, Text, Textarea, Tooltip,
-} from '@mantine/core';
+import { ActionIcon, Box, Group, MultiSelect, Stack, Text, Textarea, Tooltip } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useTranslation } from 'react-i18next';
 import { IconEye, IconEyeOff, IconTrash, IconWand } from '@tabler/icons-react';
@@ -27,17 +25,22 @@ export type RuleValuesEditorProps = {
 };
 
 export function RuleValuesEditor({
-  rule, value, feedSourceId, extraFields, onExtraFieldsChange, onSetIds, shadowedBy,
-  previewOpen, onTogglePreview,
+  rule,
+  value,
+  feedSourceId,
+  extraFields,
+  onExtraFieldsChange,
+  onSetIds,
+  shadowedBy,
+  previewOpen,
+  onTogglePreview,
 }: RuleValuesEditorProps) {
   const { t } = useTranslation('customLabels');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const onScrollTopChange = useCallback((top: number) => setScrollTop(top), []);
-  useSyncedScroll(
-    textareaRef, previewRef, onScrollTopChange, `${feedSourceId}-${previewOpen}`,
-  );
+  useSyncedScroll(textareaRef, previewRef, onScrollTopChange, `${feedSourceId}-${previewOpen}`);
 
   const lines = useMemo(() => parsePreviewLines(value), [value]);
   const lookupValues = useMemo(() => Array.from(new Set(lines.flat())), [lines]);
@@ -50,19 +53,22 @@ export function RuleValuesEditor({
 
   const fieldsQuery = useFeedSourceFields(String(feedSourceId ?? ''));
   const fieldOptions = useMemo(
-    () => (fieldsQuery.data?.fields ?? [])
-      .map((d) => d.name)
-      .filter((f) => !PREVIEW_DEFAULT_FIELDS.has(f)),
+    () =>
+      (fieldsQuery.data?.fields ?? [])
+        .map((d) => d.name)
+        .filter((f) => !PREVIEW_DEFAULT_FIELDS.has(f)),
     [fieldsQuery.data],
   );
 
   const count = parseIdList(value).size;
-  const label = rule.matchField === 'id'
-    ? t('bulk.productIds')
-    : t('bulk.valuesFor', { field: rule.matchField });
-  const ariaLabel = rule.matchField === 'id'
-    ? `${t('bulk.productIds')} — ${rule.name}`
-    : `${t('bulk.valuesFor', { field: rule.matchField })} — ${rule.name}`;
+  const label =
+    rule.matchField === 'id'
+      ? t('bulk.productIds')
+      : t('bulk.valuesFor', { field: rule.matchField });
+  const ariaLabel =
+    rule.matchField === 'id'
+      ? `${t('bulk.productIds')} — ${rule.name}`
+      : `${t('bulk.valuesFor', { field: rule.matchField })} — ${rule.name}`;
 
   const atFeed = feedSourceId !== undefined;
 
@@ -92,7 +98,9 @@ export function RuleValuesEditor({
   const toolbar = (
     <Group justify="space-between" wrap="nowrap" gap="xs">
       <Group gap="xs" wrap="nowrap">
-        <Text size="xs" c="dimmed">{label}</Text>
+        <Text size="xs" c="dimmed">
+          {label}
+        </Text>
         <Group gap={4} wrap="nowrap">
           <Tooltip label={t('clearValues')} withArrow position="top" openDelay={300}>
             <ActionIcon
@@ -155,7 +163,9 @@ export function RuleValuesEditor({
       <Text size="xs" c="dimmed" data-testid={`id-count-${rule.id}`}>
         {t('idCount', { count })}
       </Text>
-      <Text size="xs" c="dimmed">{rule.matchField}</Text>
+      <Text size="xs" c="dimmed">
+        {rule.matchField}
+      </Text>
     </Group>
   );
 
@@ -179,7 +189,9 @@ export function RuleValuesEditor({
           alignItems: 'stretch',
         }}
       >
-        <Box w={380} style={{ flex: '0 0 380px' }}>{textarea}</Box>
+        <Box w={380} style={{ flex: '0 0 380px' }}>
+          {textarea}
+        </Box>
         {previewOpen && (
           <Box style={{ flex: '1 1 auto', minWidth: 0 }}>
             <ProductPreviewColumn

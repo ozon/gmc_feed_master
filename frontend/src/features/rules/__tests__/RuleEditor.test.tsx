@@ -19,8 +19,12 @@ const noop = () => {};
 
 function makeRule(then: RuleAction[]): Rule {
   return {
-    id: 'r1', name: 'R', isMasterRule: false, isActive: true,
-    when: { op: 'all' }, then,
+    id: 'r1',
+    name: 'R',
+    isMasterRule: false,
+    isActive: true,
+    when: { op: 'all' },
+    then,
   };
 }
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { renderHook } from '../test/render';
-import {QueryClient} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import { useRunDryRun } from './hooks';
 import { queryClient as defaultClient } from './queryClient';
 import { queryKeys } from './queryKeys';
@@ -13,7 +13,6 @@ function jsonResponse(body: unknown, status = 200) {
     headers: { 'Content-Type': 'application/json' },
   });
 }
-
 
 beforeEach(() => {
   defaultClient.clear();
@@ -56,7 +55,9 @@ describe('useRunDryRun', () => {
     const invalidated = runsSpy.mock.calls.map((c) => c[0]);
     const runsKey = queryKeys.feedSource(1).runs;
     const findingsKey = queryKeys.feedSource(1).findings;
-    const hasRuns = invalidated.some((q) => JSON.stringify(q?.queryKey) === JSON.stringify(runsKey));
+    const hasRuns = invalidated.some(
+      (q) => JSON.stringify(q?.queryKey) === JSON.stringify(runsKey),
+    );
     const hasFindings = invalidated.some(
       (q) => JSON.stringify(q?.queryKey) === JSON.stringify(findingsKey),
     );

@@ -45,8 +45,12 @@ describe('api client', () => {
   });
 
   it('parses 422 error arrays into ApiError.errors', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ errors: ["title: invalid target path 'a.1'"] }, 422));
-    const error: unknown = await apiPut('/feed-sources/1/field-mapping', {}).catch((e: unknown) => e);
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ errors: ["title: invalid target path 'a.1'"] }, 422),
+    );
+    const error: unknown = await apiPut('/feed-sources/1/field-mapping', {}).catch(
+      (e: unknown) => e,
+    );
     expect(error).toBeInstanceOf(ApiError);
     expect((error as ApiError).errors).toEqual(["title: invalid target path 'a.1'"]);
     expect((error as ApiError).detail).toBeUndefined();

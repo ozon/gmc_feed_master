@@ -15,7 +15,11 @@ export function RecentRunsTable({ runs }: { runs: FeedDashboardData['recent_runs
   const { t, i18n } = useTranslation('feedDashboard');
   const { t: tMonitoring } = useTranslation('monitoring');
   if (runs.length === 0) {
-    return <Text c="dimmed" size="sm">{t('runs.empty')}</Text>;
+    return (
+      <Text c="dimmed" size="sm">
+        {t('runs.empty')}
+      </Text>
+    );
   }
   return (
     <Table striped data-testid="recent-runs-table">
@@ -34,7 +38,9 @@ export function RecentRunsTable({ runs }: { runs: FeedDashboardData['recent_runs
               <Text size="sm">{dayjs(run.started_at).locale(i18n.language).format('L LTS')}</Text>
             </Table.Td>
             <Table.Td>
-              <Badge color={STATUS_COLOR[run.status] ?? 'gray'}>{tMonitoring(`runStatus.${run.status}`, { defaultValue: run.status })}</Badge>
+              <Badge color={STATUS_COLOR[run.status] ?? 'gray'}>
+                {tMonitoring(`runStatus.${run.status}`, { defaultValue: run.status })}
+              </Badge>
             </Table.Td>
             <Table.Td>
               {run.duration_s !== null ? t('runs.duration', { seconds: run.duration_s }) : '—'}

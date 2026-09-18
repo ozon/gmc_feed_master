@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { renderHook } from '../test/render';
-import {QueryClient} from '@tanstack/react-query';
-import { useUpdatePluginEnabled, usePluginConfig, useSavePluginConfig, usePluginData, useSavePluginData } from './hooks';
+import { QueryClient } from '@tanstack/react-query';
+import {
+  useUpdatePluginEnabled,
+  usePluginConfig,
+  useSavePluginConfig,
+  usePluginData,
+  useSavePluginData,
+} from './hooks';
 import { ApiError } from './client';
 import { queryClient as defaultClient } from './queryClient';
 import { queryKeys } from './queryKeys';
@@ -14,7 +20,6 @@ function jsonResponse(body: unknown, status = 200) {
     headers: { 'Content-Type': 'application/json' },
   });
 }
-
 
 beforeEach(() => {
   defaultClient.clear();
@@ -59,9 +64,7 @@ describe('usePluginConfig', () => {
       return jsonResponse({});
     });
 
-    const { result } = renderHook(
-      () => usePluginConfig('example_upper', { clientId: 7 }),
-    );
+    const { result } = renderHook(() => usePluginConfig('example_upper', { clientId: 7 }));
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(capturedUrl).toBe('/plugins/example_upper/config?client_id=7');
@@ -84,7 +87,9 @@ describe('useSavePluginConfig', () => {
     const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
     const scope = {};
 
-    const { result } = renderHook(() => useSavePluginConfig('example_upper', scope), { queryClient: client });
+    const { result } = renderHook(() => useSavePluginConfig('example_upper', scope), {
+      queryClient: client,
+    });
     result.current.mutate(() => ({ suffix: 'X' }));
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -131,7 +136,9 @@ describe('useSavePluginData', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
 
-    const { result } = renderHook(() => useSavePluginData('custom_labels', { feedSourceId: 7 }), { queryClient: client });
+    const { result } = renderHook(() => useSavePluginData('custom_labels', { feedSourceId: 7 }), {
+      queryClient: client,
+    });
     result.current.mutate(() => ({ slotIds: { r1: 'a' } }));
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -169,10 +176,9 @@ describe('optimistic locking', () => {
       return jsonResponse({});
     });
 
-    const { result } = renderHook(
-      () => usePluginData('custom_labels', { feedSourceId: 7 }),
-      { queryClient: withVersionedData() },
-    );
+    const { result } = renderHook(() => usePluginData('custom_labels', { feedSourceId: 7 }), {
+      queryClient: withVersionedData(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual({ assignments: { a: '1' } });
@@ -205,10 +211,9 @@ describe('optimistic locking', () => {
       return jsonResponse({});
     });
 
-    const { result } = renderHook(
-      () => useSavePluginData('custom_labels', { feedSourceId: 7 }),
-      { queryClient },
-    );
+    const { result } = renderHook(() => useSavePluginData('custom_labels', { feedSourceId: 7 }), {
+      queryClient,
+    });
     result.current.mutate(() => ({ assignments: { mine: '42' } }));
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -240,10 +245,9 @@ describe('optimistic locking', () => {
       return jsonResponse({});
     });
 
-    const { result } = renderHook(
-      () => useSavePluginData('custom_labels', { feedSourceId: 7 }),
-      { queryClient },
-    );
+    const { result } = renderHook(() => useSavePluginData('custom_labels', { feedSourceId: 7 }), {
+      queryClient,
+    });
     result.current.mutate(() => ({ assignments: { mine: '42' } }));
 
     await waitFor(() => expect(result.current.isError).toBe(true));
@@ -261,9 +265,7 @@ describe('optimistic locking', () => {
       return jsonResponse({});
     });
 
-    const { result } = renderHook(
-      () => useSavePluginData('custom_labels', { feedSourceId: 7 }),
-    );
+    const { result } = renderHook(() => useSavePluginData('custom_labels', { feedSourceId: 7 }));
     result.current.mutate(() => ({ assignments: { a: '1' } }));
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

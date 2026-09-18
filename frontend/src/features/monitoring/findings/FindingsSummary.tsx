@@ -24,8 +24,12 @@ export function FindingsSummary({ counts, delta, hasPrevious, productCount }: Pr
             </Text>
             {hasPrevious && (
               <Group gap="xs">
-                <Badge color="green" data-testid="delta-fixed">↓ {delta.fixed}</Badge>
-                <Badge color="red" data-testid="delta-new">↑ {delta.new}</Badge>
+                <Badge color="green" data-testid="delta-fixed">
+                  ↓ {delta.fixed}
+                </Badge>
+                <Badge color="red" data-testid="delta-new">
+                  ↑ {delta.new}
+                </Badge>
               </Group>
             )}
           </Stack>

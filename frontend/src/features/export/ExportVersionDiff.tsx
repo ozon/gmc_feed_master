@@ -19,9 +19,7 @@ export function ExportVersionDiff({ diff, isPending, isError, onRetry }: Props) 
   if (!hasChanges) return <EmptyState message={t('noChanges')} />;
   return (
     <Stack gap="md" data-testid="export-version-diff">
-      <Text fw={600}>
-        {t('diffTitle', { version: diff.version, against: diff.against })}
-      </Text>
+      <Text fw={600}>{t('diffTitle', { version: diff.version, against: diff.against })}</Text>
       {diff.added.length > 0 ? (
         <Alert color="green" title={t('added')}>
           <Code block>{diff.added.join(', ')}</Code>

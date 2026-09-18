@@ -29,10 +29,13 @@ const STATUS_COLOR: Record<string, string> = {
 function StatusBadge({ status }: { status: string }) {
   const { t } = useTranslation('monitoring');
   const Icon =
-    status === 'success' ? IconCheck
-    : status === 'error' ? IconAlertCircle
-    : status === 'running' ? IconLoader
-    : IconPlayerSkipForward;
+    status === 'success'
+      ? IconCheck
+      : status === 'error'
+        ? IconAlertCircle
+        : status === 'running'
+          ? IconLoader
+          : IconPlayerSkipForward;
   return (
     <Badge color={STATUS_COLOR[status] ?? 'gray'} leftSection={<Icon size={12} />}>
       {t(`runStatus.${status}`, { defaultValue: status })}
@@ -78,7 +81,9 @@ export function IngestionRunsTable({ runs }: Props) {
                   {run.error_message}
                 </Text>
               ) : (
-                <Text c="dimmed" size="sm">—</Text>
+                <Text c="dimmed" size="sm">
+                  —
+                </Text>
               )}
             </Table.Td>
           </Table.Tr>

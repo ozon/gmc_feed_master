@@ -9,13 +9,7 @@ import { DashboardTab } from './DashboardTab';
 import { RulesTab } from './RulesTab';
 import { ManualTab } from './ManualTab';
 
-export default function CategoryUI({
-  pluginId,
-  scope,
-}: {
-  pluginId: string;
-  scope: PluginScope;
-}) {
+export default function CategoryUI({ pluginId, scope }: { pluginId: string; scope: PluginScope }) {
   const { t } = useTranslation('category');
   const tier = editableTier(scope);
   const [feedSourceId, setFeedSourceId] = useState<number | undefined>(undefined);
@@ -28,7 +22,9 @@ export default function CategoryUI({
   return (
     <Stack gap="md">
       <Group justify="space-between">
-        <Badge variant="light" color="gray">{tier}</Badge>
+        <Badge variant="light" color="gray">
+          {tier}
+        </Badge>
         <Group gap="xs">
           <Select
             label={t('language')}
@@ -44,7 +40,8 @@ export default function CategoryUI({
               data={[{ value: 'de-DE', label: 'de-DE' }]}
               value={null}
               onChange={(value) =>
-                value && fetchLanguage.mutate(value, {
+                value &&
+                fetchLanguage.mutate(value, {
                   onSuccess: () => setLanguage(value),
                   onError: (error) => notifyApiError(error, t('fetchLanguageFailed')),
                 })
@@ -59,10 +56,14 @@ export default function CategoryUI({
           <Tabs.Tab value="rules">{t('tabs.rules')}</Tabs.Tab>
           <Tabs.Tab value="manual">{t('tabs.manual')}</Tabs.Tab>
           <Tooltip label={t('placeholders.aiDisabled')} position="bottom">
-            <Tabs.Tab value="ai" disabled>{t('tabs.ai')}</Tabs.Tab>
+            <Tabs.Tab value="ai" disabled>
+              {t('tabs.ai')}
+            </Tabs.Tab>
           </Tooltip>
           <Tooltip label={t('placeholders.uncategorizedDisabled')} position="bottom">
-            <Tabs.Tab value="uncategorized" disabled>{t('tabs.uncategorized')}</Tabs.Tab>
+            <Tabs.Tab value="uncategorized" disabled>
+              {t('tabs.uncategorized')}
+            </Tabs.Tab>
           </Tooltip>
         </Tabs.List>
         <Tabs.Panel value="dashboard" pt="md">

@@ -3,7 +3,13 @@ import { waitFor } from '@testing-library/react';
 import { renderHook } from '../test/render';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { queryKeys } from './queryKeys';
-import { useAutoMap, useClients, useCreateClient, useFeedSourceFields, useProductList } from './hooks';
+import {
+  useAutoMap,
+  useClients,
+  useCreateClient,
+  useFeedSourceFields,
+  useProductList,
+} from './hooks';
 import { stubFetch } from '../test/fetch';
 import type { FieldMappingDoc } from './types';
 
@@ -16,7 +22,6 @@ function jsonResponse(body: unknown, status = 200) {
     headers: { 'Content-Type': 'application/json' },
   });
 }
-
 
 function callCount(url: string): number {
   return fetchMock.mock.calls.filter(([input]) => String(input) === url).length;
@@ -65,10 +70,7 @@ describe('m10-c hooks', () => {
     const { result } = renderHook(() => useCreateClient(), { queryClient });
     result.current.mutate({ name: 'Acme', status: 'active' });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/clients',
-      expect.objectContaining({ method: 'POST' }),
-    );
+    expect(fetchMock).toHaveBeenCalledWith('/clients', expect.objectContaining({ method: 'POST' }));
     await waitFor(() =>
       expect(
         fetchMock.mock.calls.filter(
@@ -86,8 +88,8 @@ describe('m10-c hooks', () => {
       }
       throw new Error(`Unexpected fetch in test: ${url}`);
     });
-    const { result } = renderHook(
-      () => useProductList(2, { page: 2, page_size: 50, q: 'sock', status: 'removed' }),
+    const { result } = renderHook(() =>
+      useProductList(2, { page: 2, page_size: 50, q: 'sock', status: 'removed' }),
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(fetchMock).toHaveBeenCalledWith(
@@ -98,7 +100,12 @@ describe('m10-c hooks', () => {
 
   it('useAutoMap posts to the auto endpoint and invalidates the mapping key', async () => {
     const mappingKey = queryKeys.feedSource(2).mapping;
-    const doc: FieldMappingDoc = { version: 1, auto_mapped: false, source_fields: [], mappings: {} };
+    const doc: FieldMappingDoc = {
+      version: 1,
+      auto_mapped: false,
+      source_fields: [],
+      mappings: {},
+    };
     await queryClient.prefetchQuery({
       queryKey: mappingKey,
       queryFn: () => Promise.resolve(doc),

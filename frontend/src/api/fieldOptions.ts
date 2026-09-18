@@ -64,10 +64,10 @@ export function buildFieldOptions(
 
   const push = (group: string, option: FieldOption) => {
     if (
-      group !== FIELD_GROUP_LABEL
-      && !literalNames.has(group)
-      && option.value.includes('.')
-      && literalNames.has(option.value)
+      group !== FIELD_GROUP_LABEL &&
+      !literalNames.has(group) &&
+      option.value.includes('.') &&
+      literalNames.has(option.value)
     ) {
       return; // generated path collides with a literal field name — literal wins
     }

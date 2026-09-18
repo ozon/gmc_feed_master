@@ -2,7 +2,11 @@ import { Group, Indicator, SegmentedControl, Stack, Text } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 
 export function SlotSelector({
-  slots, value, onChange, dirty, activeCount,
+  slots,
+  value,
+  onChange,
+  dirty,
+  activeCount,
 }: {
   slots: ReadonlyArray<string>;
   value: string;

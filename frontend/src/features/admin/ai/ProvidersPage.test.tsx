@@ -14,28 +14,46 @@ function jsonResponse(body: unknown, status = 200) {
 
 const providers = [
   {
-    id: 1, name: 'primary', provider_type: 'litellm',
-    base_url: '', model: 'openai/gpt-4o-mini',
-    input_price_per_mtok: null, output_price_per_mtok: null,
-    max_concurrency: 4, timeout_s: 30, enabled: true, tier: 'bulk',
+    id: 1,
+    name: 'primary',
+    provider_type: 'litellm',
+    base_url: '',
+    model: 'openai/gpt-4o-mini',
+    input_price_per_mtok: null,
+    output_price_per_mtok: null,
+    max_concurrency: 4,
+    timeout_s: 30,
+    enabled: true,
+    tier: 'bulk',
   },
 ];
 
 const presets = [
   {
-    vendor_key: 'openai', label: 'OpenAI', model_prefix: 'openai',
-    default_base_url: '', requires_base_url: false,
-    api_key_env_hint: 'OPENAI_API_KEY', docs_url: 'https://docs', supports_catalog: true,
+    vendor_key: 'openai',
+    label: 'OpenAI',
+    model_prefix: 'openai',
+    default_base_url: '',
+    requires_base_url: false,
+    api_key_env_hint: 'OPENAI_API_KEY',
+    docs_url: 'https://docs',
+    supports_catalog: true,
   },
 ];
 
 const catalog = {
   entries: [
     {
-      model_id: 'openai/gpt-4o', vendor: 'openai', display_name: 'gpt-4o',
-      context_window: 128000, max_output_tokens: 16384,
-      input_price_per_mtok: '2.500000', output_price_per_mtok: '10.000000',
-      supports_vision: true, supports_function_calling: true, is_recommended: true,
+      model_id: 'openai/gpt-4o',
+      vendor: 'openai',
+      display_name: 'gpt-4o',
+      context_window: 128000,
+      max_output_tokens: 16384,
+      input_price_per_mtok: '2.500000',
+      output_price_per_mtok: '10.000000',
+      supports_vision: true,
+      supports_function_calling: true,
+      is_recommended: true,
     },
   ],
   sync: { last_attempt_at: null, last_success_at: null, last_error: null, source: 'bundled' },
@@ -43,10 +61,17 @@ const catalog = {
 
 const legacyProviders = [
   {
-    id: 9, name: 'legacy', provider_type: 'openai_compatible',
-    base_url: 'http://localhost:11434/v1', model: 'llama3',
-    input_price_per_mtok: null, output_price_per_mtok: null,
-    max_concurrency: 4, timeout_s: 30, enabled: true, tier: 'bulk',
+    id: 9,
+    name: 'legacy',
+    provider_type: 'openai_compatible',
+    base_url: 'http://localhost:11434/v1',
+    model: 'llama3',
+    input_price_per_mtok: null,
+    output_price_per_mtok: null,
+    max_concurrency: 4,
+    timeout_s: 30,
+    enabled: true,
+    tier: 'bulk',
   },
 ];
 
@@ -78,9 +103,7 @@ describe('ProvidersPage', () => {
       return jsonResponse({});
     });
     render(<ProvidersPage />);
-    await waitFor(() =>
-      expect(screen.getByText('No AI providers configured')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText('No AI providers configured')).toBeInTheDocument());
   });
 
   it('creates a provider through the wizard', async () => {
@@ -90,7 +113,8 @@ describe('ProvidersPage', () => {
         posts.push(JSON.parse(String(init.body)));
         return jsonResponse({ ...providers[0], id: 2, model: 'openai/gpt-4o' }, 201);
       }
-      if (url === '/admin/ai/providers/2/test') return jsonResponse({ status: 'ok', latency_ms: 9 });
+      if (url === '/admin/ai/providers/2/test')
+        return jsonResponse({ status: 'ok', latency_ms: 9 });
       if (url === '/admin/ai/providers') return jsonResponse(providers);
       if (url === '/admin/ai/provider-presets') return jsonResponse(presets);
       if (url.startsWith('/admin/ai/model-catalog')) return jsonResponse(catalog);
@@ -114,14 +138,20 @@ describe('ProvidersPage', () => {
   it('marks legacy providers and opens the wizard with the custom preset', async () => {
     stubFetch((url) => {
       if (url === '/admin/ai/providers') return jsonResponse(legacyProviders);
-      if (url === '/admin/ai/provider-presets') return jsonResponse([
-        ...presets,
-        {
-          vendor_key: 'custom', label: 'OpenAI-kompatibel (custom)', model_prefix: 'openai',
-          default_base_url: '', requires_base_url: true,
-          api_key_env_hint: '', docs_url: '', supports_catalog: false,
-        },
-      ]);
+      if (url === '/admin/ai/provider-presets')
+        return jsonResponse([
+          ...presets,
+          {
+            vendor_key: 'custom',
+            label: 'OpenAI-kompatibel (custom)',
+            model_prefix: 'openai',
+            default_base_url: '',
+            requires_base_url: true,
+            api_key_env_hint: '',
+            docs_url: '',
+            supports_catalog: false,
+          },
+        ]);
       if (url.startsWith('/admin/ai/model-catalog')) return jsonResponse(catalog);
       return jsonResponse({});
     });
@@ -142,11 +172,22 @@ describe('ProvidersPage', () => {
       if (url === '/admin/ai/provider-presets') return jsonResponse(presets);
       if (url === '/admin/ai/model-catalog/refresh' && init?.method === 'POST') {
         refreshes.push(url);
-        return jsonResponse({ last_attempt_at: null, last_success_at: null, last_error: null, source: 'github' });
+        return jsonResponse({
+          last_attempt_at: null,
+          last_success_at: null,
+          last_error: null,
+          source: 'github',
+        });
       }
       if (url.startsWith('/admin/ai/model-catalog')) {
         return jsonResponse({
-          entries: [], sync: { last_attempt_at: null, last_success_at: null, last_error: 'boom', source: 'bundled' },
+          entries: [],
+          sync: {
+            last_attempt_at: null,
+            last_success_at: null,
+            last_error: 'boom',
+            source: 'bundled',
+          },
         });
       }
       return jsonResponse({});

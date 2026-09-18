@@ -14,9 +14,7 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-const users = [
-  { id: 1, username: 'alice', role: 'admin', is_active: true, client_ids: [] },
-];
+const users = [{ id: 1, username: 'alice', role: 'admin', is_active: true, client_ids: [] }];
 const clients = [
   { id: 3, name: 'Globex', contact_details: {}, status: 'active', created_at: '2026-01-01' },
 ];
@@ -70,9 +68,7 @@ describe('AdminPage', () => {
   it('activates the settings tab at /admin/settings', async () => {
     window.history.replaceState({}, '', '/admin/settings');
     render(<App />);
-    expect(
-      await screen.findByText('Removed-product retention (days)'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Removed-product retention (days)')).toBeInTheDocument();
     expect(screen.queryByTestId('admin-users-table')).not.toBeInTheDocument();
   });
 

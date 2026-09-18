@@ -8,9 +8,33 @@ import {
   type LocalInstance,
 } from './dndUtils';
 
-const a: LocalInstance = { id: null, enabled: true, clientId: 'a', position: 0, plugin_id: 'p1', name: 'A', configuration: { x: 1 } };
-const b: LocalInstance = { id: null, enabled: true, clientId: 'b', position: 1, plugin_id: 'p2', name: 'B', configuration: {} };
-const c: LocalInstance = { id: null, enabled: true, clientId: 'c', position: 2, plugin_id: 'p3', name: 'C', configuration: {} };
+const a: LocalInstance = {
+  id: null,
+  enabled: true,
+  clientId: 'a',
+  position: 0,
+  plugin_id: 'p1',
+  name: 'A',
+  configuration: { x: 1 },
+};
+const b: LocalInstance = {
+  id: null,
+  enabled: true,
+  clientId: 'b',
+  position: 1,
+  plugin_id: 'p2',
+  name: 'B',
+  configuration: {},
+};
+const c: LocalInstance = {
+  id: null,
+  enabled: true,
+  clientId: 'c',
+  position: 2,
+  plugin_id: 'p3',
+  name: 'C',
+  configuration: {},
+};
 
 describe('dndUtils', () => {
   it('addInstance appends a new instance with empty configuration', () => {
@@ -38,8 +62,24 @@ describe('dndUtils', () => {
   });
 
   it('isInstancesEqual compares deep equality ignoring clientId', () => {
-    const a1: LocalInstance = { id: null, enabled: true, clientId: 'x', position: 0, plugin_id: 'p1', name: 'A', configuration: { x: 1 } };
-    const a2: LocalInstance = { id: null, enabled: true, clientId: 'y', position: 0, plugin_id: 'p1', name: 'A', configuration: { x: 1 } };
+    const a1: LocalInstance = {
+      id: null,
+      enabled: true,
+      clientId: 'x',
+      position: 0,
+      plugin_id: 'p1',
+      name: 'A',
+      configuration: { x: 1 },
+    };
+    const a2: LocalInstance = {
+      id: null,
+      enabled: true,
+      clientId: 'y',
+      position: 0,
+      plugin_id: 'p1',
+      name: 'A',
+      configuration: { x: 1 },
+    };
     expect(isInstancesEqual([a1], [a2])).toBe(true);
     expect(isInstancesEqual([a1], [a])).toBe(true);
     expect(isInstancesEqual([a, b], [a])).toBe(false);
@@ -52,8 +92,24 @@ describe('dndUtils', () => {
   });
 
   it('addInstance never duplicates a held clientId after a removal', () => {
-    const p1At0 = { id: null, enabled: true, clientId: 'p1-0', position: 0, plugin_id: 'p1', name: 'A', configuration: {} } as LocalInstance;
-    const p2At1 = { id: null, enabled: true, clientId: 'p2-1', position: 1, plugin_id: 'p2', name: 'B', configuration: {} } as LocalInstance;
+    const p1At0 = {
+      id: null,
+      enabled: true,
+      clientId: 'p1-0',
+      position: 0,
+      plugin_id: 'p1',
+      name: 'A',
+      configuration: {},
+    } as LocalInstance;
+    const p2At1 = {
+      id: null,
+      enabled: true,
+      clientId: 'p2-1',
+      position: 1,
+      plugin_id: 'p2',
+      name: 'B',
+      configuration: {},
+    } as LocalInstance;
     const afterRemove = removeInstance([p1At0, p2At1], 'p1-0');
     const appended = addInstance(afterRemove, { id: 'p2', name: 'B' });
     expect(appended.map((i) => i.clientId)).toEqual(['p2-1', 'p2-2']);
@@ -72,15 +128,34 @@ describe('dndUtils', () => {
     expect(applyDragEnd([], { active: { id: 'x' }, over: null })).toBeNull();
     expect(
       applyDragEnd([], {
-        active: { id: 'palette-upper', data: { current: { source: 'palette', plugin: { id: 'upper', name: 'Upper' } } } },
+        active: {
+          id: 'palette-upper',
+          data: { current: { source: 'palette', plugin: { id: 'upper', name: 'Upper' } } },
+        },
         over: { id: 'workspace-droppable' },
       }),
     ).toBeNull();
   });
 
   it('applyDragEnd reorders on a workspace card dropped onto another card', () => {
-    const x: LocalInstance = { id: null, enabled: true, clientId: 'p1-0', position: 0, plugin_id: 'p1', name: 'A', configuration: {} };
-    const y: LocalInstance = { id: null, enabled: true, clientId: 'p2-1', position: 1, plugin_id: 'p2', name: 'B', configuration: {} };
+    const x: LocalInstance = {
+      id: null,
+      enabled: true,
+      clientId: 'p1-0',
+      position: 0,
+      plugin_id: 'p1',
+      name: 'A',
+      configuration: {},
+    };
+    const y: LocalInstance = {
+      id: null,
+      enabled: true,
+      clientId: 'p2-1',
+      position: 1,
+      plugin_id: 'p2',
+      name: 'B',
+      configuration: {},
+    };
     const event = {
       active: { id: 'p1-0', data: { current: { source: 'workspace' } } },
       over: { id: 'p2-1' },

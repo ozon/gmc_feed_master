@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  ActionIcon, Badge, Button, Group, Stack, Switch, Table, Text, Title,
-} from '@mantine/core';
+import { ActionIcon, Badge, Button, Group, Stack, Switch, Table, Text, Title } from '@mantine/core';
 import { IconBolt, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { apiGet } from '../../../api/client';
 import {
-  useAiProviders, useDeleteAiProvider, useRefreshModelCatalog, useTestAiProvider,
+  useAiProviders,
+  useDeleteAiProvider,
+  useRefreshModelCatalog,
+  useTestAiProvider,
   useUpdateAiProvider,
 } from '../../../api/hooks';
 import { notifyMutationError, notifySuccess } from '../../../app/notifications';

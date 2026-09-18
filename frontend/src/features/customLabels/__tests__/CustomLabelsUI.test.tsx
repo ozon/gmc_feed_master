@@ -29,20 +29,35 @@ beforeEach(() => {
 const GLOBAL_CONFIG = {
   slotRules: [
     {
-      id: 'r1', name: 'Mid Funnel', isActive: true, targetSlot: 'custom_label_1',
-      matchField: 'id', valueTemplate: '{brand} - Mid Funnel', fallbackTemplate: '',
+      id: 'r1',
+      name: 'Mid Funnel',
+      isActive: true,
+      targetSlot: 'custom_label_1',
+      matchField: 'id',
+      valueTemplate: '{brand} - Mid Funnel',
+      fallbackTemplate: '',
     },
     {
-      id: 'r2', name: 'Off', isActive: false, targetSlot: 'custom_label_0',
-      matchField: 'item_group_id', valueTemplate: 'Rising', fallbackTemplate: '',
+      id: 'r2',
+      name: 'Off',
+      isActive: false,
+      targetSlot: 'custom_label_0',
+      matchField: 'item_group_id',
+      valueTemplate: 'Rising',
+      fallbackTemplate: '',
     },
   ],
 };
 const CLIENT_CONFIG = {
   slotRules: [
     {
-      id: 'r3', name: 'Client Only', isActive: true, targetSlot: 'custom_label_2',
-      matchField: 'id', valueTemplate: '{brand} - ClientOnly', fallbackTemplate: '',
+      id: 'r3',
+      name: 'Client Only',
+      isActive: true,
+      targetSlot: 'custom_label_2',
+      matchField: 'id',
+      valueTemplate: '{brand} - ClientOnly',
+      fallbackTemplate: '',
     },
   ],
 };
@@ -54,11 +69,12 @@ function jsonResponseFor(url: string) {
   }
   if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse(GLOBAL_CONFIG);
   if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse(DATA);
-  if (url.startsWith('/registry/attributes')) return jsonResponse([
-    { name: 'id', kind: 'scalar', sub_fields: [] },
-    { name: 'brand', kind: 'scalar', sub_fields: [] },
-    { name: 'item_group_id', kind: 'scalar', sub_fields: [] },
-  ]);
+  if (url.startsWith('/registry/attributes'))
+    return jsonResponse([
+      { name: 'id', kind: 'scalar', sub_fields: [] },
+      { name: 'brand', kind: 'scalar', sub_fields: [] },
+      { name: 'item_group_id', kind: 'scalar', sub_fields: [] },
+    ]);
   return jsonResponse({});
 }
 
@@ -141,10 +157,7 @@ describe('CustomLabelsUI operational page', () => {
     await screen.findByText('Mid Funnel');
     expect(document.querySelectorAll('.mantine-Indicator-indicator').length).toBe(0);
     await userEvent.click(screen.getByText('Mid Funnel')); // expand
-    await userEvent.type(
-      await screen.findByLabelText('Product IDs — Mid Funnel'),
-      ',d',
-    );
+    await userEvent.type(await screen.findByLabelText('Product IDs — Mid Funnel'), ',d');
     // one dot on the rule card, one on the slot selector
     expect(document.querySelectorAll('.mantine-Indicator-indicator').length).toBe(2);
   });
@@ -160,8 +173,15 @@ describe('CustomLabelsUI operational page', () => {
     const twoInOneSlot = {
       slotRules: [
         GLOBAL_CONFIG.slotRules[0],
-        { id: 'r4', name: 'Second', isActive: true, targetSlot: 'custom_label_1',
-          matchField: 'id', valueTemplate: 'X', fallbackTemplate: '' },
+        {
+          id: 'r4',
+          name: 'Second',
+          isActive: true,
+          targetSlot: 'custom_label_1',
+          matchField: 'id',
+          valueTemplate: 'X',
+          fallbackTemplate: '',
+        },
       ],
     };
     const handler = (url: string) => {
@@ -361,15 +381,18 @@ describe('CustomLabelsUI operational page', () => {
     expect(await screen.findByText('Mid Funnel')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('tab', { name: /slot rules/i }));
     expect(
-      screen.getByText('Mid Funnel').closest('div')
+      screen
+        .getByText('Mid Funnel')
+        .closest('div')
         ?.querySelector('[data-testid="scope-badge-global"]'),
     ).not.toBeNull();
     expect(
-      screen.getByText('Off').closest('div')
-        ?.querySelector('[data-testid="scope-badge-global"]'),
+      screen.getByText('Off').closest('div')?.querySelector('[data-testid="scope-badge-global"]'),
     ).not.toBeNull();
     expect(
-      screen.getByText('Client Only').closest('div')
+      screen
+        .getByText('Client Only')
+        .closest('div')
         ?.querySelector('[data-testid="scope-badge-global"]'),
     ).toBeNull();
     await userEvent.click(screen.getByText('Mid Funnel'));
@@ -480,10 +503,11 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
     stubFetch((url) => {
       if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse(config);
       if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse({ slotIds: {} });
-      if (url.startsWith('/registry/attributes')) return jsonResponse([
-        { name: 'id', kind: 'scalar', sub_fields: [] },
-        { name: 'brand', kind: 'scalar', sub_fields: [] },
-      ]);
+      if (url.startsWith('/registry/attributes'))
+        return jsonResponse([
+          { name: 'id', kind: 'scalar', sub_fields: [] },
+          { name: 'brand', kind: 'scalar', sub_fields: [] },
+        ]);
       return jsonResponse({});
     });
     const router = createMemoryRouter(
@@ -506,9 +530,16 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
   it('all-mode rules show a controlled-by summary instead of the value textarea', async () => {
     renderFeedWithConfig({
       slotRules: [
-        { id: 'a1', name: 'All Products', isActive: true, targetSlot: 'custom_label_0',
-          matchField: 'id', matchMode: 'all', valueTemplate: '{brand} - All',
-          fallbackTemplate: '' },
+        {
+          id: 'a1',
+          name: 'All Products',
+          isActive: true,
+          targetSlot: 'custom_label_0',
+          matchField: 'id',
+          matchMode: 'all',
+          valueTemplate: '{brand} - All',
+          fallbackTemplate: '',
+        },
       ],
     });
     expect(await screen.findByText('All Products')).toBeInTheDocument();
@@ -516,17 +547,22 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
     expect(await screen.findByText(/every product gets: brand - all/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/product ids — all products/i)).not.toBeInTheDocument();
     // feed tier: config is read-only -> no override button
-    expect(
-      screen.queryByRole('button', { name: /switch to value list/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /switch to value list/i })).not.toBeInTheDocument();
   });
 
   it('values-mode rules relabel the textarea to the match field', async () => {
     renderFeedWithConfig({
       slotRules: [
-        { id: 'v1', name: 'By Brand', isActive: true, targetSlot: 'custom_label_1',
-          matchField: 'brand', matchMode: 'values', valueTemplate: '{brand} - Mid',
-          fallbackTemplate: '' },
+        {
+          id: 'v1',
+          name: 'By Brand',
+          isActive: true,
+          targetSlot: 'custom_label_1',
+          matchField: 'brand',
+          matchMode: 'values',
+          valueTemplate: '{brand} - Mid',
+          fallbackTemplate: '',
+        },
       ],
     });
     await userEvent.click(await screen.findByText('By Brand')); // expand
@@ -547,17 +583,24 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
 
   it('at client tier an all-mode rule offers the switch-to-value-list override', async () => {
     stubFetch((url) => {
-      if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse({
-        slotRules: [
-          { id: 'a1', name: 'All Products', isActive: true, targetSlot: 'custom_label_0',
-            matchField: 'id', matchMode: 'all', valueTemplate: '{brand} - All',
-            fallbackTemplate: '' },
-        ],
-      });
+      if (url.startsWith('/plugins/custom_labels/config'))
+        return jsonResponse({
+          slotRules: [
+            {
+              id: 'a1',
+              name: 'All Products',
+              isActive: true,
+              targetSlot: 'custom_label_0',
+              matchField: 'id',
+              matchMode: 'all',
+              valueTemplate: '{brand} - All',
+              fallbackTemplate: '',
+            },
+          ],
+        });
       if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse({ slotIds: {} });
-      if (url.startsWith('/registry/attributes')) return jsonResponse([
-        { name: 'id', kind: 'scalar', sub_fields: [] },
-      ]);
+      if (url.startsWith('/registry/attributes'))
+        return jsonResponse([{ name: 'id', kind: 'scalar', sub_fields: [] }]);
       return jsonResponse({});
     });
     const router = createMemoryRouter(
@@ -586,17 +629,24 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
       if (url.startsWith('/plugins/custom_labels/config') && url.includes('client_id=')) {
         return jsonResponse({ slotRules: [] });
       }
-      if (url.startsWith('/plugins/custom_labels/config')) return jsonResponse({
-        slotRules: [
-          { id: 'g1', name: 'Global All', isActive: true, targetSlot: 'custom_label_0',
-            matchField: 'id', matchMode: 'all', valueTemplate: '{brand} - Global All',
-            fallbackTemplate: '' },
-        ],
-      });
+      if (url.startsWith('/plugins/custom_labels/config'))
+        return jsonResponse({
+          slotRules: [
+            {
+              id: 'g1',
+              name: 'Global All',
+              isActive: true,
+              targetSlot: 'custom_label_0',
+              matchField: 'id',
+              matchMode: 'all',
+              valueTemplate: '{brand} - Global All',
+              fallbackTemplate: '',
+            },
+          ],
+        });
       if (url.startsWith('/plugins/custom_labels/data')) return jsonResponse({ slotIds: {} });
-      if (url.startsWith('/registry/attributes')) return jsonResponse([
-        { name: 'id', kind: 'scalar', sub_fields: [] },
-      ]);
+      if (url.startsWith('/registry/attributes'))
+        return jsonResponse([{ name: 'id', kind: 'scalar', sub_fields: [] }]);
       return jsonResponse({});
     });
     const router = createMemoryRouter(
@@ -615,9 +665,7 @@ describe('CustomLabelsUI bulk tab mode-awareness', () => {
       </QueryClientProvider>,
     );
     expect(await screen.findByText(/every product gets/i)).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: /switch to value list/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /switch to value list/i })).not.toBeInTheDocument();
   });
 });
 
@@ -640,9 +688,12 @@ describe('CustomLabelsUI live preview stats', () => {
       if (url.startsWith('/plugins/custom_labels/preview')) return jsonResponse(PREVIEW);
       return jsonResponseFor(url);
     });
-    expect(await waitFor(() =>
-      expect(screen.getByText(/2 \/ 3 staged products labeled/i)).toBeInTheDocument(),
-      { timeout: 2500 })).toBeTruthy();
+    expect(
+      await waitFor(
+        () => expect(screen.getByText(/2 \/ 3 staged products labeled/i)).toBeInTheDocument(),
+        { timeout: 2500 },
+      ),
+    ).toBeTruthy();
     expect(document.querySelectorAll('.mantine-Progress-root').length).toBe(1);
     expect(screen.getByTestId('coverage-stat-total')).toHaveTextContent('3');
     expect(screen.getByTestId('coverage-stat-labeled')).toHaveTextContent('2');
@@ -670,21 +721,20 @@ describe('CustomLabelsUI live preview stats', () => {
       }
       return jsonResponseFor(url);
     });
-    expect(await waitFor(() =>
-      expect(screen.getAllByText(/no staged products yet/i).length).toBeGreaterThan(0),
-      { timeout: 2500 })).toBeTruthy();
+    expect(
+      await waitFor(
+        () => expect(screen.getAllByText(/no staged products yet/i).length).toBeGreaterThan(0),
+        { timeout: 2500 },
+      ),
+    ).toBeTruthy();
   });
 
   it('client page sends no preview request and shows no stats header', async () => {
     const calls: string[] = [];
-    renderUI(
-      { clientId: 1 },
-      '/clients/1/plugins/custom_labels',
-      (url) => {
-        calls.push(url);
-        return jsonResponseFor(url);
-      },
-    );
+    renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels', (url) => {
+      calls.push(url);
+      return jsonResponseFor(url);
+    });
     await screen.findByText('Mid Funnel');
     expect(calls.some((u) => u.includes('/preview'))).toBe(false);
     expect(screen.queryByTestId('coverage-dashboard')).not.toBeInTheDocument();
@@ -692,12 +742,33 @@ describe('CustomLabelsUI live preview stats', () => {
 
   it('at feed tier the preview is collapsed by default and opens via the shared toolbar toggle', async () => {
     renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', (url) => {
-      if (url.includes('/products/lookup')) return jsonResponse({
-        matches: {
-          a: { count: 1, sample: { product_id: 'a', status: 'active', excluded: false, title: 'Alpha', brand: 'Acme', availability: 'in_stock' } },
-          b: { count: 1, sample: { product_id: 'b', status: 'active', excluded: false, title: 'Bravo', brand: 'Beta', availability: 'out_of_stock' } },
-        },
-      });
+      if (url.includes('/products/lookup'))
+        return jsonResponse({
+          matches: {
+            a: {
+              count: 1,
+              sample: {
+                product_id: 'a',
+                status: 'active',
+                excluded: false,
+                title: 'Alpha',
+                brand: 'Acme',
+                availability: 'in_stock',
+              },
+            },
+            b: {
+              count: 1,
+              sample: {
+                product_id: 'b',
+                status: 'active',
+                excluded: false,
+                title: 'Bravo',
+                brand: 'Beta',
+                availability: 'out_of_stock',
+              },
+            },
+          },
+        });
       if (url.startsWith('/plugins/custom_labels/data')) {
         return jsonResponse({ slotIds: { r1: 'a\nb', r3: 'z' } });
       }
@@ -717,10 +788,24 @@ describe('CustomLabelsUI live preview stats', () => {
   it('the preview toggle is shared across rule cards', async () => {
     const twoInOneSlot = {
       slotRules: [
-        { id: 'r1', name: 'Mid Funnel', isActive: true, targetSlot: 'custom_label_1',
-          matchField: 'id', valueTemplate: 'x', fallbackTemplate: '' },
-        { id: 'r4', name: 'Second', isActive: true, targetSlot: 'custom_label_1',
-          matchField: 'id', valueTemplate: 'y', fallbackTemplate: '' },
+        {
+          id: 'r1',
+          name: 'Mid Funnel',
+          isActive: true,
+          targetSlot: 'custom_label_1',
+          matchField: 'id',
+          valueTemplate: 'x',
+          fallbackTemplate: '',
+        },
+        {
+          id: 'r4',
+          name: 'Second',
+          isActive: true,
+          targetSlot: 'custom_label_1',
+          matchField: 'id',
+          valueTemplate: 'y',
+          fallbackTemplate: '',
+        },
       ],
     };
     const handler = (url: string) => {
@@ -872,7 +957,8 @@ describe('CustomLabelsUI tier navigation', () => {
     renderUI({ feedSourceId: 1 });
     await screen.findByText('Mid Funnel');
     expect(screen.getByTestId('scope-link-global')).toHaveAttribute(
-      'href', '/plugins/custom_labels',
+      'href',
+      '/plugins/custom_labels',
     );
     // client appears in both config and data groups — both link to the client page
     const clientLinks = screen.getAllByTestId('scope-link-client');
@@ -886,7 +972,8 @@ describe('CustomLabelsUI tier navigation', () => {
     renderUI({ clientId: 1 }, '/clients/1/plugins/custom_labels');
     await screen.findByText('Mid Funnel');
     expect(screen.getByTestId('scope-link-global')).toHaveAttribute(
-      'href', '/plugins/custom_labels',
+      'href',
+      '/plugins/custom_labels',
     );
     expect(screen.queryByTestId('scope-link-client')).not.toBeInTheDocument();
   });
@@ -896,10 +983,24 @@ describe('CustomLabelsUI shadowing', () => {
   it('flags values claimed by a higher-priority rule of the same slot', async () => {
     const config = {
       slotRules: [
-        { id: 'r1', name: 'Bleeder', isActive: true, targetSlot: 'custom_label_0',
-          matchField: 'id', valueTemplate: 'x', fallbackTemplate: '' },
-        { id: 'r2', name: 'Later', isActive: true, targetSlot: 'custom_label_0',
-          matchField: 'id', valueTemplate: 'y', fallbackTemplate: '' },
+        {
+          id: 'r1',
+          name: 'Bleeder',
+          isActive: true,
+          targetSlot: 'custom_label_0',
+          matchField: 'id',
+          valueTemplate: 'x',
+          fallbackTemplate: '',
+        },
+        {
+          id: 'r2',
+          name: 'Later',
+          isActive: true,
+          targetSlot: 'custom_label_0',
+          matchField: 'id',
+          valueTemplate: 'y',
+          fallbackTemplate: '',
+        },
       ],
     };
     const handler = (url: string) => {
@@ -907,9 +1008,8 @@ describe('CustomLabelsUI shadowing', () => {
       if (url.startsWith('/plugins/custom_labels/data')) {
         return jsonResponse({ slotIds: { r1: '1,2', r2: '2,3' } });
       }
-      if (url.startsWith('/registry/attributes')) return jsonResponse([
-        { name: 'id', kind: 'scalar', sub_fields: [] },
-      ]);
+      if (url.startsWith('/registry/attributes'))
+        return jsonResponse([{ name: 'id', kind: 'scalar', sub_fields: [] }]);
       return jsonResponse({});
     };
     renderUI({ feedSourceId: 1 }, '/clients/1/feeds/1/plugins/custom_labels', handler);
@@ -919,7 +1019,9 @@ describe('CustomLabelsUI shadowing', () => {
     // footer overridden list is gone; the header badge carries the summary
     expect(screen.queryByText(/overridden IDs/i)).not.toBeInTheDocument();
     // inline badge in the preview: line "2,3"'s first ID (2) is claimed by #1
-    await userEvent.click(await screen.findByRole('button', { name: /show\/hide product preview — later/i }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: /show\/hide product preview — later/i }),
+    );
     expect(await screen.findByText('Overridden by #1')).toBeInTheDocument();
   });
 });

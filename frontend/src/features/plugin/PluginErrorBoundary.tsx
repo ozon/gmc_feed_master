@@ -15,8 +15,14 @@ function PluginErrorFallback({
   return (
     <Alert color="red" title={t('errorBoundary.title')} data-testid="plugin-error-boundary">
       <Stack gap="xs" mt={4}>
-        <Text size="sm" fw={600}>{pluginName}</Text>
-        {message ? <Text size="sm" c="dimmed">{message}</Text> : null}
+        <Text size="sm" fw={600}>
+          {pluginName}
+        </Text>
+        {message ? (
+          <Text size="sm" c="dimmed">
+            {message}
+          </Text>
+        ) : null}
         <div>
           <Button size="xs" variant="light" onClick={onRetry} data-testid="plugin-error-retry">
             {t('errorBoundary.retry')}

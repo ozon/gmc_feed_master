@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { waitFor } from '@testing-library/react';
 import { renderHook } from '../test/render';
-import {QueryClient} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import { useQualityHistory } from './hooks';
 import { queryClient as defaultClient } from './queryClient';
 import { stubFetch } from '../test/fetch';
@@ -12,7 +12,6 @@ function jsonResponse(body: unknown, status = 200) {
     headers: { 'Content-Type': 'application/json' },
   });
 }
-
 
 beforeEach(() => {
   defaultClient.clear();

@@ -56,7 +56,9 @@ const AdminPage = lazy(() =>
   import('../features/admin/AdminPage').then((m) => ({ default: m.AdminPage })),
 );
 const FeedDashboardPage = lazy(() =>
-  import('../features/feedDashboard/FeedDashboardPage').then((m) => ({ default: m.FeedDashboardPage })),
+  import('../features/feedDashboard/FeedDashboardPage').then((m) => ({
+    default: m.FeedDashboardPage,
+  })),
 );
 const SystemLogsPage = lazy(() =>
   import('../features/systemLogs/SystemLogsPage').then((m) => ({ default: m.SystemLogsPage })),
@@ -72,13 +74,7 @@ export function RequireSession() {
   if (status === 'pending') return <LoadingState />;
   if (status === 'error') {
     if (error instanceof ApiError && error.status === 401) {
-      return (
-        <Navigate
-          to="/login"
-          replace
-          state={{ from: location.pathname + location.search }}
-        />
-      );
+      return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
     }
     return <ErrorState onRetry={() => void refetch()} />;
   }
@@ -119,19 +115,14 @@ export function NotFoundPage() {
 export function RouteErrorBoundary() {
   const { t } = useTranslation();
   const error = useRouteError();
-  const message = isChunkLoadFailure(error)
-    ? t('errors.chunkLoadFailed')
-    : t('errors.routeError');
+  const message = isChunkLoadFailure(error) ? t('errors.chunkLoadFailed') : t('errors.routeError');
   return (
     <Center px="md">
       <Stack align="center" gap="sm" mih="50vh" justify="center">
         <Text c="red" role="alert">
           {message}
         </Text>
-        <Button
-          variant="light"
-          onClick={() => window.location.assign(window.location.href)}
-        >
+        <Button variant="light" onClick={() => window.location.assign(window.location.href)}>
           {t('errors.reload')}
         </Button>
       </Stack>
@@ -170,7 +161,10 @@ const routes = [
             element: <MonitoringDryRunPage />,
           },
           { path: 'clients/:clientId/feeds/:feedSourceId/export', element: <ExportPage /> },
-          { path: 'clients/:clientId/feeds/:feedSourceId/plugins/:pluginId', element: <PluginPage /> },
+          {
+            path: 'clients/:clientId/feeds/:feedSourceId/plugins/:pluginId',
+            element: <PluginPage />,
+          },
           { path: 'clients/:clientId/plugins/:pluginId', element: <PluginPage /> },
           { path: 'plugins/:pluginId', element: <PluginPage /> },
           {

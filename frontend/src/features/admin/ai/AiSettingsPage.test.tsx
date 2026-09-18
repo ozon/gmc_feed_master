@@ -13,20 +13,36 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 const settings = {
-  ai_cache_type: 'local', ai_cache_namespace: 'gmc-ai',
-  ai_cache_ttl_taxonomy_s: 2592000, ai_cache_ttl_content_s: 604800,
-  ai_router_timeout_s: 30, ai_router_num_retries: 2, ai_router_allowed_fails: 3,
-  ai_router_cooldown_s: 30, ai_instructor_max_retries: 2, ai_usage_retention_days: 90,
-  redis_from_env: false, effective_cache_backend: 'local',
+  ai_cache_type: 'local',
+  ai_cache_namespace: 'gmc-ai',
+  ai_cache_ttl_taxonomy_s: 2592000,
+  ai_cache_ttl_content_s: 604800,
+  ai_router_timeout_s: 30,
+  ai_router_num_retries: 2,
+  ai_router_allowed_fails: 3,
+  ai_router_cooldown_s: 30,
+  ai_instructor_max_retries: 2,
+  ai_usage_retention_days: 90,
+  redis_from_env: false,
+  effective_cache_backend: 'local',
 };
 const status = {
-  effective_backend: 'local', redis_from_env: false, healthy: true,
-  namespace: 'gmc-ai', entries: 3,
+  effective_backend: 'local',
+  redis_from_env: false,
+  healthy: true,
+  namespace: 'gmc-ai',
+  entries: 3,
 };
 const stats = {
-  calls: 10, cache_hits: 4, hit_ratio: 0.4, prompt_tokens: 100,
-  completion_tokens: 20, cost_usd: '0.01', saved_prompt_tokens: 40,
-  saved_completion_tokens: 8, cost_saved_usd: '0.004',
+  calls: 10,
+  cache_hits: 4,
+  hit_ratio: 0.4,
+  prompt_tokens: 100,
+  completion_tokens: 20,
+  cost_usd: '0.01',
+  saved_prompt_tokens: 40,
+  saved_completion_tokens: 8,
+  cost_saved_usd: '0.004',
 };
 
 beforeAll(async () => {
@@ -71,7 +87,11 @@ describe('AiSettingsPage', () => {
   it('shows the redis override and disables the backend selector', async () => {
     stubFetch((url) => {
       if (url === '/admin/ai/settings') {
-        return jsonResponse({ ...settings, redis_from_env: true, effective_cache_backend: 'redis' });
+        return jsonResponse({
+          ...settings,
+          redis_from_env: true,
+          effective_cache_backend: 'redis',
+        });
       }
       if (url === '/admin/ai/cache') {
         return jsonResponse({ ...status, redis_from_env: true, effective_backend: 'redis' });

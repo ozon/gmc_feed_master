@@ -60,8 +60,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     headers: { ...(init?.headers ?? {}), 'X-Request-ID': requestId },
   });
   if (!response.ok) {
-    const authExempt =
-      url.startsWith('/auth/login') || url.startsWith('/auth/password');
+    const authExempt = url.startsWith('/auth/login') || url.startsWith('/auth/password');
     if (response.status === 401 && unauthorizedHandler && !authExempt) {
       unauthorizedHandler();
     }
@@ -81,10 +80,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   if (response.status === 204) return undefined as T;
   const contentType = response.headers.get('content-type');
   if (contentType && !contentType.includes('application/json')) {
-    throw new ApiError(
-      response.status,
-      `Unexpected response content type: ${contentType}`,
-    );
+    throw new ApiError(response.status, `Unexpected response content type: ${contentType}`);
   }
   const text = await response.text();
   return text ? (JSON.parse(text) as T) : (undefined as T);
@@ -101,8 +97,7 @@ async function requestWithHeaders<T>(
     headers: { ...(init?.headers ?? {}), 'X-Request-ID': requestId },
   });
   if (!response.ok) {
-    const authExempt =
-      url.startsWith('/auth/login') || url.startsWith('/auth/password');
+    const authExempt = url.startsWith('/auth/login') || url.startsWith('/auth/password');
     if (response.status === 401 && unauthorizedHandler && !authExempt) {
       unauthorizedHandler();
     }
@@ -167,7 +162,10 @@ export function logout(): Promise<{ status: string }> {
   return apiPost<{ status: string }>('/auth/logout');
 }
 
-export function changePassword(currentPassword: string, newPassword: string): Promise<{ status: string }> {
+export function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ status: string }> {
   return apiPost<{ status: string }>('/auth/password', {
     current_password: currentPassword,
     new_password: newPassword,

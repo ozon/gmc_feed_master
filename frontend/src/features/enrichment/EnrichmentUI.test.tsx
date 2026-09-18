@@ -38,10 +38,7 @@ function routeHandler(routes: Route[]) {
   };
 }
 
-function renderEnrichmentUI(
-  scope: { clientId?: number; feedSourceId?: number },
-  routes: Route[],
-) {
+function renderEnrichmentUI(scope: { clientId?: number; feedSourceId?: number }, routes: Route[]) {
   const fetchMock = stubFetch(routeHandler(routes));
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = createMemoryRouter(
@@ -145,10 +142,7 @@ describe('EnrichmentUI', () => {
   it('enrichment locale files have en/de parity', () => {
     const read = (lang: string) =>
       JSON.parse(
-        readFileSync(
-          resolve(process.cwd(), `public/locales/${lang}/enrichment.json`),
-          'utf-8',
-        ),
+        readFileSync(resolve(process.cwd(), `public/locales/${lang}/enrichment.json`), 'utf-8'),
       );
     const en = read('en');
     const de = read('de');
@@ -156,7 +150,8 @@ describe('EnrichmentUI', () => {
       Object.entries(obj).flatMap(([k, v]) =>
         typeof v === 'object' && v !== null
           ? keys(v as Record<string, unknown>, `${prefix}${k}.`)
-          : [`${prefix}${k}`]);
+          : [`${prefix}${k}`],
+      );
     expect(keys(de).sort()).toEqual(keys(en).sort());
   });
 });

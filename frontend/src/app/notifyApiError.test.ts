@@ -75,16 +75,12 @@ describe('notifyApiError', () => {
 
   it('uses the fallback for a plain Error', () => {
     expect(notifyApiError(new Error('boom'), 'Save failed')).toEqual({});
-    expect(showMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Save failed' }),
-    );
+    expect(showMock).toHaveBeenCalledWith(expect.objectContaining({ message: 'Save failed' }));
   });
 
   it('uses the fallback for a non-Error value', () => {
     expect(notifyApiError('oops', 'Save failed')).toEqual({});
-    expect(showMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Save failed' }),
-    );
+    expect(showMock).toHaveBeenCalledWith(expect.objectContaining({ message: 'Save failed' }));
   });
 
   it('is re-exported from notifications.ts', () => {

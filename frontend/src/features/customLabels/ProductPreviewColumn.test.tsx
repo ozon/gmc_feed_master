@@ -10,10 +10,18 @@ import type { ProductLookupMatch, ProductLookupSample } from '../../api/types';
 function match(count: number, sample: Partial<ProductLookupSample> | null): ProductLookupMatch {
   return {
     count,
-    sample: sample === null ? null : {
-      product_id: 'p1', status: 'active', excluded: false,
-      title: 'T', brand: 'B', availability: 'in_stock', ...sample,
-    },
+    sample:
+      sample === null
+        ? null
+        : {
+            product_id: 'p1',
+            status: 'active',
+            excluded: false,
+            title: 'T',
+            brand: 'B',
+            availability: 'in_stock',
+            ...sample,
+          },
   };
 }
 
@@ -27,10 +35,12 @@ function renderColumn(over: Partial<Parameters<typeof ProductPreviewColumn>[0]> 
     <ProductPreviewColumn
       field="id"
       lines={[['a1'], ['zz'], ['a1']]}
-      matches={new Map([
-        ['a1', match(1, { title: 'Alpha', brand: 'Acme', availability: 'in_stock' })],
-        ['zz', match(0, null)],
-      ])}
+      matches={
+        new Map([
+          ['a1', match(1, { title: 'Alpha', brand: 'Acme', availability: 'in_stock' })],
+          ['zz', match(0, null)],
+        ])
+      }
       isFetching={false}
       isError={false}
       extraFields={['price']}

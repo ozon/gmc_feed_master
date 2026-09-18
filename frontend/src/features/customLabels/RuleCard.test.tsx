@@ -18,9 +18,15 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 const RULE: ScopedSlotRule = {
-  id: 'r1', name: 'Mid Funnel', isActive: true, targetSlot: 'custom_label_1',
-  matchField: 'id', matchMode: 'values', valueTemplate: '{brand} - Mid',
-  fallbackTemplate: '', origin: 'client',
+  id: 'r1',
+  name: 'Mid Funnel',
+  isActive: true,
+  targetSlot: 'custom_label_1',
+  matchField: 'id',
+  matchMode: 'values',
+  valueTemplate: '{brand} - Mid',
+  fallbackTemplate: '',
+  origin: 'client',
 };
 
 function renderCard(over: Partial<Parameters<typeof RuleCard>[0]> = {}) {
@@ -108,9 +114,7 @@ describe('RuleCard', () => {
     expect(
       screen.getByRole('button', { name: /format & remove duplicates — mid funnel/i }),
     ).toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: /clear value list — mid funnel/i }),
-    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: /clear value list — mid funnel/i })).toBeDisabled();
   });
 
   it('shows a shadowed count badge; the footer overridden list is gone', async () => {
@@ -149,8 +153,9 @@ describe('RuleCard', () => {
     const badge = screen.getByTestId('priority-badge');
     expect(badge).toHaveTextContent('#1');
     // #N precedes the name in DOM order
-    expect(badge.compareDocumentPosition(screen.getByText('Mid Funnel')))
-      .toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(badge.compareDocumentPosition(screen.getByText('Mid Funnel'))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
   });
 
   it('with a feed source the preview is collapsed by default and opens via the toolbar toggle', async () => {
@@ -161,8 +166,12 @@ describe('RuleCard', () => {
             a1: {
               count: 1,
               sample: {
-                product_id: 'a1', status: 'active', excluded: false,
-                title: 'Alpha', brand: 'Acme', availability: 'in_stock',
+                product_id: 'a1',
+                status: 'active',
+                excluded: false,
+                title: 'Alpha',
+                brand: 'Acme',
+                availability: 'in_stock',
               },
             },
           },

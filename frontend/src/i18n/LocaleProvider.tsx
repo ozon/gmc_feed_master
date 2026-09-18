@@ -17,7 +17,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }, [language]);
 
   const settings = useMemo(
-    () => ({ locale: language, firstDayOfWeek: language === 'de' ? 1 : 0 } as const),
+    () => ({ locale: language, firstDayOfWeek: language === 'de' ? 1 : 0 }) as const,
     [language],
   );
 

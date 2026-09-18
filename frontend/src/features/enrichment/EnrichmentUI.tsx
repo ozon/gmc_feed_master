@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import {
-  ActionIcon, Badge, Button, Checkbox, Group, NumberInput, Paper, Stack, Text, Title,
+  ActionIcon,
+  Badge,
+  Button,
+  Checkbox,
+  Group,
+  NumberInput,
+  Paper,
+  Stack,
+  Text,
+  Title,
 } from '@mantine/core';
 import { IconPinnedOff } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -59,16 +68,19 @@ export default function EnrichmentUI({
 
   const scan = useMutation({
     mutationFn: () =>
-      mutate<{ scanned: number; with_suggestions: number; failed: number }>(
-        'scan', { feed_source_id: feedSourceId, limit: limit === '' ? 20 : limit },
-      ),
+      mutate<{ scanned: number; with_suggestions: number; failed: number }>('scan', {
+        feed_source_id: feedSourceId,
+        limit: limit === '' ? 20 : limit,
+      }),
     onSuccess: (result: { scanned: number; with_suggestions: number; failed: number }) => {
       void invalidate();
-      notifySuccess(t('scanDone', {
-        scanned: result.scanned,
-        with_suggestions: result.with_suggestions,
-        failed: result.failed,
-      }));
+      notifySuccess(
+        t('scanDone', {
+          scanned: result.scanned,
+          with_suggestions: result.with_suggestions,
+          failed: result.failed,
+        }),
+      );
     },
     onError: (error) => notifyApiError(error, t('scan')),
   });
@@ -108,7 +120,9 @@ export default function EnrichmentUI({
     return (
       <Stack gap="md">
         <Title order={3}>{t('title')}</Title>
-        <Badge variant="light" color="gray">feed_source</Badge>
+        <Badge variant="light" color="gray">
+          feed_source
+        </Badge>
       </Stack>
     );
   }
@@ -124,9 +138,7 @@ export default function EnrichmentUI({
   const toggle = (productId: string, field: string, checked: boolean) => {
     setSelected((prev) => {
       const current = prev[productId] ?? [];
-      const next = checked
-        ? [...current, field]
-        : current.filter((f) => f !== field);
+      const next = checked ? [...current, field] : current.filter((f) => f !== field);
       return { ...prev, [productId]: next };
     });
   };
@@ -157,7 +169,9 @@ export default function EnrichmentUI({
       <Paper withBorder p="md">
         <Title order={4}>{t('suggestions')}</Title>
         {suggestionEntries.length === 0 ? (
-          <Text c="dimmed" mt="sm">{t('empty')}</Text>
+          <Text c="dimmed" mt="sm">
+            {t('empty')}
+          </Text>
         ) : (
           <Stack gap="xs" mt="sm">
             {suggestionEntries.map(([productId, fields]) => (
@@ -216,15 +230,21 @@ export default function EnrichmentUI({
       <Paper withBorder p="md">
         <Title order={4}>{t('pinned')}</Title>
         {Object.entries(pinned).length === 0 ? (
-          <Text c="dimmed" mt="sm">{t('empty')}</Text>
+          <Text c="dimmed" mt="sm">
+            {t('empty')}
+          </Text>
         ) : (
           <Stack gap="xs" mt="sm">
             {Object.entries(pinned).map(([productId, fields]) => (
               <Group key={productId} justify="space-between" wrap="nowrap" w="100%">
                 <Group gap="xs">
-                  <Badge variant="light" color="green">{productId}</Badge>
+                  <Badge variant="light" color="green">
+                    {productId}
+                  </Badge>
                   {Object.entries(fields).map(([field, value]) => (
-                    <Text key={field} size="sm">{field}: {value}</Text>
+                    <Text key={field} size="sm">
+                      {field}: {value}
+                    </Text>
                   ))}
                 </Group>
                 <ActionIcon

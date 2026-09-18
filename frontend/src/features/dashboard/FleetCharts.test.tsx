@@ -26,14 +26,34 @@ const summary = (runs: DashboardSummary['runs_by_day']): DashboardSummary => ({
   counts: { clients: 1, feed_sources: 2, active_products: 30, failed_last_exports: 0 },
   clients: [
     {
-      id: 1, name: 'Acme', status: 'active',
+      id: 1,
+      name: 'Acme',
+      status: 'active',
       feed_sources: [
-        { id: 2, client_id: 1, name: 'Feed A', source_format: 'xml', item_count: 20,
-          last_export_at: null, last_export_status: null, last_run_at: null, last_run_status: null,
-          quality: { critical: 0, warning: 0, info: 0 } },
-        { id: 3, client_id: 1, name: 'Feed B', source_format: 'tsv', item_count: 10,
-          last_export_at: null, last_export_status: null, last_run_at: null, last_run_status: null,
-          quality: { critical: 0, warning: 0, info: 0 } },
+        {
+          id: 2,
+          client_id: 1,
+          name: 'Feed A',
+          source_format: 'xml',
+          item_count: 20,
+          last_export_at: null,
+          last_export_status: null,
+          last_run_at: null,
+          last_run_status: null,
+          quality: { critical: 0, warning: 0, info: 0 },
+        },
+        {
+          id: 3,
+          client_id: 1,
+          name: 'Feed B',
+          source_format: 'tsv',
+          item_count: 10,
+          last_export_at: null,
+          last_export_status: null,
+          last_run_at: null,
+          last_run_status: null,
+          quality: { critical: 0, warning: 0, info: 0 },
+        },
       ],
     },
   ],
@@ -87,6 +107,10 @@ describe('FleetCharts', () => {
     render(<FleetCharts summary={many} />);
     const data = charts.donut[0].data;
     expect(data).toHaveLength(9);
-    expect(data[8]).toEqual({ name: i18n.t('charts.other', { ns: 'dashboard' }), value: 10, color: 'gray.6' });
+    expect(data[8]).toEqual({
+      name: i18n.t('charts.other', { ns: 'dashboard' }),
+      value: 10,
+      color: 'gray.6',
+    });
   });
 });

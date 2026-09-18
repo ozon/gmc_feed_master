@@ -28,9 +28,8 @@ describe('AppErrorBoundary', () => {
         <Boom />
       </AppErrorBoundary>,
     );
-    expect(vi.mocked(captureException)).toHaveBeenCalledWith(
-      expect.any(Error),
-      { scope: 'boundary' },
-    );
+    expect(vi.mocked(captureException)).toHaveBeenCalledWith(expect.any(Error), {
+      scope: 'boundary',
+    });
   });
 });

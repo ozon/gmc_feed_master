@@ -14,24 +14,40 @@ function jsonResponse(body: unknown, status = 200) {
 
 const presets = [
   {
-    vendor_key: 'openai', label: 'OpenAI', model_prefix: 'openai',
-    default_base_url: '', requires_base_url: false,
-    api_key_env_hint: 'OPENAI_API_KEY', docs_url: 'https://docs', supports_catalog: true,
+    vendor_key: 'openai',
+    label: 'OpenAI',
+    model_prefix: 'openai',
+    default_base_url: '',
+    requires_base_url: false,
+    api_key_env_hint: 'OPENAI_API_KEY',
+    docs_url: 'https://docs',
+    supports_catalog: true,
   },
   {
-    vendor_key: 'custom', label: 'OpenAI-kompatibel (custom)', model_prefix: 'openai',
-    default_base_url: '', requires_base_url: true,
-    api_key_env_hint: '', docs_url: '', supports_catalog: false,
+    vendor_key: 'custom',
+    label: 'OpenAI-kompatibel (custom)',
+    model_prefix: 'openai',
+    default_base_url: '',
+    requires_base_url: true,
+    api_key_env_hint: '',
+    docs_url: '',
+    supports_catalog: false,
   },
 ];
 
 const catalog = {
   entries: [
     {
-      model_id: 'openai/gpt-4o', vendor: 'openai', display_name: 'gpt-4o',
-      context_window: 128000, max_output_tokens: 16384,
-      input_price_per_mtok: '2.500000', output_price_per_mtok: '10.000000',
-      supports_vision: true, supports_function_calling: true, is_recommended: true,
+      model_id: 'openai/gpt-4o',
+      vendor: 'openai',
+      display_name: 'gpt-4o',
+      context_window: 128000,
+      max_output_tokens: 16384,
+      input_price_per_mtok: '2.500000',
+      output_price_per_mtok: '10.000000',
+      supports_vision: true,
+      supports_function_calling: true,
+      is_recommended: true,
     },
   ],
   sync: { last_attempt_at: null, last_success_at: null, last_error: null, source: 'bundled' },
@@ -46,7 +62,10 @@ beforeEach(() => {
     if (url === '/admin/ai/provider-presets') return jsonResponse(presets);
     if (url.startsWith('/admin/ai/model-catalog')) return jsonResponse(catalog);
     if (url === '/admin/ai/providers' && init?.method === 'POST') {
-      return jsonResponse({ ...catalog.entries[0], id: 5, name: 'x', tier: 'bulk', enabled: true }, 201);
+      return jsonResponse(
+        { ...catalog.entries[0], id: 5, name: 'x', tier: 'bulk', enabled: true },
+        201,
+      );
     }
     if (url === '/admin/ai/providers/5/test') {
       return jsonResponse({ status: 'ok', latency_ms: 12 });

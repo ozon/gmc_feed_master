@@ -15,7 +15,8 @@ beforeAll(async () => {
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
-    status, headers: { 'Content-Type': 'application/json' },
+    status,
+    headers: { 'Content-Type': 'application/json' },
   });
 }
 
@@ -23,10 +24,7 @@ beforeEach(() => {
   stubFetch((url) => jsonResponse({}));
 });
 
-function renderSurface(
-  element: ReactNode,
-  scope: { clientId?: number; feedSourceId?: number },
-) {
+function renderSurface(element: ReactNode, scope: { clientId?: number; feedSourceId?: number }) {
   const url = scope.feedSourceId
     ? '/clients/1/feeds/1/plugins/custom_labels'
     : '/clients/1/plugins/custom_labels';
@@ -55,7 +53,9 @@ describe('plugin surface registries', () => {
 
   it('LabelizerPage renders the bulk grid without rules UI', async () => {
     const Page = CUSTOM_COMPONENTS.custom_labels;
-    renderSurface(<Page pluginId="custom_labels" scope={{ feedSourceId: 1 }} />, { feedSourceId: 1 });
+    renderSurface(<Page pluginId="custom_labels" scope={{ feedSourceId: 1 }} />, {
+      feedSourceId: 1,
+    });
     expect(await screen.findByTestId('slot-selector')).toBeInTheDocument();
     expect(screen.queryByTestId('rules-readonly-hint')).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /slot rules/i })).not.toBeInTheDocument();

@@ -31,7 +31,9 @@ export function RuleAiBudget({ feedSourceId }: { feedSourceId?: number }) {
 
   return (
     <Stack gap={4}>
-      <Text size="sm" fw={500}>{t('ai.budget.title')}</Text>
+      <Text size="sm" fw={500}>
+        {t('ai.budget.title')}
+      </Text>
       <Group gap="md">
         <Switch
           aria-label={t('ai.budget.enabled')}

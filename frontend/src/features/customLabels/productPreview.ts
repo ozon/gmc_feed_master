@@ -41,7 +41,10 @@ export function useSyncedScroll(
     const preview = previewRef.current;
     if (!textarea || !preview) return;
     let syncing = false;
-    const release = () => requestAnimationFrame(() => { syncing = false; });
+    const release = () =>
+      requestAnimationFrame(() => {
+        syncing = false;
+      });
     const onTextareaScroll = () => {
       if (syncing) return;
       syncing = true;

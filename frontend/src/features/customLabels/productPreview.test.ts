@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { OVERSCAN, ROW_HEIGHT, VIEWPORT_ROWS, availabilityColor, windowRange } from './productPreview';
+import {
+  OVERSCAN,
+  ROW_HEIGHT,
+  VIEWPORT_ROWS,
+  availabilityColor,
+  windowRange,
+} from './productPreview';
 
 describe('windowRange', () => {
   it('starts at 0 and covers the viewport plus overscan', () => {

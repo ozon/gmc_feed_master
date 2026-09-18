@@ -171,7 +171,12 @@ function UserModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title={user ? t('users.edit') : t('users.add')} centered>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={user ? t('users.edit') : t('users.add')}
+      centered
+    >
       <Stack gap="md">
         {!user && (
           <>

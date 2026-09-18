@@ -29,20 +29,108 @@ const mappingDoc: FieldMappingDoc = {
 };
 
 const registryAttrs: RegistryAttribute[] = [
-  { name: 'title', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
-  { name: 'description', kind: 'scalar', required: 'optional', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
-  { name: 'id', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
-  { name: 'brand', kind: 'scalar', required: 'required', baseline_required: false, sub_fields: [], enum_values: [], max_repeats: 1 },
-  { name: 'installment', kind: 'structured', required: 'optional', baseline_required: false, sub_fields: [
-    { name: 'months', type: 'string', required: 'optional' },
-    { name: 'amount', type: 'string', required: 'optional' },
-  ], enum_values: [], max_repeats: 1 },
-  { name: 'link', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
-  { name: 'image_link', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
-  { name: 'availability', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
-  { name: 'price', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
-  { name: 'condition', kind: 'scalar', required: 'required', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
-  { name: 'structured_title', kind: 'structured', required: 'optional', baseline_required: true, sub_fields: [], enum_values: [], max_repeats: 1 },
+  {
+    name: 'title',
+    kind: 'scalar',
+    required: 'required',
+    baseline_required: true,
+    sub_fields: [],
+    enum_values: [],
+    max_repeats: 1,
+  },
+  {
+    name: 'description',
+    kind: 'scalar',
+    required: 'optional',
+    baseline_required: true,
+    sub_fields: [],
+    enum_values: [],
+    max_repeats: 1,
+  },
+  {
+    name: 'id',
+    kind: 'scalar',
+    required: 'required',
+    baseline_required: true,
+    sub_fields: [],
+    enum_values: [],
+    max_repeats: 1,
+  },
+  {
+    name: 'brand',
+    kind: 'scalar',
+    required: 'required',
+    baseline_required: false,
+    sub_fields: [],
+    enum_values: [],
+    max_repeats: 1,
+  },
+  {
+    name: 'installment',
+    kind: 'structured',
+    required: 'optional',
+    baseline_required: false,
+    sub_fields: [
+      { name: 'months', type: 'string', required: 'optional' },
+      { name: 'amount', type: 'string', required: 'optional' },
+    ],
+    enum_values: [],
+    max_repeats: 1,
+  },
+  {
+    name: 'link',
+    kind: 'scalar',
+    required: 'required',
+    baseline_required: true,
+    sub_fields: [],
+    enum_values: [],
+    max_repeats: 1,
+  },
+  {
+    name: 'image_link',
+    kind: 'scalar',
+    required: 'required',
+    baseline_required: true,
+    sub_fields: [],
+    enum_values: [],
+    max_repeats: 1,
+  },
+  {
+    name: 'availability',
+    kind: 'scalar',
+    required: 'required',
+    baseline_required: true,
+    sub_fields: [],
+    enum_values: [],
+    max_repeats: 1,
+  },
+  {
+    name: 'price',
+    kind: 'scalar',
+    required: 'required',
+    baseline_required: true,
+    sub_fields: [],
+    enum_values: [],
+    max_repeats: 1,
+  },
+  {
+    name: 'condition',
+    kind: 'scalar',
+    required: 'required',
+    baseline_required: true,
+    sub_fields: [],
+    enum_values: [],
+    max_repeats: 1,
+  },
+  {
+    name: 'structured_title',
+    kind: 'structured',
+    required: 'optional',
+    baseline_required: true,
+    sub_fields: [],
+    enum_values: [],
+    max_repeats: 1,
+  },
 ];
 
 function jsonResponse(body: unknown, status = 200) {
@@ -79,12 +167,15 @@ function renderTab() {
   return render(
     <MemoryRouter initialEntries={['/clients/1/feeds/1/setup?tab=mapping']}>
       <Routes>
-        <Route path="/clients/:clientId/feeds/:feedSourceId/setup" element={
-          <QueryClientProvider client={queryClient}>
-            <Notifications position="top-right" limit={5} />
-            <MappingTab />
-          </QueryClientProvider>
-        } />
+        <Route
+          path="/clients/:clientId/feeds/:feedSourceId/setup"
+          element={
+            <QueryClientProvider client={queryClient}>
+              <Notifications position="top-right" limit={5} />
+              <MappingTab />
+            </QueryClientProvider>
+          }
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -129,9 +220,13 @@ describe('MappingTab', () => {
 
     renderTab();
 
-    expect(await screen.findByText(/required registry attributes not covered/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/required registry attributes not covered/i),
+    ).toBeInTheDocument();
     expect(screen.getAllByText(/id/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/the following required attributes are not mapped/i)).not.toHaveTextContent(/brand/i);
+    expect(
+      screen.getByText(/the following required attributes are not mapped/i),
+    ).not.toHaveTextContent(/brand/i);
     expect(screen.getAllByText(/price/i).length).toBeGreaterThanOrEqual(1);
   });
 
@@ -186,9 +281,11 @@ describe('MappingTab', () => {
     const user = userEvent.setup();
     fetchMock = stubFetch((url) => {
       if (url === '/feed-sources/1/field-mapping') {
-        if (fetchMock.mock.calls.some(
-          ([input, init]) => String(input) === url && init?.method === 'PUT',
-        )) {
+        if (
+          fetchMock.mock.calls.some(
+            ([input, init]) => String(input) === url && init?.method === 'PUT',
+          )
+        ) {
           return jsonResponse({ ...mappingDoc, auto_mapped: false });
         }
         return jsonResponse(mappingDoc);
@@ -229,9 +326,11 @@ describe('MappingTab', () => {
     const user = userEvent.setup();
     fetchMock = stubFetch((url) => {
       if (url === '/feed-sources/1/field-mapping') {
-        if (fetchMock.mock.calls.some(
-          ([input, init]) => String(input) === url && init?.method === 'PUT',
-        )) {
+        if (
+          fetchMock.mock.calls.some(
+            ([input, init]) => String(input) === url && init?.method === 'PUT',
+          )
+        ) {
           return jsonResponse({ ...mappingDoc, auto_mapped: false });
         }
         return jsonResponse(mappingDoc);
@@ -272,9 +371,11 @@ describe('MappingTab', () => {
     const user = userEvent.setup();
     fetchMock = stubFetch((url) => {
       if (url === '/feed-sources/1/field-mapping') {
-        if (fetchMock.mock.calls.some(
-          ([input, init]) => String(input) === url && init?.method === 'PUT',
-        )) {
+        if (
+          fetchMock.mock.calls.some(
+            ([input, init]) => String(input) === url && init?.method === 'PUT',
+          )
+        ) {
           return jsonResponse({ ...mappingDoc, auto_mapped: false });
         }
         return jsonResponse(mappingDoc);
@@ -322,10 +423,12 @@ describe('MappingTab', () => {
     const user = userEvent.setup();
     fetchMock = stubFetch((url) => {
       if (url === '/feed-sources/1/field-mapping') {
-        if (fetchMock.mock.calls.some(
-          ([input, init]) => String(input) === url && init?.method === 'PUT',
-        )) {
-          return jsonResponse({ errors: ['product_id: unknown attribute \'bad\''] }, 422);
+        if (
+          fetchMock.mock.calls.some(
+            ([input, init]) => String(input) === url && init?.method === 'PUT',
+          )
+        ) {
+          return jsonResponse({ errors: ["product_id: unknown attribute 'bad'"] }, 422);
         }
         return jsonResponse(mappingDoc);
       }
@@ -426,7 +529,9 @@ describe('MappingTab', () => {
       expect(screen.getByText('product_id')).toBeInTheDocument();
     });
     await waitFor(() => {
-      expect(screen.queryByText(/required registry attributes not covered/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/required registry attributes not covered/i),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -441,9 +546,11 @@ describe('MappingTab', () => {
     };
     fetchMock = stubFetch((url) => {
       if (url === '/feed-sources/1/field-mapping') {
-        if (fetchMock.mock.calls.some(
-          ([input, init]) => String(input) === url && init?.method === 'PUT',
-        )) {
+        if (
+          fetchMock.mock.calls.some(
+            ([input, init]) => String(input) === url && init?.method === 'PUT',
+          )
+        ) {
           return jsonResponse({ ...doc, auto_mapped: false });
         }
         return jsonResponse(doc);
@@ -497,9 +604,11 @@ describe('MappingTab', () => {
     };
     fetchMock = stubFetch((url) => {
       if (url === '/feed-sources/1/field-mapping') {
-        if (fetchMock.mock.calls.some(
-          ([input, init]) => String(input) === url && init?.method === 'PUT',
-        )) {
+        if (
+          fetchMock.mock.calls.some(
+            ([input, init]) => String(input) === url && init?.method === 'PUT',
+          )
+        ) {
           return jsonResponse({ ...doc, auto_mapped: false });
         }
         return jsonResponse(doc);
@@ -549,9 +658,11 @@ describe('MappingTab', () => {
     };
     fetchMock = stubFetch((url) => {
       if (url === '/feed-sources/1/field-mapping') {
-        if (fetchMock.mock.calls.some(
-          ([input, init]) => String(input) === url && init?.method === 'PUT',
-        )) {
+        if (
+          fetchMock.mock.calls.some(
+            ([input, init]) => String(input) === url && init?.method === 'PUT',
+          )
+        ) {
           return jsonResponse({ ...doc, auto_mapped: false });
         }
         return jsonResponse(doc);
@@ -611,9 +722,11 @@ describe('MappingTab', () => {
     const user = userEvent.setup();
     fetchMock = stubFetch((url) => {
       if (url === '/feed-sources/1/field-mapping') {
-        if (fetchMock.mock.calls.some(
-          ([input, init]) => String(input) === url && init?.method === 'PUT',
-        )) {
+        if (
+          fetchMock.mock.calls.some(
+            ([input, init]) => String(input) === url && init?.method === 'PUT',
+          )
+        ) {
           return jsonResponse({ ...mappingDoc, custom_fields: ['brand_extra'] });
         }
         return jsonResponse({ ...mappingDoc, custom_fields: [] });
@@ -644,9 +757,7 @@ describe('MappingTab', () => {
       const body = putBody('/feed-sources/1/field-mapping');
       expect(body).toBeDefined();
       expect(body?.custom_fields).toEqual(['brand_extra']);
-      expect(body?.mappings).toEqual(
-        expect.objectContaining({ brand_extra: { target: 'brand' } }),
-      );
+      expect(body?.mappings).toEqual(expect.objectContaining({ brand_extra: { target: 'brand' } }));
     });
   });
 
@@ -654,9 +765,11 @@ describe('MappingTab', () => {
     const user = userEvent.setup();
     fetchMock = stubFetch((url) => {
       if (url === '/feed-sources/1/field-mapping') {
-        if (fetchMock.mock.calls.some(
-          ([input, init]) => String(input) === url && init?.method === 'PUT',
-        )) {
+        if (
+          fetchMock.mock.calls.some(
+            ([input, init]) => String(input) === url && init?.method === 'PUT',
+          )
+        ) {
           return jsonResponse({ ...mappingDoc, custom_fields: [] });
         }
         return jsonResponse(mappingDoc);

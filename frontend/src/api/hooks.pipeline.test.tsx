@@ -29,8 +29,11 @@ describe('usePatchPipelineInstance', () => {
     stubFetch((url, init) => {
       if (url === '/feed-sources/7/pipeline' && (!init || init.method === 'GET')) {
         pipelineGets += 1;
-        return jsonResponse({ instances: [{ id: 42, position: 0, plugin_id: 'p',
-          name: 'P', configuration: {}, enabled: true }] });
+        return jsonResponse({
+          instances: [
+            { id: 42, position: 0, plugin_id: 'p', name: 'P', configuration: {}, enabled: true },
+          ],
+        });
       }
       if (url === '/feed-sources/7/pipeline/instances/42' && init?.method === 'PATCH') {
         return jsonResponse({ id: 42, enabled: false });

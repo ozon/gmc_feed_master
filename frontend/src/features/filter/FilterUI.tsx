@@ -1,10 +1,26 @@
-import { ActionIcon, Badge, Button, Group, Paper, Select, Stack, Switch, Text, TextInput } from '@mantine/core';
+import {
+  ActionIcon,
+  Badge,
+  Button,
+  Group,
+  Paper,
+  Select,
+  Stack,
+  Switch,
+  Text,
+  TextInput,
+} from '@mantine/core';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBlocker } from 'react-router';
 import { apiPost } from '../../api/client';
-import { usePluginConfig, useSavePluginConfig, useRegistryAttributes, type PluginScope } from '../../api/hooks';
+import {
+  usePluginConfig,
+  useSavePluginConfig,
+  useRegistryAttributes,
+  type PluginScope,
+} from '../../api/hooks';
 import { buildFieldOptions, fromRegistryAttributes } from '../../api/fieldOptions';
 import { FieldSelect } from '../../components/FieldSelect';
 import { notifyApiError, notifySuccess } from '../../app/notifications';
@@ -149,9 +165,15 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
   return (
     <Stack gap="md">
       <Group justify="space-between">
-        <Text fw={500} size="lg">{t('title')}</Text>
+        <Text fw={500} size="lg">
+          {t('title')}
+        </Text>
         <Group>
-          <Button variant="default" onClick={() => serverDraft && setDraft(serverDraft)} disabled={!dirty}>
+          <Button
+            variant="default"
+            onClick={() => serverDraft && setDraft(serverDraft)}
+            disabled={!dirty}
+          >
             {tCommon('actions.cancel')}
           </Button>
           <Button onClick={() => void onSave()} loading={saveConfig.isPending} disabled={!dirty}>
@@ -166,7 +188,13 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
       />
       <Stack gap="xs" data-testid="filter-editor">
         {draft.conditions.map((condition, index) => (
-          <Group key={index} gap="xs" wrap="nowrap" align="flex-start" data-testid={`condition-row-${index}`}>
+          <Group
+            key={index}
+            gap="xs"
+            wrap="nowrap"
+            align="flex-start"
+            data-testid={`condition-row-${index}`}
+          >
             <FieldSelect
               aria-label={t('field')}
               value={condition.field || ''}
@@ -193,7 +221,9 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
                   aria-label={t('caseSensitive')}
                   label={t('caseSensitive')}
                   checked={condition.caseSensitive !== false}
-                  onChange={(e) => patchCondition(index, { caseSensitive: e.currentTarget.checked })}
+                  onChange={(e) =>
+                    patchCondition(index, { caseSensitive: e.currentTarget.checked })
+                  }
                 />
               </>
             ) : null}
@@ -201,10 +231,12 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
               variant="subtle"
               color="red"
               aria-label={t('deleteCondition')}
-              onClick={() => setDraft((prev) => ({
-                ...prev,
-                conditions: prev.conditions.filter((_, i) => i !== index),
-              }))}
+              onClick={() =>
+                setDraft((prev) => ({
+                  ...prev,
+                  conditions: prev.conditions.filter((_, i) => i !== index),
+                }))
+              }
               data-testid={`condition-delete-${index}`}
             >
               <IconTrash size={14} />
@@ -215,10 +247,12 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
           variant="light"
           size="xs"
           leftSection={<IconPlus size={14} />}
-          onClick={() => setDraft((prev) => ({
-            ...prev,
-            conditions: [...prev.conditions, { field: '', op: 'equals', arg: '' }],
-          }))}
+          onClick={() =>
+            setDraft((prev) => ({
+              ...prev,
+              conditions: [...prev.conditions, { field: '', op: 'equals', arg: '' }],
+            }))
+          }
           data-testid="condition-add"
           w="fit-content"
         >
@@ -227,14 +261,20 @@ export default function FilterUI({ pluginId, scope }: FilterUIProps) {
       </Stack>
       <Paper withBorder p="sm">
         {hasIncomplete ? (
-          <Text size="sm" c="dimmed">{t('incomplete')}</Text>
+          <Text size="sm" c="dimmed">
+            {t('incomplete')}
+          </Text>
         ) : preview ? (
           <Text size="sm">
             {t('previewPass', { pass: preview.pass, total: preview.total })}{' '}
-            <Badge size="xs" variant="light" color="gray">{preview.fail}</Badge>
+            <Badge size="xs" variant="light" color="gray">
+              {preview.fail}
+            </Badge>
           </Text>
         ) : (
-          <Text size="sm" c="dimmed">…</Text>
+          <Text size="sm" c="dimmed">
+            …
+          </Text>
         )}
       </Paper>
     </Stack>

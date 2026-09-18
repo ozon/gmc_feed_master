@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  compileTemplate, formatIdList, parseIdList, parsePreviewLines, renderPreview,
+  compileTemplate,
+  formatIdList,
+  parseIdList,
+  parsePreviewLines,
+  renderPreview,
 } from '../ids';
 
 describe('parseIdList', () => {

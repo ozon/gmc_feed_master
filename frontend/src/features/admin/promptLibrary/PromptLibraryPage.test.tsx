@@ -1,7 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {QueryClient} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
 import { stubFetch } from '../../../test/fetch';
@@ -18,15 +18,29 @@ function jsonResponse(body: unknown, status = 200) {
 
 const templates = [
   {
-    id: 1, task_type: 'policy_check', client_id: null, version: 1, name: 'Default',
-    system_prompt: 'Check {{title}}.', user_prompt: '{{title}} {{description}}',
-    variables: ['title', 'description'], is_active: true, created_at: '2026-09-11T10:00:00Z',
+    id: 1,
+    task_type: 'policy_check',
+    client_id: null,
+    version: 1,
+    name: 'Default',
+    system_prompt: 'Check {{title}}.',
+    user_prompt: '{{title}} {{description}}',
+    variables: ['title', 'description'],
+    is_active: true,
+    created_at: '2026-09-11T10:00:00Z',
     created_by: 'operator',
   },
   {
-    id: 2, task_type: 'policy_check', client_id: null, version: 2, name: 'Stricter',
-    system_prompt: 'Strictly check {{title}}.', user_prompt: '{{title}} {{description}}',
-    variables: ['title', 'description'], is_active: false, created_at: '2026-09-11T11:00:00Z',
+    id: 2,
+    task_type: 'policy_check',
+    client_id: null,
+    version: 2,
+    name: 'Stricter',
+    system_prompt: 'Strictly check {{title}}.',
+    user_prompt: '{{title}} {{description}}',
+    variables: ['title', 'description'],
+    is_active: false,
+    created_at: '2026-09-11T11:00:00Z',
     created_by: 'operator',
   },
 ];
@@ -42,7 +56,6 @@ beforeEach(() => {
     return jsonResponse({});
   });
 });
-
 
 describe('PromptLibraryPage', () => {
   it('groups versions by task type with active badge and activate button', async () => {
@@ -60,13 +73,7 @@ describe('TemplateEditor warnings', () => {
   it('warns when a declared variable is missing from the template text', async () => {
     const user = userEvent.setup();
     render(
-      <TemplateEditor
-        opened
-        template={null}
-        clientId={null}
-        feedOptions={[]}
-        onClose={() => {}}
-      />,
+      <TemplateEditor opened template={null} clientId={null} feedOptions={[]} onClose={() => {}} />,
     );
     await user.click(screen.getByRole('combobox', { name: /task type/i }));
     await user.click(screen.getByRole('option', { name: 'title_optimization' }));
@@ -82,13 +89,7 @@ describe('TemplateEditor warnings', () => {
   it('shows a malformed-brace warning for {{Title}}', async () => {
     const user = userEvent.setup();
     render(
-      <TemplateEditor
-        opened
-        template={null}
-        clientId={null}
-        feedOptions={[]}
-        onClose={() => {}}
-      />,
+      <TemplateEditor opened template={null} clientId={null} feedOptions={[]} onClose={() => {}} />,
     );
     const [, userInput] = screen
       .getAllByRole('textbox')

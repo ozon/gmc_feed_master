@@ -21,10 +21,7 @@ export function DashboardTab({
   const stats = useCategoryStats(feedSourceId);
 
   const client = summary.data?.clients?.find((c) => c.id === clientId);
-  const feedSources = useMemo(
-    () => client?.feed_sources ?? [],
-    [client],
-  );
+  const feedSources = useMemo(() => client?.feed_sources ?? [], [client]);
 
   useEffect(() => {
     if (feedSourceId === undefined && feedSources.length > 0) {
@@ -64,13 +61,13 @@ export function DashboardTab({
     <Stack gap="md">
       <Group justify="space-between">
         {select}
-        <Text size="xs" c="dimmed">{t('dashboard.asOfLastRun')}</Text>
+        <Text size="xs" c="dimmed">
+          {t('dashboard.asOfLastRun')}
+        </Text>
       </Group>
       {stats.isLoading && <LoadingState />}
       {stats.isError && <ErrorState onRetry={() => void stats.refetch()} />}
-      {stats.data && stats.data.total === 0 && (
-        <EmptyState message={t('dashboard.noProducts')} />
-      )}
+      {stats.data && stats.data.total === 0 && <EmptyState message={t('dashboard.noProducts')} />}
       {stats.data && stats.data.total > 0 && (
         <Stack gap="xs">
           <Text size="sm" c="dimmed">
@@ -79,23 +76,28 @@ export function DashboardTab({
               total: stats.data.total,
             })}
           </Text>
-          <Progress
-            value={(labeled / stats.data.total) * 100}
-            size="lg"
-          />
+          <Progress value={(labeled / stats.data.total) * 100} size="lg" />
           <Group gap="md" mt="xs" align="flex-start">
             {BUCKET_KEYS.map((bucket) => (
               <Paper withBorder p="sm" key={bucket}>
                 <Stack gap={2}>
-                  <Text size="xs" c="dimmed">{t(`dashboard.buckets.${bucket}`)}</Text>
-                  <Text fw={700} fz="lg">{stats.data!.buckets[bucket]}</Text>
+                  <Text size="xs" c="dimmed">
+                    {t(`dashboard.buckets.${bucket}`)}
+                  </Text>
+                  <Text fw={700} fz="lg">
+                    {stats.data!.buckets[bucket]}
+                  </Text>
                 </Stack>
               </Paper>
             ))}
             <Paper withBorder p="sm">
               <Stack gap={2}>
-                <Text size="xs" c="dimmed">{t('dashboard.total')}</Text>
-                <Text fw={700} fz="lg">{stats.data.total}</Text>
+                <Text size="xs" c="dimmed">
+                  {t('dashboard.total')}
+                </Text>
+                <Text fw={700} fz="lg">
+                  {stats.data.total}
+                </Text>
               </Stack>
             </Paper>
           </Group>

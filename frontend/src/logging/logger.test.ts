@@ -1,10 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  createLogger,
-  flushLogs,
-  newRequestId,
-  resetLogQueue,
-} from './logger';
+import { createLogger, flushLogs, newRequestId, resetLogQueue } from './logger';
 
 const beaconMock = vi.fn(() => true);
 const fetchMock = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })));

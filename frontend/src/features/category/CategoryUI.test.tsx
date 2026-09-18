@@ -28,10 +28,7 @@ function routeHandler(routes: Route[]) {
   };
 }
 
-function renderCategoryUI(
-  scope: { clientId?: number; feedSourceId?: number },
-  routes: Route[],
-) {
+function renderCategoryUI(scope: { clientId?: number; feedSourceId?: number }, routes: Route[]) {
   const fetchMock = stubFetch(routeHandler(routes));
   renderCategoryUIWithHandler(scope, fetchMock);
   return fetchMock;
@@ -138,8 +135,6 @@ describe('CategoryUI shell', () => {
     const combobox = await screen.findByRole('combobox', { name: /feed source/i });
     expect(combobox).toBeDisabled();
     releaseSummary!(jsonResponse({ clients: [] }));
-    await waitFor(() =>
-      expect(screen.getByText(/no feed sources yet/i)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText(/no feed sources yet/i)).toBeInTheDocument());
   });
 });

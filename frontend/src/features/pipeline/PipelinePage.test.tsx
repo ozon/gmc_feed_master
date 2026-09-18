@@ -3,7 +3,7 @@ import { screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider, Link } from 'react-router';
 import { Notifications, notifications } from '@mantine/notifications';
-import {QueryClient} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
@@ -28,7 +28,8 @@ vi.mock('../plugin/configComponents', () => ({
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
-    status, headers: { 'Content-Type': 'application/json' },
+    status,
+    headers: { 'Content-Type': 'application/json' },
   });
 }
 
@@ -46,8 +47,14 @@ const plugin = {
 
 const serverDoc = {
   instances: [
-    { id: 11, position: 0, plugin_id: 'upper', name: 'Upper',
-      configuration: { suffix: '!' }, enabled: true },
+    {
+      id: 11,
+      position: 0,
+      plugin_id: 'upper',
+      name: 'Upper',
+      configuration: { suffix: '!' },
+      enabled: true,
+    },
   ],
 };
 
@@ -140,7 +147,8 @@ describe('PipelinePage', () => {
     const user = userEvent.setup();
     let releasePatch!: (response: Response) => void;
     stubFetch((url, init) => {
-      if (url === '/plugins') return jsonResponse([plugin, { ...plugin, id: 'fresh', name: 'Fresh' }]);
+      if (url === '/plugins')
+        return jsonResponse([plugin, { ...plugin, id: 'fresh', name: 'Fresh' }]);
       if (url === '/feed-sources/1/pipeline') return jsonResponse(serverDoc);
       if (url === '/feed-sources/1/pipeline/instances/11' && init?.method === 'PATCH') {
         return new Promise<Response>((resolve) => {
@@ -161,7 +169,8 @@ describe('PipelinePage', () => {
   it('add from registry marks the page dirty', async () => {
     const user = userEvent.setup();
     stubFetch((url) => {
-      if (url === '/plugins') return jsonResponse([plugin, { ...plugin, id: 'fresh', name: 'Fresh' }]);
+      if (url === '/plugins')
+        return jsonResponse([plugin, { ...plugin, id: 'fresh', name: 'Fresh' }]);
       if (url === '/feed-sources/1/pipeline') return jsonResponse(serverDoc);
       return jsonResponse({});
     });
@@ -173,7 +182,8 @@ describe('PipelinePage', () => {
   it('asks for confirmation via modal when leaving with unsaved changes', async () => {
     const user = userEvent.setup();
     stubFetch((url) => {
-      if (url === '/plugins') return jsonResponse([plugin, { ...plugin, id: 'fresh', name: 'Fresh' }]);
+      if (url === '/plugins')
+        return jsonResponse([plugin, { ...plugin, id: 'fresh', name: 'Fresh' }]);
       if (url === '/feed-sources/1/pipeline') return jsonResponse(serverDoc);
       return jsonResponse({});
     });
@@ -191,7 +201,8 @@ describe('PipelinePage', () => {
   it('stays on the page when the unsaved-changes modal is dismissed', async () => {
     const user = userEvent.setup();
     stubFetch((url) => {
-      if (url === '/plugins') return jsonResponse([plugin, { ...plugin, id: 'fresh', name: 'Fresh' }]);
+      if (url === '/plugins')
+        return jsonResponse([plugin, { ...plugin, id: 'fresh', name: 'Fresh' }]);
       if (url === '/feed-sources/1/pipeline') return jsonResponse(serverDoc);
       return jsonResponse({});
     });
@@ -210,10 +221,22 @@ describe('PipelinePage', () => {
     const user = userEvent.setup();
     const twoInstanceDoc = {
       instances: [
-        { id: 11, position: 0, plugin_id: 'upper', name: 'First',
-          configuration: {}, enabled: true },
-        { id: 12, position: 1, plugin_id: 'upper', name: 'Second',
-          configuration: {}, enabled: true },
+        {
+          id: 11,
+          position: 0,
+          plugin_id: 'upper',
+          name: 'First',
+          configuration: {},
+          enabled: true,
+        },
+        {
+          id: 12,
+          position: 1,
+          plugin_id: 'upper',
+          name: 'Second',
+          configuration: {},
+          enabled: true,
+        },
       ],
     };
     let putBody: unknown = null;
@@ -238,17 +261,28 @@ describe('PipelinePage', () => {
     // dnd-kit collision-detects against the ACTIVE row Card's rect (not the
     // handle) — mock it too, else the jsdom all-zero rect never intersects.
     vi.spyOn(draggedRow, 'getBoundingClientRect').mockReturnValue({
-      ...rowBox, right: rowBox.left + rowBox.width, bottom: rowBox.top + rowBox.height,
-      x: rowBox.left, y: rowBox.top, toJSON: () => ({}),
+      ...rowBox,
+      right: rowBox.left + rowBox.width,
+      bottom: rowBox.top + rowBox.height,
+      x: rowBox.left,
+      y: rowBox.top,
+      toJSON: () => ({}),
     } as DOMRect);
     vi.spyOn(handle, 'getBoundingClientRect').mockReturnValue({
-      ...rowBox, right: rowBox.left + rowBox.width, bottom: rowBox.top + rowBox.height,
-      x: rowBox.left, y: rowBox.top, toJSON: () => ({}),
+      ...rowBox,
+      right: rowBox.left + rowBox.width,
+      bottom: rowBox.top + rowBox.height,
+      x: rowBox.left,
+      y: rowBox.top,
+      toJSON: () => ({}),
     } as DOMRect);
     vi.spyOn(secondRow, 'getBoundingClientRect').mockReturnValue({
-      ...secondBox, right: secondBox.left + secondBox.width,
+      ...secondBox,
+      right: secondBox.left + secondBox.width,
       bottom: secondBox.top + secondBox.height,
-      x: secondBox.left, y: secondBox.top, toJSON: () => ({}),
+      x: secondBox.left,
+      y: secondBox.top,
+      toJSON: () => ({}),
     } as DOMRect);
 
     // activationConstraint distance: 4 — move ≥4px to activate, then drop on row 2
@@ -313,8 +347,14 @@ describe('PipelinePage', () => {
       if (url === '/feed-sources/1/pipeline') {
         return jsonResponse({
           instances: [
-            { id: 21, position: 0, plugin_id: 'probe', name: 'Probe',
-              configuration: {}, enabled: true },
+            {
+              id: 21,
+              position: 0,
+              plugin_id: 'probe',
+              name: 'Probe',
+              configuration: {},
+              enabled: true,
+            },
           ],
         });
       }
@@ -345,8 +385,14 @@ describe('PipelinePage', () => {
       if (url === '/feed-sources/1/pipeline') {
         return jsonResponse({
           instances: [
-            { id: 22, position: 0, plugin_id: 'setup', name: 'Setup Probe',
-              configuration: {}, enabled: true },
+            {
+              id: 22,
+              position: 0,
+              plugin_id: 'setup',
+              name: 'Setup Probe',
+              configuration: {},
+              enabled: true,
+            },
           ],
         });
       }

@@ -3,12 +3,18 @@ import { editableTier, mergeRules } from './scope';
 import type { CategoryRule } from './types';
 
 const g1: CategoryRule = {
-  id: 'g1', source_field: 'product_type', operator: 'eq',
-  source_value: 'Shoes', taxonomy_id: '166',
+  id: 'g1',
+  source_field: 'product_type',
+  operator: 'eq',
+  source_value: 'Shoes',
+  taxonomy_id: '166',
 };
 const g2: CategoryRule = {
-  id: 'g2', source_field: 'product_type', operator: 'eq',
-  source_value: 'Boots', taxonomy_id: '53',
+  id: 'g2',
+  source_field: 'product_type',
+  operator: 'eq',
+  source_value: 'Boots',
+  taxonomy_id: '53',
 };
 
 describe('editableTier', () => {
@@ -25,7 +31,13 @@ describe('mergeRules', () => {
   it('client overrides same id in place, appends unseen', () => {
     const client: CategoryRule[] = [
       { ...g1, taxonomy_id: '999' },
-      { id: 'c1', source_field: 'product_type', operator: 'ne', source_value: 'Socks', taxonomy_id: '166' },
+      {
+        id: 'c1',
+        source_field: 'product_type',
+        operator: 'ne',
+        source_value: 'Socks',
+        taxonomy_id: '166',
+      },
     ];
     const merged = mergeRules([g1, g2], client);
     expect(merged.map((r) => [r.id, r.origin])).toEqual([

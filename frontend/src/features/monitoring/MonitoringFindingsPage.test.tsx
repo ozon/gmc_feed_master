@@ -24,8 +24,22 @@ const findings = {
   has_previous: false,
   prev_counts: null,
   findings: [
-    { severity: 'critical', code: 'gtin_mpn', field: 'gtin', message: 'Bad GTIN', product_id: 'p1', details: {} },
-    { severity: 'warning', code: 'brand_required', field: 'brand', message: 'Missing brand', product_id: 'p2', details: {} },
+    {
+      severity: 'critical',
+      code: 'gtin_mpn',
+      field: 'gtin',
+      message: 'Bad GTIN',
+      product_id: 'p1',
+      details: {},
+    },
+    {
+      severity: 'warning',
+      code: 'brand_required',
+      field: 'brand',
+      message: 'Missing brand',
+      product_id: 'p2',
+      details: {},
+    },
   ],
 };
 
@@ -57,7 +71,10 @@ function renderAt() {
     <MemoryRouter initialEntries={['/clients/1/feeds/1/monitoring/findings']}>
       <Notifications position="top-right" limit={1} />
       <Routes>
-        <Route path="/clients/:clientId/feeds/:feedSourceId/monitoring/findings" element={<MonitoringFindingsPage />} />
+        <Route
+          path="/clients/:clientId/feeds/:feedSourceId/monitoring/findings"
+          element={<MonitoringFindingsPage />}
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -66,7 +83,8 @@ function renderAt() {
 function stubEndpoints(payload: unknown) {
   stubFetch((url) => {
     if (url === '/feed-sources/1/quality-findings') return jsonResponse(payload);
-    if (url.startsWith('/feed-sources/1/quality-history')) return jsonResponse({ rows: historyRows });
+    if (url.startsWith('/feed-sources/1/quality-history'))
+      return jsonResponse({ rows: historyRows });
     if (url.startsWith('/feed-sources/1/products/')) {
       return jsonResponse({
         product_id: 'p1',

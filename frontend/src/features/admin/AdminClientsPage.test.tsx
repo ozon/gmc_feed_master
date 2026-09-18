@@ -33,8 +33,7 @@ describe('AdminClientsPage', () => {
         deleted = true;
         return new Response(null, { status: 204 });
       }
-      if (url === '/clients')
-        return jsonResponse(deleted ? [] : clients);
+      if (url === '/clients') return jsonResponse(deleted ? [] : clients);
       if (url === '/dashboard/summary')
         return jsonResponse({
           counts: { clients: 0, feed_sources: 0, active_products: 0, failed_last_exports: 0 },

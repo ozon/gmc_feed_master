@@ -36,7 +36,13 @@ import {
 } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
-import { useChangePassword, useDashboardSummary, useLogout, usePlugins, useSession } from '../api/hooks';
+import {
+  useChangePassword,
+  useDashboardSummary,
+  useLogout,
+  usePlugins,
+  useSession,
+} from '../api/hooks';
 import { getPluginIcon } from '../components/PluginIconMap';
 import { ChatWidget } from '../features/chat/ChatWidget';
 import { LanguageSwitcher } from '../i18n/LanguageSwitcher';
@@ -165,8 +171,7 @@ function FeedBreadcrumb() {
 
   const client = summary?.clients?.find((entry) => String(entry.id) === clientId);
   const feed = client?.feed_sources?.find((entry) => String(entry.id) === feedSourceId);
-  const area =
-    /^\/clients\/[^/]+\/feeds\/[^/]+\/([^/?]+)/.exec(location.pathname)?.[1] ?? '';
+  const area = /^\/clients\/[^/]+\/feeds\/[^/]+\/([^/?]+)/.exec(location.pathname)?.[1] ?? '';
 
   if (!clientId) return null;
 
@@ -313,7 +318,11 @@ export function AppShell() {
                   to={item.to}
                   label={item.label}
                   leftSection={<item.icon size={16} />}
-                  active={item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to)}
+                  active={
+                    item.to === '/'
+                      ? location.pathname === '/'
+                      : location.pathname.startsWith(item.to)
+                  }
                   variant="subtle"
                   onClick={close}
                 />

@@ -25,9 +25,7 @@ export function DryRunResults({ result }: Props) {
         <Text size="sm" c={r.dropped ? 'red' : undefined}>
           {t('dryRun.dropped', { count: r.dropped ?? 0 })}
         </Text>
-        {r.error_message ? (
-          <Code block>{r.error_message}</Code>
-        ) : null}
+        {r.error_message ? <Code block>{r.error_message}</Code> : null}
         {r.findings && r.findings.length > 0 ? <FindingsTable findings={r.findings} /> : null}
       </Stack>
     </Card>

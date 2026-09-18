@@ -10,8 +10,24 @@ beforeAll(async () => {
 });
 
 const instances: LocalInstance[] = [
-  { id: 1, position: 0, plugin_id: 'upper', name: 'Upper', configuration: {}, enabled: true, clientId: 'upper-0' },
-  { id: 2, position: 1, plugin_id: 'lower', name: 'Lower', configuration: {}, enabled: false, clientId: 'lower-1' },
+  {
+    id: 1,
+    position: 0,
+    plugin_id: 'upper',
+    name: 'Upper',
+    configuration: {},
+    enabled: true,
+    clientId: 'upper-0',
+  },
+  {
+    id: 2,
+    position: 1,
+    plugin_id: 'lower',
+    name: 'Lower',
+    configuration: {},
+    enabled: false,
+    clientId: 'lower-1',
+  },
 ];
 
 describe('PipelineOverviewStrip', () => {

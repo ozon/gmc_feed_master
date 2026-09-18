@@ -1,15 +1,5 @@
 import { Fragment, useMemo, useState } from 'react';
-import {
-  Badge,
-  Button,
-  Code,
-  Group,
-  Select,
-  Stack,
-  Table,
-  TextInput,
-  Title,
-} from '@mantine/core';
+import { Badge, Button, Code, Group, Select, Stack, Table, TextInput, Title } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useEventLogs } from '../../api/hooks';

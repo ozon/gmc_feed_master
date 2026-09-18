@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CloseButton, Combobox, InputBase, useCombobox } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
-import { INDEXED_PATH_REGEX, type FieldOption, type GroupedFieldOptions } from '../api/fieldOptions';
+import {
+  INDEXED_PATH_REGEX,
+  type FieldOption,
+  type GroupedFieldOptions,
+} from '../api/fieldOptions';
 
 export type FieldSelectProps = {
   value: string;
-  onChange: (value: string) => void;   // clear emits ''
+  onChange: (value: string) => void; // clear emits ''
   options: GroupedFieldOptions;
   label?: React.ReactNode;
   description?: React.ReactNode;
@@ -23,9 +27,9 @@ function matchesQuery(option: FieldOption, group: string, query: string): boolea
   const q = query.trim().toLowerCase();
   if (!q) return true;
   return (
-    option.value.toLowerCase().includes(q)
-    || option.label.toLowerCase().includes(q)
-    || group.toLowerCase().includes(q)
+    option.value.toLowerCase().includes(q) ||
+    option.label.toLowerCase().includes(q) ||
+    group.toLowerCase().includes(q)
   );
 }
 
@@ -67,12 +71,13 @@ export function FieldSelect({
   const showInvalid = search !== '' && !isValidSyntax;
 
   const visibleGroups = useMemo(
-    () => options
-      .map((g) => ({
-        group: g.group,
-        items: g.items.filter((i) => matchesQuery(i, g.group, query)),
-      }))
-      .filter((g) => g.items.length > 0),
+    () =>
+      options
+        .map((g) => ({
+          group: g.group,
+          items: g.items.filter((i) => matchesQuery(i, g.group, query)),
+        }))
+        .filter((g) => g.items.length > 0),
     [options, query],
   );
 
@@ -149,7 +154,11 @@ export function FieldSelect({
             {visibleGroups.map((g) => (
               <Combobox.Group key={g.group} label={g.group}>
                 {g.items.map((item) => (
-                  <Combobox.Option key={item.value} value={item.value} active={item.value === value}>
+                  <Combobox.Option
+                    key={item.value}
+                    value={item.value}
+                    active={item.value === value}
+                  >
                     {item.label}
                   </Combobox.Option>
                 ))}
@@ -160,9 +169,7 @@ export function FieldSelect({
                 {t('fieldSelect.customValue', { value: search })}
               </Combobox.Option>
             )}
-            {showInvalid && (
-              <Combobox.Empty>{t('fieldSelect.invalidPath')}</Combobox.Empty>
-            )}
+            {showInvalid && <Combobox.Empty>{t('fieldSelect.invalidPath')}</Combobox.Empty>}
           </Combobox.Options>
         </Combobox.Dropdown>
       )}

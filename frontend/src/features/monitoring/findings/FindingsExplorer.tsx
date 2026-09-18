@@ -54,7 +54,13 @@ function GroupCounts({ group }: { group: FindingGroup }) {
   );
 }
 
-function GroupRows({ group, onOpenProduct }: { group: FindingGroup; onOpenProduct: (id: string) => void }) {
+function GroupRows({
+  group,
+  onOpenProduct,
+}: {
+  group: FindingGroup;
+  onOpenProduct: (id: string) => void;
+}) {
   const { t } = useTranslation('monitoring');
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? group.findings : group.findings.slice(0, GROUP_PREVIEW_SIZE);
@@ -73,7 +79,10 @@ function GroupRows({ group, onOpenProduct }: { group: FindingGroup; onOpenProduc
         </Table.Thead>
         <Table.Tbody>
           {visible.map((finding, index) => (
-            <Table.Tr key={`${finding.product_id}-${finding.field ?? ''}-${index}`} data-testid="finding-row">
+            <Table.Tr
+              key={`${finding.product_id}-${finding.field ?? ''}-${index}`}
+              data-testid="finding-row"
+            >
               <Table.Td>
                 <SeverityBadge severity={finding.severity} />
               </Table.Td>
@@ -174,7 +183,11 @@ export function FindingsExplorer({ findings, onOpenProduct }: Props) {
               <Accordion.Control>
                 <Group justify="space-between" wrap="nowrap">
                   <Text fw={500}>
-                    {mode === 'rule' ? <RuleLabel code={group.key} /> : groupLabel(group.key, mode, t)}
+                    {mode === 'rule' ? (
+                      <RuleLabel code={group.key} />
+                    ) : (
+                      groupLabel(group.key, mode, t)
+                    )}
                   </Text>
                   <GroupCounts group={group} />
                 </Group>

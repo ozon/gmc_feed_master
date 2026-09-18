@@ -10,7 +10,10 @@ describe('fillDates', () => {
     ];
     const filled = fillDates(rows, 4, (date) => ({ date, raw: 0, exportable: 0 }));
     expect(filled.map((r) => r.date)).toEqual([
-      '2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04',
+      '2026-09-01',
+      '2026-09-02',
+      '2026-09-03',
+      '2026-09-04',
     ]);
     expect(filled[1]).toEqual({ date: '2026-09-02', raw: 0, exportable: 0 });
   });
@@ -28,7 +31,10 @@ describe('fillChartDates', () => {
     ];
     const filled = fillChartDates(rows, 4);
     expect(filled.map((r) => r.date)).toEqual([
-      '2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04',
+      '2026-09-01',
+      '2026-09-02',
+      '2026-09-03',
+      '2026-09-04',
     ]);
     expect(filled[1]).toEqual({ date: '2026-09-02', success: 0, error: 0 });
   });
@@ -44,7 +50,10 @@ describe('fillChartDates', () => {
     ];
     const filled = fillChartDates(rows, 4);
     expect(filled.map((r) => r.date)).toEqual([
-      '2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04',
+      '2026-09-01',
+      '2026-09-02',
+      '2026-09-03',
+      '2026-09-04',
     ]);
     expect(filled[0]).toEqual({ date: '2026-09-01', success: 1, error: 0 });
     expect(filled[3]).toEqual({ date: '2026-09-04', success: 2, error: 1 });

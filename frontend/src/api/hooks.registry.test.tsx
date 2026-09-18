@@ -10,26 +10,43 @@ let fetchMock: ReturnType<typeof stubFetch>;
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
-    status, headers: { 'Content-Type': 'application/json' },
+    status,
+    headers: { 'Content-Type': 'application/json' },
   });
 }
 
-
 const registryFixture = [
-  { name: 'title', kind: 'scalar', required: 'required', sub_fields: [],
-    enum_values: [], baseline_required: true, max_repeats: 1 },
-  { name: 'product_detail', kind: 'repeated_structured', required: 'optional',
+  {
+    name: 'title',
+    kind: 'scalar',
+    required: 'required',
+    sub_fields: [],
+    enum_values: [],
+    baseline_required: true,
+    max_repeats: 1,
+  },
+  {
+    name: 'product_detail',
+    kind: 'repeated_structured',
+    required: 'optional',
     sub_fields: [
       { name: 'section_name', type: 'String', required: 'optional', kind: 'repeated_scalar' },
     ],
-    enum_values: [], baseline_required: false, max_repeats: 2 },
+    enum_values: [],
+    baseline_required: false,
+    max_repeats: 2,
+  },
 ];
 
 const fieldsFixture = {
   fields: [
     { name: 'title', kind: 'scalar', sub_fields: [], max_repeats: 1 },
-    { name: 'shipping', kind: 'repeated_structured',
-      sub_fields: [{ name: 'country', kind: 'repeated_scalar' }], max_repeats: 3 },
+    {
+      name: 'shipping',
+      kind: 'repeated_structured',
+      sub_fields: [{ name: 'country', kind: 'repeated_scalar' }],
+      max_repeats: 3,
+    },
   ],
 };
 

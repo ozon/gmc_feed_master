@@ -173,18 +173,10 @@ export function captureException(error: unknown, context: LogContext = {}): void
 
 export function installGlobalErrorHandlers(): void {
   window.addEventListener('error', (event) => {
-    createLogger('window').error(
-      event.message,
-      { url: currentPath() },
-      event.error,
-    );
+    createLogger('window').error(event.message, { url: currentPath() }, event.error);
   });
   window.addEventListener('unhandledrejection', (event) => {
-    createLogger('promise').error(
-      'unhandledrejection',
-      { url: currentPath() },
-      event.reason,
-    );
+    createLogger('promise').error('unhandledrejection', { url: currentPath() }, event.reason);
   });
   window.addEventListener('pagehide', flush);
   document.addEventListener('visibilitychange', () => {

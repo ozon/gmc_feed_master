@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { notifications, Notifications } from '@mantine/notifications';
-import {QueryClient} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { stubFetch } from '../../test/fetch';
@@ -39,12 +39,10 @@ beforeEach(() => {
   notifications.clean();
 });
 
-
 function postCalls(url: string): number {
   const fm = vi.mocked(globalThis.fetch);
-  return fm.mock.calls.filter(
-    ([input, init]) => String(input) === url && init?.method === 'POST',
-  ).length;
+  return fm.mock.calls.filter(([input, init]) => String(input) === url && init?.method === 'POST')
+    .length;
 }
 
 function renderAt() {
@@ -52,7 +50,10 @@ function renderAt() {
     <MemoryRouter initialEntries={['/clients/1/feeds/1/monitoring/runs']}>
       <Notifications position="top-right" limit={1} />
       <Routes>
-        <Route path="/clients/:clientId/feeds/:feedSourceId/monitoring/runs" element={<MonitoringRunsPage />} />
+        <Route
+          path="/clients/:clientId/feeds/:feedSourceId/monitoring/runs"
+          element={<MonitoringRunsPage />}
+        />
       </Routes>
     </MemoryRouter>,
   );

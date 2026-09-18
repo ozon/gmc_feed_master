@@ -47,8 +47,15 @@ const page2Items = Array.from({ length: 2 }, (_, i) => ({
 const productsPage1: ProductsPageResponse = {
   items: page1Items,
   fields: [
-    'availability', 'brand', 'condition', 'description', 'id',
-    'image_link', 'link', 'price', 'title',
+    'availability',
+    'brand',
+    'condition',
+    'description',
+    'id',
+    'image_link',
+    'link',
+    'price',
+    'title',
   ],
   total: 7,
   page: 1,
@@ -58,8 +65,15 @@ const productsPage1: ProductsPageResponse = {
 const productsPage2: ProductsPageResponse = {
   items: page2Items,
   fields: [
-    'availability', 'brand', 'condition', 'description', 'id',
-    'image_link', 'link', 'price', 'title',
+    'availability',
+    'brand',
+    'condition',
+    'description',
+    'id',
+    'image_link',
+    'link',
+    'price',
+    'title',
   ],
   total: 7,
   page: 2,
@@ -75,7 +89,9 @@ const productDetail: ProductDetail = {
   removed_at: '2026-08-29T00:00:00Z',
   raw_data: { title: 'Product 1', price: '10.99', custom_field: 'test-value-42' },
   processed_data: {
-    title: 'Product 1 PROCESSED', price: '10.99', custom_field: 'test-value-42',
+    title: 'Product 1 PROCESSED',
+    price: '10.99',
+    custom_field: 'test-value-42',
   },
   excluded: false,
 };
@@ -90,8 +106,15 @@ beforeEach(() => {
 
 const feedFields = {
   fields: [
-    'availability', 'brand', 'condition', 'description', 'id',
-    'image_link', 'link', 'price', 'title',
+    'availability',
+    'brand',
+    'condition',
+    'description',
+    'id',
+    'image_link',
+    'link',
+    'price',
+    'title',
   ],
 };
 
@@ -164,8 +187,8 @@ describe('ProductsPage', () => {
     await user.click(screen.getByRole('option', { name: '25' }));
 
     await waitFor(() => {
-      const calls = fetchMock.mock.calls.filter(
-        ([input]) => String(input).includes('page_size=25'),
+      const calls = fetchMock.mock.calls.filter(([input]) =>
+        String(input).includes('page_size=25'),
       );
       expect(calls.length).toBeGreaterThanOrEqual(1);
     });
@@ -188,9 +211,7 @@ describe('ProductsPage', () => {
     await vi.advanceTimersByTimeAsync(400);
 
     await waitFor(() => {
-      const calls = fetchMock.mock.calls.filter(
-        ([input]) => String(input).includes('q=sock'),
-      );
+      const calls = fetchMock.mock.calls.filter(([input]) => String(input).includes('q=sock'));
       expect(calls.length).toBeGreaterThanOrEqual(1);
     });
 
@@ -212,8 +233,8 @@ describe('ProductsPage', () => {
     await user.click(screen.getByRole('option', { name: /removed/i }));
 
     await waitFor(() => {
-      const calls = fetchMock.mock.calls.filter(
-        ([input]) => String(input).includes('status=removed'),
+      const calls = fetchMock.mock.calls.filter(([input]) =>
+        String(input).includes('status=removed'),
       );
       expect(calls.length).toBeGreaterThanOrEqual(1);
     });
@@ -235,9 +256,7 @@ describe('ProductsPage', () => {
     const conditionCheckbox = await screen.findByRole('checkbox', { name: /condition/i });
     await user.click(conditionCheckbox);
 
-    const stored = JSON.parse(
-      localStorage.getItem('products.columns.2') ?? '[]',
-    ) as string[];
+    const stored = JSON.parse(localStorage.getItem('products.columns.2') ?? '[]') as string[];
     expect(stored).not.toContain('condition');
   });
 
@@ -274,9 +293,7 @@ describe('ProductsPage', () => {
     expect(screen.getByText('Brand 1')).toBeInTheDocument();
     expect(screen.getByText('Brand 5')).toBeInTheDocument();
 
-    const stored = JSON.parse(
-      localStorage.getItem('products.columns.2') ?? '[]',
-    ) as string[];
+    const stored = JSON.parse(localStorage.getItem('products.columns.2') ?? '[]') as string[];
     expect(stored).toContain('brand');
   });
 

@@ -24,7 +24,12 @@ type Props = {
 };
 
 export function PluginList({
-  instances, plugins, selectedClientId, onSelect, onToggleEnabled, onAdd,
+  instances,
+  plugins,
+  selectedClientId,
+  onSelect,
+  onToggleEnabled,
+  onAdd,
   onReorderDragEnd,
 }: Props) {
   const { t } = useTranslation('pipeline');
@@ -32,9 +37,14 @@ export function PluginList({
 
   return (
     <Stack gap="md" data-testid="plugin-list">
-      <Text fw={600} size="sm">{t('instances')}</Text>
+      <Text fw={600} size="sm">
+        {t('instances')}
+      </Text>
       <DndContext sensors={sensors} onDragEnd={onReorderDragEnd}>
-        <SortableContext items={instances.map((i) => i.clientId)} strategy={verticalListSortingStrategy}>
+        <SortableContext
+          items={instances.map((i) => i.clientId)}
+          strategy={verticalListSortingStrategy}
+        >
           {instances.map((instance) => (
             <InstanceRow
               key={instance.clientId}
@@ -54,7 +64,11 @@ export function PluginList({
 }
 
 function InstanceRow({
-  instance, plugin, selected, onSelect, onToggleEnabled,
+  instance,
+  plugin,
+  selected,
+  onSelect,
+  onToggleEnabled,
 }: {
   instance: LocalInstance;
   plugin: PluginInfo | undefined;
@@ -68,7 +82,11 @@ function InstanceRow({
     data: { source: 'workspace' },
   });
   const Icon = getPluginIcon(plugin?.manifest?.frontend?.icon);
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
   return (
     <Card
       ref={setNodeRef}
@@ -90,7 +108,9 @@ function InstanceRow({
           <IconGripVertical size={16} />
         </ActionIcon>
         <Icon size={16} />
-        <Text size="sm" fw={selected ? 600 : 400} style={{ flex: 1 }}>{instance.name}</Text>
+        <Text size="sm" fw={selected ? 600 : 400} style={{ flex: 1 }}>
+          {instance.name}
+        </Text>
         <Switch
           checked={instance.enabled}
           wrapperProps={{ onClick: (e) => e.stopPropagation() }}
@@ -103,7 +123,9 @@ function InstanceRow({
 }
 
 function AddFromRegistry({
-  instances, plugins, onAdd,
+  instances,
+  plugins,
+  onAdd,
 }: {
   instances: LocalInstance[];
   plugins: PluginInfo[];
@@ -117,9 +139,13 @@ function AddFromRegistry({
   const available = pipelineModules.filter((p) => !present.has(p.id));
   return (
     <Stack gap="xs">
-      <Text size="xs" c="dimmed" tt="uppercase">{t('addFromRegistry')}</Text>
+      <Text size="xs" c="dimmed" tt="uppercase">
+        {t('addFromRegistry')}
+      </Text>
       {available.length === 0 ? (
-        <Text size="xs" c="dimmed">{t('paletteEmpty')}</Text>
+        <Text size="xs" c="dimmed">
+          {t('paletteEmpty')}
+        </Text>
       ) : (
         available.map((plugin) => {
           const Icon = getPluginIcon(plugin.manifest?.frontend?.icon);
@@ -163,8 +189,12 @@ function RegistrySection({ plugins }: { plugins: PluginInfo[] }) {
 
   return (
     <Stack gap="xs">
-      <Text size="xs" c="dimmed" tt="uppercase">{t('registry')}</Text>
-      <Text size="xs" c="dimmed">{t('registryToggleHelp')}</Text>
+      <Text size="xs" c="dimmed" tt="uppercase">
+        {t('registry')}
+      </Text>
+      <Text size="xs" c="dimmed">
+        {t('registryToggleHelp')}
+      </Text>
       {plugins.map((plugin) => {
         const Icon = getPluginIcon(plugin.manifest?.frontend?.icon);
         return (
@@ -174,7 +204,9 @@ function RegistrySection({ plugins }: { plugins: PluginInfo[] }) {
               <Stack gap={0}>
                 <Text size="sm">{plugin.name}</Text>
                 <Group gap={4}>
-                  <Badge size="xs" variant="light">v{plugin.version}</Badge>
+                  <Badge size="xs" variant="light">
+                    v{plugin.version}
+                  </Badge>
                   {plugin.used_by_feed_sources > 0 ? (
                     <Badge size="xs" color="orange" variant="light">
                       {t('inUse', { count: plugin.used_by_feed_sources })}
