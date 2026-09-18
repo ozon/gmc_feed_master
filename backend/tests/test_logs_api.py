@@ -220,6 +220,23 @@ async def test_entries_from_to_filter(settings_app):
     await admin_client.aclose()
 
 
+async def test_entries_q_escapes_like_wildcards(settings_app):
+    app, factory = settings_app
+    async with factory() as session, session.begin():
+        session.add_all(
+            [
+                EventLog(category="audit", level="info", source="backend", message="50% off"),
+                EventLog(category="audit", level="info", source="backend", message="plain"),
+            ]
+        )
+    admin_client = await _login(app, "operator", "admin-pass")
+    listing = await admin_client.get("/logs/entries?q=%25")
+    assert listing.status_code == 200
+    messages = [item["message"] for item in listing.json()["items"]]
+    assert messages == ["50% off"]
+    await admin_client.aclose()
+
+
 async def test_client_logs_rate_limit_exceeded(settings_app):
     app, _ = settings_app
     from app.routes.logs import _CLIENT_LOG_MAX_PER_WINDOW

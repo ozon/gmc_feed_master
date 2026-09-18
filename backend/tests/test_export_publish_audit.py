@@ -151,3 +151,35 @@ async def test_audit_failure_does_not_fail_export(env, monkeypatch):
             )
         ).scalars().all()
     assert rows == []
+
+
+async def test_dry_run_does_not_write_publish_audit(env):
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(
+        run_id=env["run_id"],
+        feed_source_id=env["feed_source_id"],
+        client_id=env["client_id"],
+    )
+    try:
+        ctx = StepContext(
+            feed_source_id=env["feed_source_id"],
+            session_factory=env["factory"],
+            logger=logging.getLogger("test"),
+            run_state=RunState(),
+            ingestion_run_id=env["run_id"],
+            trigger="manual",
+            dry_run=True,
+        )
+        result = await env["step"].execute(ctx)
+    finally:
+        structlog.contextvars.clear_contextvars()
+
+    assert result.statistics["export"]["products"] == 1
+
+    async with env["factory"]() as session:
+        rows = (
+            await session.execute(
+                select(EventLog).where(EventLog.message == "export.publish")
+            )
+        ).scalars().all()
+    assert rows == []

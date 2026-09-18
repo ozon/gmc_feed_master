@@ -21,6 +21,7 @@ _MAX_LIMIT = 500
 _MAX_BODY_BYTES = 32000
 _CLIENT_LOG_WINDOW_S = 60
 _CLIENT_LOG_MAX_PER_WINDOW = 60
+_CLIENT_LOG_EVICT_THRESHOLD = 256
 _client_log_hits: dict[str, tuple[float, int]] = {}
 
 
@@ -30,8 +31,20 @@ def _require_db(db_session: AsyncSession | None) -> AsyncSession:
     return db_session
 
 
+def _escape_like(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _evict_stale_client_log_hits(now: float) -> None:
+    cutoff = now - _CLIENT_LOG_WINDOW_S
+    for key in [k for k, (start, _) in _client_log_hits.items() if start < cutoff]:
+        del _client_log_hits[key]
+
+
 def _allow_client_log(username: str, now: float) -> bool:
     # ponytail: in-memory fixed window, single worker — move to Redis if workers scale.
+    if len(_client_log_hits) > _CLIENT_LOG_EVICT_THRESHOLD:
+        _evict_stale_client_log_hits(now)
     window_start, count = _client_log_hits.get(username, (now, 0))
     if now - window_start >= _CLIENT_LOG_WINDOW_S:
         _client_log_hits[username] = (now, 1)
@@ -82,7 +95,7 @@ async def list_events(
     if run_id is not None:
         stmt = stmt.where(EventLog.run_id == run_id)
     if q:
-        stmt = stmt.where(EventLog.message.ilike(f"%{q}%"))
+        stmt = stmt.where(EventLog.message.ilike(f"%{_escape_like(q)}%", escape="\\"))
     if from_ is not None:
         stmt = stmt.where(EventLog.created_at >= from_)
     if to is not None:
