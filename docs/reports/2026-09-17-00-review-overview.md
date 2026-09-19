@@ -24,7 +24,7 @@ Remediation cycles landed since this review (all on `main` unless noted):
 - **Quality-contract gaps** — branch `feat/quality-contract-gaps`: `T1`, `T2`, `T4`, `T5` (plugins-only), `T6`; `T3`/`T7` were already resolved.
 - Earlier: `B1`/`A2`/`A3` at `cccb501`; frontend `F1`–`F10`/`F12` at `0a98f4b`.
 
-Still open from the prioritized list: `B2` (SSRF), scale/perf (`B6`/`B7`), single-worker invariants (`A9`/`A10`), docs/spec rot (`A1`, `A4`–`A16`), backend lows (`B8`, `B10`–`B13`), tooling lows (`T8`–`T12`), deferred frontend `F11`/`F13`, and mypy `strict` (deferred; 3274 errors).
+Still open from the prioritized list: `B2` (SSRF), scale/perf (`B6`/`B7`), single-worker invariants (`A9`/`A10`), docs/spec rot (`A1`, `A4`–`A16`), backend lows (`B8`, `B10`–`B13`), deferred frontend `F11`/`F13`, and mypy `strict` (deferred; 3274 errors). Tooling `T10`–`T12` are fixed; `T8`/`T9` are deferred by operator choice.
 
 ## Finding statistics
 

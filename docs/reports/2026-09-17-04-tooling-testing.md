@@ -15,11 +15,11 @@ Remediated on branch `feat/quality-contract-gaps`. Verified: ruff exit-0 (`exten
 | T5 | Partially fixed | `plugins/` is now typechecked via a separate `mypy --explicit-package-bases` invocation; its 1 finding fixed. `strict` deferred — 3274 errors / 172 files, recorded in `docs/decisions.md`. |
 | T6 | Fixed | `pytest-cov==7.1.0`; `[tool.coverage]` source `app/`, `fail_under = 85`; CI runs `pytest --cov=app`. The AGENTS reportlog claim is reconciled to local triage. |
 | T7 | Fixed | Superseded by the production-container-deployment cycle (`docker-compose.prod.yml`, `docs/prod_deployment.md`). |
-| T8 | Open | Stale root instruction docs (`coding-agent-instructions.md`, `i18n-agent-instructions.md`, `m10-frontend-instructions.md`) still present. |
-| T9 | Open | `examples/feed.xml` duplicate still present. |
-| T10 | Open | `.env.example` still ships sync `postgresql://`. |
-| T11 | Open | CI still `on: push` + `pull_request` with no branch filter and sets both `DATABASE_URL`/`TEST_DATABASE_URL`. |
-| T12 | Partially fixed | `pillow` is now exact-pinned; `mypy`/`uvicorn` ranges remain (cosmetic, `uv sync --locked`). |
+| T8 | Deferred (operator decision) | Stale root instruction docs left in place by choice. |
+| T9 | Deferred (operator decision) | Duplicate `examples/feed.xml` left in place by choice. |
+| T10 | Fixed | `.env.example` now ships `postgresql+asyncpg://` with a note that `postgresql://`/`postgres://` are also accepted. |
+| T11 | Fixed | CI `push` limited to `branches: [main]`; `DATABASE_URL` scoped to the two Alembic steps, so the pytest step no longer triggers the both-set conftest warning. |
+| T12 | Fixed | `uvicorn==0.52.4`, `structlog==26.1.0`, `mypy==2.3.1` exact-pinned (installed lock versions; no version change). |
 
 Top 5 priority actions: #1 (T1), #3 (T2), #4 (T4 + T5-plugins), and the coverage half of #5 (T6) are done; the runbook half of #5 landed with T7. #2 was already in place (T3).
 
