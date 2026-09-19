@@ -13,7 +13,7 @@ dependencies = [
   "argon2-cffi==25.1.0",
   "apscheduler==3.11.3",
   "jsonschema==4.26.0",
-  "pillow>=10.4,<11",
+  "pillow==12.3.0",
   "litellm==1.101.0",
   "instructor==1.17.0",
   "redis==8.1.0",

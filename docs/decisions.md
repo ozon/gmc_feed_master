@@ -1562,3 +1562,11 @@ under the pinned `maxWarnings: 338`.
 **Decision:** CI adds a second mypy invocation (`MYPYPATH=../plugins uv run mypy --explicit-package-bases ../plugins`); the single `mypy . ../plugins` form cannot be used because every plugin's `plugin.py` maps to a duplicate top-level `plugin` module. The one finding (`filter/plugin.py` preview returning `JSONResponse` under a `dict[str, int]` annotation) is fixed by widening the annotation to `dict[str, int] | JSONResponse`, matching enrichment/custom_labels. `mypy --strict` is **not** enabled: it currently reports 3274 errors across 172 files, tracked as a future cycle.
 
 **Rationale:** The contract code is the highest-value thing to typecheck and was the only completely unchecked surface; the fix is one line. Full strict is a large, mechanical, separate project and bundling it would dwarf this cycle.
+
+### Dependency scanning + Pillow security bump (T2)
+
+**Topic:** No security/dependency scanning existed; the runtime lock carried known CVEs.
+
+**Decision:** Add `.github/dependabot.yml` (uv, npm, github-actions, weekly, minor/patch groups) and two CI audit gates: a runtime-only `pip-audit` (`uv export --frozen --no-dev | pip-audit -r`, tool pinned at `pip-audit==2.10.1`) and `npm audit --audit-level=high`. A runtime audit found 33 CVEs in `pillow 10.4.0`; bump `pillow>=10.4,<11` to `pillow==12.3.0`. `diskcache 5.6.3` has `PYSEC-2026-2447` (pickle deserialization) with **no fixed release**; the audit passes `--ignore-vuln PYSEC-2026-2447` because exploiting it needs write access to the server-local `ai_cache_dir`, which is not an attacker-reachable path here. Dev-only CVEs (e.g. `pytest 8.4.2`) are outside the runtime gate by `--no-dev`.
+
+**Rationale:** `litellm` and the image path are the largest third-party surfaces; a silent vulnerable pin was the biggest unmanaged risk. Runtime-only keeps the gate about the shipped artifact and avoids an unmaintainable dev-dependency whitelist.
