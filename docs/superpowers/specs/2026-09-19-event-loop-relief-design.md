@@ -59,11 +59,13 @@ File: `app/export/service.py`.
 File: `app/pipeline/steps.py`.
 
 - Add `import asyncio` and module constant `PLUGIN_CALL_TIMEOUT_S = 30`.
-- Add one helper used by both call sites:
+- Add one helper used by both call sites (reading the module constant at call time so tests can monkeypatch it):
 
   ```python
-  async def _call_plugin(fn, *args, timeout=PLUGIN_CALL_TIMEOUT_S, **kwargs):
-      return await asyncio.wait_for(asyncio.to_thread(fn, *args, **kwargs), timeout)
+  async def _call_plugin(fn, *args, **kwargs):
+      return await asyncio.wait_for(
+          asyncio.to_thread(fn, *args, **kwargs), PLUGIN_CALL_TIMEOUT_S
+      )
   ```
 
 - `prepare_run(...)` → `await _call_plugin(prepare, config, data, rctx)`.
