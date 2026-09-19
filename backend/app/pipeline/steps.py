@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import inspect
 import logging
 from collections.abc import Callable
@@ -197,6 +198,22 @@ class StagingStep:
         )
 
 
+PLUGIN_CALL_TIMEOUT_S = 30
+
+
+async def _call_plugin(fn, *args, **kwargs):
+    """Run a sync plugin hook in a worker thread under a hard timeout.
+
+    ponytail: wait_for cancels the await, not the OS thread. A timed-out hook
+    keeps running in the background; the product it was handling is marked
+    errored and discarded, so it cannot corrupt survivors. A subprocess
+    sandbox is the escape hatch if a hook ever needs true cancellation.
+    """
+    return await asyncio.wait_for(
+        asyncio.to_thread(fn, *args, **kwargs), PLUGIN_CALL_TIMEOUT_S
+    )
+
+
 class PluginStep:
     name = "run_plugins"
 
@@ -232,8 +249,11 @@ class PluginStep:
                     logger=ctx.logger,
                     run_state=ctx.run_state,
                 )
-                run_states[key] = prepare(
-                    instance["resolved_config"], instance["resolved_data"], rctx
+                run_states[key] = await _call_plugin(
+                    prepare,
+                    instance["resolved_config"],
+                    instance["resolved_data"],
+                    rctx,
                 )
 
         for product in ctx.run_state.products:
@@ -256,7 +276,8 @@ class PluginStep:
                 )
                 try:
                     if accepts_state.get(key):
-                        result = plugin_obj.process(
+                        result = await _call_plugin(
+                            plugin_obj.process,
                             current,
                             instance["resolved_config"],
                             instance["resolved_data"],
@@ -264,12 +285,21 @@ class PluginStep:
                             state=run_states.get(key),
                         )
                     else:
-                        result = plugin_obj.process(
+                        result = await _call_plugin(
+                            plugin_obj.process,
                             current,
                             instance["resolved_config"],
                             instance["resolved_data"],
                             rctx,
                         )
+                except asyncio.TimeoutError:
+                    ctx.logger.warning(
+                        "plugin %s timed out on product %s after %ss",
+                        instance["plugin"], pid, PLUGIN_CALL_TIMEOUT_S,
+                    )
+                    errored += 1
+                    error = True
+                    break
                 except Exception as exc:  # noqa: BLE001
                     ctx.logger.warning(
                         "plugin %s errored on product %s: %s",

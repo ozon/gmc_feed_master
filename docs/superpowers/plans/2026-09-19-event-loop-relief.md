@@ -213,7 +213,7 @@ async def test_plugin_call_timeout_errors_product_and_continues(
 
     assert result.failed_count == 1
     assert result.processed_count == 1
-    assert rows["1"].processed_data == {"id": "1", "title": "a"}
+    assert rows["1"].processed_data is None
     assert rows["2"].processed_data == {"id": "2", "title": "b", "touched": True}
     await engine.dispose()
 ```

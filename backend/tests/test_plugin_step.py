@@ -1,4 +1,5 @@
 import logging
+import time
 
 import pytest
 from sqlalchemy import select
@@ -341,4 +342,34 @@ async def test_two_instances_of_same_plugin_keep_separate_run_state(
     )
 
     assert rows["1"].processed_data == {"id": "1", "title": "a", "tags": ["A", "B"]}
+    await engine.dispose()
+
+
+class SlowOnOnePlugin:
+    def process(self, product, config, data, rctx):
+        if product["id"] == "1":
+            time.sleep(0.2)
+        return {**product, "touched": True}
+
+
+async def test_plugin_call_timeout_errors_product_and_continues(
+    isolated_database_url, monkeypatch,
+):
+    monkeypatch.setattr("app.pipeline.steps.PLUGIN_CALL_TIMEOUT_S", 0.05)
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    products = [{"id": "1", "title": "a"}, {"id": "2", "title": "b"}]
+    feed_source, pks = await _prepare(factory, products)
+    bundle = {"instances": [
+        {"position": 0, "plugin": "slow", "resolved_config": {}, "resolved_data": {}},
+    ]}
+
+    result, rows, _ = await _run_plugin_step(
+        factory, feed_source, products, pks, bundle, {"slow": SlowOnOnePlugin()}
+    )
+
+    assert result.failed_count == 1
+    assert result.processed_count == 1
+    assert rows["1"].processed_data is None
+    assert rows["2"].processed_data == {"id": "2", "title": "b", "touched": True}
     await engine.dispose()
