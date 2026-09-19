@@ -47,47 +47,7 @@ export default defineConfig(({ mode }) => {
           }
         : {}),
       proxy: {
-        '/admin': {
-          target: apiTarget,
-          changeOrigin: true,
-        },
-        '/auth': {
-          target: apiTarget,
-          changeOrigin: true,
-        },
-        '/health': {
-          target: apiTarget,
-          changeOrigin: true,
-        },
-        '/clients': {
-          target: apiTarget,
-          changeOrigin: true,
-        },
-        '/feed-sources': {
-          target: apiTarget,
-          changeOrigin: true,
-        },
-        '/dashboard': {
-          target: apiTarget,
-          changeOrigin: true,
-        },
-        '/plugins': {
-          target: apiTarget,
-          changeOrigin: true,
-        },
-        '/registry': {
-          target: apiTarget,
-          changeOrigin: true,
-        },
-        '/export': {
-          target: apiTarget,
-          changeOrigin: true,
-        },
-        '/logs': {
-          target: apiTarget,
-          changeOrigin: true,
-        },
-        '/chat': {
+        '/api': {
           target: apiTarget,
           changeOrigin: true,
         },

@@ -116,7 +116,7 @@ The external proxy must implement the same routing:
 
 | Path | Target |
 |---|---|
-| `/auth/*`, `/health`, `/admin/*`, `/clients`, `/clients/*`, `/feed-sources/*`, `/dashboard/*`, `/plugins`, `/plugins/*`, `/registry/*`, `/export/*`, `/chat`, `/logs/*` | `127.0.0.1:${BACKEND_PORT:-8000}` |
+| `/api/*`, `/export/*`, `/health` | `127.0.0.1:${BACKEND_PORT:-8000}` |
 | everything else | `127.0.0.1:${FRONTEND_PORT:-8080}` |
 
 If the proxy runs on another host, set `BACKEND_BIND`/`FRONTEND_BIND` to the
