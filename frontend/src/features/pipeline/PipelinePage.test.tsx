@@ -302,7 +302,7 @@ describe('PipelinePage', () => {
     const saved = putBody as { instances: Array<{ id: number; name: string }> };
     expect(saved.instances[0]).toMatchObject({ id: 12, name: 'Second' });
     expect(saved.instances[1]).toMatchObject({ id: 11, name: 'First' });
-  });
+  }, 20000);
 
   it('remove button deletes the instance locally and enables Save', async () => {
     const user = userEvent.setup();

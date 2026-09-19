@@ -204,7 +204,7 @@ describe('PluginPage', () => {
     await waitFor(() => expect(capturedConfigUrl).toBe('/plugins/rules/config?feed_source_id=1'));
     expect(capturedConfigUrl).not.toContain('client_id');
     // Generic Save is hidden with a custom component; the only "Save" button is RulesUI's own, disabled until dirty.
-    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
+    await waitFor(() => expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled());
   });
 
   it('renders the filter custom component for the filter plugin', async () => {
