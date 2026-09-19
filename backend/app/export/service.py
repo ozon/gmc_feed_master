@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
 import secrets
@@ -85,7 +86,7 @@ class ExportService:
 
         try:
             channel = channel_metadata_for(feed_source, client_name, self._public_base_url)
-            data = render_feed(products, registry, channel)
+            data = await asyncio.to_thread(render_feed, products, registry, channel)
             file_hash = hashlib.sha256(data).hexdigest()
         except Exception:
             await self._mark_run_failed(feed_source_id, ingestion_run_id)
@@ -133,7 +134,9 @@ class ExportService:
                     run.export_version_id = latest.id
                 else:
                     version_number = (latest.version_number + 1) if latest is not None else 1
-                    self._store.write_version(feed_source_id, version_number, data)
+                    await asyncio.to_thread(
+                        self._store.write_version, feed_source_id, version_number, data
+                    )
                     new_version = ExportVersion(
                         feed_source_id=feed_source_id,
                         export_run_id=run.id,
@@ -155,7 +158,7 @@ class ExportService:
 
         try:
             if not (deduplicated and self._store.published_exists(feed_source_id)):
-                self._store.publish(feed_source_id, data)
+                await asyncio.to_thread(self._store.publish, feed_source_id, data)
         except Exception:
             await self._mark_run_failed(feed_source_id, ingestion_run_id)
             raise
@@ -282,8 +285,8 @@ class ExportService:
                 for row in rows:
                     findings_by_run.setdefault(row.ingestion_run_id, []).append(row)
 
-        new_products = self._load_version_products(feed_source_id, version_number, registry)
-        old_products = self._load_version_products(feed_source_id, against, registry)
+        new_products = await self._load_version_products(feed_source_id, version_number, registry)
+        old_products = await self._load_version_products(feed_source_id, against, registry)
         result = _field_diff(old_products, new_products, version_number, against)
         result["findings"] = _findings_diff(
             findings_by_run.get(run_a, []),
@@ -293,10 +296,12 @@ class ExportService:
         ).model_dump()
         return result
 
-    def _load_version_products(
+    async def _load_version_products(
         self, feed_source_id: int, version_number: int, registry: RegistryDocument
     ) -> dict[str, dict[str, Any]]:
-        data = self._store.read_version(feed_source_id, version_number)
+        data = await asyncio.to_thread(
+            self._store.read_version, feed_source_id, version_number
+        )
         if data is None:
             raise LookupError(f"version file {version_number} missing")
         report = parse_xml(data, registry)
@@ -318,7 +323,9 @@ class ExportService:
             ).scalar_one_or_none()
         if version is None:
             raise LookupError(f"version {version_number} not found")
-        data = self._store.read_version(feed_source_id, version_number)
+        data = await asyncio.to_thread(
+            self._store.read_version, feed_source_id, version_number
+        )
         if data is None:
             raise LookupError(f"version file {version_number} missing")
         return data
@@ -342,14 +349,16 @@ class ExportService:
             ).scalar_one_or_none()
         if source_version is None:
             raise LookupError(f"version {version_number} not found")
-        data = self._store.read_version(feed_source_id, version_number)
+        data = await asyncio.to_thread(
+            self._store.read_version, feed_source_id, version_number
+        )
         if data is None:
             raise LookupError(f"version file {version_number} missing")
 
         report = parse_xml(data, registry)
         products = list(report.products)
         channel = channel_metadata_for(feed_source, client_name, self._public_base_url)
-        rendered = render_feed(products, registry, channel)
+        rendered = await asyncio.to_thread(render_feed, products, registry, channel)
         file_hash = hashlib.sha256(rendered).hexdigest()
 
         new_number: int | None = None
@@ -374,7 +383,9 @@ class ExportService:
                     )
                 ).scalar_one_or_none()
                 new_number = (latest.version_number + 1) if latest is not None else 1
-                self._store.write_version(feed_source_id, new_number, rendered)
+                await asyncio.to_thread(
+                    self._store.write_version, feed_source_id, new_number, rendered
+                )
                 run = ExportRun(
                     feed_source_id=feed_source_id,
                     ingestion_run_id=None,
@@ -401,7 +412,7 @@ class ExportService:
             raise
 
         try:
-            self._store.publish(feed_source_id, rendered)
+            await asyncio.to_thread(self._store.publish, feed_source_id, rendered)
         except Exception:
             await self._mark_run_failed_by_id(version.export_run_id)
             raise

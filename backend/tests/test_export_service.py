@@ -1,3 +1,4 @@
+import threading
 from datetime import datetime, timezone
 from typing import ClassVar
 
@@ -226,3 +227,36 @@ async def test_publish_failure_marks_run_failed_and_keeps_version(env, monkeypat
     assert runs[0].status == "failed"
     versions = await _versions(env["factory"], env["feed_source_id"])
     assert [v.version_number for v in versions] == [1]
+
+
+async def test_export_render_and_file_writes_run_off_the_event_loop(env, monkeypatch):
+    from app.export import service as export_service
+
+    run_id = await _start_run(env)
+    loop_thread = threading.get_ident()
+    seen: list[int] = []
+
+    original_render = export_service.render_feed
+    original_write = env["store"].write_version
+    original_publish = env["store"].publish
+
+    def recording_render(*args, **kwargs):
+        seen.append(threading.get_ident())
+        return original_render(*args, **kwargs)
+
+    def recording_write(*args, **kwargs):
+        seen.append(threading.get_ident())
+        return original_write(*args, **kwargs)
+
+    def recording_publish(*args, **kwargs):
+        seen.append(threading.get_ident())
+        return original_publish(*args, **kwargs)
+
+    monkeypatch.setattr(export_service, "render_feed", recording_render)
+    monkeypatch.setattr(env["store"], "write_version", recording_write)
+    monkeypatch.setattr(env["store"], "publish", recording_publish)
+
+    await env["service"].export_for_run(env["feed_source_id"], run_id, PRODUCTS, REGISTRY)
+
+    assert len(seen) == 3
+    assert all(thread_id != loop_thread for thread_id in seen)
