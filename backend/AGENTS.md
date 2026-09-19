@@ -111,10 +111,11 @@ Rather than restating generic rules Ruff already checks, point at the rule group
 ```bash
 uv run ruff check . ../plugins   # exit-0, hard gate, no baseline file
 uv run mypy .            # exit-0, hard gate, no baseline file
+MYPYPATH=../plugins uv run mypy --explicit-package-bases ../plugins   # plugins runtime-contract code
 uv run alembic check     # no pending model changes without a migration
 uv run pytest --report-log=.report.jsonl   # jq-based failure gate, see Testing above
 ```
-All four are enforced in CI (`.github/workflows/ci.yml`), which runs them after `alembic upgrade head`.
+These gates are enforced in CI (`.github/workflows/ci.yml`), which runs them after `alembic upgrade head`.
 
 ## Documentation map
 - `docs/architecture.md` — Pipeline stages, delta mechanics, plugin system

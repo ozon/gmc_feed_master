@@ -43,6 +43,9 @@ jobs:
         run: |
           uv run mypy .
           echo "mypy: clean (0 errors)"
+      - name: Mypy gate — plugins (exit-0)
+        working-directory: backend
+        run: MYPYPATH=../plugins uv run mypy --explicit-package-bases ../plugins
       - name: Run backend tests and compile checks
         working-directory: backend
         run: uv run pytest -q && uv run python -m compileall app alembic registry

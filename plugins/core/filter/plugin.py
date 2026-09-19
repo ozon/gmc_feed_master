@@ -184,7 +184,7 @@ class FilterPlugin:
             payload: PreviewRequest,
             user: CurrentUser = Depends(get_current_user),
             db_session: Any = Depends(get_db_session),
-        ) -> dict[str, int]:
+        ) -> dict[str, int] | JSONResponse:
             for index, condition in enumerate(payload.conditions):
                 try:
                     _validate_condition(condition, index)

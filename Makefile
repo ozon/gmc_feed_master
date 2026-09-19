@@ -58,6 +58,7 @@ backend-lint-fix: ## Lint + auto-fix backend with ruff
 .PHONY: backend-typecheck
 backend-typecheck: ## Type-check backend with mypy
 	cd $(BACKEND_DIR) && uv run mypy .
+	cd $(BACKEND_DIR) && MYPYPATH=../plugins uv run mypy --explicit-package-bases ../plugins
 
 .PHONY: backend-migrate
 backend-migrate: ## Apply database migrations (alembic upgrade head)

@@ -1554,3 +1554,11 @@ under the pinned `maxWarnings: 338`.
 **Rationale:** The deployment runs one uvicorn worker, so any sync work in an async path stalls requests and the scheduler. `to_thread` is the smallest change that removes the stall without touching the renderer/store APIs or the plugin contract. A timed-out call abandons its thread (Python cannot kill it); this is safe because the product is errored and discarded and plugin calls are sequential, so the executor is not starved. Streaming export stays deferred until peak memory is measured as a problem.
 
 **Non-goals:** `B8` image-dimension insert race, `routes/clients.py` sync unlink, `B6`/`B7` write/scan amplification.
+
+### Mypy covers plugins; strict deferred (T5)
+
+**Topic:** The runtime-contract plugin code was never typechecked.
+
+**Decision:** CI adds a second mypy invocation (`MYPYPATH=../plugins uv run mypy --explicit-package-bases ../plugins`); the single `mypy . ../plugins` form cannot be used because every plugin's `plugin.py` maps to a duplicate top-level `plugin` module. The one finding (`filter/plugin.py` preview returning `JSONResponse` under a `dict[str, int]` annotation) is fixed by widening the annotation to `dict[str, int] | JSONResponse`, matching enrichment/custom_labels. `mypy --strict` is **not** enabled: it currently reports 3274 errors across 172 files, tracked as a future cycle.
+
+**Rationale:** The contract code is the highest-value thing to typecheck and was the only completely unchecked surface; the fix is one line. Full strict is a large, mechanical, separate project and bundling it would dwarf this cycle.
