@@ -211,7 +211,9 @@
       "title": "Version diff",
       "versionA": "Version A",
       "versionB": "Version B",
-      "needTwo": "Need at least two versions to compare."
+      "needTwo": "Need at least two versions to compare.",
+      "system": "System",
+      "user": "User"
     }
   }
 }

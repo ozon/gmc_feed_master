@@ -71,5 +71,6 @@
     "passwordPlaceholder": "Neues Passwort eingeben"
   },
   "saved": "Einstellungen gespeichert",
-  "saveFailed": "Einstellungen konnten nicht gespeichert werden."
+  "saveFailed": "Einstellungen konnten nicht gespeichert werden.",
+  "unsavedChanges": "Ungespeicherte Änderungen. Trotzdem verlassen?"
 }

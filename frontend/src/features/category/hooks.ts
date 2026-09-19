@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost } from '../../api/client';
 import { queryKeys } from '../../api/queryKeys';
 import type { CategoryMatch, CategoryProductState, CategoryRule, CategoryStats } from './types';
@@ -11,19 +11,23 @@ export function useCategoryStats(feedSourceId: number | string | undefined) {
   });
 }
 
-export function useCategoryMatches(
+export function useCategoryMatchesInfinite(
   feedSourceId: number | string,
   ruleId: string,
   limit: number,
-  offset: number,
 ) {
-  return useQuery({
-    queryKey: queryKeys.category.matches(feedSourceId, ruleId, limit, offset),
-    queryFn: () =>
+  return useInfiniteQuery({
+    queryKey: queryKeys.category.matches(feedSourceId, ruleId, limit),
+    queryFn: ({ pageParam }) =>
       apiGet<{ total: number; items: CategoryMatch[] }>(
         `/plugins/category/matches?feed_source_id=${feedSourceId}` +
-          `&rule_id=${encodeURIComponent(ruleId)}&limit=${limit}&offset=${offset}`,
+          `&rule_id=${encodeURIComponent(ruleId)}&limit=${limit}&offset=${pageParam}`,
       ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((count, page) => count + page.items.length, 0);
+      return loaded < lastPage.total ? loaded : undefined;
+    },
     enabled: Boolean(feedSourceId) && Boolean(ruleId),
   });
 }

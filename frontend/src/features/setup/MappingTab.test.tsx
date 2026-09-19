@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Notifications, notifications } from '@mantine/notifications';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
 import { requestBody, stubFetch } from '../../test/fetch';
@@ -164,21 +164,21 @@ beforeEach(async () => {
 });
 
 function renderTab() {
-  return render(
-    <MemoryRouter initialEntries={['/clients/1/feeds/1/setup?tab=mapping']}>
-      <Routes>
-        <Route
-          path="/clients/:clientId/feeds/:feedSourceId/setup"
-          element={
-            <QueryClientProvider client={queryClient}>
-              <Notifications position="top-right" limit={5} />
-              <MappingTab />
-            </QueryClientProvider>
-          }
-        />
-      </Routes>
-    </MemoryRouter>,
+  const router = createMemoryRouter(
+    [
+      {
+        path: '/clients/:clientId/feeds/:feedSourceId/setup',
+        element: (
+          <QueryClientProvider client={queryClient}>
+            <Notifications position="top-right" limit={5} />
+            <MappingTab />
+          </QueryClientProvider>
+        ),
+      },
+    ],
+    { initialEntries: ['/clients/1/feeds/1/setup?tab=mapping'] },
   );
+  return render(<RouterProvider router={router} />);
 }
 
 describe('MappingTab', () => {

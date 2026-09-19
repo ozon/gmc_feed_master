@@ -71,5 +71,6 @@
     "passwordPlaceholder": "Enter new password"
   },
   "saved": "Settings saved",
-  "saveFailed": "Could not save settings."
+  "saveFailed": "Could not save settings.",
+  "unsavedChanges": "You have unsaved changes. Leave anyway?"
 }

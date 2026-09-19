@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Group, Stack, Text, Title } from '@mantine/core';
 import { IconWand } from '@tabler/icons-react';
 import { useTranslation } from 'react-i18next';
-import { useParams } from 'react-router';
+import { useParams, useBlocker } from 'react-router';
 import {
   useAutoMap,
   useFieldMapping,
@@ -16,20 +16,8 @@ import {
   notifyMutationError,
   notifySuccess,
 } from '../../app/notifications';
+import { mapFieldErrors } from '../../app/notifyApiError';
 import { MappingTable } from './MappingTable';
-
-function parseRowErrors(errors: string[]): Record<string, string> {
-  const map: Record<string, string> = {};
-  for (const err of errors) {
-    const colonIdx = err.indexOf(':');
-    if (colonIdx > 0) {
-      const source = err.slice(0, colonIdx);
-      const message = err.slice(colonIdx + 2);
-      map[source] = message;
-    }
-  }
-  return map;
-}
 
 function deepEqual(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -82,6 +70,12 @@ export function MappingTab() {
     if (customList !== null && !deepEqual(customList, serverCustomFields)) return true;
     return false;
   }, [localEdits, customList, serverCustomFields]);
+
+  useBlocker(({ currentLocation, nextLocation }) => {
+    if (!isDirty) return false;
+    if (currentLocation.pathname === nextLocation.pathname) return false;
+    return !window.confirm(tSetup('unsavedChanges'));
+  });
 
   const coveredTargets = useMemo(() => {
     const targets = new Set<string>();
@@ -177,7 +171,7 @@ export function MappingTab() {
       notifySuccess(tSetup('mapping.saved'));
     } catch (error) {
       if (error instanceof ApiError && error.errors) {
-        setRowErrors(parseRowErrors(error.errors));
+        setRowErrors(mapFieldErrors(error.errors));
       }
       notifyMutationError(error, tSetup('mapping.saveFailed'));
     }

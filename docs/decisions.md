@@ -1516,3 +1516,31 @@ releases without an auto-deploy path the operator did not want. A single Compose
 file keeps the no-Caddy mode to one `--scale caddy=0` flag. See
 `docs/decisions/0013-production-deployment.md` and
 `docs/superpowers/specs/2026-09-18-production-container-deployment-design.md`.
+
+## 2026-09-19
+
+### Frontend review remediation (2026-09-17 report)
+
+**Topic:** Resolve `docs/reports/2026-09-17-02-frontend.md`.
+
+**Decision:** Fixed F1–F4, F6–F10 and F12; deferred F11 (OpenAPI type codegen)
+and F13 (stable list keys) as disproportionate/unsafe, recorded in the report's
+status table. Two ADR-0001 deviations are corrected: `TaxonomyCombobox` now uses
+`useQuery` (keyed on language + debounced query) and surfaces failures instead of
+collapsing them to an empty list; `MatchesModal` load-more now uses
+`useInfiniteQuery`, superseding the manual-accumulation mechanism logged on
+2026-09-10 while keeping its operator-visible behavior (append, no duplicate
+products, reset on rule change — now via the query key). `MappingTab` and
+`FeedSettingsForm` gain `useBlocker` unsaved-changes guards (`window.confirm`,
+matching `RulesUI`), and `FeedSettingsForm` gates Save/Cancel on form-or-config
+dirty. `ConfirmModal` clears its type-to-confirm text on the `opened` transition.
+
+**Rationale:** The 2026-09-17 review flagged these as the actionable defects. F11
+needs an `openapi-typescript` pipeline that does not fit the hand-shaped domain
+types; F13's stable keys would require row ids that enter saved config and change
+confighashes, and the state mis-association it guards against does not occur
+because row editors are controlled (`JsonSchemaForm` is stateless, `FieldSelect`
+resyncs `search` on value change).
+
+**Lint:** No new `oxlint` warnings introduced; modified files verified clean
+under the pinned `maxWarnings: 338`.

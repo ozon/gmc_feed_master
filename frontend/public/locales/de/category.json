@@ -95,6 +95,7 @@
   },
   "taxonomy": {
     "search": "Kategorie suchen",
-    "noResults": "Keine passende Kategorie."
+    "noResults": "Keine passende Kategorie.",
+    "searchFailed": "Kategorien konnten nicht gesucht werden."
   }
 }

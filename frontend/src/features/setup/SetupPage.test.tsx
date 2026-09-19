@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
+import { createMemoryRouter, RouterProvider, useLocation } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
@@ -41,13 +41,13 @@ const feed: FeedSourceRow = {
 
 function renderAt(path: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const router = createMemoryRouter(
+    [{ path: '/clients/:clientId/feeds/:feedSourceId?/setup', element: <SetupPage /> }],
+    { initialEntries: [path] },
+  );
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/clients/:clientId/feeds/:feedSourceId?/setup" element={<SetupPage />} />
-        </Routes>
-      </MemoryRouter>
+      <RouterProvider router={router} />
     </QueryClientProvider>,
   );
 }
@@ -121,25 +121,27 @@ describe('SetupPage', () => {
 
     let currentSearch = '';
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/clients/:clientId/feeds/:feedSourceId?/setup',
+          element: (
+            <>
+              <SetupPage />
+              <SearchProbe
+                onSearch={(s) => {
+                  currentSearch = s;
+                }}
+              />
+            </>
+          ),
+        },
+      ],
+      { initialEntries: ['/clients/1/feeds/1/setup'] },
+    );
     const view = render(
       <QueryClientProvider client={client}>
-        <MemoryRouter initialEntries={['/clients/1/feeds/1/setup']}>
-          <Routes>
-            <Route
-              path="/clients/:clientId/feeds/:feedSourceId?/setup"
-              element={
-                <>
-                  <SetupPage />
-                  <SearchProbe
-                    onSearch={(s) => {
-                      currentSearch = s;
-                    }}
-                  />
-                </>
-              }
-            />
-          </Routes>
-        </MemoryRouter>
+        <RouterProvider router={router} />
       </QueryClientProvider>,
     );
 

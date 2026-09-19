@@ -16,7 +16,6 @@ export function ProductDrawer({ feedSourceId, productId, onClose }: ProductDrawe
 
   return (
     <Drawer opened={productId !== null} onClose={onClose} title={t('drawerTitle')} size="lg">
-      {productId === null && null}
       {detail.isPending && <LoadingState />}
       {detail.isError && <ErrorState />}
       {detail.data && (

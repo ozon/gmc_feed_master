@@ -35,11 +35,13 @@ export const queryKeys = {
   category: {
     stats: (feedSourceId: number | string) =>
       ['feed-source', feedSourceId, 'category-stats'] as const,
-    matches: (feedSourceId: number | string, ruleId: string, limit: number, offset: number) =>
-      ['feed-source', feedSourceId, 'category-matches', ruleId, { limit, offset }] as const,
+    matches: (feedSourceId: number | string, ruleId: string, limit: number) =>
+      ['feed-source', feedSourceId, 'category-matches', ruleId, limit] as const,
     product: (feedSourceId: number | string, productId: string) =>
       ['feed-source', feedSourceId, 'category-product', productId] as const,
     languages: ['category', 'taxonomy-languages'] as const,
+    taxonomySearch: (language: string, query: string) =>
+      ['category', 'taxonomy-search', language, query] as const,
   },
   eventLogs: (filters: unknown) => ['logs', 'entries', filters] as const,
   adminUsers: ['admin', 'users'] as const,

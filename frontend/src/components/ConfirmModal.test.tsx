@@ -1,8 +1,28 @@
 import { describe, expect, it, vi } from 'vitest';
+import { useState } from 'react';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Button } from '@mantine/core';
 import { render } from '../test/render';
 import { ConfirmModal } from './ConfirmModal';
+
+function ConfirmModalHarness() {
+  const [opened, setOpened] = useState(true);
+  return (
+    <>
+      <Button onClick={() => setOpened((value) => !value)}>toggle</Button>
+      <ConfirmModal
+        opened={opened}
+        title="Delete feed"
+        message="This cannot be undone."
+        typeToConfirm="Acme"
+        danger
+        onConfirm={vi.fn<() => void>()}
+        onClose={() => setOpened(false)}
+      />
+    </>
+  );
+}
 
 describe('ConfirmModal', () => {
   it('confirms and cancels', async () => {
@@ -55,5 +75,20 @@ describe('ConfirmModal', () => {
 
     await user.click(confirm);
     expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears the confirmation text when reopened', async () => {
+    const user = userEvent.setup();
+
+    render(<ConfirmModalHarness />);
+
+    await user.type(screen.getByLabelText(/type acme to confirm/i), 'Acme');
+    expect(screen.getByLabelText(/type acme to confirm/i)).toHaveValue('Acme');
+
+    await user.click(screen.getByRole('button', { name: 'toggle' }));
+    await user.click(screen.getByRole('button', { name: 'toggle' }));
+
+    expect(screen.getByLabelText(/type acme to confirm/i)).toHaveValue('');
+    expect(screen.getByRole('button', { name: 'Confirm' })).toBeDisabled();
   });
 });

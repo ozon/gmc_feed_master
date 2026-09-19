@@ -75,9 +75,9 @@ describe('MatchesModal', () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false, staleTime: Infinity } },
     });
-    client.setQueryData(queryKeys.category.matches(7, 'g1', 50, 0), {
-      total: 8,
-      items: pageItems('p1', 5),
+    client.setQueryData(queryKeys.category.matches(7, 'g1', 50), {
+      pages: [{ total: 8, items: pageItems('p1', 5) }],
+      pageParams: [0],
     });
     stubFetch(() => jsonResponse({ total: 0, items: [] }));
     render(<MatchesModal feedSourceId={7} ruleId="g1" opened onClose={() => {}} />, {

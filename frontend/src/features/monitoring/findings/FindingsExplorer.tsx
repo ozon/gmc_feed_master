@@ -10,7 +10,7 @@ import {
   Text,
   TextInput,
 } from '@mantine/core';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import type { QualityFinding } from '../../../api/types';
@@ -124,9 +124,18 @@ export function FindingsExplorer({ findings, onOpenProduct }: Props) {
   const [severities, setSeverities] = useState<string[]>([]);
   const [rules, setRules] = useState<string[]>([]);
 
-  const codes = [...new Set(findings.map((finding) => finding.code))];
-  const filtered = filterFindings(findings, { severities, rules, search });
-  const groups = mode === 'attribute' ? groupByAttribute(filtered) : groupByRule(filtered);
+  const codes = useMemo(
+    () => [...new Set(findings.map((finding) => finding.code))],
+    [findings],
+  );
+  const filtered = useMemo(
+    () => filterFindings(findings, { severities, rules, search }),
+    [findings, severities, rules, search],
+  );
+  const groups = useMemo(
+    () => (mode === 'attribute' ? groupByAttribute(filtered) : groupByRule(filtered)),
+    [mode, filtered],
+  );
 
   return (
     <Stack gap="md">

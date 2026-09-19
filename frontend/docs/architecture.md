@@ -216,8 +216,8 @@ Charts use `@mantine/charts@9.5.2` (peer `recharts`); styles imported in `src/Ap
 
 ### Setup (`src/features/setup/`)
 - `SetupPage` — tabs: Feed Settings, Field Mapping, Export URL
-- `FeedSettingsForm` — writes only changed keys to `PUT /feed-sources/{id}`; `configuration` updates are merged (`basic_auth`, and since Z3 `ai_qc: {enabled, budget}` from the AI quality-check switch + budget input) so unrelated config keys are preserved
-- `MappingTab` — `MappingTable` (TanStack Table; observed rows + custom rows with add/remove, shadow indicator for observed/custom overlap) + auto-map button (the only automap trigger — pipeline runs and dry-runs never auto-match; custom source fields are dormant until the feed supplies the key)
+- `FeedSettingsForm` — writes only changed keys to `PUT /feed-sources/{id}`; `configuration` updates are merged (`basic_auth`, and since Z3 `ai_qc: {enabled, budget}` from the AI quality-check switch + budget input) so unrelated config keys are preserved. Save/Cancel enable on either form dirty or config dirty (basic-auth/AI-QC changes; Cancel resets both), and a `useBlocker` guard prompts on navigation away from unsaved edits
+- `MappingTab` — `MappingTable` (TanStack Table; observed rows + custom rows with add/remove, shadow indicator for observed/custom overlap) + auto-map button (the only automap trigger — pipeline runs and dry-runs never auto-match; custom source fields are dormant until the feed supplies the key); dirty mapping edits are protected by a `useBlocker` guard
 
 ## Development Setup
 ```bash

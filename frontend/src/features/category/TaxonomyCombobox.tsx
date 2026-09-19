@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Select } from '@mantine/core';
+import { useDebouncedValue } from '@mantine/hooks';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { apiGet } from '../../api/client';
+import { queryKeys } from '../../api/queryKeys';
 import type { TaxonomyEntry } from './types';
 
 const DEBOUNCE_MS = 300;
@@ -19,29 +22,20 @@ export function TaxonomyCombobox({
 }) {
   const { t } = useTranslation('category');
   const [query, setQuery] = useState('');
-  const [entries, setEntries] = useState<TaxonomyEntry[]>([]);
-  const visibleEntries = disabled || !query.trim() ? [] : entries;
+  const [debouncedQuery] = useDebouncedValue(query, DEBOUNCE_MS);
+  const trimmedQuery = debouncedQuery.trim();
 
-  useEffect(() => {
-    if (disabled || !query.trim()) {
-      return;
-    }
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      void apiGet<{ items: TaxonomyEntry[] }>(
+  const searchQuery = useQuery({
+    queryKey: queryKeys.category.taxonomySearch(language, trimmedQuery),
+    queryFn: () =>
+      apiGet<{ items: TaxonomyEntry[] }>(
         `/plugins/category/taxonomy/search?language=${encodeURIComponent(language)}` +
-          `&q=${encodeURIComponent(query)}&limit=50&offset=0`,
-      )
-        .catch(() => ({ items: [] as TaxonomyEntry[] }))
-        .then((result) => {
-          if (!cancelled) setEntries(result.items);
-        });
-    }, DEBOUNCE_MS);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [query, language, disabled]);
+          `&q=${encodeURIComponent(trimmedQuery)}&limit=50&offset=0`,
+      ),
+    enabled: !disabled && trimmedQuery !== '',
+  });
+
+  const visibleEntries = disabled || !query.trim() ? [] : (searchQuery.data?.items ?? []);
 
   return (
     <Select
@@ -59,7 +53,9 @@ export function TaxonomyCombobox({
       onSearchChange={setQuery}
       onChange={(next) => onChange(next)}
       placeholder={t('taxonomy.search')}
-      nothingFoundMessage={t('taxonomy.noResults')}
+      nothingFoundMessage={
+        searchQuery.isError ? t('taxonomy.searchFailed') : t('taxonomy.noResults')
+      }
     />
   );
 }

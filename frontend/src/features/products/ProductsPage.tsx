@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Checkbox,
@@ -73,8 +73,11 @@ export function ProductsPage() {
   });
 
   const fieldsQuery = useFeedSourceFields(feedSourceId ?? '');
-  const allFields = (fieldsQuery.data?.fields ?? []).map((d) => d.name);
-  const dataFields = query.data?.fields ?? [];
+  const allFields = useMemo(
+    () => (fieldsQuery.data?.fields ?? []).map((d) => d.name),
+    [fieldsQuery.data],
+  );
+  const dataFields = useMemo(() => query.data?.fields ?? [], [query.data]);
   const mergedFields = useMemo(
     () => [...new Set([...allFields, ...dataFields])],
     [allFields, dataFields],
@@ -92,22 +95,25 @@ export function ProductsPage() {
     return { id, desc };
   }, [sortParam]);
 
-  const updateParams = (updates: Record<string, string | null>) => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        for (const [key, value] of Object.entries(updates)) {
-          if (value === null) {
-            next.delete(key);
-          } else {
-            next.set(key, value);
+  const updateParams = useCallback(
+    (updates: Record<string, string | null>) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          for (const [key, value] of Object.entries(updates)) {
+            if (value === null) {
+              next.delete(key);
+            } else {
+              next.set(key, value);
+            }
           }
-        }
-        return next;
-      },
-      { replace: true },
-    );
-  };
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
 
   const handleSearchChange = (value: string) => {
     setSearchInput(value);
@@ -118,7 +124,7 @@ export function ProductsPage() {
     if (prevDebouncedQRef.current === debouncedQ) return;
     prevDebouncedQRef.current = debouncedQ;
     updateParams({ q: debouncedQ || null, page: null });
-  }, [debouncedQ]);
+  }, [debouncedQ, updateParams]);
 
   const handleStatusChange = (value: string | null) => {
     updateParams({ status: value === 'all' ? null : value, page: null });

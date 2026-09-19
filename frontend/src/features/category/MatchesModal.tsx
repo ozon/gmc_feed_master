@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { Badge, Button, Group, List, Modal, Stack, Text } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
-import { useCategoryMatches } from './hooks';
+import { useCategoryMatchesInfinite } from './hooks';
 import { ErrorState, LoadingState } from '../../components/StateViews';
-import type { CategoryMatch } from './types';
 
 const PAGE_SIZE = 50;
 
@@ -19,28 +17,9 @@ export function MatchesModal({
   onClose: () => void;
 }) {
   const { t } = useTranslation('category');
-  const [offset, setOffset] = useState(0);
-  const [items, setItems] = useState<CategoryMatch[]>([]);
-  const [total, setTotal] = useState<number | null>(null);
-  const query = useCategoryMatches(feedSourceId ?? 0, ruleId, PAGE_SIZE, offset);
-
-  const [prevRuleId, setPrevRuleId] = useState(ruleId);
-  if (prevRuleId !== ruleId) {
-    setPrevRuleId(ruleId);
-    setOffset(0);
-    setItems([]);
-    setTotal(null);
-  }
-  const [prevQueryData, setPrevQueryData] = useState<typeof query.data>(undefined);
-  if (query.data && query.data !== prevQueryData) {
-    setPrevQueryData(query.data);
-    setTotal(query.data.total);
-    setItems((current) => {
-      if (offset === 0) return query.data.items;
-      const seen = new Set(current.map((item) => item.product_id));
-      return [...current, ...query.data.items.filter((item) => !seen.has(item.product_id))];
-    });
-  }
+  const query = useCategoryMatchesInfinite(feedSourceId ?? 0, ruleId, PAGE_SIZE);
+  const items = query.data?.pages.flatMap((page) => page.items) ?? [];
+  const total = query.data?.pages.at(-1)?.total ?? null;
 
   return (
     <Modal
@@ -68,11 +47,11 @@ export function MatchesModal({
             ))}
           </List>
         )}
-        {total !== null && items.length < total && !query.isError && (
+        {query.hasNextPage && !query.isError && (
           <Button
             variant="subtle"
-            loading={query.isFetching}
-            onClick={() => setOffset(offset + PAGE_SIZE)}
+            loading={query.isFetchingNextPage}
+            onClick={() => void query.fetchNextPage()}
           >
             {t('matches.loadMore')}
           </Button>

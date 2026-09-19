@@ -228,11 +228,11 @@ function DiffModal({
                 v{a.version} — {a.name}
               </Text>
               <Text size="sm" fw={500}>
-                System
+                {t('promptLibrary.diff.system')}
               </Text>
               <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{a.system_prompt}</pre>
               <Text size="sm" fw={500}>
-                User
+                {t('promptLibrary.diff.user')}
               </Text>
               <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{a.user_prompt}</pre>
             </Stack>
@@ -241,11 +241,11 @@ function DiffModal({
                 v{b.version} — {b.name}
               </Text>
               <Text size="sm" fw={500}>
-                System
+                {t('promptLibrary.diff.system')}
               </Text>
               <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{b.system_prompt}</pre>
               <Text size="sm" fw={500}>
-                User
+                {t('promptLibrary.diff.user')}
               </Text>
               <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{b.user_prompt}</pre>
             </Stack>

@@ -27,6 +27,11 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   const { t } = useTranslation();
   const [confirmText, setConfirmText] = useState('');
+  const [prevOpened, setPrevOpened] = useState(opened);
+  if (prevOpened !== opened) {
+    setPrevOpened(opened);
+    setConfirmText('');
+  }
 
   const matchesType = typeToConfirm ? confirmText === typeToConfirm : true;
 

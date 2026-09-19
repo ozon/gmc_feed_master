@@ -95,6 +95,7 @@
   },
   "taxonomy": {
     "search": "Search category",
-    "noResults": "No matching category."
+    "noResults": "No matching category.",
+    "searchFailed": "Could not search categories."
   }
 }

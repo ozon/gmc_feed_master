@@ -9,8 +9,9 @@ import {
   Switch,
   TextInput,
 } from '@mantine/core';
-import { useForm } from '@tanstack/react-form';
+import { useForm, useStore } from '@tanstack/react-form';
 import { useTranslation } from 'react-i18next';
+import { useBlocker } from 'react-router';
 import { useUpdateFeedSource } from '../../api/hooks';
 import { ApiError } from '../../api/client';
 import { notifyMutationError, notifySuccess } from '../../app/notifications';
@@ -54,6 +55,13 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
   const [aiQcEnabled, setAiQcEnabled] = useState(Boolean(aiQcCfg?.enabled));
   const [aiQcBudget, setAiQcBudget] = useState<number>(Number(aiQcCfg?.budget ?? 50));
 
+  const basicAuth = (feed.configuration?.basic_auth ?? undefined) as
+    | Record<string, unknown>
+    | undefined;
+  const originalUsername = (basicAuth?.username as string | undefined) ?? '';
+  const originalAiQcEnabled = Boolean(aiQcCfg?.enabled);
+  const originalAiQcBudget = Number(aiQcCfg?.budget ?? 50);
+
   const form = useForm({
     defaultValues: {
       name: feed.name,
@@ -84,12 +92,6 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
       if (value.history_retention_count !== feed.history_retention_count)
         payload.history_retention_count = value.history_retention_count;
 
-      const originalUsername =
-        ((
-          (feed.configuration as Record<string, unknown> | undefined)?.basic_auth as
-            | Record<string, unknown>
-            | undefined
-        )?.username as string | undefined) ?? '';
       const existingCfg = feed.configuration ?? {};
       const cfgUpdate: Record<string, unknown> = {};
       if (username !== originalUsername || password) {
@@ -124,6 +126,28 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
       }
     },
   });
+
+  const isDirty = useStore(form.store, (state) => state.isDirty);
+  const configDirty =
+    username !== originalUsername ||
+    password !== '' ||
+    aiQcEnabled !== originalAiQcEnabled ||
+    aiQcBudget !== originalAiQcBudget;
+  const dirty = isDirty || configDirty;
+
+  useBlocker(({ currentLocation, nextLocation }) => {
+    if (!dirty) return false;
+    if (currentLocation.pathname === nextLocation.pathname) return false;
+    return !window.confirm(t('unsavedChanges'));
+  });
+
+  const resetConfig = () => {
+    setUsername(originalUsername);
+    setPassword('');
+    setAiQcEnabled(originalAiQcEnabled);
+    setAiQcBudget(originalAiQcBudget);
+    setServerError(null);
+  };
 
   const [prevFeed, setPrevFeed] = useState(feed);
   if (prevFeed !== feed) {
@@ -283,18 +307,21 @@ export function FeedSettingsForm({ feed }: { feed: FeedSourceRow }) {
           value={password}
           onChange={(event) => setPassword(event.currentTarget.value)}
         />
-        <form.Subscribe selector={(state) => ({ isDirty: state.isDirty })}>
-          {({ isDirty }) => (
-            <Group justify="flex-end" mt="sm">
-              <Button variant="default" onClick={() => form.reset()} disabled={!isDirty}>
-                {tCommon('actions.cancel')}
-              </Button>
-              <Button type="submit" loading={updateFeedSource.isPending} disabled={!isDirty}>
-                {tCommon('actions.save')}
-              </Button>
-            </Group>
-          )}
-        </form.Subscribe>
+        <Group justify="flex-end" mt="sm">
+          <Button
+            variant="default"
+            onClick={() => {
+              form.reset();
+              resetConfig();
+            }}
+            disabled={!dirty}
+          >
+            {tCommon('actions.cancel')}
+          </Button>
+          <Button type="submit" loading={updateFeedSource.isPending} disabled={!dirty}>
+            {tCommon('actions.save')}
+          </Button>
+        </Group>
       </Stack>
     </form>
   );

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import { Notifications, notifications } from '@mantine/notifications';
 import i18n from '../../i18n';
 import { render } from '../../test/render';
@@ -60,12 +61,18 @@ beforeEach(async () => {
 });
 
 function renderWithQuery(ui: React.ReactNode) {
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <Notifications position="top-right" limit={5} />
-      {ui}
-    </QueryClientProvider>,
-  );
+  const router = createMemoryRouter([
+    {
+      path: '/',
+      element: (
+        <QueryClientProvider client={queryClient}>
+          <Notifications position="top-right" limit={5} />
+          {ui}
+        </QueryClientProvider>
+      ),
+    },
+  ]);
+  return render(<RouterProvider router={router} />);
 }
 
 describe('FeedSettingsForm', () => {
@@ -177,6 +184,47 @@ describe('FeedSettingsForm', () => {
     await screen.findByDisplayValue('Acme Feed');
 
     expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
+  });
+
+  it('enables save and persists when only the AI-QC switch changes', async () => {
+    const user = userEvent.setup();
+    fetchMock = stubFetch(() => jsonResponse({}));
+
+    renderWithQuery(<FeedSettingsForm feed={feed} />);
+
+    await screen.findByDisplayValue('Acme Feed');
+
+    await user.click(screen.getByRole('switch', { name: /ai quality check/i }));
+
+    const saveBtn = screen.getByRole('button', { name: /save/i });
+    await waitFor(() => expect(saveBtn).toBeEnabled());
+
+    await user.click(saveBtn);
+
+    await waitFor(() => expect(putCalls('/feed-sources/1')).toBe(1));
+    expect(putBody('/feed-sources/1')).toEqual({
+      configuration: {
+        basic_auth: { username: 'admin' },
+        ai_qc: { enabled: true, budget: 50 },
+      },
+    });
+  });
+
+  it('cancel restores unsaved AI-QC changes', async () => {
+    const user = userEvent.setup();
+    fetchMock = stubFetch(() => jsonResponse({}));
+
+    renderWithQuery(<FeedSettingsForm feed={feed} />);
+
+    await screen.findByDisplayValue('Acme Feed');
+
+    const aiQcSwitch = screen.getByRole('switch', { name: /ai quality check/i });
+    await user.click(aiQcSwitch);
+    expect(aiQcSwitch).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+
+    expect(screen.getByRole('switch', { name: /ai quality check/i })).not.toBeChecked();
   });
 
   it('writes ai_qc config preserving existing basic_auth', async () => {
