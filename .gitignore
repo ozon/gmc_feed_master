@@ -73,6 +73,9 @@ frontend_new/.vite/
 # Exported feed files
 exports/
 backend/.report.json*
+backend/.coverage
+backend/.coverage.*
+backend/htmlcov/
 .openchamber/*
 
 # Production runtime data / deploy tag

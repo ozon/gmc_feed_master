@@ -72,7 +72,7 @@ uv run mypy .                             # gate: exit-0, hard (flipped 2026-09-
 - Run with `uv run pytest --report-log=.report.jsonl` — JSON Lines, one event per line.
 - Use `pytest-reportlog`, not `pytest-json-report`: the latter has documented crashes and duplicate-report bugs under `pytest-xdist` (upstream numirias/pytest-json-report#51/#52, pytest-dev/pytest-xdist#1140), and this project runs with `-n auto` by default via `addopts`. `pytest-reportlog` only writes from the controller process, so it's xdist-safe by construction.
 - `.report.jsonl` is a test artifact — gitignored, never committed.
-- CI failure gate:
+- Failure triage (local — CI runs `uv run pytest --cov=app --cov-report=term-missing`; `coverage`'s `fail_under = 85` in `pyproject.toml` is the gate):
   ```bash
   uv run pytest --report-log=.report.jsonl
   FAILED=$(jq -c 'select(.["$report_type"]=="TestReport" and .when=="call" and .outcome=="failed")' \
@@ -113,7 +113,7 @@ uv run ruff check . ../plugins   # exit-0, hard gate, no baseline file
 uv run mypy .            # exit-0, hard gate, no baseline file
 MYPYPATH=../plugins uv run mypy --explicit-package-bases ../plugins   # plugins runtime-contract code
 uv run alembic check     # no pending model changes without a migration
-uv run pytest --report-log=.report.jsonl   # jq-based failure gate, see Testing above
+uv run pytest --cov=app --cov-report=term-missing   # coverage floor 85 (pyproject)
 ```
 These gates are enforced in CI (`.github/workflows/ci.yml`), which runs them after `alembic upgrade head`.
 

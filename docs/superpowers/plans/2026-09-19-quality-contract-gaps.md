@@ -405,6 +405,8 @@ fail_under = 85
 Run: `uv lock && uv sync --locked`
 Expected: `pytest-cov` and `coverage` installed.
 
+Also add to `.gitignore` (under the exported-feed-files block): `backend/.coverage`, `backend/.coverage.*`, `backend/htmlcov/`.
+
 - [ ] **Step 2: Gate the CI test step on coverage**
 
 In `.github/workflows/ci.yml`, replace:

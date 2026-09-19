@@ -111,7 +111,7 @@ Each B905 `strict=True` is justified by a length invariant; where a mismatch is 
 
 ### 5. T6 — backend coverage gate
 
-**Dependency.** Add `pytest-cov==7.1.0` to `[dependency-groups].dev` (it pulls `coverage` transitively; pin only the direct tool).
+**Dependency.** Add `pytest-cov==7.1.0` to `[dependency-groups].dev` (it pulls `coverage` transitively; pin only the direct tool). Add `backend/.coverage`, `backend/.coverage.*`, and `backend/htmlcov/` to `.gitignore` (coverage artifacts).
 
 **Config** (`backend/pyproject.toml`):
 ```toml

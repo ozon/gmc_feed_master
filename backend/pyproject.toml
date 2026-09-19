@@ -29,12 +29,19 @@ dev = [
   "pytest-postgresql==8.1.0",
   "pytest-xdist==3.8.0",
   "pytest-reportlog",
+  "pytest-cov==7.1.0",
   "ruff==0.16.6",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-n auto"
+
+[tool.coverage.run]
+source = ["app"]
+
+[tool.coverage.report]
+fail_under = 85
 
 [tool.mypy]
 python_version = "3.10"

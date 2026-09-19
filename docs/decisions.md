@@ -1570,3 +1570,11 @@ under the pinned `maxWarnings: 338`.
 **Decision:** Add `.github/dependabot.yml` (uv, npm, github-actions, weekly, minor/patch groups) and two CI audit gates: a runtime-only `pip-audit` (`uv export --frozen --no-dev | pip-audit -r`, tool pinned at `pip-audit==2.10.1`) and `npm audit --audit-level=high`. A runtime audit found 33 CVEs in `pillow 10.4.0`; bump `pillow>=10.4,<11` to `pillow==12.3.0`. `diskcache 5.6.3` has `PYSEC-2026-2447` (pickle deserialization) with **no fixed release**; the audit passes `--ignore-vuln PYSEC-2026-2447` because exploiting it needs write access to the server-local `ai_cache_dir`, which is not an attacker-reachable path here. Dev-only CVEs (e.g. `pytest 8.4.2`) are outside the runtime gate by `--no-dev`.
 
 **Rationale:** `litellm` and the image path are the largest third-party surfaces; a silent vulnerable pin was the biggest unmanaged risk. Runtime-only keeps the gate about the shipped artifact and avoids an unmaintainable dev-dependency whitelist.
+
+### Backend coverage floor at 85% (T6)
+
+**Topic:** Coverage was unmeasured and the documented CI failure gate did not exist.
+
+**Decision:** Add `pytest-cov==7.1.0` to dev deps and a coverage gate: `[tool.coverage.run] source=["app"]`, `[tool.coverage.report] fail_under=85`; CI runs `uv run pytest --cov=app --cov-report=term-missing`. Measured baseline at adoption is 86% (1021 missed / 7197 statements) over `app/`. `backend/AGENTS.md`'s reportlog/jq recipe is reclassified as local failure triage, matching what CI actually runs. Frontend coverage is not added.
+
+**Rationale:** 85% is a floor one point under the measured baseline, so it ratchets without flaking; it makes uncovered critical paths visible. The reportlog jq gate was redundant with pytest's own exit code, so the doc is corrected rather than the CI expanded.
