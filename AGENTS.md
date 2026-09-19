@@ -63,7 +63,7 @@ in `.env` stay untouched). Backend runs exactly one worker/replica. Full guide:
 - Commit secrets, tokens, or `.env` files
 - Bypass the per-feed-source run lock
 - Mutate `original_product` in plugin `process()` (read-only)
-- Use reserved plugin routes `/plugins/{id}/config` or `/plugins/{id}/data`
+- Use reserved plugin routes `/api/plugins/{id}/config` or `/api/plugins/{id}/data`
 - Duplicate server state into client stores (TanStack Query only)
 
 ## Documentation map

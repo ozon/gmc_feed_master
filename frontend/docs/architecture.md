@@ -243,8 +243,8 @@ cd frontend && npm run dev
 - `.env.example` is the canonical list of frontend env vars; copy it to `.env.local` (gitignored). `VITE_ALLOWED_HOSTS` is comma-separated — Vite rejects any Host header not listed, so reaching the dev server by hostname means adding it here.
 - To serve the app through Caddy instead, run `make dev-caddy` (HTTP, no TLS) and set `DEV_HOST` to the same host. The two knobs are deliberately paired: `VITE_ALLOWED_HOSTS` governs Vite, `DEV_HOST` governs Caddy's site label.
 
-- Vite proxies `/auth/*`, `/health`, `/admin`, `/clients`, `/feed-sources`, `/dashboard`, `/plugins`, `/registry`, `/export`, `/logs`, `/chat` to `VITE_API_TARGET` (default `http://127.0.0.1:8000`; set it in `.env` to match a backend on another port) — production Caddyfiles mirror this proxy list, including `/admin/*`
-- `/chat`, `/logs/*`, and the rest of the list above are proxied by both Caddyfiles and the Vite dev server, so the chat widget and the logger/viewer reach the backend under `npm run dev` and through Caddy.
+- Vite proxies `/api` to `VITE_API_TARGET` (default `http://127.0.0.1:8000`; set it in `.env` to match a backend on another port) — the production Caddyfiles proxy the same `/api` prefix, plus the public root `/export/*` and `/health`.
+- The `/api` prefix keeps the backend namespace disjoint from SPA routes, so `/admin/users`, `/clients/:c/feeds/:f/...`, and `/plugins/:id` are refresh- and bookmark-safe (they no longer collide with API prefixes). The chat widget and the logger/viewer reach the backend under `npm run dev` and through Caddy via `/api`.
 - HTTPS required for `Secure` session cookie
 
 ## Key Files
