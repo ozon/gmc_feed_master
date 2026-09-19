@@ -312,3 +312,33 @@ async def test_empty_bundle_passes_everything_through(isolated_database_url):
     assert ctx.run_state.products == [{"id": "1", "title": "a"}]
     assert rows["1"].processed_data == {"id": "1", "title": "a"}
     await engine.dispose()
+
+
+class TagStatePlugin:
+    def prepare_run(self, config, data, rctx):
+        return {"tag": config["tag"]}
+
+    def process(self, product, config, data, rctx, state=None):
+        tags = list(product.get("tags", []))
+        tags.append(state["tag"])
+        return {**product, "tags": tags}
+
+
+async def test_two_instances_of_same_plugin_keep_separate_run_state(
+    isolated_database_url,
+):
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    products = [{"id": "1", "title": "a"}]
+    feed_source, pks = await _prepare(factory, products)
+    bundle = {"instances": [
+        {"position": 0, "plugin": "tag", "resolved_config": {"tag": "A"}, "resolved_data": {}},
+        {"position": 1, "plugin": "tag", "resolved_config": {"tag": "B"}, "resolved_data": {}},
+    ]}
+
+    _result, rows, _ = await _run_plugin_step(
+        factory, feed_source, products, pks, bundle, {"tag": TagStatePlugin()}
+    )
+
+    assert rows["1"].processed_data == {"id": "1", "title": "a", "tags": ["A", "B"]}
+    await engine.dispose()

@@ -213,13 +213,14 @@ class PluginStep:
         processed = dropped = errored = 0
 
         # prepare_run: once per plugin instance per run (run-scoped state).
-        run_states: dict[str, Any] = {}
-        accepts_state: dict[str, bool] = {}
-        for instance in bundle.get("instances", []):
+        run_states: dict[Any, Any] = {}
+        accepts_state: dict[Any, bool] = {}
+        for index, instance in enumerate(bundle.get("instances", [])):
+            key = instance.get("position", index)
             plugin_obj = self._registry.get(instance["plugin"])
             if plugin_obj is None:
                 continue
-            accepts_state[instance["plugin"]] = (
+            accepts_state[key] = (
                 "state" in inspect.signature(plugin_obj.process).parameters
             )
             prepare = getattr(plugin_obj, "prepare_run", None)
@@ -231,7 +232,7 @@ class PluginStep:
                     logger=ctx.logger,
                     run_state=ctx.run_state,
                 )
-                run_states[instance["plugin"]] = prepare(
+                run_states[key] = prepare(
                     instance["resolved_config"], instance["resolved_data"], rctx
                 )
 
@@ -240,7 +241,8 @@ class PluginStep:
             current = product
             original = deepcopy(product)
             drop = error = False
-            for instance in bundle.get("instances", []):
+            for index, instance in enumerate(bundle.get("instances", [])):
+                key = instance.get("position", index)
                 plugin_obj = self._registry.get(instance["plugin"])
                 if plugin_obj is None:
                     continue
@@ -253,13 +255,13 @@ class PluginStep:
                     run_state=ctx.run_state,
                 )
                 try:
-                    if accepts_state.get(instance["plugin"]):
+                    if accepts_state.get(key):
                         result = plugin_obj.process(
                             current,
                             instance["resolved_config"],
                             instance["resolved_data"],
                             rctx,
-                            state=run_states.get(instance["plugin"]),
+                            state=run_states.get(key),
                         )
                     else:
                         result = plugin_obj.process(
