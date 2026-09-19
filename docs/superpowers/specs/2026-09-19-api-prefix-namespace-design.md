@@ -29,7 +29,7 @@ The SPA owns browser routes that share prefixes with backend API routes. Both de
 |---|---|
 | Primary constraint | Keep public SPA root URLs stable (`/admin/users`, `/clients/...`, `/plugins/...`) |
 | Where `/api` lives | Owned by the FastAPI app (prefixed router), not applied only at the proxy |
-| Backend test adaptation | Auto-prefixing `app_client` fixture; 613 call sites unchanged |
+| Backend test adaptation | Test client `base_url` includes `/api`; the 613 request-path call sites unchanged |
 | Frontend test adaptation | `stubFetch` strips `/api`; only the 4 direct-fetch test files change |
 | Public root endpoints | `/export/{token}.xml` (Google Merchant Center) and `/health` stay at root |
 | Docs URLs | `/api/docs`, `/api/openapi.json`, `/api/redoc` |
@@ -69,6 +69,7 @@ Every existing route body and relative path is unchanged; only the mount prefix 
 
 - `frontend/src/api/client.ts`: add `const API_BASE = '/api'` and `withApiBase(url)` that prefixes site-relative paths only (leading `/`, not already `/api`); absolute (`http(s)://`, protocol-relative) URLs pass through. Apply in `fetchWithContext` and `requestWithHeaders`. Keep the original URL for the `authExempt` check and structured logging.
 - `frontend/src/api/hooks.ts`: `useExportVersionContent` keeps `apiGetText` (prefixed API path). `usePublishedExportContent` uses a new `publicGetText(url)` that fetches the absolute `exportUrl` verbatim.
+- `frontend/src/logging/logger.ts`: the two direct `/logs/client` targets (`navigator.sendBeacon` and the `fetch` fallback, logger.ts:72,80) go through the same prefix helper (a standalone `src/api/base.ts` avoids a `logger.ts` ↔ `client.ts` import cycle).
 - `frontend/vite.config.ts`: collapse the 11 proxy entries to a single `'/api': { target: apiTarget, changeOrigin: true }`. `VITE_API_TARGET`, HTTPS, and `allowedHosts` are unchanged. In dev the public export URL is absolute (`PUBLIC_BASE_URL` default `http://localhost:8000`), so it needs no proxy.
 - No changes to `router.tsx`, SPA routes, or links.
 
@@ -80,7 +81,7 @@ Every existing route body and relative path is unchanged; only the mount prefix 
 
 ### 4. Tests
 
-- Backend `tests/conftest.py`: `app_client` returns a `TestClient` subclass that prepends `/api` to site-relative requests, skipping `/health`, `/export...`, `/docs`, `/openapi.json`, `/redoc`. The 613 root-relative call sites are unchanged.
+- Backend tests: app clients are built ad-hoc (`app_factory`/`access_app`/… fixtures yield the app, tests construct `httpx.AsyncClient`/`TestClient` with `base_url="https://testserver"`). httpx merges a base_url path with the request path, so tests are adapted by changing that literal to `https://testserver/api` (mechanical, ~50 files); the 613 request-path call sites are unchanged. Public-route exceptions keep a non-prefixed client: `/health` callers (`test_request_context.py`, `test_scheduler_startup.py`) and the `/export/...` client in `test_export_public.py` (already `http://test.public`). `test_tooling.py` health clients use the default base_url and are untouched.
 - New backend contract test: an unprefixed API path (e.g. `/clients`) does not resolve through the app, while `/api/clients` does.
 - Audit backend tests that assert root-level 404s or inspect `app.openapi()` paths; adjust only those.
 - Frontend `src/test/fetch.ts`: `stubFetch` strips a leading `/api` before invoking the handler, so the 54 `stubFetch` test files keep root-relative keys. `localeResponse` is untouched (locales are not prefixed).
@@ -98,7 +99,7 @@ Every existing route body and relative path is unchanged; only the mount prefix 
 - `frontend/docs/architecture.md` — proxy list (line ~246) becomes `/api`; deep-link collision note.
 - Root `AGENTS.md` and `backend/AGENTS.md` — reserved plugin routes become `/api/plugins/{id}/config|data`, and the "never use reserved routes" wording is updated.
 - `docs/prod_deployment.md` — routing table.
-- New `docs/decisions/0012-api-prefix-namespace.md` ADR: collision problem, backend-owned prefix decision, consequences, and rollout note.
+- New `docs/decisions/0014-api-prefix-namespace.md` ADR: collision problem, backend-owned prefix decision, consequences, and rollout note.
 
 ## Risks / out of scope
 
