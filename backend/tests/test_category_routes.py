@@ -51,14 +51,14 @@ async def app_factory(isolated_database_url, monkeypatch):
     app = create_app(settings=settings, db_session_factory=factory)
     router = APIRouter()
     cp.CategoryPlugin().register_routes(router)
-    app.include_router(router, prefix="/plugins/category")
+    app.include_router(router, prefix="/api/plugins/category")
     yield app, factory, monkeypatch
     await engine.dispose()
 
 
 async def logged_in_client(app_factory):
     app, _, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -153,7 +153,7 @@ class TestFetchRoute:
                 username="bob", password_hash=hash_password("bob-pass"), role="user"
             ))
         client = AsyncClient(
-            transport=ASGITransport(app=app), base_url="https://testserver"
+            transport=ASGITransport(app=app), base_url="https://testserver/api"
         )
         assert (await client.post(
             "/auth/login", json={"username": "bob", "password": "bob-pass"}
@@ -273,8 +273,8 @@ class TestDatabaseUnavailableRoutes:
         router = APIRouter()
         with patch.object(db_engine, "get_db_session", none_db_session):
             cp.CategoryPlugin().register_routes(router)
-        app.include_router(router, prefix="/plugins/category")
-        client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+        app.include_router(router, prefix="/api/plugins/category")
+        client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
         resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
         assert resp.status_code == 200
 

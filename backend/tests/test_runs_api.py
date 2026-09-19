@@ -52,7 +52,7 @@ async def app_factory(isolated_database_url, tmp_path):
 
 async def logged_in_client(app_factory):
     app, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -173,6 +173,6 @@ async def test_history_unknown_feed_source_returns_404(app_factory):
 
 async def test_trigger_unauthenticated_returns_401(app_factory):
     app, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await client.post("/feed-sources/1/run")).status_code == 401
     assert (await client.get("/feed-sources/1/ingestion-runs")).status_code == 401

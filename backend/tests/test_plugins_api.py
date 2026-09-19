@@ -78,7 +78,7 @@ async def seed_plugin(factory, name="title_case", version="1.0.0", manifest=None
 
 async def logged_in_client(app_factory):
     app, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -345,7 +345,7 @@ async def test_plugin_endpoints_require_auth(app_factory):
     _, factory = app_factory
     await seed_plugin(factory)
     app, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await client.get("/plugins")).status_code == 401
     assert (await client.put("/plugins/title_case/enabled", json={"enabled": True})).status_code == 401
     assert (await client.get("/plugins/title_case/config")).status_code == 401

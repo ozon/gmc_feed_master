@@ -49,7 +49,7 @@ async def settings_app(isolated_database_url):
 
 
 async def _login(app, username, password):
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     response = await client.post(
         "/auth/login", json={"username": username, "password": password}
     )
@@ -257,9 +257,9 @@ async def test_unhandled_exception_persisted_as_server_error(settings_app):
     async def boom() -> None:
         raise RuntimeError("kaboom")
 
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     with pytest.raises(RuntimeError, match="kaboom"):
-        await client.get("/boom", headers={"X-Request-ID": "srv-err-req-1"})
+        await client.get("https://testserver/boom", headers={"X-Request-ID": "srv-err-req-1"})
     await client.aclose()
 
     async with factory() as session:

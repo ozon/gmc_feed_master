@@ -38,7 +38,7 @@ async def postgres_app(isolated_database_url):
 
 async def client_factory(postgres_app):
     app, _ = postgres_app
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     return client
 
 
@@ -135,7 +135,7 @@ async def test_startup_seeds_once_and_session_survives_new_app_instance(
     )
     first_app = create_app(settings=settings, db_session_factory=factory)
     async with first_app.router.lifespan_context(first_app):
-        first = AsyncClient(transport=ASGITransport(app=first_app), base_url="https://testserver")
+        first = AsyncClient(transport=ASGITransport(app=first_app), base_url="https://testserver/api")
         assert (await first.post("/auth/login", json={"username": "operator", "password": "first-password"})).status_code == 200
         token = first.cookies["gmc_session"]
         await first.aclose()
@@ -143,7 +143,7 @@ async def test_startup_seeds_once_and_session_survives_new_app_instance(
     second_settings = settings.model_copy(update={"initial_password": "replacement"})
     second_app = create_app(settings=second_settings, db_session_factory=factory)
     async with second_app.router.lifespan_context(second_app):
-        second = AsyncClient(transport=ASGITransport(app=second_app), base_url="https://testserver")
+        second = AsyncClient(transport=ASGITransport(app=second_app), base_url="https://testserver/api")
         second.cookies.set("gmc_session", token)
         assert (await second.get("/auth/me")).status_code == 200
         assert (await second.post("/auth/login", json={"username": "operator", "password": "replacement"})).status_code == 401

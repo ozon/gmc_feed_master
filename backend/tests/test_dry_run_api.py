@@ -70,7 +70,7 @@ async def app_factory(isolated_database_url, tmp_path):
 
 async def logged_in_client(app_factory):
     app, _, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -221,7 +221,7 @@ async def test_dry_run_source_failure_returns_422(app_factory):
 
 async def test_dry_run_404_and_auth(app_factory):
     app, _, _ = app_factory
-    anon = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    anon = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await anon.post("/feed-sources/1/dry-run", json={})).status_code == 401
     client = await logged_in_client(app_factory)
     assert (await client.post("/feed-sources/99999/dry-run", json={})).status_code == 404

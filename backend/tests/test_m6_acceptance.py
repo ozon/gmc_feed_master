@@ -74,7 +74,7 @@ async def app_factory(isolated_database_url):
 
 async def logged_in_client(app_factory):
     app, _, _, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -539,7 +539,7 @@ async def test_toggle_and_config_round_trip_via_api(app_factory):
         async with app.router.lifespan_context(app):
             pass
 
-        client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+        client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
         resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
         assert resp.status_code == 200
 

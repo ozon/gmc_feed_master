@@ -67,7 +67,7 @@ async def _login(client: AsyncClient, username: str, password: str) -> None:
 @pytest.mark.asyncio
 async def test_scoped_user_cannot_read_or_write_global_plugin_config(scope_app):
     app = scope_app
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as bob:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api") as bob:
         await _login(bob, "bob", "bob-pass")
         assert (await bob.get("/plugins/custom_labels/config")).status_code == 403
         assert (await bob.put(
@@ -78,7 +78,7 @@ async def test_scoped_user_cannot_read_or_write_global_plugin_config(scope_app):
 @pytest.mark.asyncio
 async def test_scoped_user_cannot_read_or_write_global_plugin_data(scope_app):
     app = scope_app
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as bob:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api") as bob:
         await _login(bob, "bob", "bob-pass")
         assert (await bob.get("/plugins/custom_labels/data")).status_code == 403
         assert (await bob.put(
@@ -89,7 +89,7 @@ async def test_scoped_user_cannot_read_or_write_global_plugin_data(scope_app):
 @pytest.mark.asyncio
 async def test_admin_can_read_global_plugin_config(scope_app):
     app = scope_app
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as admin:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api") as admin:
         await _login(admin, "operator", "admin-pass")
         assert (await admin.get("/plugins/custom_labels/config")).status_code == 200
 
@@ -97,7 +97,7 @@ async def test_admin_can_read_global_plugin_config(scope_app):
 @pytest.mark.asyncio
 async def test_scoped_user_cannot_toggle_plugin_enabled(scope_app):
     app = scope_app
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as bob:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api") as bob:
         await _login(bob, "bob", "bob-pass")
         assert (await bob.put(
             "/plugins/custom_labels/enabled", json={"enabled": False}
@@ -107,7 +107,7 @@ async def test_scoped_user_cannot_toggle_plugin_enabled(scope_app):
 @pytest.mark.asyncio
 async def test_admin_can_toggle_plugin_enabled(scope_app):
     app = scope_app
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as admin:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api") as admin:
         await _login(admin, "operator", "admin-pass")
         assert (await admin.put(
             "/plugins/custom_labels/enabled", json={"enabled": False}
@@ -120,7 +120,7 @@ async def test_admin_can_toggle_plugin_enabled(scope_app):
 @pytest.mark.asyncio
 async def test_scoped_user_can_use_client_tier(scope_app):
     app = scope_app
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as bob:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api") as bob:
         await _login(bob, "bob", "bob-pass")
         response = await bob.get("/plugins/custom_labels/config?client_id=1")
         assert response.status_code == 200
@@ -130,7 +130,7 @@ async def test_scoped_user_can_use_client_tier(scope_app):
 @pytest.mark.asyncio
 async def test_malformed_scope_query_params_return_422(scope_app):
     app = scope_app
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as bob:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api") as bob:
         await _login(bob, "bob", "bob-pass")
         assert (await bob.get("/plugins?client_id=abc")).status_code == 422
         assert (await bob.get("/plugins/custom_labels/config?feed_source_id=xyz")).status_code == 422

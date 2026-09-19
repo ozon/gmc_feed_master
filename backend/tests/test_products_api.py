@@ -48,7 +48,7 @@ async def app_factory(isolated_database_url):
 
 async def logged_in_client(app_factory):
     app, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -87,7 +87,7 @@ _BASE = {"title": "T", "description": "D", "link": "L", "image_link": "I",
 
 async def test_products_requires_auth_and_404(app_factory):
     app, _ = app_factory
-    anon = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    anon = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await anon.get("/feed-sources/1/products")).status_code == 401
     client = await logged_in_client(app_factory)
     assert (await client.get("/feed-sources/99999/products")).status_code == 404
@@ -325,7 +325,7 @@ async def test_lookup_subfield_path(app_factory):
 
 async def test_lookup_requires_auth_404_and_422(app_factory):
     app, _ = app_factory
-    anon = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    anon = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await anon.post("/feed-sources/1/products/lookup", json={"values": ["a"]})).status_code == 401
     client = await logged_in_client(app_factory)
     assert (await client.post("/feed-sources/99999/products/lookup", json={"values": ["a"]})).status_code == 404

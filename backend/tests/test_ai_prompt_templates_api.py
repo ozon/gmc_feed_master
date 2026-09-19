@@ -41,7 +41,7 @@ async def settings_app(isolated_database_url):
 @pytest_asyncio.fixture
 async def admin_http(settings_app):
     app, _ = settings_app
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await client.post(
         "/auth/login", json={"username": "operator", "password": "admin-pass"}
     )).status_code == 200
@@ -186,7 +186,7 @@ async def test_routes_forbidden_for_non_admin(settings_app):
     app, factory = settings_app
     async with factory() as session, session.begin():
         await create_user(session, "plain", "user-pass", "user", [])
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await client.post(
         "/auth/login", json={"username": "plain", "password": "user-pass"}
     )).status_code == 200

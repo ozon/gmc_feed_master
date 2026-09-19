@@ -48,7 +48,7 @@ async def _audit_messages(factory):
 
 async def test_login_success_and_failure_are_audited(settings_app):
     app, factory = settings_app
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (
         await client.post(
             "/auth/login", json={"username": "operator", "password": "wrong"}
@@ -67,7 +67,7 @@ async def test_login_success_and_failure_are_audited(settings_app):
 
 async def test_user_create_is_audited_with_actor(settings_app):
     app, factory = settings_app
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     await client.post(
         "/auth/login", json={"username": "operator", "password": "admin-pass"}
     )
@@ -91,7 +91,7 @@ async def test_user_create_is_audited_with_actor(settings_app):
 
 async def test_user_create_audit_failure_rolls_back(settings_app, monkeypatch):
     app, factory = settings_app
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     await client.post(
         "/auth/login", json={"username": "operator", "password": "admin-pass"}
     )

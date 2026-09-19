@@ -103,7 +103,7 @@ def test_injected_session_store_does_not_initialize_database(settings, store, cl
 
     app = create_app(settings=settings, session_store=store, clock=clock)
 
-    with TestClient(app, base_url="https://testserver"):
+    with TestClient(app, base_url="https://testserver/api"):
         assert app.state.db_session_factory is None
         assert app.state.db_engine is None
 

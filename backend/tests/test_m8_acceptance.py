@@ -68,7 +68,7 @@ async def app_factory(isolated_database_url, tmp_path):
 
 async def logged_in_client(app_factory):
     app, _, _, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -144,8 +144,8 @@ async def test_full_pipeline_publishes_gmc_xml_at_token_url(app_factory):
     _client, feed_source = await _create_feed_source(app_factory)
     await _trigger_run(app_factory, feed_source["id"])
 
-    anonymous = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
-    resp = await anonymous.get(f"/export/{_token_of(feed_source)}.xml")
+    anonymous = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
+    resp = await anonymous.get(f"https://testserver/export/{_token_of(feed_source)}.xml")
     assert resp.status_code == 200
     body = resp.content
     assert body.startswith(b'<?xml version="1.0" encoding="UTF-8"?>')
@@ -233,8 +233,8 @@ async def test_rollback_republishes_old_version(app_factory):
     assert body["version_number"] == 3
     assert body["source"] == "rollback"
 
-    anonymous = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
-    resp = await anonymous.get(f"/export/{_token_of(feed_source)}.xml")
+    anonymous = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
+    resp = await anonymous.get(f"https://testserver/export/{_token_of(feed_source)}.xml")
     assert resp.status_code == 200
     report = parse_xml(resp.content, REGISTRY)
     sku1 = next(p for p in report.products if p["id"] == "SKU-1")
@@ -252,6 +252,6 @@ async def test_rotated_token_invalidates_old_url(app_factory):
     new_token = resp.json()["export_token"]
     assert new_token != old_token
 
-    anonymous = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
-    assert (await anonymous.get(f"/export/{old_token}.xml")).status_code == 404
-    assert (await anonymous.get(f"/export/{new_token}.xml")).status_code == 200
+    anonymous = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
+    assert (await anonymous.get(f"https://testserver/export/{old_token}.xml")).status_code == 404
+    assert (await anonymous.get(f"https://testserver/export/{new_token}.xml")).status_code == 200

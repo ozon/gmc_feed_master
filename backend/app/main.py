@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -23,7 +23,7 @@ from .auth import (
     set_session_cookie,
 )
 from .clock import Clock, SystemClock
-from .config import Settings, get_settings
+from .config import API_PREFIX, Settings, get_settings
 from .db.engine import create_engine, create_session_factory, get_db_session
 from .event_log import audit
 from .ingest import HttpFetcher
@@ -250,24 +250,30 @@ def create_app(
         if getattr(application.state, "db_engine", None) is not None:
             await application.state.db_engine.dispose()
 
-    app = FastAPI(lifespan=lifespan)
+    app = FastAPI(
+        lifespan=lifespan,
+        docs_url=f"{API_PREFIX}/docs",
+        openapi_url=f"{API_PREFIX}/openapi.json",
+        redoc_url=f"{API_PREFIX}/redoc",
+    )
+    api = APIRouter(prefix=API_PREFIX)
     app.add_middleware(RequestContextMiddleware)
-    app.include_router(clients_router, dependencies=[Depends(enforce_scope_access)])
-    app.include_router(dashboard_router)
-    app.include_router(dry_run_router, dependencies=[Depends(enforce_scope_access)])
-    app.include_router(export_history_router, dependencies=[Depends(enforce_scope_access)])
+    api.include_router(clients_router, dependencies=[Depends(enforce_scope_access)])
+    api.include_router(dashboard_router)
+    api.include_router(dry_run_router, dependencies=[Depends(enforce_scope_access)])
+    api.include_router(export_history_router, dependencies=[Depends(enforce_scope_access)])
     app.include_router(export_public_router)
-    app.include_router(feed_dashboard_router, dependencies=[Depends(enforce_scope_access)])
-    app.include_router(field_mapping_router, dependencies=[Depends(enforce_scope_access)])
-    app.include_router(pipeline_router, dependencies=[Depends(enforce_scope_access)])
-    app.include_router(plugins_router, dependencies=[Depends(enforce_scope_access)])
-    app.include_router(products_router, dependencies=[Depends(enforce_scope_access)])
-    app.include_router(quality_router, dependencies=[Depends(enforce_scope_access)])
-    app.include_router(registry_router, dependencies=[Depends(enforce_scope_access)])
-    app.include_router(admin_router)
-    app.include_router(ai_admin_router)
-    app.include_router(chat_router)
-    app.include_router(logs_router)
+    api.include_router(feed_dashboard_router, dependencies=[Depends(enforce_scope_access)])
+    api.include_router(field_mapping_router, dependencies=[Depends(enforce_scope_access)])
+    api.include_router(pipeline_router, dependencies=[Depends(enforce_scope_access)])
+    api.include_router(plugins_router, dependencies=[Depends(enforce_scope_access)])
+    api.include_router(products_router, dependencies=[Depends(enforce_scope_access)])
+    api.include_router(quality_router, dependencies=[Depends(enforce_scope_access)])
+    api.include_router(registry_router, dependencies=[Depends(enforce_scope_access)])
+    api.include_router(admin_router)
+    api.include_router(ai_admin_router)
+    api.include_router(chat_router)
+    api.include_router(logs_router)
     app.state.settings = settings
     app.state.session_store = session_store
     app.state.session_store_injected = session_store is not None
@@ -342,7 +348,7 @@ def create_app(
         app.state.settings = _settings
         return {"status": "ok"}
 
-    @app.post("/auth/login")
+    @api.post("/auth/login")
     async def login(
         credentials: Credentials,
         request: Request,
@@ -393,7 +399,7 @@ def create_app(
                 )
         return {"username": user_id}
 
-    @app.post("/auth/logout")
+    @api.post("/auth/logout")
     async def logout(
         request: Request,
         response: Response,
@@ -420,7 +426,7 @@ def create_app(
                 )
         return {"status": "ok"}
 
-    @app.post("/auth/password")
+    @api.post("/auth/password")
     async def password(
         payload: PasswordChange,
         request: Request,
@@ -451,7 +457,7 @@ def create_app(
         clear_session_cookie(response)
         return {"status": "ok"}
 
-    @app.get("/auth/me")
+    @api.get("/auth/me")
     def me(user: CurrentUser = Depends(get_current_user)) -> dict:
         return {
             "username": user.username,
@@ -459,9 +465,11 @@ def create_app(
             "client_ids": sorted(user.client_ids) if user.client_ids is not None else None,
         }
 
-    @app.post("/auth/interaction")
+    @api.post("/auth/interaction")
     def interaction(username: str = Depends(require_user_for_interaction)) -> dict[str, str]:
         return {"username": username}
+
+    app.include_router(api)
 
     return app
 

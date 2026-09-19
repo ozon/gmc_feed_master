@@ -21,11 +21,11 @@ def test_resolve_request_id_rejects_invalid():
 
 
 def test_middleware_echoes_and_generates(client):
-    generated = client.get("/health")
+    generated = client.get("https://testserver/health")
     assert _UUID_RE.match(generated.headers["x-request-id"])
 
-    echoed = client.get("/health", headers={"X-Request-ID": "abc12345"})
+    echoed = client.get("https://testserver/health", headers={"X-Request-ID": "abc12345"})
     assert echoed.headers["x-request-id"] == "abc12345"
 
-    replaced = client.get("/health", headers={"X-Request-ID": "bad id!"})
+    replaced = client.get("https://testserver/health", headers={"X-Request-ID": "bad id!"})
     assert replaced.headers["x-request-id"] != "bad id!"

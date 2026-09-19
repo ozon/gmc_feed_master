@@ -51,7 +51,7 @@ async def app_factory(isolated_database_url, tmp_path):
 
 
 async def _logged_in_client(app):
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client

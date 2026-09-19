@@ -47,13 +47,13 @@ async def app_factory(isolated_database_url):
     app = create_app(settings=settings, db_session_factory=factory)
     router = APIRouter()
     cp.CategoryPlugin().register_routes(router)
-    app.include_router(router, prefix="/plugins/category")
+    app.include_router(router, prefix="/api/plugins/category")
     yield app, factory
     await engine.dispose()
 
 
 async def login(app, username, password):
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post(
         "/auth/login", json={"username": username, "password": password}
     )

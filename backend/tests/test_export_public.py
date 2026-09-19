@@ -46,7 +46,7 @@ async def app_factory(isolated_database_url, tmp_path):
 
 async def logged_in_client(app_factory):
     app, _, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -84,10 +84,10 @@ async def test_public_endpoint_404_for_unknown_token_and_before_export(app_facto
     client, payload = await _create_feed_source(app_factory)
     token = payload["export_url"].rsplit("/", 1)[1].removesuffix(".xml")
 
-    resp = await client.get("/export/does-not-exist.xml")
+    resp = await client.get("https://testserver/export/does-not-exist.xml")
     assert resp.status_code == 404
 
-    resp = await client.get(f"/export/{token}.xml")
+    resp = await client.get(f"https://testserver/export/{token}.xml")
     assert resp.status_code == 404
 
 
@@ -102,8 +102,8 @@ async def test_public_endpoint_serves_published_file_without_auth(app_factory):
     store = ExportFileStore(settings.export_dir)
     store.publish(feed_source_id, b"<rss>published</rss>")
 
-    anonymous = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
-    resp = await anonymous.get(f"/export/{token}.xml")
+    anonymous = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
+    resp = await anonymous.get(f"https://testserver/export/{token}.xml")
     assert resp.status_code == 200
     assert resp.content == b"<rss>published</rss>"
     assert resp.headers["content-type"].startswith("application/xml")
@@ -124,8 +124,8 @@ async def test_rotate_token_invalidates_old_url_immediately(app_factory):
     assert body["export_url"] != old_url
     assert body["export_token"] != old_token
 
-    assert (await client.get(f"/export/{old_token}.xml")).status_code == 404
-    resp = await client.get(f"/export/{body['export_token']}.xml")
+    assert (await client.get(f"https://testserver/export/{old_token}.xml")).status_code == 404
+    resp = await client.get(f"https://testserver/export/{body['export_token']}.xml")
     assert resp.status_code == 200
 
 

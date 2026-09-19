@@ -132,5 +132,5 @@ def settings():
 def client(settings, store, clock):
     return TestClient(
         create_app(settings=settings, session_store=store, clock=clock),
-        base_url="https://testserver",
+        base_url="https://testserver/api",
     )

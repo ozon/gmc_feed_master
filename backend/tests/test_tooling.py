@@ -168,10 +168,10 @@ def test_create_app_is_public_entry_point_for_health_and_auth_flow():
                 secret="integration-secret",
             ),
         ),
-        base_url="https://testserver",
+        base_url="https://testserver/api",
     )
 
-    assert client.get("/health").json() == {"status": "ok"}
+    assert client.get("https://testserver/health").json() == {"status": "ok"}
     login = client.post(
         "/auth/login", json={"username": "operator", "password": "correct"}
     )

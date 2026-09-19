@@ -60,7 +60,7 @@ async def app_factory(isolated_database_url, tmp_path):
 
 async def logged_in_client(app_factory):
     app, _, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -158,7 +158,7 @@ async def test_history_shows_rollback_version_as_not_qc_d(app_factory):
 async def test_history_requires_auth_and_known_feed_source(app_factory):
     feed_source_id = await _seed_versions(app_factory, [BASE])
     app, _, _ = app_factory
-    anonymous = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    anonymous = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await anonymous.get(f"/feed-sources/{feed_source_id}/export-history")).status_code == 401
 
     client = await logged_in_client(app_factory)
@@ -233,7 +233,7 @@ async def test_version_content_404_when_file_pruned(app_factory):
 async def test_version_content_requires_auth_and_known_feed_source(app_factory):
     feed_source_id = await _seed_versions(app_factory, [BASE])
     app, _, _ = app_factory
-    anonymous = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    anonymous = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (
         await anonymous.get(f"/feed-sources/{feed_source_id}/export-history/1/content")
     ).status_code == 401
@@ -252,7 +252,7 @@ async def test_version_content_404_for_feed_source_outside_client_scope(app_fact
         await create_user(session, "scoped", "scoped-pw", "user", [other_client.id])
 
     scoped = AsyncClient(
-        transport=ASGITransport(app=app_factory[0]), base_url="https://testserver"
+        transport=ASGITransport(app=app_factory[0]), base_url="https://testserver/api"
     )
     login = await scoped.post(
         "/auth/login", json={"username": "scoped", "password": "scoped-pw"}
@@ -296,7 +296,7 @@ async def test_set_export_token_rejects_non_admin(app_factory):
         await create_user(session, "plain", "user-pass", "user", [feed.client_id])
 
     plain = AsyncClient(
-        transport=ASGITransport(app=app_factory[0]), base_url="https://testserver"
+        transport=ASGITransport(app=app_factory[0]), base_url="https://testserver/api"
     )
     login = await plain.post("/auth/login", json={"username": "plain", "password": "user-pass"})
     assert login.status_code == 200

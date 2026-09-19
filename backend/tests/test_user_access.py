@@ -54,7 +54,7 @@ async def test_login_rejects_inactive_user(access_app):
             select(User).where(User.username == "mallory")
         )).scalar_one()
         user.password_hash = hash_password("inactive-pass")
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api") as client:
         response = await client.post(
             "/auth/login", json={"username": "mallory", "password": "inactive-pass"}
         )
@@ -64,7 +64,7 @@ async def test_login_rejects_inactive_user(access_app):
 @pytest.mark.asyncio
 async def test_auth_me_reports_role_and_clients(access_app):
     app, _ = access_app
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api") as client:
         assert (await client.post(
             "/auth/login", json={"username": "operator", "password": "admin-pass"}
         )).status_code == 200
@@ -83,7 +83,7 @@ async def test_auth_me_for_regular_user_lists_assigned_clients(access_app):
             select(User).where(User.username == "bob")
         )).scalar_one()
         user.password_hash = hash_password("bob-pass")
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api") as client:
         assert (await client.post(
             "/auth/login", json={"username": "bob", "password": "bob-pass"}
         )).status_code == 200

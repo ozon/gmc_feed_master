@@ -7,6 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_EXPORT_DIR = Path(__file__).resolve().parents[2] / "exports"
 
+API_PREFIX = "/api"
+
 
 class Settings(BaseSettings):
     session_idle_minutes: int = Field(default=30, gt=0)

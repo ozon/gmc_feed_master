@@ -43,7 +43,7 @@ async def app_factory(isolated_database_url):
 
 async def logged_in_client(app_factory):
     app, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -269,7 +269,7 @@ async def test_update_client_empty_status_returns_422(app_factory):
 
 async def test_all_endpoints_require_auth(app_factory):
     app, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await client.post("/clients", json={"name": "X"})).status_code == 401
     assert (await client.get("/clients")).status_code == 401
     assert (await client.post("/clients/1/feed-sources", json={"name": "X", "source_format": "xml"})).status_code == 401

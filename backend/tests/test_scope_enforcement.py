@@ -56,7 +56,7 @@ async def scope_app(isolated_database_url):
 @pytest_asyncio.fixture
 async def admin_client(scope_app):
     app, _ = scope_app
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await client.post(
         "/auth/login", json={"username": "operator", "password": "admin-pass"}
     )).status_code == 200
@@ -67,7 +67,7 @@ async def admin_client(scope_app):
 @pytest_asyncio.fixture
 async def bob_client(scope_app):
     app, _ = scope_app
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await client.post(
         "/auth/login", json={"username": "bob", "password": "bob-pass"}
     )).status_code == 200

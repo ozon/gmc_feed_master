@@ -60,14 +60,14 @@ async def app_factory(isolated_database_url):
     app = create_app(settings=settings, db_session_factory=factory)
     router = APIRouter()
     CustomLabelsPlugin().register_routes(router)
-    app.include_router(router, prefix="/plugins/custom_labels")
+    app.include_router(router, prefix="/api/plugins/custom_labels")
     yield app, factory
     await engine.dispose()
 
 
 async def logged_in_client(app_factory):
     app, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -301,7 +301,7 @@ class TestPreviewRoute:
 
     async def test_requires_auth(self, app_factory):
         app, _ = app_factory
-        client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+        client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
         resp = await client.post("/plugins/custom_labels/preview", json={})
         assert resp.status_code in (401, 422)  # not logged in
 

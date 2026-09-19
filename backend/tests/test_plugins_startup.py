@@ -61,7 +61,7 @@ async def test_lifespan_discovers_registers_and_mounts(
 
     async with app.router.lifespan_context(app):
         assert app.state.plugin_registry["example_upper"] is not None
-        assert "/plugins/example_upper/status" in _all_route_paths(app)
+        assert "/api/plugins/example_upper/status" in _all_route_paths(app)
 
     async with factory() as session:
         row = (
@@ -96,7 +96,7 @@ async def test_plugin_routes_require_auth_via_scope_dependency(
     async with app.router.lifespan_context(app):
         transport = ASGITransport(app=app)
         async with AsyncClient(
-            transport=transport, base_url="https://testserver"
+            transport=transport, base_url="https://testserver/api"
         ) as client:
             # Plugin-contributed routers are mounted behind enforce_scope_access,
             # so an unauthenticated request is rejected before the handler runs.

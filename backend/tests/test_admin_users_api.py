@@ -45,7 +45,7 @@ async def admin_app(isolated_database_url):
 @pytest_asyncio.fixture
 async def admin_http(admin_app):
     app, _ = admin_app
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await client.post(
         "/auth/login", json={"username": "operator", "password": "admin-pass"}
     )).status_code == 200
@@ -56,7 +56,7 @@ async def admin_http(admin_app):
 @pytest.mark.asyncio
 async def test_admin_users_requires_admin_role(admin_app):
     app, _ = admin_app
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as bob:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api") as bob:
         assert (await bob.post(
             "/auth/login", json={"username": "bob", "password": "bob-pass"}
         )).status_code == 200
@@ -85,7 +85,7 @@ async def test_admin_creates_user_with_role_and_clients(admin_app, admin_http):
     assert body["role"] == "user"
     assert body["client_ids"] == [1]
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as login:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api") as login:
         assert (await login.post(
             "/auth/login", json={"username": "carol", "password": "carol-pass"}
         )).status_code == 200
@@ -117,7 +117,7 @@ async def test_admin_updates_role_clients_and_active(admin_http):
 @pytest.mark.asyncio
 async def test_admin_resets_password_and_revokes_sessions(admin_app, admin_http):
     app, _ = admin_app
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as bob:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api") as bob:
         assert (await bob.post(
             "/auth/login", json={"username": "bob", "password": "bob-pass"}
         )).status_code == 200
@@ -128,7 +128,7 @@ async def test_admin_resets_password_and_revokes_sessions(admin_app, admin_http)
         )
         assert reset.status_code == 204
         assert (await bob.get("/auth/me")).status_code == 401
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as reborn:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api") as reborn:
         assert (await reborn.post(
             "/auth/login", json={"username": "bob", "password": "new-bob-pass"}
         )).status_code == 200

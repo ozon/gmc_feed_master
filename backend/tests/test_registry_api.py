@@ -46,7 +46,7 @@ async def app_factory(isolated_database_url):
 
 async def logged_in_client(app_factory):
     app, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -54,7 +54,7 @@ async def logged_in_client(app_factory):
 
 async def test_registry_attributes_requires_auth(app_factory):
     app, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.get("/registry/attributes")
     assert resp.status_code == 401
 
@@ -190,7 +190,7 @@ async def _scoped_client(app_factory, assigned_client_id: int) -> AsyncClient:
     from app.persistence.users import create_user
     async with app.state.db_session_factory() as session:
         await create_user(session, "scoped", "scoped-pw", "user", [assigned_client_id])
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "scoped", "password": "scoped-pw"})
     assert resp.status_code == 200
     return client

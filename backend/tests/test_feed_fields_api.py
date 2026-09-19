@@ -45,7 +45,7 @@ async def app_factory(isolated_database_url):
 
 async def logged_in_client(app_factory):
     app, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -53,7 +53,7 @@ async def logged_in_client(app_factory):
 
 async def test_fields_requires_auth(app_factory):
     app, _ = app_factory
-    anon = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    anon = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await anon.get("/feed-sources/1/fields")).status_code == 401
 
 

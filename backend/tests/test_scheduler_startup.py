@@ -99,6 +99,6 @@ async def test_app_without_db_has_no_scheduler():
     app = create_app(settings=settings, session_store=store)
     assert not hasattr(app.state, "scheduler_service") or getattr(app.state, "scheduler_service", None) is None
 
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
-    resp = await client.get("/health")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
+    resp = await client.get("https://testserver/health")
     assert resp.status_code == 200

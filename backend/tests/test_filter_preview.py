@@ -65,7 +65,7 @@ async def app_factory(isolated_database_url):
 
 async def logged_in_client(app_factory):
     app, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -100,7 +100,7 @@ async def _setup_feed(factory, client, products):
 def _mount_filter(app):
     router = APIRouter()
     FilterPlugin().register_routes(router)
-    app.include_router(router, prefix="/plugins/filter")
+    app.include_router(router, prefix="/api/plugins/filter")
 
 
 _BASE = {"title": "T", "price": "1.00 EUR", "brand": "Acme"}
@@ -109,7 +109,7 @@ _BASE = {"title": "T", "price": "1.00 EUR", "brand": "Acme"}
 async def test_preview_requires_auth(app_factory):
     app, _ = app_factory
     _mount_filter(app)
-    anon = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    anon = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await anon.post(
         "/plugins/filter/preview", json={"feed_source_id": 1, "conditions": []}
     )

@@ -72,7 +72,7 @@ async def m1_app(isolated_database_url):
 
 
 async def _client(app):
-    return AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    return AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
 
 
 @pytest.mark.asyncio

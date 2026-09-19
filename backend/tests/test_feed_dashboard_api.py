@@ -47,7 +47,7 @@ async def app_factory(isolated_database_url):
 
 async def logged_in_client(app_factory):
     app, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     resp = await client.post("/auth/login", json={"username": "operator", "password": "pw"})
     assert resp.status_code == 200
     return client
@@ -90,7 +90,7 @@ async def _add_export_run(factory, feed_id, product_count, started_days_ago=0):
 
 async def test_dashboard_requires_auth(app_factory):
     app, _ = app_factory
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await client.get("/feed-sources/1/dashboard")).status_code == 401
 
 
@@ -279,7 +279,7 @@ async def test_dashboard_denies_cross_tenant_access(app_factory):
         session.add(UserClient(user_id=restricted.id, client_id=own_client_id))
 
     restricted_client = AsyncClient(
-        transport=ASGITransport(app=app), base_url="https://testserver",
+        transport=ASGITransport(app=app), base_url="https://testserver/api",
     )
     resp = await restricted_client.post(
         "/auth/login", json={"username": "bob", "password": "bob-pass"}

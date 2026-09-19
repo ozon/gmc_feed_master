@@ -66,7 +66,7 @@ async def app_with_fake_ai(isolated_database_url):
 @pytest_asyncio.fixture
 async def chat_http(app_with_fake_ai):
     app, _ = app_with_fake_ai
-    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver")
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver/api")
     assert (await client.post(
         "/auth/login", json={"username": "operator", "password": "admin-pass"}
     )).status_code == 200

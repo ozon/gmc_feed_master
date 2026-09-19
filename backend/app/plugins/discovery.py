@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.access import enforce_scope_access
+from app.config import API_PREFIX
 from app.models.plugin import Plugin
 from app.plugins.loader import PluginLoadError, load_plugin_class
 from app.plugins.manifest import ManifestError, PluginManifest, parse_manifest
@@ -141,7 +142,7 @@ async def discover_and_mount(app: FastAPI) -> None:
         if candidate.router is not None:
             app.include_router(
                 candidate.router,
-                prefix=f"/plugins/{candidate.manifest.id}",
+                prefix=f"{API_PREFIX}/plugins/{candidate.manifest.id}",
                 dependencies=[Depends(enforce_scope_access)],
             )
 
