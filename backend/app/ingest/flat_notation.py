@@ -60,10 +60,7 @@ def parse_header(
                 )
 
             prev = seen.get(name, 0)
-            if prev >= 1:
-                kind = "repeated_structured"
-            else:
-                kind = "structured"
+            kind = "repeated_structured" if prev >= 1 else "structured"
             seen[name] = prev + 1
 
             if prev == 0:
@@ -164,7 +161,7 @@ def split_row(
                 if len(parts) < expected:
                     # Pad with empty strings
                     parts.extend([""] * (expected - len(parts)))
-                struct = dict(zip(spec.sub_fields, parts))
+                struct = dict(zip(spec.sub_fields, parts, strict=True))
                 structs.append(struct)
 
             if structs:
@@ -185,7 +182,7 @@ def split_row(
                 )
             if len(parts) < expected:
                 parts.extend([""] * (expected - len(parts)))
-            result[spec.name] = dict(zip(spec.sub_fields, parts))
+            result[spec.name] = dict(zip(spec.sub_fields, parts, strict=True))
 
         else:
             # scalar, repeated_scalar or generic
@@ -193,10 +190,7 @@ def split_row(
             col_idx += 1
             if not cell:
                 continue
-            if spec.kind == "repeated_scalar":
-                values = _split_csv_cell(cell)
-            else:
-                values = cell
+            values = _split_csv_cell(cell) if spec.kind == "repeated_scalar" else cell
             result[spec.name] = values
 
     return result, None

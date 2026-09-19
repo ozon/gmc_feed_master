@@ -100,7 +100,7 @@ async def enforce_scope_access(
             raise HTTPException(
                 status_code=422,
                 detail="client_id must be an integer",
-            )
+            ) from None
         if client_id_int not in user.client_ids:
             raise HTTPException(status_code=404, detail="client not found")
     if feed_source_id is None:
@@ -115,7 +115,7 @@ async def enforce_scope_access(
         raise HTTPException(
             status_code=422,
             detail="feed_source_id must be an integer",
-        )
+        ) from None
     feed_source = await db_session.get(FeedSource, feed_source_id_int)
     feed_client_id = feed_source.client_id if feed_source is not None else None
     # Close the implicitly-begun read transaction so handlers can start

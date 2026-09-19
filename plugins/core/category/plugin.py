@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import csv
 import io
 import os
@@ -455,10 +456,8 @@ class CategoryPlugin:
                 tmp.write_text(csv_text, encoding="utf-8")
                 os.replace(tmp, target)
             except OSError as exc:
-                try:
+                with contextlib.suppress(OSError):
                     tmp.unlink()
-                except OSError:
-                    pass
                 raise HTTPException(
                     status_code=500, detail=f"cannot write taxonomy file: {exc}"
                 ) from exc

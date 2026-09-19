@@ -19,7 +19,7 @@ class AiPolicyCheck:
         if ctx.ai_service is None or ctx.ai_budget <= 0:
             return []
 
-        by_id = dict(zip(product_ids, products))
+        by_id = dict(zip(product_ids, products, strict=True))
         ordered = [
             pid for pid in ctx.previous_ai_product_ids if pid in by_id
         ] + [pid for pid in product_ids if pid not in ctx.previous_ai_product_ids]

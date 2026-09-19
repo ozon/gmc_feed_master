@@ -258,7 +258,9 @@ class ExportService:
             if against_version is None:
                 raise LookupError(f"version {against} not found")
 
-            run_ids: dict[int, int | None] = {
+            # SQLAlchemy Row unpacks as a tuple but is not typed as Iterable[tuple],
+            # so C416's dict(rows) rewrite does not typecheck.
+            run_ids: dict[int, int | None] = {  # noqa: C416
                 number: ingestion_run_id
                 for number, ingestion_run_id in (
                     await session.execute(

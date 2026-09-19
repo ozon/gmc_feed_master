@@ -34,7 +34,7 @@
 
 ---
 
-### Task 1: Enable the documented ruff rules and fix the 17 findings (T4)
+### Task 1: Enable the documented ruff rules and fix the 18 findings (T4)
 
 **Files:**
 - Modify: `ruff.toml`
@@ -48,9 +48,15 @@ Add to `ruff.toml`:
 [lint]
 select = ["E4", "E7", "E9", "F", "B", "C4", "SIM", "I"]
 ```
+**Correction found during execution:** use `extend-select` instead — Ruff 0.16's built-in default set is narrower than `E4,E7,E9,F`, so the explicit `select` above would additionally pull in 10 unrelated `E402`/`E702` findings in tests. The final config is:
+
+```toml
+[lint]
+extend-select = ["B", "C4", "SIM", "I", "E711", "E712"]
+```
 
 Run: `uv run ruff check . ../plugins --output-format concise`
-Expected: FAIL, 17 findings (the list fixed below).
+Expected: FAIL, 18 findings (the list fixed below).
 
 - [ ] **Step 2: Fix the B904 sites**
 
@@ -87,17 +93,21 @@ Expected: FAIL, 17 findings (the list fixed below).
 `backend/app/qc/ai_rules.py:22`: `by_id = dict(zip(product_ids, products, strict=True))`
 `backend/app/qc/engine.py:72`: `for product, product_id in zip(products, product_ids, strict=True):`
 `backend/app/staging/persistence.py:83`: `for u, row in zip(group, rows, strict=True):`
+`backend/app/staging/persistence.py:204`: `StagingProduct.excluded.is_(False),` (SQLAlchemy needs `.is_`, not `not`)
 `plugins/core/enrichment/plugin.py:136`: `for (product_id, _raw), result in zip(candidates, results, strict=True):`
 
 Each length invariant holds by construction (flat-notation `parts` is padded to `len(spec.sub_fields)`; the others are aligned 1:1).
 
 - [ ] **Step 4: Fix C4, SIM, and the remaining sites**
 
-`backend/app/export/service.py:261` — replace the dict comprehension with `dict(...)`:
+`backend/app/export/service.py:261` — keep the dict comprehension but suppress C416, which cannot be satisfied without breaking mypy (`Row` is not typed as `Iterable[tuple]`):
 
 ```python
-            run_ids: dict[int, int | None] = dict(
-                (
+            # SQLAlchemy Row unpacks as a tuple but is not typed as Iterable[tuple],
+            # so C416's dict(rows) rewrite does not typecheck.
+            run_ids: dict[int, int | None] = {  # noqa: C416
+                number: ingestion_run_id
+                for number, ingestion_run_id in (
                     await session.execute(
                         select(ExportVersion.version_number, ExportRun.ingestion_run_id)
                         .join(ExportRun, ExportVersion.export_run_id == ExportRun.id)
@@ -107,7 +117,7 @@ Each length invariant holds by construction (flat-notation `parts` is padded to 
                         )
                     )
                 ).all()
-            )
+            }
 ```
 
 `backend/app/ingest/flat_notation.py:63`:

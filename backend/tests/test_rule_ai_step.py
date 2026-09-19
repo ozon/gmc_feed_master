@@ -157,7 +157,8 @@ def test_ai_output_fields_mirror_task_fields() -> None:
 
     from app.pipeline.enrichment import TASK_FIELDS
 
-    assert plugin._AI_OUTPUT_FIELDS == {k: tuple(v) for k, v in TASK_FIELDS.items()}
+    expected = {k: tuple(v) for k, v in TASK_FIELDS.items()}
+    assert expected == plugin._AI_OUTPUT_FIELDS
 
 
 @pytest_asyncio.fixture

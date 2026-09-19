@@ -540,7 +540,7 @@ class TestMatchMode:
 
     def test_values_mode_default_unchanged(self, plugin):
         # rules without matchMode behave exactly as before: no ids -> no match
-        rule = {k: v for k, v in CONFIG["slotRules"][0].items()}
+        rule = dict(CONFIG["slotRules"][0])
         config = {"slotRules": [rule]}
         state = plugin.prepare_run(config, {"slotIds": {}}, _ctx())
         out = plugin.process({"id": "a", "brand": "B"}, config,

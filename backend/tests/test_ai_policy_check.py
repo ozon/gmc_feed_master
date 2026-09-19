@@ -88,7 +88,7 @@ async def test_all_failed_emits_unavailable_finding():
 async def test_budget_exhausted_emits_coverage_finding():
     real = AiResult(value={"violations": []}, status="ok", error_code=None,
                     prompt_tokens=1, completion_tokens=1)
-    ai = FakeAi({pid: real for pid in ["p1", "p2", "p3"]})
+    ai = FakeAi(dict.fromkeys(["p1", "p2", "p3"], real))
     products = [{"title": pid} for pid in ["p1", "p2", "p3"]]
     findings = await AiPolicyCheck().check(products, ["p1", "p2", "p3"], make_ctx(ai, budget=1))
     assert any("budget" in f.message and f.product_id == "" for f in findings)

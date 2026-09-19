@@ -185,7 +185,7 @@ async def test_dedupe_restores_missing_published_file(env):
 
 async def test_retention_prunes_oldest_versions_and_files(env):
     titles = ["t1", "t2", "t3"]
-    for index, title in enumerate(titles):
+    for title in titles:
         run_id = await _start_run(env)
         products = [dict(PRODUCTS[0], title=title), PRODUCTS[1]]
         await env["service"].export_for_run(env["feed_source_id"], run_id, products, REGISTRY)

@@ -59,8 +59,8 @@ def evaluate_condition(condition: dict[str, Any], product: dict[str, Any]) -> bo
         raise FilterError(f"filter op {op!r} requires a non-empty field")
     try:
         attr, index, sub = _parse_indexed(field)
-    except ValueError:
-        raise FilterError(f"invalid field path {field!r}")
+    except ValueError as exc:
+        raise FilterError(f"invalid field path {field!r}") from exc
     value: Any = product.get(attr)
     if index is not None:
         if isinstance(value, list) and len(value) >= index:

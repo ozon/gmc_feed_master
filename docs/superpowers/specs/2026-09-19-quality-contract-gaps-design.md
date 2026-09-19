@@ -10,7 +10,7 @@ The 2026-09-17 tooling review found the documented quality contract overstates t
 
 - **T1** — `/chat` was missing from the API proxy prefix list. Already fixed in `Caddyfile`, `Caddyfile.dev`, and `frontend/vite.config.ts`; `README.md:64` still omits it.
 - **T2** — no security/dependency scanning: no `.github/dependabot.yml`, no `pip-audit`, no `npm audit` in CI. A runtime audit of the locked env finds **33 vulnerabilities in `pillow 10.4.0`** (fix available) and **2 in `diskcache 5.6.3`** (no upstream fix).
-- **T4** — `backend/AGENTS.md` claims B006/B008, C4, SIM113, and I are "enforced via Ruff", but `ruff.toml` has no `[lint] select`, so only Ruff defaults (`E4,E7,E9,F`) run and the configured `extend-immutable-calls` is inert. `--select B,C4,SIM,I` finds **17 latent violations**.
+- **T4** — `backend/AGENTS.md` claims B006/B008, C4, SIM113, I, and E711/E712 are "enforced via Ruff", but `ruff.toml` has no rule selection, so only Ruff's built-in default set runs and the configured `extend-immutable-calls` is inert. The documented families (`--select B,C4,SIM,I,E711,E712`) find **18 latent violations**.
 - **T5** — mypy is non-strict and CI runs `mypy .` from `backend/` only, so `plugins/` (the runtime-contract code) is never typechecked. Full `--strict` is **3274 errors in 172 files**.
 - **T6** — no coverage tooling at all; `backend/AGENTS.md` documents a jq/`--report-log` CI failure gate that CI does not actually run (`ci.yml` runs plain `uv run pytest -q`).
 
@@ -22,7 +22,7 @@ The 2026-09-17 tooling review found the documented quality contract overstates t
 | T2 scanning | `.github/dependabot.yml` (uv, npm, github-actions, weekly) + CI `pip-audit` (runtime deps) + `npm audit` |
 | T2 pillow | `pillow>=10.4,<11` → `pillow==12.3.0` (fixes all 33) |
 | T2 diskcache | Runtime audit runs `--ignore-vuln PYSEC-2026-2447`, documented in `docs/decisions.md` (no upstream fix; cache dir is server-local) |
-| T4 | `ruff.toml` `[lint] select = ["E4","E7","E9","F","B","C4","SIM","I"]`; fix all 17 |
+| T4 | `ruff.toml` `[lint] extend-select = ["B","C4","SIM","I","E711","E712"]`; fix all 18 |
 | T5 | Typecheck `plugins/` via a second mypy invocation; fix its 1 error; **defer `strict`** |
 | T6 | `pytest-cov` dev dep; `[tool.coverage]` source `app/`, `fail_under = 85`; CI runs the coverage command; fix the AGENTS reportlog claim |
 | T3 / T7 | Out of scope — already resolved |
@@ -69,21 +69,22 @@ Dev-only CVEs (e.g. `pytest 8.4.2`) are intentionally excluded by `--no-dev`; th
 `ruff.toml` gains:
 ```toml
 [lint]
-select = ["E4", "E7", "E9", "F", "B", "C4", "SIM", "I"]
+extend-select = ["B", "C4", "SIM", "I", "E711", "E712"]
 ```
-(`select` replaces defaults, so the default families are listed explicitly.) Enabling `B` activates the already-present `[lint.flake8-bugbear] extend-immutable-calls`; the survey shows zero B008 findings, so FastAPI `Depends(...)` defaults are unaffected. `I` has zero current findings, so no import churn.
+(`extend-select` adds the documented families on top of Ruff's built-in defaults. The original review recommended an explicit `select = ["E4","E7","E9","F",...]`, but Ruff 0.16's actual default set is narrower than that list, so the explicit form would additionally pull in unrelated `E402`/`E702` findings in tests. `extend-select` enforces exactly what `backend/AGENTS.md` claims and nothing more.) Enabling `B` activates the already-present `[lint.flake8-bugbear] extend-immutable-calls`; the survey shows zero B008 findings, so FastAPI `Depends(...)` defaults are unaffected. `I` has zero current findings, so no import churn.
 
-The 17 fixes, all behavior-preserving:
+The 18 fixes, all behavior-preserving:
 
 | File:line | Rule | Fix |
 |-----------|------|-----|
 | `app/access.py:100`, `:115` | B904 | `raise ... from err` / `from None` |
-| `app/export/service.py:261` | C416 | `dict((await ...).all())` instead of a dict comprehension |
+| `app/export/service.py:261` | C416 | narrow `# noqa: C416` with a reason — SQLAlchemy `Row` is not typed as `Iterable[tuple]`, so the `dict(rows)` rewrite fails mypy |
 | `app/ingest/flat_notation.py:63`, `:196` | SIM108 | ternary expressions |
 | `app/ingest/flat_notation.py:167`, `:188` | B905 | `zip(..., strict=True)` — `parts` is padded to `expected = len(spec.sub_fields)`, so lengths are equal by construction |
 | `app/qc/ai_rules.py:22` | B905 | `zip(..., strict=True)` (aligned lists) |
 | `app/qc/engine.py:72` | B905 | `zip(..., strict=True)` (aligned lists) |
 | `app/staging/persistence.py:83` | B905 | `zip(..., strict=True)` (`rows` is `add_all(group)`'s result) |
+| `app/staging/persistence.py:204` | E712 | `StagingProduct.excluded.is_(False)` (SQLAlchemy needs `.is_`, not `not`) |
 | `tests/test_ai_policy_check.py:91` | C420 | `dict.fromkeys(...)` |
 | `tests/test_custom_labels_plugin.py:543` | C416 | plain `dict(...)` |
 | `tests/test_export_service.py:188` | B007 | drop the unused `enumerate` index (`for title in titles:`) |

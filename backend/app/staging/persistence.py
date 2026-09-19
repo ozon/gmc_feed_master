@@ -80,7 +80,7 @@ async def apply_staging_delta(
             ]
             session.add_all(rows)
             await session.flush()
-            for u, row in zip(group, rows):
+            for u, row in zip(group, rows, strict=True):
                 pk_map[u.product_id] = row.id
 
     for group in _chunks(updates, chunk_size):
@@ -201,7 +201,7 @@ async def load_export_bound(
             .where(
                 StagingProduct.feed_source_id == feed_source_id,
                 StagingProduct.status == "active",
-                StagingProduct.excluded == False,
+                StagingProduct.excluded.is_(False),
             )
             .order_by(StagingProduct.product_id)
         )

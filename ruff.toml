@@ -1,6 +1,9 @@
 target-version = "py310"
 src = ["backend", "plugins"]
 
+[lint]
+extend-select = ["B", "C4", "SIM", "I", "E711", "E712"]
+
 [lint.flake8-bugbear]
 extend-immutable-calls = [
   "fastapi.Depends",

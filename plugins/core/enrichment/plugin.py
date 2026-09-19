@@ -133,7 +133,7 @@ class EnrichmentPlugin:
             suggestions = dict((data or {}).get("suggestions") or {})
             failed = 0
             with_suggestions = 0
-            for (product_id, _raw), result in zip(candidates, results):
+            for (product_id, _raw), result in zip(candidates, results, strict=True):
                 if result.status == "fallback" or not isinstance(result.value, dict):
                     failed += 1
                     continue

@@ -69,7 +69,7 @@ async def run_engine(
     findings: list[Finding] = []
 
     # Per-product rules — attach product_id to each finding
-    for product, product_id in zip(products, product_ids):
+    for product, product_id in zip(products, product_ids, strict=True):
         for rule in per_product_rules:
             try:
                 rule_findings = await rule.check(product, ctx)
