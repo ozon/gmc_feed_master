@@ -28,6 +28,7 @@
     "add": "Mandanten hinzufügen",
     "edit": "Bearbeiten",
     "delete": "Mandanten löschen",
+    "empty": "Noch keine Mandanten. Legen Sie den ersten Mandanten an, um zu starten.",
     "columns": {
       "name": "Name",
       "status": "Status"

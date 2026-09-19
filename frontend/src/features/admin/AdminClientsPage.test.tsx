@@ -67,4 +67,29 @@ describe('AdminClientsPage', () => {
 
     await waitFor(() => expect(screen.queryByText('Globex')).not.toBeInTheDocument());
   });
+
+  it('shows an empty state on a fresh database', async () => {
+    stubFetch((url) => {
+      if (url === '/clients') return jsonResponse([]);
+      if (url === '/dashboard/summary')
+        return jsonResponse({
+          counts: { clients: 0, feed_sources: 0, active_products: 0, failed_last_exports: 0 },
+          clients: [],
+        });
+      if (url === '/plugins') return jsonResponse([]);
+      return jsonResponse({});
+    });
+
+    queryClient.setQueryData(queryKeys.session, {
+      username: 'operator',
+      role: 'admin',
+      client_ids: null,
+    });
+    render(<App />);
+
+    expect(
+      await screen.findByText('No clients yet. Add the first client to get started.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('admin-clients-table')).not.toBeInTheDocument();
+  });
 });

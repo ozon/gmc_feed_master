@@ -28,6 +28,7 @@
     "add": "Add Client",
     "edit": "Edit",
     "delete": "Delete client",
+    "empty": "No clients yet. Add the first client to get started.",
     "columns": {
       "name": "Name",
       "status": "Status"
