@@ -28,9 +28,7 @@ function renderCombobox() {
 describe('TaxonomyCombobox', () => {
   it('shows debounced search results', async () => {
     const user = userEvent.setup();
-    stubFetch(() =>
-      jsonResponse({ items: [{ id: '1234', path: 'Apparel > Shoes' }] }),
-    );
+    stubFetch(() => jsonResponse({ items: [{ id: '1234', path: 'Apparel > Shoes' }] }));
 
     renderCombobox();
 

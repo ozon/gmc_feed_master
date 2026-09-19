@@ -124,10 +124,7 @@ export function FindingsExplorer({ findings, onOpenProduct }: Props) {
   const [severities, setSeverities] = useState<string[]>([]);
   const [rules, setRules] = useState<string[]>([]);
 
-  const codes = useMemo(
-    () => [...new Set(findings.map((finding) => finding.code))],
-    [findings],
-  );
+  const codes = useMemo(() => [...new Set(findings.map((finding) => finding.code))], [findings]);
   const filtered = useMemo(
     () => filterFindings(findings, { severities, rules, search }),
     [findings, severities, rules, search],
