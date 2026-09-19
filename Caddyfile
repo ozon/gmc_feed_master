@@ -17,6 +17,9 @@
 	handle /health {
 		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
 	}
+	handle /clients {
+		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
+	}
 	handle /clients/* {
 		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
 	}
@@ -24,6 +27,9 @@
 		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
 	}
 	handle /dashboard/* {
+		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
+	}
+	handle /plugins {
 		reverse_proxy {$BACKEND_URL:http://127.0.0.1:8000}
 	}
 	handle /plugins/* {
