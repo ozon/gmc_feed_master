@@ -3,10 +3,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 import structlog
-from sqlalchemy import delete
+from sqlalchemy import CursorResult, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.event_log import EventLog
@@ -172,4 +172,4 @@ async def purge_expired_events(
         result = await session.execute(
             delete(EventLog).where(EventLog.created_at < now - timedelta(days=days))
         )
-        return EventLogPurgeCounts(rows=result.rowcount)
+        return EventLogPurgeCounts(rows=cast(CursorResult[Any], result).rowcount)

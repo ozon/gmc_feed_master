@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
-from sqlalchemy import update
+from sqlalchemy import CursorResult, update
 
 from ..models.ingestion import IngestionRun
 
@@ -29,4 +29,4 @@ async def reconcile_interrupted_runs(
                 completed_at=clock.now(),
             )
         )
-        return result.rowcount
+        return cast(CursorResult[Any], result).rowcount

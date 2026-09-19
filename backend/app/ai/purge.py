@@ -3,8 +3,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import Any, cast
 
-from sqlalchemy import delete
+from sqlalchemy import CursorResult, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.ai import AiUsageLog
@@ -39,4 +40,4 @@ async def purge_expired_ai(
                 AiUsageLog.created_at < now - timedelta(days=usage_days)
             )
         )
-        return AiPurgeCounts(usage_rows=usage.rowcount)
+        return AiPurgeCounts(usage_rows=cast(CursorResult[Any], usage).rowcount)

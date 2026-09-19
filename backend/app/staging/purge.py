@@ -3,8 +3,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import Any, cast
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import CursorResult, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.export import ExportRun
@@ -122,6 +123,6 @@ async def purge_expired_ingestion_runs(
         )
         return IngestionRunPurgeCounts(
             runs_purged=len(purged_ids),
-            export_runs_detached=detached.rowcount,
-            findings_deleted=findings.rowcount,
+            export_runs_detached=cast(CursorResult[Any], detached).rowcount,
+            findings_deleted=cast(CursorResult[Any], findings).rowcount,
         )
