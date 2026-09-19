@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime
+from urllib.parse import urlsplit
+
+import biip
 
 from .constants import (
     BASELINE_REQUIRED,
@@ -62,28 +65,30 @@ class GtinMpn:
     rule_id = "gtin_mpn"
 
     @staticmethod
-    def _gs1_checksum(gtin: str) -> bool:
-        if not gtin.isdigit() or len(gtin) < 8:
-            return False
-        digits = [int(d) for d in reversed(gtin)]
-        total = sum(d * (3 if i % 2 else 1) for i, d in enumerate(digits))
-        return total % 10 == 0
+    def _values(raw: object) -> list[str]:
+        items = raw if isinstance(raw, (list, tuple)) else [raw]
+        values = [str(v).strip() for v in items if v is not None]
+        return [v for v in values if v]
 
     async def check(self, product: dict, ctx: QcContext) -> list[Finding]:
-        gtin = product.get("gtin")
-        if not gtin:
+        values = self._values(product.get("gtin"))
+        if not values:
             if not product.get("mpn") or not product.get("brand"):
                 return [Finding(
                     rule_id=self.rule_id, severity="warning",
                     field="gtin", message="missing gtin requires mpn and brand",
                 )]
             return []
-        if not self._gs1_checksum(str(gtin)):
-            return [Finding(
-                rule_id=self.rule_id, severity="critical",
-                field="gtin", message="invalid GTIN checksum",
-            )]
-        return []
+        findings = []
+        for value in values:
+            result = biip.parse(value)
+            if result.gtin is None:
+                findings.append(Finding(
+                    rule_id=self.rule_id, severity="critical",
+                    field="gtin",
+                    message=result.gtin_error or f"invalid GTIN: {value}",
+                ))
+        return findings
 
 
 class EnumValues:
@@ -230,7 +235,8 @@ class ImageRequirements:
             urls.append((f"additional_image_link.{i}", str(url)))
 
         for field_name, url in urls:
-            ext = url.rsplit(".", 1)[-1].lower() if "." in url else ""
+            filename = urlsplit(url).path.rsplit("/", 1)[-1]
+            ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
             if ext not in IMAGE_FORMATS:
                 findings.append(Finding(
                     rule_id=self.rule_id, severity="warning",

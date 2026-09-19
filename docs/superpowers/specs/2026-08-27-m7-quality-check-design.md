@@ -144,7 +144,7 @@ persistence time.
 |---|---|---|---|
 | `baseline_required` | per-product | hand-written field list: `id`, `title`/`structured_title`, `description`/`structured_description`, `link`, `image_link`, `availability`, `price`, `condition` | critical |
 | `brand_required` | per-product | hand-written; exempt when `google_product_category` (ID form) is in the hardcoded media taxonomy set: Books {784, 543541, 543542, 543543}, DVDs & Videos {839, 543527, 543528, 543529}, Music & Sound Recordings {855, 543522, 543523, 543524, 543525, 543526} (Google Product Taxonomy 2021-09-21; string-path values are not exempted — ID preferred per `gmc_def.md`) | warning |
-| `gtin_mpn` | per-product | hand-written: missing `gtin` → `mpn`+`brand` required; present `gtin` → GS1 mod-10 checksum | critical |
+| `gtin_mpn` | per-product | hand-written: missing `gtin` → `mpn`+`brand` required; present `gtin` → each value parsed with `biip` (GS1 check digit + valid length 8/12/13/14, repeatable-aware) | critical |
 | `enum_values` | per-product | registry-driven: every attribute with `enum_values`, case-sensitive | critical |
 | `conditional_required` | per-product | hand-written table: `availability=preorder` → `availability_date`; `unit_pricing_base_measure` requires `unit_pricing_measure` | warning |
 | `date_format` | per-product | hand-written field list, strict ISO 8601 incl. timezone | critical |

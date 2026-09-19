@@ -158,6 +158,50 @@ async def test_gtin_missing_mpn_only_warns():
     assert len(findings) == 1
 
 
+async def test_gtin_valid_all_lengths():
+    rule = GtinMpn()
+    for value in ("96385074", "036000291452", "4006381333931", "10614141000415"):
+        findings = await rule.check({"gtin": value}, _make_ctx())
+        assert findings == [], value
+
+
+async def test_gtin_invalid_length_is_critical():
+    rule = GtinMpn()
+    findings = await rule.check({"gtin": "1234567890"}, _make_ctx())
+    assert len(findings) == 1
+    assert findings[0].severity == "critical"
+
+
+async def test_gtin_non_numeric_is_critical():
+    rule = GtinMpn()
+    findings = await rule.check({"gtin": "abc"}, _make_ctx())
+    assert len(findings) == 1
+    assert findings[0].severity == "critical"
+
+
+async def test_gtin_repeated_valid_list():
+    rule = GtinMpn()
+    product = {"gtin": ["4006381333931", "036000291452"]}
+    findings = await rule.check(product, _make_ctx())
+    assert findings == []
+
+
+async def test_gtin_repeated_one_invalid():
+    rule = GtinMpn()
+    product = {"gtin": ["4006381333931", "0012345678900"]}
+    findings = await rule.check(product, _make_ctx())
+    assert len(findings) == 1
+    assert findings[0].severity == "critical"
+    assert "check digit" in findings[0].message
+
+
+async def test_gtin_empty_list_treated_as_missing():
+    rule = GtinMpn()
+    findings = await rule.check({"gtin": []}, _make_ctx())
+    assert len(findings) == 1
+    assert findings[0].severity == "warning"
+
+
 # -- EnumValues --
 
 async def test_enum_values_invalid():
@@ -368,6 +412,59 @@ async def test_image_requirements_probe_error():
     findings = await rule.check({"image_link": "http://example.com/img.jpg"}, _make_ctx(image_probe=probe))
     assert len(findings) == 1
     assert findings[0].severity == "info"
+
+
+async def test_image_requirements_allows_query_parameter():
+    probe = AsyncMock()
+    probe.probe.return_value = (1600, 1600, None)
+    rule = ImageRequirements()
+    findings = await rule.check(
+        {"image_link": "https://example.com/img.jpg?v=1243"}, _make_ctx(image_probe=probe)
+    )
+    assert findings == []
+
+
+async def test_image_requirements_allows_fragment():
+    probe = AsyncMock()
+    probe.probe.return_value = (1600, 1600, None)
+    rule = ImageRequirements()
+    findings = await rule.check(
+        {"image_link": "https://example.com/img.webp#frag"}, _make_ctx(image_probe=probe)
+    )
+    assert findings == []
+
+
+async def test_image_requirements_allows_multiple_parameters():
+    probe = AsyncMock()
+    probe.probe.return_value = (1600, 1600, None)
+    rule = ImageRequirements()
+    findings = await rule.check(
+        {"image_link": "https://example.com/img.png?size=large&x=1"},
+        _make_ctx(image_probe=probe),
+    )
+    assert findings == []
+
+
+async def test_image_requirements_extensionless_still_warns():
+    probe = AsyncMock()
+    probe.probe.return_value = (1600, 1600, None)
+    rule = ImageRequirements()
+    findings = await rule.check(
+        {"image_link": "https://example.com/image?v=1"}, _make_ctx(image_probe=probe)
+    )
+    assert len(findings) == 1
+    assert "unrecognized image format" in findings[0].message
+
+
+async def test_image_requirements_directory_dot_not_extension():
+    probe = AsyncMock()
+    probe.probe.return_value = (1600, 1600, None)
+    rule = ImageRequirements()
+    findings = await rule.check(
+        {"image_link": "https://example.com/v1.2/image?v=1"}, _make_ctx(image_probe=probe)
+    )
+    assert len(findings) == 1
+    assert "unrecognized image format" in findings[0].message
 
 
 # -- VariantConsistency --

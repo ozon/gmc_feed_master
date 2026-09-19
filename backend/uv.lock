@@ -424,6 +424,18 @@ wheels = [
 ]
 
 [[package]]
+name = "biip"
+version = "5.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/55/4e/5c1a9af471374734c623a97397b089213309f762ed2f4496f991e7cf44a7/biip-5.0.0.tar.gz", hash = "sha256:261293aa28a8df20e6e2d155a8a35cccd8ed15b6c8ebbb90d8d85793ae4185d1", size = 210773, upload-time = "2025-10-12T20:40:27.449Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/52/8f/26c38ded673ec5c55df2f08d0ea4b2648350894e2a0110cee38ddacb30e9/biip-5.0.0-py3-none-any.whl", hash = "sha256:6b4c7910d7d1a8bb2a680335fe05359e050dcf62f408dd58e35a0367433ea58b", size = 184415, upload-time = "2025-10-12T20:40:25.786Z" },
+]
+
+[[package]]
 name = "boto3"
 version = "1.43.95"
 source = { registry = "https://pypi.org/simple" }
@@ -1159,6 +1171,7 @@ dependencies = [
     { name = "apscheduler" },
     { name = "argon2-cffi" },
     { name = "asyncpg" },
+    { name = "biip" },
     { name = "diskcache" },
     { name = "fastapi" },
     { name = "httpx" },
@@ -1191,6 +1204,7 @@ requires-dist = [
     { name = "apscheduler", specifier = "==3.11.3" },
     { name = "argon2-cffi", specifier = "==25.1.0" },
     { name = "asyncpg", specifier = "==0.30.0" },
+    { name = "biip", specifier = "==5.0.0" },
     { name = "diskcache", specifier = "==5.6.3" },
     { name = "fastapi", specifier = "==0.141.1" },
     { name = "httpx", specifier = "==0.28.1" },

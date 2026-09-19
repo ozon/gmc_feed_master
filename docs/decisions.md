@@ -1578,3 +1578,21 @@ under the pinned `maxWarnings: 338`.
 **Decision:** Add `pytest-cov==7.1.0` to dev deps and a coverage gate: `[tool.coverage.run] source=["app"]`, `[tool.coverage.report] fail_under=85`; CI runs `uv run pytest --cov=app --cov-report=term-missing`. Measured baseline at adoption is 86% (1021 missed / 7197 statements) over `app/`. `backend/AGENTS.md`'s reportlog/jq recipe is reclassified as local failure triage, matching what CI actually runs. Frontend coverage is not added.
 
 **Rationale:** 85% is a floor one point under the measured baseline, so it ratchets without flaking; it makes uncovered critical paths visible. The reportlog jq gate was redundant with pytest's own exit code, so the doc is corrected rather than the CI expanded.
+
+## 2026-09-19
+
+### QC GTIN validation uses biip
+
+**Topic:** GTIN check implementation in the quality-check engine.
+
+**Decision:** Validate GTINs with `biip==5.0.0` (`biip.parse(v).gtin`) instead of the hand-rolled GS1 mod-10 helper, and validate every value of the repeatable `gtin` field. Invalid check digit, invalid length (not 8, 12, 13, or 14), or non-numeric input → `critical`. `gmc-feed-engine-spec.md` §"GTIN/MPN logic" (mod-10 weighting, "no special cases") is not contradicted: biip applies the standard GS1 weighting and adds the GTIN length enforcement already documented in `gmc_def.md`.
+
+**Rationale:** The hand-rolled helper accepted meaningless lengths and coerced list values to `str(list)`, producing false findings. biip ships `py.typed`, so no mypy override is needed.
+
+### Image URL query strings relaxed
+
+**Topic:** False `image_requirements` format warnings.
+
+**Decision:** The image-format check resolves the URL path with `urllib.parse.urlsplit` and inspects only the final path segment, so query strings (`?v=1243`) and fragments (`#...`) no longer break extension detection. URLs with no recognizable extension still warn; magic-byte sniffing (promised in the M7 QC design) remains a follow-up.
+
+**Rationale:** Most CDNs append cache-busting query parameters to otherwise valid image URLs; treating `jpg?v=1243` as an unknown format produced widespread false positives.
