@@ -9,10 +9,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, Depends, FastAPI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.access import enforce_scope_access
 from app.models.plugin import Plugin
 from app.plugins.loader import PluginLoadError, load_plugin_class
 from app.plugins.manifest import ManifestError, PluginManifest, parse_manifest
@@ -138,7 +139,11 @@ async def discover_and_mount(app: FastAPI) -> None:
     for candidate in candidates:
         registry[candidate.manifest.id] = candidate.instance
         if candidate.router is not None:
-            app.include_router(candidate.router, prefix=f"/plugins/{candidate.manifest.id}")
+            app.include_router(
+                candidate.router,
+                prefix=f"/plugins/{candidate.manifest.id}",
+                dependencies=[Depends(enforce_scope_access)],
+            )
 
     logger.info("plugins: %d registered, %d rejected", len(candidates), len(rejected))
     for reason in rejected:

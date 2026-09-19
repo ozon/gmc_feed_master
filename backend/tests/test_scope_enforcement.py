@@ -151,6 +151,43 @@ async def test_assigned_feed_source_routes_allowed(scope_app, bob_client, admin_
 
 
 @pytest.mark.asyncio
+async def test_client_id_param_cannot_bypass_feed_source_scope(
+    scope_app, bob_client, admin_client
+):
+    feeds = (await admin_client.get("/dashboard/summary")).json()["clients"]
+    acme_id = next(c["id"] for c in feeds if c["name"] == "Acme")
+    other_feed_id = next(f["id"] for c in feeds if c["name"] == "Other Corp"
+                     for f in c["feed_sources"])
+    acme_feed_id = next(f["id"] for c in feeds if c["name"] == "Acme"
+                    for f in c["feed_sources"])
+    # A valid client_id (Acme, assigned to bob) must not short-circuit the
+    # check on the feed source (Other Corp, not assigned).
+    assert (await bob_client.get(
+        f"/feed-sources/{other_feed_id}?client_id={acme_id}"
+    )).status_code == 404
+    for path in (
+        f"/feed-sources/{other_feed_id}/products",
+        f"/feed-sources/{other_feed_id}/export-history",
+        f"/feed-sources/{other_feed_id}/quality-findings",
+        f"/feed-sources/{other_feed_id}/field-mapping",
+        f"/feed-sources/{other_feed_id}/pipeline",
+        f"/feed-sources/{other_feed_id}/dashboard",
+        f"/feed-sources/{other_feed_id}/ingestion-runs",
+    ):
+        assert (await bob_client.get(f"{path}?client_id={acme_id}")).status_code == 404, path
+    assert (await bob_client.get(
+        f"/registry/attributes?feed_source_id={other_feed_id}&client_id={acme_id}"
+    )).status_code == 404
+    assert (await bob_client.post(
+        f"/feed-sources/{other_feed_id}/dry-run?client_id={acme_id}"
+    )).status_code == 404
+    # The assigned client + feed source still passes with both params present.
+    assert (await bob_client.get(
+        f"/feed-sources/{acme_feed_id}/products?client_id={acme_id}"
+    )).status_code == 200
+
+
+@pytest.mark.asyncio
 async def test_plugin_preview_body_scope_enforced(scope_app, bob_client, admin_client):
     app, _ = scope_app
     feeds = (await admin_client.get("/dashboard/summary")).json()["clients"]

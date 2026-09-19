@@ -4,6 +4,7 @@ import json  # noqa: F401  (re-exported helper contract)
 import textwrap  # noqa: F401
 
 import pytest
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -68,6 +69,38 @@ async def test_lifespan_discovers_registers_and_mounts(
         ).scalar_one()
         assert row.version == MANIFEST["version"]
         assert row.enabled is False
+    await engine.dispose()
+
+
+async def test_plugin_routes_require_auth_via_scope_dependency(
+    tmp_path, settings, isolated_database_url
+):
+    engine = create_async_engine(isolated_database_url, pool_size=2, max_overflow=0)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+
+    code = """
+        from fastapi import APIRouter
+
+        class Plugin:
+            def process(self, product, config, data, ctx):
+                return product
+            def register_routes(self, router: APIRouter) -> APIRouter:
+                router.add_api_route("/status", lambda: {"ok": True})
+                return router
+    """
+    write_plugin(tmp_path / "upper", manifest=MANIFEST, code=code)
+    app = create_app(
+        settings=settings, db_session_factory=factory, plugins_dir=tmp_path
+    )
+
+    async with app.router.lifespan_context(app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(
+            transport=transport, base_url="https://testserver"
+        ) as client:
+            # Plugin-contributed routers are mounted behind enforce_scope_access,
+            # so an unauthenticated request is rejected before the handler runs.
+            assert (await client.get("/plugins/example_upper/status")).status_code == 401
     await engine.dispose()
 
 

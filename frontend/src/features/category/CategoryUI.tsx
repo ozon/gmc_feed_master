@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Badge, Group, Select, Stack, Tabs, Tooltip } from '@mantine/core';
 import { useTranslation } from 'react-i18next';
 import { notifyApiError } from '../../app/notifications';
-import type { PluginScope } from '../../api/hooks';
+import { useSession, type PluginScope } from '../../api/hooks';
 import { useCategoryLanguages, useFetchCategoryLanguage } from './hooks';
 import { editableTier } from './scope';
 import { DashboardTab } from './DashboardTab';
@@ -11,6 +11,8 @@ import { ManualTab } from './ManualTab';
 
 export default function CategoryUI({ pluginId, scope }: { pluginId: string; scope: PluginScope }) {
   const { t } = useTranslation('category');
+  const { data: session } = useSession();
+  const isAdmin = session?.role === 'admin';
   const tier = editableTier(scope);
   const [feedSourceId, setFeedSourceId] = useState<number | undefined>(undefined);
   const [language, setLanguage] = useState('en-US');
@@ -33,7 +35,7 @@ export default function CategoryUI({ pluginId, scope }: { pluginId: string; scop
             value={available.includes(language) ? language : available[0]}
             onChange={(value) => value && setLanguage(value)}
           />
-          {deMissing && (
+          {deMissing && isAdmin && (
             <Select
               placeholder={t('fetchLanguage')}
               w={220}

@@ -57,7 +57,7 @@ list).
 5. **Load** Python class via `load_plugin_class()` (imports `entry_point`) — Python's `sys.modules` cache prevents re-execution when a test both imports the plugin directly and calls `create_app(plugins_dir=...)`
 6. **Collect** optional router via `register_routes()` (validates no reserved paths: `/config`, `/data`)
 7. **Register** in `Plugin` table (upsert by `name` + `version`)
-8. **Mount** router at `/plugins/{id}/` if present
+8. **Mount** router at `/plugins/{id}/` if present, behind the central `enforce_scope_access` dependency (auth + tenant scope are enforced for every plugin route, not opt-in per plugin)
 9. **Store** instance in `app.state.plugin_registry[manifest.id]` for pipeline runner
 
 Invalid manifest → rejected, logged, startup continues.

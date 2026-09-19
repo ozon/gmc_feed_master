@@ -103,26 +103,26 @@ async def enforce_scope_access(
             )
         if client_id_int not in user.client_ids:
             raise HTTPException(status_code=404, detail="client not found")
+    if feed_source_id is None:
         return
-    if feed_source_id is not None:
-        if db_session is None:
-            return  # handler will raise 503 (database unavailable)
-        from .models.feed_source import FeedSource
+    if db_session is None:
+        return  # handler will raise 503 (database unavailable)
+    from .models.feed_source import FeedSource
 
-        try:
-            feed_source_id_int = int(feed_source_id)
-        except ValueError:
-            raise HTTPException(
-                status_code=422,
-                detail="feed_source_id must be an integer",
-            )
-        feed_source = await db_session.get(FeedSource, feed_source_id_int)
-        feed_client_id = feed_source.client_id if feed_source is not None else None
-        # Close the implicitly-begun read transaction so handlers can start
-        # their own `session.begin()` without InvalidRequestError.
-        await db_session.rollback()
-        if feed_client_id is None or feed_client_id not in user.client_ids:
-            raise HTTPException(status_code=404, detail="feed source not found")
+    try:
+        feed_source_id_int = int(feed_source_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=422,
+            detail="feed_source_id must be an integer",
+        )
+    feed_source = await db_session.get(FeedSource, feed_source_id_int)
+    feed_client_id = feed_source.client_id if feed_source is not None else None
+    # Close the implicitly-begun read transaction so handlers can start
+    # their own `session.begin()` without InvalidRequestError.
+    await db_session.rollback()
+    if feed_client_id is None or feed_client_id not in user.client_ids:
+        raise HTTPException(status_code=404, detail="feed source not found")
 
 
 async def ensure_feed_source_access(

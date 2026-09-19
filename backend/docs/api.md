@@ -170,7 +170,7 @@ Versioned, immutable prompt templates per task type. Editing = creating a new ve
 - `global` = neither parameter provided
 
 ### Plugin-Contributed Routes
-Plugins may register custom routes under `/plugins/{plugin_id}/...` via `register_routes(router)`.
+Plugins may register custom routes under `/plugins/{plugin_id}/...` via `register_routes(router)`. All plugin-contributed routers are mounted behind the central `enforce_scope_access` dependency, so every plugin route requires authentication and validates any `client_id`/`feed_source_id` it carries (path or query) against the caller's assigned clients — isolation is not opt-in per plugin.
 **Reserved sub-paths (enforced by contract test):**
 - `/plugins/{plugin_id}/config` — core config endpoints
 - `/plugins/{plugin_id}/data` — core data endpoints
@@ -181,7 +181,7 @@ Plugin routes must not use these prefixes. Example: Category plugin uses `/plugi
 - `GET /plugins/category/taxonomy/languages` — lists available taxonomy languages currently loaded from the plugin's CSV files.
 - `GET /plugins/category/taxonomy/search?language=&q=&limit=&offset=` — searches taxonomy entries by path segment, with startswith matches ranked ahead of contains matches. 422 for an unknown language.
 - `GET /plugins/category/taxonomy/validate?taxonomy_id=` — checks a single taxonomy id against the loaded taxonomy; returns `{valid, path}`.
-- `POST /plugins/category/taxonomy/fetch` — fetches Google's official taxonomy file for a requested language and replaces the local CSV (de-DE only). 422 for non-fetchable languages; 502 on upstream fetch failure or invalid/too-small upstream data; 500 if the local taxonomy file cannot be written.
+- `POST /plugins/category/taxonomy/fetch` — **admin-only (403 for non-admins)**. Fetches Google's official taxonomy file for a requested language and replaces the local CSV (de-DE only). 422 for non-fetchable languages; 502 on upstream fetch failure or invalid/too-small upstream data; 500 if the local taxonomy file cannot be written.
 - `GET /plugins/category/stats?feed_source_id=` — categorization statistics for a feed source. Response `{total, buckets: {manual, auto, excluded, uncategorized}, rules: {rule_id: count}}`, computed over active, non-excluded staged products; products with no recorded provenance count as `uncategorized`, and rule counts include every product carrying a `_category_rule_id`.
 - `GET /plugins/category/matches?feed_source_id=&rule_id=&limit=&offset=` — paged list of products matched by a rule. Response `{total, items: [{product_id, title}]}` with titles coalesced from processed then raw data, ordered by product_id; limit 1–200 (default 50), offset ≥ 0.
 - `GET /plugins/category/product?feed_source_id=&product_id=` — full categorization state for a single staged product. Response `{product_id, title, provenance, rule_id, google_product_category, status}`. 404 if the product is unknown, removed, or excluded.

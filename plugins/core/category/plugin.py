@@ -364,7 +364,7 @@ class CategoryPlugin:
         from fastapi.responses import JSONResponse
         from pydantic import BaseModel, Field
 
-        from app.access import CurrentUser, get_current_user
+        from app.access import CurrentUser, get_current_user, require_admin
 
         class ValidateRequest(BaseModel):
             rules: list[dict[str, Any]] = Field(default_factory=list)
@@ -423,7 +423,7 @@ class CategoryPlugin:
         })
         router.get("/taxonomy/validate", response_model=None)(taxonomy_validate)
 
-        async def fetch_language(payload, user=Depends(get_current_user)):
+        async def fetch_language(payload, user=Depends(require_admin)):
             if payload.language not in _FETCHABLE_LANGUAGES:
                 raise HTTPException(
                     status_code=422,

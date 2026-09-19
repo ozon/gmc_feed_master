@@ -17,6 +17,7 @@ from app.models.session import Session
 from app.models.staging import StagingProduct
 from app.models.user import User
 from app.persistence.users import seed_initial_user
+from app.security.passwords import hash_password
 from tests.category_plugin_module import category_plugin as cp
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "category"
@@ -145,6 +146,24 @@ class TestTaxonomyRoutes:
 
 
 class TestFetchRoute:
+    async def test_fetch_requires_admin(self, app_factory):
+        app, factory, _ = app_factory
+        async with factory() as session, session.begin():
+            session.add(User(
+                username="bob", password_hash=hash_password("bob-pass"), role="user"
+            ))
+        client = AsyncClient(
+            transport=ASGITransport(app=app), base_url="https://testserver"
+        )
+        assert (await client.post(
+            "/auth/login", json={"username": "bob", "password": "bob-pass"}
+        )).status_code == 200
+        resp = await client.post(
+            "/plugins/category/taxonomy/fetch", json={"language": "de-DE"}
+        )
+        assert resp.status_code == 403
+        await client.aclose()
+
     async def test_fetch_rejects_unknown_language(self, app_factory):
         client = await logged_in_client(app_factory)
         resp = await client.post("/plugins/category/taxonomy/fetch", json={"language": "fr-FR"})
