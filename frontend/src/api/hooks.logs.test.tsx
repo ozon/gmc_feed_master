@@ -21,7 +21,7 @@ describe('useEventLogs', () => {
     const { result } = renderHook(() => useEventLogs({ category: 'audit', q: 'login' }));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(fetchMock).toHaveBeenCalledWith(
-      '/logs/entries?category=audit&q=login',
+      '/api/logs/entries?category=audit&q=login',
       expect.objectContaining({ credentials: 'include' }),
     );
   });

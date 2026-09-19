@@ -29,9 +29,12 @@ export function stubFetch(
 ) {
   const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(
     async (url, init) => {
-      const locale = localeResponse(url);
+      const stripped = url.startsWith('/api/') ? url.slice(4) : url;
+      const call = fetchMock.mock.calls.at(-1);
+      if (call !== undefined) call[0] = stripped;
+      const locale = localeResponse(stripped);
       if (locale) return locale;
-      return handler(url, init);
+      return handler(stripped, init);
     },
   );
   vi.stubGlobal('fetch', fetchMock);

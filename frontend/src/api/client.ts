@@ -1,4 +1,5 @@
 import { createLogger, newRequestId } from '../logging/logger';
+import { withApiBase } from './base';
 
 export type User = { username: string; role: 'admin' | 'user'; client_ids: number[] | null };
 
@@ -56,7 +57,7 @@ async function fetchWithContext(url: string, init?: RequestInit): Promise<Respon
   const requestId = newRequestId();
   const headers = new Headers(init?.headers);
   headers.set('X-Request-ID', requestId);
-  const response = await fetch(url, {
+  const response = await fetch(withApiBase(url), {
     ...init,
     credentials: 'include',
     headers,
@@ -100,7 +101,7 @@ async function requestWithHeaders<T>(
   const requestId = newRequestId();
   const headers = new Headers(init?.headers);
   headers.set('X-Request-ID', requestId);
-  const response = await fetch(url, {
+  const response = await fetch(withApiBase(url), {
     ...init,
     credentials: 'include',
     headers,
@@ -146,6 +147,12 @@ export function apiGetWithHeaders<T>(url: string): Promise<{ data: T; headers: H
 
 export async function apiGetText(url: string): Promise<string> {
   const response = await fetchWithContext(url);
+  return response.text();
+}
+
+export async function publicGetText(url: string): Promise<string> {
+  const response = await fetch(url, { credentials: 'include' });
+  if (!response.ok) throw await parseError(response);
   return response.text();
 }
 

@@ -61,7 +61,7 @@ describe('registry/fields hooks', () => {
   it('useRegistryAttributes passes feed_source_id and returns descriptors', async () => {
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
-      if (url === '/registry/attributes?feed_source_id=5') return jsonResponse(registryFixture);
+      if (url === '/api/registry/attributes?feed_source_id=5') return jsonResponse(registryFixture);
       return jsonResponse([]);
     });
     const { result } = renderHook(() => useRegistryAttributes(5), { queryClient });
@@ -71,7 +71,7 @@ describe('registry/fields hooks', () => {
 
   it('useRegistryAttributes without id keeps the bare URL', async () => {
     fetchMock.mockImplementation(async (input) => {
-      expect(String(input)).toBe('/registry/attributes');
+      expect(String(input)).toBe('/api/registry/attributes');
       return jsonResponse(registryFixture.map((a) => ({ ...a, max_repeats: 0 })));
     });
     const { result } = renderHook(() => useRegistryAttributes(), { queryClient });
@@ -80,7 +80,7 @@ describe('registry/fields hooks', () => {
 
   it('useFeedSourceFields returns descriptor array', async () => {
     fetchMock.mockImplementation(async (input) => {
-      expect(String(input)).toBe('/feed-sources/7/fields');
+      expect(String(input)).toBe('/api/feed-sources/7/fields');
       return jsonResponse(fieldsFixture);
     });
     const { result } = renderHook(() => useFeedSourceFields(7), { queryClient });
@@ -91,8 +91,8 @@ describe('registry/fields hooks', () => {
   it('useTriggerRun invalidates the registry attributes prefix (directive 3)', async () => {
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
-      if (url === '/registry/attributes?feed_source_id=5') return jsonResponse(registryFixture);
-      if (url === '/feed-sources/5/run') return jsonResponse({ run_id: 1 });
+      if (url === '/api/registry/attributes?feed_source_id=5') return jsonResponse(registryFixture);
+      if (url === '/api/feed-sources/5/run') return jsonResponse({ run_id: 1 });
       return jsonResponse({});
     });
     const registry = renderHook(() => useRegistryAttributes(5), { queryClient });

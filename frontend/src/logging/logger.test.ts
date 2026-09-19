@@ -28,7 +28,7 @@ describe('logger', () => {
     flushLogs();
     expect(beaconMock).toHaveBeenCalledTimes(1);
     const [url, blob] = beaconMock.mock.calls[0] as unknown as [string, Blob];
-    expect(url).toBe('/logs/client');
+    expect(url).toBe('/api/logs/client');
     return blob.text().then((text) => {
       const payload = JSON.parse(text) as {
         entries: Array<{ context: Record<string, unknown>; level: string }>;
@@ -45,7 +45,7 @@ describe('logger', () => {
     flushLogs();
     expect(beaconMock).toHaveBeenCalledTimes(1);
     const [url, blob] = beaconMock.mock.calls[0] as unknown as [string, Blob];
-    expect(url).toBe('/logs/client');
+    expect(url).toBe('/api/logs/client');
     return blob.text().then((text) => {
       const payload = JSON.parse(text) as {
         entries: Array<{ level: string }>;

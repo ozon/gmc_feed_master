@@ -19,6 +19,7 @@ import {
   changePassword,
   getCurrentUser,
   logout,
+  publicGetText,
 } from './client';
 import { queryKeys } from './queryKeys';
 import type {
@@ -671,7 +672,7 @@ export function useExportVersionContent(
 export function usePublishedExportContent(exportUrl: string, enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.exportContent(exportUrl),
-    queryFn: () => apiGetText(exportUrl),
+    queryFn: () => publicGetText(exportUrl),
     enabled: enabled && Boolean(exportUrl),
   });
 }

@@ -1,3 +1,5 @@
+import { withApiBase } from '../api/base';
+
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 export type LogContext = Record<string, unknown>;
 
@@ -69,7 +71,7 @@ function flush(): void {
   try {
     if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
       const queued = navigator.sendBeacon(
-        '/logs/client',
+        withApiBase('/logs/client'),
         new Blob([body], { type: 'application/json' }),
       );
       if (queued) return;
@@ -77,7 +79,7 @@ function flush(): void {
   } catch {
     // fall through to fetch
   }
-  void fetch('/logs/client', {
+  void fetch(withApiBase('/logs/client'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body,

@@ -7,6 +7,7 @@ import {
   changePassword,
   getCurrentUser,
   login,
+  publicGetText,
   setUnauthorizedHandler,
 } from './client';
 import { resetLogQueue } from '../logging/logger';
@@ -32,7 +33,7 @@ describe('api client', () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ username: 'operator' }));
     await expect(getCurrentUser()).resolves.toEqual({ username: 'operator' });
     expect(fetchMock).toHaveBeenCalledWith(
-      '/auth/me',
+      '/api/auth/me',
       expect.objectContaining({ credentials: 'include' }),
     );
   });
@@ -135,5 +136,14 @@ describe('apiGetText', () => {
   it('throws ApiError on a non-OK response', async () => {
     fetchMock.mockResolvedValueOnce(new Response('nope', { status: 404 }));
     await expect(apiGetText('/x')).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('does not prefix absolute URLs', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('<xml/>', { status: 200 }));
+    await publicGetText('https://test.public/export/tok.xml');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://test.public/export/tok.xml',
+      expect.anything(),
+    );
   });
 });
