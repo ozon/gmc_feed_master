@@ -26,6 +26,12 @@ flowchart LR
 | 7. Quality Check | `QualityCheckStep` | Run per-product + cross-product rules (incl. optional AI policy check); persist `QualityFinding`; never blocks export |
 | 8. Export | `ExportStep` | Serialize to GMC XML; version in `ExportVersion`; atomic publish to `export_dir/published/{id}.xml` |
 
+### Event-loop safety (single-worker deployment)
+
+- **Export:** `render_feed` and the `ExportFileStore` version/publish writes run via `asyncio.to_thread`; `is_file`/`unlink` metadata ops stay on the loop.
+- **Plugins:** synchronous `prepare_run`/`process` hooks run in the executor under `PLUGIN_CALL_TIMEOUT_S = 30`; a timeout marks the product errored and abandons the thread (it cannot be killed).
+- **QC image probe:** the Pillow decode runs via `asyncio.to_thread`.
+
 ### Ingest Details (`app/ingest/`)
 - Delimited inputs (TSV/CSV) parse via a single RFC-4180 `csv.reader` stream pass — quoted cells may contain embedded newlines; row-error line numbers are physical end-of-row lines.
 - Annotated headers `attr(sub1:sub2:…)` trust the header's declared sub-field list as the positional truth; sub-fields unknown to the registry are tolerated and dropped at mapping/export (both filter structured values to registry-known sub-fields).

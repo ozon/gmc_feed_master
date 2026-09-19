@@ -1544,3 +1544,13 @@ resyncs `search` on value change).
 
 **Lint:** No new `oxlint` warnings introduced; modified files verified clean
 under the pinned `maxWarnings: 338`.
+
+### Event-loop relief (B3/B4/B5/B9)
+
+**Topic:** Fix the 2026-09-17 backend review's event-loop findings.
+
+**Decision:** Export keeps its in-memory renderer but `render_feed` and the version/publish file writes run via `asyncio.to_thread`; metadata ops (`is_file`, `unlink`) stay on the loop. The synchronous plugin contract is unchanged, but every `prepare_run`/`process` call now runs in the executor under `PLUGIN_CALL_TIMEOUT_S = 30` (`app/pipeline/steps.py`), and plugin run state is keyed per instance (`position`) instead of manifest id. Pillow image decode runs via `asyncio.to_thread`. No streaming renderer, threshold, async plugin contract, or schema change.
+
+**Rationale:** The deployment runs one uvicorn worker, so any sync work in an async path stalls requests and the scheduler. `to_thread` is the smallest change that removes the stall without touching the renderer/store APIs or the plugin contract. A timed-out call abandons its thread (Python cannot kill it); this is safe because the product is errored and discarded and plugin calls are sequential, so the executor is not starved. Streaming export stays deferred until peak memory is measured as a problem.
+
+**Non-goals:** `B8` image-dimension insert race, `routes/clients.py` sync unlink, `B6`/`B7` write/scan amplification.

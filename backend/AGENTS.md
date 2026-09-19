@@ -105,7 +105,7 @@ Rather than restating generic rules Ruff already checks, point at the rule group
 ## Performance
 - Profile before optimizing pipeline hot paths (`cProfile`/`py-spy`); reference the measurement in the PR/commit, matching the existing wall-time-tracking style in `docs/decisions.md`.
 - `QualityCheckStep` cross-product rules use one bulk query per rule, not one query per product.
-- `app/export/service.py` streams output rather than building the full feed in memory above the threshold documented in `docs/architecture.md`.
+- `app/export/service.py` renders the feed in memory but runs `render_feed` and the version/publish file writes off the event loop via `asyncio.to_thread` (single-worker deployment); streaming to file is future work if peak memory becomes a problem.
 
 ## CI gate (required, in order)
 ```bash

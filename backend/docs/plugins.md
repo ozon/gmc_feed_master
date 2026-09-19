@@ -137,6 +137,13 @@ class PipelineModulePlugin(Protocol):
 ### `prepare_run(config, data, ctx) -> state` (optional)
 Called once per plugin instance per pipeline run, before the first product. Plugins may return any run-scoped state (parsed ID sets, compiled templates). The state is passed to every `process(product, config, data, ctx, state=...)` call of that instance for the run, but only if `process` declares a `state` parameter. Plugins without `prepare_run` are unaffected. Use this instead of caching per-run data on `self` — plugin instances are singletons and runs of different feed sources execute concurrently.
 
+Both `prepare_run` and `process` run in a worker thread under a hard
+`PLUGIN_CALL_TIMEOUT_S = 30` ceiling (`app/pipeline/steps.py`). A hook that
+exceeds it is recorded as a product error and the run continues; the worker
+thread is abandoned, not killed (Python cannot cancel a running thread). Run
+state is keyed per pipeline instance (position), so two instances of the same
+plugin never share it.
+
 ### Virtual Fields
 Plugins may create **any registry-known attribute** on the product, regardless of input feed schema. Path grammar (§5.7 spec) addresses nested/repeated fields.
 
