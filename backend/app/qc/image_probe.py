@@ -14,6 +14,10 @@ from .constants import IMAGE_CONCURRENCY, IMAGE_FETCH_CAP_BYTES
 logger = logging.getLogger(__name__)
 
 
+def _image_size(body: bytes) -> tuple[int, int]:
+    return Image.open(BytesIO(body)).size
+
+
 class ImageProbeImpl:
     def __init__(self, session_factory, client: httpx.AsyncClient) -> None:
         self._session_factory = session_factory
@@ -48,8 +52,7 @@ class ImageProbeImpl:
                     return None, None, error
 
                 body = response.content[:IMAGE_FETCH_CAP_BYTES]
-                img = Image.open(BytesIO(body))
-                width, height = img.size
+                width, height = await asyncio.to_thread(_image_size, body)
 
                 await self._cache_dimensions(url, width, height)
                 return width, height, None

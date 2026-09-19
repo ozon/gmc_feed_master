@@ -5,7 +5,7 @@ import httpx
 import pytest
 
 from app.models.image_dimension import ImageDimension
-from app.qc.image_probe import ImageProbeImpl
+from app.qc.image_probe import ImageProbeImpl, _image_size
 
 pytestmark = pytest.mark.asyncio
 
@@ -145,3 +145,7 @@ async def test_probe_corrupt_image():
     assert width is None
     assert height is None
     assert error is not None
+
+
+async def test_image_size_helper_reads_dimensions():
+    assert _image_size(_make_jpeg_bytes(300, 120)) == (300, 120)
