@@ -4,6 +4,10 @@ Repo-wide ponytail-audit. Scope: over-engineering and complexity **only** — co
 
 Tags: `delete` (dead code, nothing replaces it) · `stdlib` (hand-rolled stdlib — function named) · `native` (code/dep doing what the platform already does) · `yagni` (one-implementation abstraction, unset config, one-caller layer) · `shrink` (same logic, fewer lines).
 
+## Status update — 2026-09-19
+
+All 12 cuts applied on `main` at `ec26c7f` (`refactor: apply over-engineering audit cuts (O1-O12)`), net −210 lines across 25 files. `O12` was already absent. Verified at that commit: backend full suite 1436 passed, ruff + mypy clean, frontend typecheck/build/lint clean. The report line count (~-145) excluded the deleted tests and the spec/plan/doc edits folded into the same change.
+
 ## Findings (biggest cut first)
 
 1. **`delete`** `backend/scripts/verify_m6_gate.py` + `verify_m9_gate.py` — near-identical 44-line milestone gate runners; no CI/Makefile/script caller (CI gate lives in `.github/workflows/ci.yml`, local in `Makefile`). Replacement: nothing. `O1`

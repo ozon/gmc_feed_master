@@ -4,6 +4,20 @@ Scope: `gmc-feed-engine-spec.md` (authoritative), `backend/docs/`, `frontend/doc
 
 Rule applied: the spec is always right; where docs contradict it, the doc is the bug. Where the **implementation** has outgrown the spec, that is an operator flag, not a doc fix.
 
+## Status update — 2026-09-19
+
+| # | Status | Note |
+|---|--------|------|
+| A2 | Fixed | `cccb501` — plugin-contributed routers mount behind `enforce_scope_access`; startup test added. |
+| A3 | Fixed | `cccb501` — category taxonomy fetch gated to admin; frontend hides the control for non-admins. |
+| A1, A8, A15 | Open — operator-owned | Spec amendments still pending (see Operator flags). |
+| A4–A7 | Open | Not addressed. |
+| A9–A10 | Open | Single-worker invariants still implicit. |
+| A11 | Open | ADR coverage incomplete; `docs/decisions/0013` exists but the AGENTS ADR map is not refreshed. |
+| A12–A14, A16 | Open | Not addressed. |
+
+No other architecture/doc findings were changed by the remediation cycles (`O*` over-engineering, `B3/B4/B5/B9` event-loop, `T*` quality-contract).
+
 ## Overall assessment
 
 The core engine (pipeline order, delta hashing, three-tier scope merge, plugin contract/reserved routes, atomic publish, migrations) is implemented faithfully to the spec, and the backend docs largely match the code. The main problem is governance: the implementation has grown well past `gmc-feed-engine-spec.md` (RBAC, AI/LiteLLM+Redis, enrichment as a seventh stage) without the spec being updated, so several spec sections are now false while AGENTS.md still declares the spec authoritative. Doc drift is concentrated in Category and RBAC/plugin-scope details. Two boundary-quality issues stand out: plugin-contributed routers bypass central tenant-scope enforcement, and a client-scoped user can mutate a global taxonomy file.

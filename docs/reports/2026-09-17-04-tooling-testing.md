@@ -2,6 +2,27 @@
 
 Scope: `.github/`, `Makefile`, `docker-compose.yml`, `Caddyfile*`, `ruff.toml`, `backend/pyproject.toml`, `backend/alembic.ini`, `backend/scripts/`, `frontend/package.json`, `frontend/vite.config.ts`, `.env.example`, `README.md`, AGENTS.md files, and root-level instruction docs. Read-only; no code modified.
 
+## Status update — 2026-09-19
+
+Remediated on branch `feat/quality-contract-gaps`. Verified: ruff exit-0 (`extend-select` B/C4/SIM/I/E711/E712), `mypy .` and `mypy --explicit-package-bases ../plugins` clean, full backend suite 1440 passed at 85.81% coverage (floor 85), runtime `pip-audit` clean (2 ignored), `npm audit` clean.
+
+| # | Status | Note |
+|---|--------|------|
+| T1 | Fixed | `/chat` was already proxied in `Caddyfile`, `Caddyfile.dev`, and `vite.config.ts`; this cycle added it to the `README.md:64` prefix list, the one remaining drift. |
+| T2 | Fixed | `.github/dependabot.yml` (uv/npm/github-actions) + runtime `pip-audit` (pinned 2.10.1, `--no-dev`) + `npm audit --audit-level=high` CI steps. The runtime audit found 33 CVEs in `pillow 10.4.0`; bumped to `pillow==12.3.0`. `diskcache` `PYSEC-2026-2447` has no fix → documented `--ignore-vuln`. |
+| T3 | Resolved (superseded) | The Oxc cycle (2026-09-18) shipped `oxlint`/`oxfmt` + a CI lint/format step; ESLint was never adopted (TS 7 blocker). |
+| T4 | Fixed | `ruff.toml` gains `[lint] extend-select = ["B","C4","SIM","I","E711","E712"]` (not the report's literal `select`: Ruff 0.16's defaults are narrower, so `select` additionally pulled in 10 unrelated `E402`/`E702` test findings). 18 findings fixed. |
+| T5 | Partially fixed | `plugins/` is now typechecked via a separate `mypy --explicit-package-bases` invocation; its 1 finding fixed. `strict` deferred — 3274 errors / 172 files, recorded in `docs/decisions.md`. |
+| T6 | Fixed | `pytest-cov==7.1.0`; `[tool.coverage]` source `app/`, `fail_under = 85`; CI runs `pytest --cov=app`. The AGENTS reportlog claim is reconciled to local triage. |
+| T7 | Fixed | Superseded by the production-container-deployment cycle (`docker-compose.prod.yml`, `docs/prod_deployment.md`). |
+| T8 | Open | Stale root instruction docs (`coding-agent-instructions.md`, `i18n-agent-instructions.md`, `m10-frontend-instructions.md`) still present. |
+| T9 | Open | `examples/feed.xml` duplicate still present. |
+| T10 | Open | `.env.example` still ships sync `postgresql://`. |
+| T11 | Open | CI still `on: push` + `pull_request` with no branch filter and sets both `DATABASE_URL`/`TEST_DATABASE_URL`. |
+| T12 | Partially fixed | `pillow` is now exact-pinned; `mypy`/`uvicorn` ranges remain (cosmetic, `uv sync --locked`). |
+
+Top 5 priority actions: #1 (T1), #3 (T2), #4 (T4 + T5-plugins), and the coverage half of #5 (T6) are done; the runbook half of #5 landed with T7. #2 was already in place (T3).
+
 ## Overall assessment
 
 This is a well-run repo in most respects: a single CI workflow covers an above-average gate set (registry artifact check, `alembic upgrade` + `alembic check` drift gate, hard exit-0 ruff/mypy, full backend suite against real Postgres, frontend typecheck+test+build), the test infrastructure is genuinely strong (template-database cloning per xdist worker, `TestClock`, 1079 tests, contract tests with negative cases), and repo hygiene is good (clean `git status`, comprehensive `.gitignore`, `uv lock --check` passes, `npm audit` clean). The three real weaknesses: the API proxy prefix list is hand-duplicated across four files and has already drifted (`/chat` is broken in dev and prod), the frontend has zero lint and the backend's documented ruff rule set is not actually enabled in config, and there is no security/dependency scanning or coverage measurement anywhere. Deployment is a manual host-process story with a single-worker constraint and no runbook outside a buried design doc.

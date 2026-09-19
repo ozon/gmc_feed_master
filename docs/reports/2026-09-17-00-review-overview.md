@@ -15,6 +15,17 @@ Finding ID prefixes (`B`, `F`, `A`, `T`, `O`) are **local to this 2026-09-17 rev
 
 **Overall health: good, with a small number of load-bearing gaps.** The core engine is faithful to the spec (pipeline order, delta hashing, three-tier scope merge, plugin contract, atomic publish, migration hygiene) and the frontend is disciplined (strict TS with zero `any` in production code, TanStack Query conventions largely held, plugin error isolation wired, en/de i18n parity). The one Critical is a genuine cross-tenant authorization bypass in the shared scope guard. Outside that, the gaps cluster in three places: tenant-isolation boundaries that are opt-in rather than enforced, synchronous work on the single-worker event loop, and a documented quality contract (ruff/mypy/lint/coverage) that the config does not actually deliver. Over-engineering residue is small (~145 lines) — the codebase is not bloated.
 
+## Remediation status — 2026-09-19
+
+Remediation cycles landed since this review (all on `main` unless noted):
+
+- **Over-engineering cuts** — `ec26c7f`: all `O1`–`O12` (net −210 lines).
+- **Event-loop relief** — `b103a97`: `B3`, `B4`, `B5`, `B9`.
+- **Quality-contract gaps** — branch `feat/quality-contract-gaps`: `T1`, `T2`, `T4`, `T5` (plugins-only), `T6`; `T3`/`T7` were already resolved.
+- Earlier: `B1`/`A2`/`A3` at `cccb501`; frontend `F1`–`F10`/`F12` at `0a98f4b`.
+
+Still open from the prioritized list: `B2` (SSRF), scale/perf (`B6`/`B7`), single-worker invariants (`A9`/`A10`), docs/spec rot (`A1`, `A4`–`A16`), backend lows (`B8`, `B10`–`B13`), tooling lows (`T8`–`T12`), deferred frontend `F11`/`F13`, and mypy `strict` (deferred; 3274 errors).
+
 ## Finding statistics
 
 | Report | Critical | High | Medium | Low |
