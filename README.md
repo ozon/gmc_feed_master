@@ -95,3 +95,8 @@ Verify the artifact is up to date (CI runs this automatically):
 cd backend
 uv run python scripts/registry_check.py --source ../gmc_def.md --output registry/attributes.json --check
 ```
+
+## Documentation
+
+- [`docs/environment-variables.md`](docs/environment-variables.md) — every backend, frontend, production-stack, tooling, and test environment variable
+- [`docs/prod_deployment.md`](docs/prod_deployment.md) — production deployment guide

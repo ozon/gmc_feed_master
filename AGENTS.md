@@ -88,6 +88,7 @@ in `.env` stay untouched). Backend runs exactly one worker/replica. Full guide:
 - `frontend/AGENTS.md` — Frontend-specific commands and conventions
 - `docs/prod_deployment.md` — VPS provisioning, domain/TLS, deploy, rollback, backups
 - `docs/release_process.md` — short release/deploy runbook (tag → GHCR → pull/up)
+- `docs/environment-variables.md` — every backend, frontend, prod-stack, tooling, and test env var
 
 ## Documentation
 Any change to behavior, API surface, data model, or commands MUST update the affected docs and ADRs in the same commit. Documentation that contradicts `gmc-feed-engine-spec.md` is a bug: fix the doc, never the spec, and flag the conflict to the operator.
