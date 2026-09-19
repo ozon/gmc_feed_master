@@ -11,12 +11,8 @@ from sqlalchemy.ext.asyncio import (
 from ..config import Settings
 
 
-def async_database_url(settings: Settings) -> str:
-    return settings.async_database_url
-
-
 def create_engine(settings: Settings) -> AsyncEngine:
-    return create_async_engine(async_database_url(settings))
+    return create_async_engine(settings.async_database_url)
 
 
 def create_session_factory(

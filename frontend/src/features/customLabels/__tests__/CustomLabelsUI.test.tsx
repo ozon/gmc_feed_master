@@ -8,7 +8,7 @@ import type { ReactNode } from 'react';
 import i18n from '../../../i18n';
 import { render } from '../../../test/render';
 import { requestBody, stubFetch } from '../../../test/fetch';
-import CustomLabelsUI from '../../../../../plugins/core/custom_labels/frontend/component';
+import CustomLabelsUI from '../CustomLabelsUI';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

@@ -9,20 +9,12 @@ from registry.loader import load_registry
 from ..access import require_feed_source
 from ..auth import require_user
 from ..db.engine import get_db_session
+from ..mapping.matcher import _SUB_EFFECTIVE_KINDS
 from ..models.staging import StagingProduct
 from ..qc.constants import BASELINE_ALTERNATIVE_PAIRS, BASELINE_REQUIRED
 from ..schemas.field_mapping import RegistryAttributeOut, RegistrySubFieldOut
 
 router = APIRouter()
-
-
-def _attribute_sub_kind(parent_kind: str) -> str | None:
-    """Sub-field effective kind, mirroring matcher._SUB_EFFECTIVE_KINDS."""
-    if parent_kind == "structured":
-        return "scalar"
-    if parent_kind == "repeated_structured":
-        return "repeated_scalar"
-    return None
 
 
 async def compute_max_repeats(
@@ -87,7 +79,7 @@ async def list_registry_attributes(
                         name=sub.name,
                         type=sub.type,
                         required=sub.required.value,
-                        kind=_attribute_sub_kind(kind),
+                        kind=_SUB_EFFECTIVE_KINDS.get(kind),
                     )
                     for sub in attribute.fields
                 ],

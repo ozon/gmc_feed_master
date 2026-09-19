@@ -5,7 +5,6 @@ from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from app.db.engine import (
-    async_database_url,
     create_engine,
     create_session_factory,
     get_db_session,
@@ -15,7 +14,7 @@ from app.db.engine import (
 def test_database_url_is_converted_to_asyncpg(settings):
     settings.database_url = "postgresql://postgres:postgres@localhost:5432/gmc_feed"
 
-    assert async_database_url(settings) == (
+    assert settings.async_database_url == (
         "postgresql+asyncpg://postgres:postgres@localhost:5432/gmc_feed"
     )
 

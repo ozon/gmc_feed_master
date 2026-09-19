@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass
-from typing import Any
 
 from pydantic import BaseModel
 
-from ..staging.hashing import canonical_json
 from . import schemas
 
 # The authoritative variable set per task type. Templates (DB or builtin)
@@ -89,8 +86,3 @@ TASK_SPECS: dict[str, TaskSpec] = {
         response_model=schemas.ImageQualityResult,
     ),
 }
-
-
-def input_hash(task_type: str, variables: dict[str, Any]) -> str:
-    payload = canonical_json({"task_type": task_type, "variables": variables})
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()

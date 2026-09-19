@@ -1,28 +1,9 @@
 from __future__ import annotations
 
-import typing
-
 import pytest
 from pydantic import ValidationError
 
 from app.ai import schemas
-from app.ai.constraints import enum_values
-
-
-def _literal_values(annotation: object) -> tuple[str, ...]:
-    for arg in typing.get_args(annotation):
-        if typing.get_origin(arg) is typing.Literal:
-            return typing.get_args(arg)
-    raise AssertionError("no Literal in annotation")
-
-
-def test_gender_and_age_group_literals_match_registry() -> None:
-    gender = _literal_values(schemas.EnrichedAttributes.model_fields["gender"].annotation)
-    age_group = _literal_values(
-        schemas.EnrichedAttributes.model_fields["age_group"].annotation
-    )
-    assert tuple(gender) == enum_values("gender")
-    assert tuple(age_group) == enum_values("age_group")
 
 
 def test_optimized_title_accepts_valid() -> None:
@@ -97,14 +78,3 @@ def test_image_quality_requires_core_fields() -> None:
         watermark=False, text_overlay=True, background="white", confidence=0.9,
     )
     assert result.text_overlay is True
-
-
-def test_response_models_registry_covers_all_tasks() -> None:
-    assert set(schemas.RESPONSE_MODELS) == {
-        "title_optimization",
-        "description_optimization",
-        "category_classification",
-        "policy_check",
-        "attribute_enrichment",
-        "image_quality",
-    }

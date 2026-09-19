@@ -92,13 +92,3 @@ class ImageQualityResult(BaseModel):
 
 class RuleValueResult(BaseModel):
     value: str
-
-
-RESPONSE_MODELS: dict[str, type[BaseModel]] = {
-    "title_optimization": OptimizedTitle,
-    "description_optimization": OptimizedDescription,
-    "category_classification": CategoryAssignment,
-    "policy_check": PolicyCheckResult,
-    "attribute_enrichment": EnrichedAttributes,
-    "image_quality": ImageQualityResult,
-}

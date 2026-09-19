@@ -7,8 +7,6 @@ from .engine import Finding, QcContext
 
 logger = logging.getLogger(__name__)
 
-CHUNK_SIZE = 10
-
 
 class AiPolicyCheck:
     """AI-powered policy check. Budget counts real (non-cache) calls only."""

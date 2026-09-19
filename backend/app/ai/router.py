@@ -14,7 +14,6 @@ from ..models.global_setting import GlobalSetting
 
 logger = logging.getLogger(__name__)
 
-TIERS = ("bulk", "precision")
 FALLBACKS = [{"bulk": ["precision"]}]
 
 

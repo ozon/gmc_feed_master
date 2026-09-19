@@ -2,7 +2,7 @@ import type { ComponentType } from 'react';
 import type { PluginScope } from '../../api/hooks';
 import RulesUI from '../../../../plugins/core/rules/frontend/component';
 import FilterUI from '../../../../plugins/core/filter/frontend/component';
-import { LabelizerPage } from '../customLabels/LabelizerPage';
+import CustomLabelsUI from '../customLabels/CustomLabelsUI';
 import CategoryUI from '../category/CategoryUI';
 import EnrichmentUI from '../enrichment/EnrichmentUI';
 
@@ -13,7 +13,7 @@ export type CustomComponentProps = { pluginId: string; scope: PluginScope };
 export const CUSTOM_COMPONENTS: Record<string, ComponentType<CustomComponentProps>> = {
   rules: RulesUI,
   filter: FilterUI,
-  custom_labels: LabelizerPage,
+  custom_labels: (p) => <CustomLabelsUI {...p} onlyTab="ids" />,
   category: CategoryUI,
   enrichment: EnrichmentUI,
 };

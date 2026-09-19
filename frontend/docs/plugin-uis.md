@@ -1,21 +1,21 @@
 # Frontend Plugin UIs
 
-## Build-Time Discovery
+## Custom Component Registration
 
-Plugins with custom UIs declare `manifest.frontend.component` (e.g., `"Editor.tsx"`). At build time, Vite scans `plugins/*/frontend/` and registers components — **no runtime module federation**, single build pipeline.
+Plugins with custom UIs declare `manifest.frontend.component` (e.g., `"component.tsx"`). There is no Vite scan of `plugins/*/frontend/` yet: custom components are registered statically in `frontend/src/features/plugin/customComponents.tsx` (plugin id → component), and `PluginPage` resolves `CUSTOM_COMPONENTS[plugin.id]` when the manifest declares a `frontend.component`.
 
-### Discovery Flow
+### Registration Flow
 ```
-Vite build
+PluginPage
     │
     ▼
-Scan plugins/*/frontend/ for .tsx files
+manifest.frontend.component set?
     │
     ▼
-Generate virtual module: pluginComponents.ts
+CUSTOM_COMPONENTS[plugin.id] (static map)
     │
     ▼
-Import in PluginPage → render via dynamic import
+Render component with { pluginId, scope }
 ```
 
 ### Manifest Frontend Field
@@ -90,7 +90,7 @@ the request (the backend's `_resolve_target` answers undeclared scopes with
 
 ### Custom Component Registry
 
-`frontend/src/features/plugin/customComponents.ts` maps plugin IDs to statically imported components (`rules` → RulesUI, `filter` → FilterUI, `custom_labels` → CustomLabelsUI); `PluginPage` resolves `CUSTOM_COMPONENTS[plugin.id]` when `manifest.frontend.component` is set. Add new custom components to that map until build-time discovery lands.
+`frontend/src/features/plugin/customComponents.tsx` maps plugin IDs to statically imported components (`rules` → RulesUI, `filter` → FilterUI, `custom_labels` → `CustomLabelsUI` with `onlyTab="ids"`); `PluginPage` resolves `CUSTOM_COMPONENTS[plugin.id]` when `manifest.frontend.component` is set. Add new custom components to that map until build-time discovery lands.
 
 ### Pipeline Editor embedding
 
@@ -100,7 +100,7 @@ the request (the backend's `_resolve_target` answers undeclared scopes with
 2. **Plugin-page link**: if the plugin has no Setup component but does have a custom page component (`manifest.frontend.component`, resolved via `CUSTOM_COMPONENTS`), the panel shows a hint plus an "Open plugin page" link to the feed-tier plugin page, and no raw JSON-schema instance form.
 3. **Instance form**: otherwise the panel renders generic JSON-schema instance settings (`JsonSchemaForm`) only.
 
-For `custom_labels`, `CustomLabelsUI` splits its two surfaces via the additive `onlyTab` prop: `LabelizerSetup` (`onlyTab="rules"`) renders rules-only in the panel, while `LabelizerPage` (`onlyTab="ids"`) renders the bulk-IDs dashboard only on the plugin page. The plugin page is therefore data-only (bulk IDs) at every tier — it no longer hosts the slot-rules editor.
+For `custom_labels`, `CustomLabelsUI` splits its two surfaces via the additive `onlyTab` prop: `CONFIG_COMPONENTS` inlines it with `onlyTab="rules"` (rules-only in the panel), while `CUSTOM_COMPONENTS` inlines it with `onlyTab="ids"` (bulk-IDs dashboard only on the plugin page). The plugin page is therefore data-only (bulk IDs) at every tier — it no longer hosts the slot-rules editor.
 
 ### First-Party Reference: Rules (`plugins/core/rules/frontend/component.tsx`)
 
@@ -156,12 +156,12 @@ generating `pluginComponents.ts`, per ADR 0002 — third-party plugins currently
 use schema-rendered forms). Error isolation via `PluginErrorBoundary` is now
 implemented (see below).
 
-### First-Party Reference: Category (`plugins/core/category/frontend/component.tsx`)
+### First-Party Reference: Category
 
-The Category module is the third core plugin with a custom UI. The stub follows
-the same re-export pattern as Rules and Filter; the component receives
-`{ pluginId, scope }` and the shell keeps page-level state (feedSourceId +
-language) that it passes to all tabs.
+The Category module is the third core plugin with a custom UI. `CategoryUI`
+(`frontend/src/features/category/CategoryUI.tsx`) is registered directly in
+`customComponents.tsx`; it receives `{ pluginId, scope }` and the shell keeps
+page-level state (feedSourceId + language) that it passes to all tabs.
 
 - **Dashboard tab:** feed-source selector drawn from the dashboard summary for
   the route's client; 4-bucket progress (auto/manual/excluded/uncategorized) +
@@ -181,12 +181,13 @@ language) that it passes to all tabs.
 - **Placeholders:** the AI and Uncategorized tabs and the Generate / Copy /
   Bulk-delete controls render as disabled-with-tooltip placeholders (spec v1 scope).
 
-### First-Party Reference: Enrichment (`plugins/core/enrichment/frontend/component.tsx`)
+### First-Party Reference: Enrichment
 
 The Enrichment module is the fifth core plugin with a custom UI
-(`src/features/enrichment/EnrichmentUI.tsx`, re-exported by the stub).
-Receives `{ pluginId, scope }`; operates on the feed-source tier
-(`scope.feedSourceId`), other tiers render the title + tier badge only.
+(`src/features/enrichment/EnrichmentUI.tsx`, registered directly in
+`customComponents.tsx`). Receives `{ pluginId, scope }`; operates on the
+feed-source tier (`scope.feedSourceId`), other tiers render the title + tier
+badge only.
 
 - **Scan:** limit NumberInput (1–50) + Scan button → `POST /plugins/enrichment/scan`
   with `{feed_source_id, limit}`; success toast reports
@@ -235,7 +236,7 @@ badges and bookmarks.
 |--------|---------|--------------|
 | Labelizer | Custom (`Editor.tsx`) | Dimension editor with global/client scope switch, ID lists per dimension |
 | Rules | Custom (`component.tsx` stub → `frontend/src/features/rules/RulesUI`) | Ordered rule list (IF/THEN AST) with dnd reordering, active/master toggles, per-rule editor, dirty-save guard |
-| Category | Custom (`component.tsx` stub → `frontend/src/features/category/CategoryUI`) | 4-bucket dashboard (auto/manual/excluded/uncategorized), drag-drop rule editor, taxonomy autocomplete, match counts, matched-products modal, dirty-state guard |
+| Category | Custom (`frontend/src/features/category/CategoryUI`, direct registration) | 4-bucket dashboard (auto/manual/excluded/uncategorized), drag-drop rule editor, taxonomy autocomplete, match counts, matched-products modal, dirty-state guard |
 | Filter | Custom (`component.tsx` stub → `frontend/src/features/filter/FilterUI`) | Conjunctive scalar condition editor with live preview |
 
 ## Adding a Plugin UI

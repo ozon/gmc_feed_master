@@ -103,14 +103,6 @@ async def authenticate(credentials: Credentials, settings: Settings, session=Non
     return credentials.username
 
 
-async def create_session(store: SessionStore, clock: Clock, user_id: str) -> str:
-    return await store.create(user_id, clock.now())
-
-
-async def invalidate_session(store: SessionStore, token: str) -> None:
-    await store.invalidate(token)
-
-
 def set_session_cookie(response: Response, token: str, max_age: int) -> None:
     response.set_cookie(
         SESSION_COOKIE_NAME,

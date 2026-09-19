@@ -15,9 +15,3 @@ def max_length(attr: str) -> int | None:
     info = _attributes().get(attr)
     constraints = getattr(info, "constraints", None)
     return getattr(constraints, "max_length", None)
-
-
-def enum_values(attr: str) -> tuple[str, ...]:
-    info = _attributes().get(attr)
-    values = getattr(info, "enum_values", None)
-    return tuple(values) if values else ()

@@ -18,8 +18,6 @@ from .auth import (
     _store,
     authenticate,
     clear_session_cookie,
-    create_session,
-    invalidate_session,
     require_user,
     require_user_for_interaction,
     set_session_cookie,
@@ -377,7 +375,7 @@ def create_app(
                         "login failure audit write failed", exc_info=True
                     )
             raise
-        token = await create_session(store, app.state.clock, user_id)
+        token = await store.create(user_id, app.state.clock.now())
         set_session_cookie(response, token, settings.session_absolute_hours * 60 * 60)
         if db_session is not None:
             try:
@@ -405,7 +403,7 @@ def create_app(
     ) -> dict[str, str]:
         # Dependencies validate the token before it is invalidated.
         token = request.cookies[SESSION_COOKIE_NAME]
-        await invalidate_session(store, token)
+        await store.invalidate(token)
         clear_session_cookie(response)
         if db_session is not None:
             try:
@@ -449,7 +447,7 @@ def create_app(
                 target_type="user",
                 target_id=request_user,
             )
-        await invalidate_session(request.app.state.session_store, token)
+        await request.app.state.session_store.invalidate(token)
         clear_session_cookie(response)
         return {"status": "ok"}
 
