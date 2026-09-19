@@ -215,4 +215,5 @@ class FilterPlugin:
             return {"total": total, "pass": passing, "fail": total - passing}
 
         preview.__annotations__["payload"] = PreviewRequest
-        router.post("/preview")(preview)
+        preview.__annotations__["return"] = dict[str, int] | JSONResponse
+        router.post("/preview", response_model=None)(preview)

@@ -97,7 +97,7 @@ Each B905 `strict=True` is justified by a length invariant; where a mismatch is 
 
 ### 4. T5 — typecheck plugins, defer strict
 
-**Fix.** `plugins/core/filter/plugin.py` `preview(...)` is annotated `-> dict[str, int]` but returns a `JSONResponse` on validation failure (line 192). Change the annotation to `dict[str, int] | JSONResponse`, matching the established `dict[str, Any] | JSONResponse` pattern in `plugins/core/enrichment/plugin.py` and `plugins/core/custom_labels/plugin.py`.
+**Fix.** `plugins/core/filter/plugin.py` `preview(...)` is annotated `-> dict[str, int]` but returns a `JSONResponse` on validation failure (line 192). Widen the annotation to `dict[str, int] | JSONResponse` for mypy, and — because the module uses `from __future__ import annotations` — also set `preview.__annotations__["return"]` with the runtime union and register the route with `response_model=None`. Without the latter two, FastAPI builds a response field from the string `ForwardRef` and raises `PydanticUserError` at request time (`test_filter_preview.py`, `test_scope_enforcement.py`). This is exactly the `custom_labels` preview pattern; enrichment/category use `response_model=None` on their JSONResponse-returning routes.
 
 **CI/local invocation.** A separate mypy run (running `mypy . ../plugins` in one invocation fails resolution: every plugin's `plugin.py` maps to a duplicate top-level `plugin` module):
 ```yaml

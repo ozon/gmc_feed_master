@@ -210,6 +210,17 @@ In `plugins/core/filter/plugin.py`, change the `preview` signature annotation:
         ) -> dict[str, int] | JSONResponse:
 ```
 
+Then, because the module uses `from __future__ import annotations`, FastAPI would otherwise build a response field from the string `ForwardRef` and raise `PydanticUserError` at request time. Set the runtime union and disable response-model inference (the `custom_labels` preview pattern):
+
+```python
+        preview.__annotations__["payload"] = PreviewRequest
+        preview.__annotations__["return"] = dict[str, int] | JSONResponse
+        router.post("/preview", response_model=None)(preview)
+```
+
+Run: `TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5434/postgres uv run pytest tests/test_filter_preview.py tests/test_scope_enforcement.py tests/test_filter_plugin.py -q`
+Expected: PASS.
+
 - [ ] **Step 3: Add the CI gate**
 
 In `.github/workflows/ci.yml`, immediately after the existing `Mypy gate (exit-0)` step, insert:
