@@ -36,8 +36,7 @@ def test_compose_defines_only_healthy_postgres_service():
 def test_frontend_proxy_and_ci_startup_are_documented():
     root = Path(__file__).resolve().parents[2]
     vite_config = (root / "frontend" / "vite.config.ts").read_text()
-    assert "'/auth'" in vite_config
-    assert "'/health'" in vite_config
+    assert "'/api'" in vite_config
     assert "127.0.0.1:8000" in vite_config
     assert "loadEnv(mode, rootDir, '')" in vite_config
     assert "VITE_HTTPS_CERT" in vite_config
